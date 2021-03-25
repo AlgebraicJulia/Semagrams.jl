@@ -1,0 +1,33 @@
+{
+  "name": "wired",
+  "version": "0.0.1",
+  "description": "An Editor for Wiring Things",
+  "main": "src/index.ts",
+  "repository": "git@github.com:olynch/wired",
+  "author": "Owen Lynch <root@owenlynch.org>",
+  "license": "MIT",
+  "private": "true",
+  "scripts": {
+    "build": "webpack",
+    "dev": "webpack serve",
+    "test": "jasmine-ts --config=jasmine.json"
+  },
+  "dependencies": {
+    "@types/mithril": "^2.0.6",
+    "mithril": "^2.0.4"
+  },
+  "devDependencies": {
+    "@types/jasmine": "^3.6.7",
+    "copy-webpack-plugin": "^8.1.0",
+    "jasmine": "^3.7.0",
+    "jasmine-spec-reporter": "^6.0.0",
+    "@ert78gb/jasmine-ts": "^0.3.2",
+    "ts-loader": "^8.0.18",
+    "ts-node": "^9.1.1",
+    "typescript": "^4.2.3",
+    "typescript-language-server": "^0.5.1",
+    "webpack": "^5.27.2",
+    "webpack-cli": "^4.5.0",
+    "webpack-dev-server": "^3.11.2"
+  }
+}

@@ -1,1 +1,5 @@
 /target
+/.direnv/
+/.log/
+/dist/
+/node_modules/

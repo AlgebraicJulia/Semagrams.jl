@@ -1,0 +1,14 @@
+{
+    "compilerOptions": {
+        "outDir": "./dist/",
+        "sourceMap": true,
+        "esModuleInterop": true,
+        "target": "es5",
+        "lib": ["dom", "es2015"],
+        "strict": true,
+        "downlevelIteration": true
+    },
+    "include": [
+        "**/*.ts"
+    ]
+}
