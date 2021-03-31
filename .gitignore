@@ -1,5 +1,4 @@
-/target
-/.direnv/
+/javascript/.direnv/
 /.log/
-/dist/
-/node_modules/
+/javascript/dist/
+/javascript/node_modules/

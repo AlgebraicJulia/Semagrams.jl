@@ -3,6 +3,7 @@ import { add2, dist2, round2, sub2, Vec2Like } from "@thi.ng/vectors";
 import { LocatedWires } from "./LocatedWires";
 import { Attachment, box_attach } from "./Wires";
 import { AttachType, WiresSchema } from "./WiresSchema";
+import m from "mithril";
 
 const GRIDSIZE = 100;
 const SNAPSIZE = 20;
@@ -112,6 +113,8 @@ export class EditorState {
         if (this.clicked != null) {
             this.lw.setLoc(box_attach(this.clicked),
                 snapToGrid(add2([], p, this.clickedOffset) as Vec2Like));
+        } else {
+            (e as any).redraw = false;
         }
     }
 
@@ -132,7 +135,6 @@ export class EditorState {
                         ty: ModalState.SelectBox,
                         choices: box_types
                     };
-                    // this.lw.addBox("box", this.inputconfig.color, this.cursor);
                     break;
                 }
                 case "p": {
@@ -213,12 +215,9 @@ export class EditorState {
                         break;
                     }
                     case ModalState.SelectBox: {
-                        this.lw.addBox("box",
+                        this.lw.addBox(this.modal.choices[choice - 1],
                             this.inputconfig.color,
                             this.cursor)
-                        // this.lw.addBox(this.modal.choices[choice - 1],
-                        //     this.inputconfig.color,
-                        //     this.cursor)
                         break;
                     }
                 }

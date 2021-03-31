@@ -1,8 +1,8 @@
-import { colorAttachment, EditorContext, EditorState } from "./EditorState";
+import { colorAttachment, EditorState } from "./EditorState";
 import { map } from "@thi.ng/transducers";
 import { BOXRADIUS } from "./LocatedWires";
 import { box_attach } from "./Wires";
-import { portnode } from "./PortNode";
+import { PortNode } from "./PortNode";
 import { BoxStyle } from "./WiresSchema";
 import { add2 } from "@thi.ng/vectors";
 import m from 'mithril';
@@ -30,13 +30,14 @@ export const BoxNode: m.Component<BoxAttrs> = {
             fill: colorAttachment(state, a),
             stroke: box.color ?? "black",
             "data-a": JSON.stringify(a),
-            onmousenter: state.handlemouseenterattachment,
+            onmouseover: state.handlemouseenterattachment,
             onmouseout: state.handlemouseoutattachment,
             onmousedown: state.handlemousedownbox,
             onmouseup: state.handlemouseupbox,
         };
-        const portnodes = map(port_idx => [portnode, box_idx, port_idx], box.ports.keys());
-        var b: m.Vnode;
+        const portnodes = map(port_idx => m(PortNode, { state, box_idx, port_idx }),
+            box.ports.keys());
+        var b: m.Vnode<any, any>;
         switch (boxty.style) {
             case BoxStyle.Circular: {
                 b = m("circle", {

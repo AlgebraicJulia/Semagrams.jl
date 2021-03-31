@@ -1,9 +1,15 @@
 import { DirectedPortGraphSchema, PetriSchema } from './WiresSchema'
 import { Editor } from './Editor';
-import { start } from "@thi.ng/hdom";
 import { EditorState } from './EditorState';
 import { LocatedWires } from './LocatedWires';
+import m from "mithril";
 
-const state = new EditorState(new LocatedWires(DirectedPortGraphSchema));
+const state = new EditorState(new LocatedWires(PetriSchema));
 
-start([new Editor()], { root: document.body, ctx: { state } })
+const App = {
+    view() {
+        return m(Editor, { state });
+    }
+}
+
+m.mount(document.body, App)
