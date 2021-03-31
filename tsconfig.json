@@ -1,14 +1,16 @@
 {
     "compilerOptions": {
+        "downlevelIteration": true,
+        "esModuleInterop": true,
+        "importHelpers": true,
+        "lib": ["dom", "es2015"],
         "outDir": "./dist/",
         "sourceMap": true,
-        "esModuleInterop": true,
-        "target": "es5",
-        "lib": ["dom", "es2015"],
         "strict": true,
-        "downlevelIteration": true
+        "target": "es5"
     },
     "include": [
-        "**/*.ts"
+        "src/*.ts",
+        "spec/*.ts"
     ]
 }

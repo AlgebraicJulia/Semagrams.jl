@@ -1,21 +1,9 @@
-import m from 'mithril';
-import { empty_graph } from './Wired'
+import { DirectedPortGraphSchema, PetriSchema } from './WiresSchema'
 import { Editor } from './Editor';
+import { start } from "@thi.ng/hdom";
+import { EditorState } from './EditorState';
+import { LocatedWires } from './LocatedWires';
 
-const Home: m.Component<any, any> = {
-    view({ }) {
-        return m('.page',
-            m('h1', "Wired"),
-            m('p', "A totally wired editor"),
-            m(Editor, { initialWired: empty_graph })
-        )
-    }
-}
+const state = new EditorState(new LocatedWires(DirectedPortGraphSchema));
 
-function main(): void {
-    m.route(document.body, '/', {
-        '/': Home
-    });
-}
-
-main();
+start([new Editor()], { root: document.body, ctx: { state } })

@@ -8,20 +8,27 @@
   "license": "MIT",
   "private": "true",
   "scripts": {
-    "build": "webpack",
-    "dev": "webpack serve",
+    "build": "webpack --config webpack.prod.js",
+    "dev": "webpack serve --config webpack.dev.js",
     "test": "jasmine-ts --config=jasmine.json"
   },
   "dependencies": {
-    "@types/mithril": "^2.0.6",
-    "mithril": "^2.0.4"
+    "@thi.ng/api": "^7.1.4",
+    "@thi.ng/associative": "^5.1.9",
+    "@thi.ng/equiv": "^1.0.41",
+    "@thi.ng/idgen": "^0.2.35",
+    "@thi.ng/transducers": "^7.6.9",
+    "@thi.ng/vectors": "^5.1.7",
+    "mithril": "^2.0.4",
+    "tslib": "^2.1.0"
   },
   "devDependencies": {
+    "@ert78gb/jasmine-ts": "^0.3.2",
     "@types/jasmine": "^3.6.7",
+    "@types/mithril": "^2.0.7",
     "copy-webpack-plugin": "^8.1.0",
     "jasmine": "^3.7.0",
     "jasmine-spec-reporter": "^6.0.0",
-    "@ert78gb/jasmine-ts": "^0.3.2",
     "ts-loader": "^8.0.18",
     "ts-node": "^9.1.1",
     "typescript": "^4.2.3",

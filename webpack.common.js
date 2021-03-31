@@ -23,8 +23,12 @@ module.exports = {
   },
 
   output: {
-    filename: '[name].bundle.js',
+    filename: 'app.bundle.js',
     path: path.resolve(__dirname, 'dist'),
+    // library: {
+    //   name: '[name]',
+    //   type: 'umd'
+    // },
   },
 
   mode: 'development',
@@ -45,10 +49,6 @@ module.exports = {
                   from: 'assets/**/*',
               },
           ]
-      }),
-      new webpack.DefinePlugin({
-          'typeof CANVAS_RENDERER': JSON.stringify(true),
-          'typeof WEBGL_RENDERER': JSON.stringify(true),
       }),
   ],
 }

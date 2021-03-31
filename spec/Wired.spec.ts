@@ -1,4 +1,4 @@
-import { Wired, Point, GraphSchema } from "../src/Wired";
+// import { Wires, Point, GraphSchema } from "../src/Wires";
 
 // describe("Wired", () => {
 //     it("sanity test", () => {
