@@ -1,9 +1,8 @@
 import { equiv } from "@thi.ng/equiv";
 import { add2, dist2, round2, sub2, Vec2Like } from "@thi.ng/vectors";
-import { LocatedWires } from "./LocatedWires";
-import { Attachment, box_attach } from "./Wires";
-import { AttachType, WiresSchema } from "./WiresSchema";
-import m from "mithril";
+import { LocatedWireViz } from "./LocatedWireViz";
+import { Attachment, box_attach } from "./WireViz";
+import { AttachType, WireVizSchema } from "./WireVizSchema";
 
 const GRIDSIZE = 100;
 const SNAPSIZE = 20;
@@ -17,13 +16,13 @@ function snapToGrid(p: Vec2Like): Vec2Like {
     }
 }
 
-function compatiblePortTypes(schema: WiresSchema, boxty: string): string[] {
+function compatiblePortTypes(schema: WireVizSchema, boxty: string): string[] {
     return Object.entries(schema.port_types)
         .filter(([_, portprops]) => portprops.box == boxty)
         .map(([portty, _]) => portty);
 }
 
-function compatibleWireTypes(schema: WiresSchema,
+function compatibleWireTypes(schema: WireVizSchema,
     srcty: [AttachType, string],
     tgtty: [AttachType, string]): string[] {
     return Object.entries(schema.wire_types)
@@ -69,28 +68,32 @@ interface ModalSelectWire {
 type Modal = ModalNormal | ModalSelectBox | ModalSelectPort | ModalSelectWire;
 
 export class EditorState {
-    lw: LocatedWires
-    cursor: Vec2Like
-    inputconfig: InputConfig
-    overAttachment: Attachment | null
-    src: Attachment | null
-    tgt: Attachment | null
     clicked: number | null
     clickedOffset: Vec2Like
-    svgelt: SVGSVGElement | null
+    cursor: Vec2Like
+    inputconfig: InputConfig
+    lw: LocatedWireViz
     modal: Modal
+    overAttachment: Attachment | null
+    selected: number | null
+    sendToJl: Function
+    src: Attachment | null
+    svgelt: SVGSVGElement | null
+    tgt: Attachment | null
 
-    constructor(initWires: LocatedWires) {
-        this.lw = initWires;
-        this.svgelt = null;
+    constructor(initWires: LocatedWireViz, sendToJl: Function) {
+        this.clicked = null;
+        this.clickedOffset = [0, 0];
         this.cursor = [0, 0];
         this.inputconfig = new InputConfig();
-        this.overAttachment = null;
-        this.clicked = null;
-        this.src = null;
-        this.tgt = null;
-        this.clickedOffset = [0, 0];
+        this.lw = initWires;
         this.modal = { ty: ModalState.Normal };
+        this.overAttachment = null;
+        this.selected = null;
+        this.sendToJl = sendToJl;
+        this.src = null;
+        this.svgelt = null;
+        this.tgt = null;
     }
 
     eventCoordsSVG(e: MouseEvent): Vec2Like {
@@ -130,7 +133,7 @@ export class EditorState {
                     break;
                 }
                 case "b": {
-                    const box_types = [...Object.keys(this.lw.wires.schema.box_types)];
+                    const box_types = [...Object.keys(this.lw.wireviz.schema.box_types)];
                     this.modal = {
                         ty: ModalState.SelectBox,
                         choices: box_types
@@ -140,8 +143,8 @@ export class EditorState {
                 case "p": {
                     if (this.overAttachment != null) {
                         const box_idx = this.overAttachment.box_idx;
-                        const box = this.lw.wires.boxes.get(box_idx)!;
-                        const porttypeoptions = compatiblePortTypes(this.lw.wires.schema, box.ty);
+                        const box = this.lw.wireviz.boxes.get(box_idx)!;
+                        const porttypeoptions = compatiblePortTypes(this.lw.wireviz.schema, box.ty);
                         if (porttypeoptions.length == 1) {
                             this.lw.addPort(
                                 porttypeoptions[0],
@@ -171,9 +174,9 @@ export class EditorState {
                     const t = this.tgt;
                     if ((s != undefined) && (t != undefined)) {
                         const wiretypeoptions = compatibleWireTypes(
-                            this.lw.wires.schema,
-                            this.lw.wires.attachmentType(s),
-                            this.lw.wires.attachmentType(t)
+                            this.lw.wireviz.schema,
+                            this.lw.wireviz.attachmentType(s),
+                            this.lw.wireviz.attachmentType(t)
                         );
                         if (wiretypeoptions.length == 1) {
                             this.lw.addWire(wiretypeoptions[0], s, t);
@@ -193,6 +196,20 @@ export class EditorState {
                 }
                 case "D": {
                     console.log(this.lw);
+                    break;
+                }
+                case "P": {
+                    console.log(this.lw.wireviz);
+                    break;
+                }
+                case "S": {
+                    this.sendToJl(this.lw.wireviz.export());
+                    break;
+                }
+                case "Escape": {
+                    this.src = null;
+                    this.tgt = null;
+                    this.selected = null;
                     break;
                 }
             }
@@ -241,6 +258,7 @@ export class EditorState {
     handlemousedownbox = (e: MouseEvent) => {
         const a = eventDataProperty(e, "data-a") as Attachment;
         this.clicked = a.box_idx;
+        this.selected = a.box_idx;
         const loc = this.lw.getLoc(a)!;
         this.clickedOffset = sub2([], loc, this.eventCoordsSVG(e)) as Vec2Like;
     }

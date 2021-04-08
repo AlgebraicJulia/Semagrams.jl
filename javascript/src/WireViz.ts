@@ -1,5 +1,6 @@
 import { equiv } from "@thi.ng/equiv";
-import { AttachType, WiresSchema } from "./WiresSchema"
+import { hash } from "@thi.ng/vectors";
+import { AttachType, WireVizSchema } from "./WireVizSchema"
 
 export interface BoxAttachment {
     ty: AttachType.Box
@@ -13,6 +14,17 @@ export interface PortAttachment {
 }
 
 export type Attachment = BoxAttachment | PortAttachment;
+
+export function hashAttachment(a: Attachment) {
+    switch (a.ty) {
+        case AttachType.Box: {
+            return hash([0, a.box_idx]);
+        }
+        case AttachType.Port: {
+            return hash([1, a.box_idx, a.port_idx])
+        }
+    }
+}
 
 export function box_attach(i: number): BoxAttachment {
     return { ty: AttachType.Box, box_idx: i };
@@ -37,6 +49,15 @@ export class Box {
         public ports: Map<number, Port>,
         public color?: string
     ) { }
+
+    export() {
+        return {
+            ty: this.ty,
+            weights: this.weights,
+            ports: Array.from(this.ports.entries()),
+            color: this.color
+        }
+    }
 }
 
 export class Wire {
@@ -60,13 +81,13 @@ class IDGen {
     }
 }
 
-export class Wires {
+export class WireViz {
     public boxes: Map<number, Box>
     public wires: Map<number, Wire>
     private gen: IDGen;
 
     constructor(
-        readonly schema: WiresSchema,
+        readonly schema: WireVizSchema,
     ) {
         this.boxes = new Map();
         this.wires = new Map();
@@ -175,6 +196,13 @@ export class Wires {
             this.remPort(a.box_idx, a.port_idx)
         } else {
             throw new Error("invalid attachment type")
+        }
+    }
+
+    export() {
+        return {
+            boxes: Array.from(this.boxes.entries()).map(([i, box]) => [i, box.export()]),
+            wires: Array.from(this.wires.entries())
         }
     }
 }

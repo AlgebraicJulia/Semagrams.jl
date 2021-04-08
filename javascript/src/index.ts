@@ -1,15 +1,19 @@
-import { DirectedPortGraphSchema, PetriSchema } from './WiresSchema'
 import { Editor } from './Editor';
 import { EditorState } from './EditorState';
-import { LocatedWires } from './LocatedWires';
+import { LocatedWireViz } from './LocatedWireViz';
 import m from "mithril";
+import { WireVizSchema } from './WireVizSchema';
 
-const state = new EditorState(new LocatedWires(PetriSchema));
 
-const App = {
-    view() {
-        return m(Editor, { state });
-    }
+export function main(ws: WireVizSchema, divid: string, sendToJl: Function) {
+    const dom = document.getElementById(divid)!;
+    const state = new EditorState(new LocatedWireViz(ws), sendToJl);
+
+    const App = {
+        view() {
+            return m(Editor, { state });
+        }
+    };
+
+    m.mount(dom, App)
 }
-
-m.mount(document.body, App)

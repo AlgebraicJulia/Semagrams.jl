@@ -1,5 +1,5 @@
 {
-  "name": "wired",
+  "name": "wireviz",
   "version": "0.0.1",
   "description": "An Editor for Wiring Things",
   "main": "src/index.ts",
@@ -9,6 +9,7 @@
   "private": "true",
   "scripts": {
     "build": "webpack --config webpack.prod.js",
+    "devbuild": "webpack --config webpack.dev.js",
     "dev": "webpack serve --config webpack.dev.js",
     "test": "jasmine-ts --config=jasmine.json"
   },
@@ -19,12 +20,14 @@
     "@thi.ng/idgen": "^0.2.35",
     "@thi.ng/transducers": "^7.6.9",
     "@thi.ng/vectors": "^5.1.7",
+    "katex": "^0.13.2",
     "mithril": "^2.0.4",
     "tslib": "^2.1.0"
   },
   "devDependencies": {
     "@ert78gb/jasmine-ts": "^0.3.2",
     "@types/jasmine": "^3.6.7",
+    "@types/katex": "^0.11.0",
     "@types/mithril": "^2.0.7",
     "copy-webpack-plugin": "^8.1.0",
     "jasmine": "^3.7.0",

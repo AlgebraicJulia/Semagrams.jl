@@ -2,8 +2,10 @@ import { map } from "@thi.ng/transducers";
 import { EditorState, ModalState } from "./EditorState";
 import { WireNode } from "./WireNode";
 import { BoxNode } from "./BoxNode";
-import { add2 } from "@thi.ng/vectors";
+import { add2, hash } from "@thi.ng/vectors";
 import m from "mithril";
+import { HashMap } from "@thi.ng/associative";
+import { Attachment, hashAttachment } from "./WireViz";
 
 function makeMarker(id: string, color: string) {
     return m("marker",
@@ -76,15 +78,45 @@ interface EditorAttrs {
     state: EditorState
 }
 
+const globalStyle = `
+.katex { font-size: 1.5em; }
+`;
+
 export const Editor: m.Component<EditorAttrs> = {
     oncreate({ dom, attrs: { state } }) {
         state.svgelt = dom as SVGSVGElement;
     },
 
     view({ attrs: { state } }) {
-        const boxnodes = [...map(box_idx => m(BoxNode, { state, box_idx }), state.lw.wires.boxes.keys())];
-        const wirenodes = map(wire_idx => m(WireNode, { state, wire_idx }),
-            state.lw.wires.wires.keys());
+        const boxnodes = [...map(box_idx => m(BoxNode, { state, box_idx }), state.lw.wireviz.boxes.keys())];
+        const wires_by_src_tgt =
+            new HashMap<[number, number], [number, boolean][]>(null, { hash });
+        for (const wire_idx of state.lw.wireviz.wires.keys()) {
+            const w = state.lw.wireviz.wires.get(wire_idx)!;
+            const s = hashAttachment(w.src);
+            const t = hashAttachment(w.tgt);
+            var key: [number, number];
+            var val: [number, boolean];
+            if (s <= t) {
+                key = [s, t];
+                val = [wire_idx, true];
+            } else {
+                key = [t, s];
+                val = [wire_idx, false];
+            }
+            var wlist;
+            if (wlist = wires_by_src_tgt.get(key)) {
+                wlist.push(val);
+            } else {
+                wires_by_src_tgt.set(key, [val]);
+            }
+        }
+        console.log([...wires_by_src_tgt]);
+        const wirenodes = map((wlist) =>
+            wlist.map((w, i) => m(WireNode, { state, wire_idx: w[0], i, n: wlist.length })),
+            wires_by_src_tgt.values());
+        // const wirenodes = map(wire_idx => m(WireNode, { state, wire_idx }),
+        // state.lw.wireviz.wires.keys());
         return m("svg", {
             width: "95%",
             height: "500px",
@@ -93,6 +125,7 @@ export const Editor: m.Component<EditorAttrs> = {
             tabindex: "0",
             style: { "border-style": "solid", "stroke-width": "2px" },
         },
+            m("style", m.trust(globalStyle)),
             svgdefs,
             m("rect", { width: "100%", height: "100%", fill: "url(#grid)" }),
             m(ChoiceModal, { state }),

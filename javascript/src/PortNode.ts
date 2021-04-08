@@ -1,6 +1,6 @@
 import m from "mithril";
 import { colorAttachment, EditorState } from "./EditorState";
-import { port_attach } from "./Wires";
+import { port_attach } from "./WireViz";
 
 const PORTRADIUS = 7;
 
@@ -14,7 +14,7 @@ export const PortNode: m.Component<PortAttrs> = {
     view({ attrs: { state, box_idx, port_idx } }) {
         const a = port_attach(box_idx, port_idx);
         const loc = state.lw.getLoc(a)!;
-        const port = state.lw.wires.boxes.get(box_idx)!.ports.get(port_idx)!;
+        const port = state.lw.wireviz.boxes.get(box_idx)!.ports.get(port_idx)!;
         const attrs = {
             fill: colorAttachment(state, a),
             stroke: port.color ?? "black",

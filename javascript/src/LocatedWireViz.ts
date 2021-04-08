@@ -1,16 +1,17 @@
-import { Wires, Attachment, BoxAttachment, PortAttachment } from "./Wires";
-import { WiresSchema, AttachType, PortStyle } from "./WiresSchema";
+import { WireViz, Attachment, BoxAttachment, PortAttachment } from "./WireViz";
+import { WireVizSchema, AttachType, PortStyle } from "./WireVizSchema";
 import { Vec2Like, add2 } from "@thi.ng/vectors";
+import { centerIndex } from "./Util";
 
 export const BOXRADIUS = 40;
 
-export class LocatedWires {
-    wires: Wires
+export class LocatedWireViz {
+    wireviz: WireViz
     boxlocs: Map<number, Vec2Like>
     portlocs: Map<number, Map<number, Vec2Like>>
 
-    constructor(schema: WiresSchema) {
-        this.wires = new Wires(schema);
+    constructor(schema: WireVizSchema) {
+        this.wireviz = new WireViz(schema);
         this.boxlocs = new Map();
         this.portlocs = new Map();
     }
@@ -20,14 +21,14 @@ export class LocatedWires {
     }
 
     updatePortLocs(box_idx: number) {
-        const box = this.wires.boxes.get(box_idx)!;
+        const box = this.wireviz.boxes.get(box_idx)!;
         const boxportlocs = this.portlocs.get(box_idx)!;
         const circular = [];
         const input = [];
         const output = [];
         for (const port_idx of box.ports.keys()) {
             const p = box.ports.get(port_idx)!;
-            const port_schema = this.wires.schema.port_types[p.ty];
+            const port_schema = this.wireviz.schema.port_types[p.ty];
             switch (port_schema.style) {
                 case PortStyle.Circular: {
                     circular.push(port_idx);
@@ -53,12 +54,12 @@ export class LocatedWires {
         })
         input.forEach((port_idx, i) => {
             const x = -BOXRADIUS;
-            const y = BOXRADIUS * 1.5 * (i - ((input.length - 1) / 2)) / input.length;
+            const y = BOXRADIUS * 1.5 * centerIndex(i, input.length);
             boxportlocs.set(port_idx, [x, y]);
         });
         output.forEach((port_idx, i) => {
             const x = BOXRADIUS;
-            const y = BOXRADIUS * 1.5 * (i - ((output.length - 1) / 2)) / output.length;
+            const y = BOXRADIUS * 1.5 * centerIndex(i, output.length);
             boxportlocs.set(port_idx, [x, y]);
         });
     }
@@ -77,28 +78,28 @@ export class LocatedWires {
     }
 
     addBox(ty: string, color: string | undefined, loc: Vec2Like): Attachment {
-        const a = this.wires.addBox(ty, color);
+        const a = this.wireviz.addBox(ty, color);
         this.portlocs.set(a.box_idx, new Map());
         this.setLoc(a, loc);
         return a;
     }
 
     addPort(ty: string, box_idx: number, color: string | undefined): Attachment {
-        const a = this.wires.addPort(ty, box_idx, color);
+        const a = this.wireviz.addPort(ty, box_idx, color);
         this.updatePortLocs(box_idx);
         return a;
     }
 
     addWire(ty: string, src: Attachment, tgt: Attachment): number | undefined {
-        return this.wires.addWire(ty, src, tgt);
+        return this.wireviz.addWire(ty, src, tgt);
     }
 
     remWire(i: number) {
-        this.wires.remWire(i);
+        this.wireviz.remWire(i);
     }
 
     remPort(box_idx: number, port_idx: number) {
-        this.wires.remPort(box_idx, port_idx);
+        this.wireviz.remPort(box_idx, port_idx);
         this.portlocs.get(box_idx)!.delete(port_idx);
         this.updatePortLocs(box_idx);
     }
@@ -106,7 +107,7 @@ export class LocatedWires {
     remBox(box_idx: number) {
         this.boxlocs.delete(box_idx);
         this.portlocs.delete(box_idx);
-        this.wires.remBox(box_idx);
+        this.wireviz.remBox(box_idx);
     }
 
     remAttachment(a: Attachment) {

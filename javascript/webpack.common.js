@@ -25,10 +25,10 @@ module.exports = {
   output: {
     filename: 'app.bundle.js',
     path: path.resolve(__dirname, 'dist'),
-    // library: {
-    //   name: '[name]',
-    //   type: 'umd'
-    // },
+    library: {
+      name: 'app',
+      type: 'umd'
+    },
   },
 
   mode: 'development',
