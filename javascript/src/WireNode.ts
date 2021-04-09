@@ -1,15 +1,13 @@
 import { add2, dist2, mulN2, rotate, sub2, Vec, Vec2Like, ZERO2 } from "@thi.ng/vectors";
 import { EditorState } from "./EditorState";
 import m from "mithril";
-import { centerIndex } from "./Util";
 
 const WIREOFFSETCONSTANT = 60;
 
 interface WireAttrs {
     state: EditorState
     wire_idx: number
-    i: number,
-    n: number
+    offset: number
 }
 
 function svgPath(segs: Array<[string, Array<Vec>]>) {
@@ -37,12 +35,12 @@ function curvePoints(p1: Vec2Like, p2: Vec2Like, offset: number): Array<[string,
 }
 
 export const WireNode: m.Component<WireAttrs> = {
-    view({ attrs: { state, wire_idx, i, n } }) {
+    view({ attrs: { state, wire_idx, offset } }) {
         const e = state.lw.wireviz.wires.get(wire_idx)!;
         const sloc = state.lw.getLoc(e.src)!;
         const tloc = state.lw.getLoc(e.tgt)!;
         return m("path", {
-            d: svgPath(curvePoints(sloc, tloc, WIREOFFSETCONSTANT * centerIndex(i, n))),
+            d: svgPath(curvePoints(sloc, tloc, WIREOFFSETCONSTANT * offset)),
             stroke: "black",
             "marker-mid": "url(#arrow)",
             fill: "none"

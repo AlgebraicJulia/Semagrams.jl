@@ -6,6 +6,7 @@ import { add2, hash } from "@thi.ng/vectors";
 import m from "mithril";
 import { HashMap } from "@thi.ng/associative";
 import { Attachment, hashAttachment } from "./WireViz";
+import { centerIndex } from "./Util";
 
 function makeMarker(id: string, color: string) {
     return m("marker",
@@ -14,8 +15,8 @@ function makeMarker(id: string, color: string) {
             viewBox: "0 0 10 10",
             refX: "5",
             refY: "5",
-            markerWidth: "12",
-            markerHeight: "12",
+            markerWidth: "6",
+            markerHeight: "6",
             orient: "auto",
         },
         m("path", {
@@ -111,9 +112,11 @@ export const Editor: m.Component<EditorAttrs> = {
                 wires_by_src_tgt.set(key, [val]);
             }
         }
-        console.log([...wires_by_src_tgt]);
         const wirenodes = map((wlist) =>
-            wlist.map((w, i) => m(WireNode, { state, wire_idx: w[0], i, n: wlist.length })),
+            wlist.map((w, i) => {
+                const offset = (w[1] ? 1 : -1) * centerIndex(i, wlist.length);
+                return m(WireNode, { state, wire_idx: w[0], offset })
+            }),
             wires_by_src_tgt.values());
         // const wirenodes = map(wire_idx => m(WireNode, { state, wire_idx }),
         // state.lw.wireviz.wires.keys());

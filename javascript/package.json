@@ -14,10 +14,8 @@
     "test": "jasmine-ts --config=jasmine.json"
   },
   "dependencies": {
-    "@thi.ng/api": "^7.1.4",
     "@thi.ng/associative": "^5.1.9",
     "@thi.ng/equiv": "^1.0.41",
-    "@thi.ng/idgen": "^0.2.35",
     "@thi.ng/transducers": "^7.6.9",
     "@thi.ng/vectors": "^5.1.7",
     "katex": "^0.13.2",
@@ -29,7 +27,9 @@
     "@types/jasmine": "^3.6.7",
     "@types/katex": "^0.11.0",
     "@types/mithril": "^2.0.7",
+    "closure-webpack-plugin": "^2.5.0",
     "copy-webpack-plugin": "^8.1.0",
+    "google-closure-compiler": "^20210302.0.0",
     "jasmine": "^3.7.0",
     "jasmine-spec-reporter": "^6.0.0",
     "ts-loader": "^8.0.18",

@@ -34,12 +34,11 @@ export const BoxNode: m.Component<BoxAttrs> = {
             onmousedown: state.handlemousedownbox,
             onmouseup: state.handlemouseupbox,
         })
-        const shape = m.trust(boxty.shape);
         const highlight = m("g", {
             transform: "scale(1.1)",
             fill: state.selected == box_idx ? "yellow" : "none",
             stroke: "none",
-        }, shape);
+        }, m.trust(boxty.shape));
         const text = m("foreignObject", {
             x: "-40px",
             y: "-40px",
@@ -55,7 +54,7 @@ export const BoxNode: m.Component<BoxAttrs> = {
         }, m.trust(katex.renderToString("\\int_a^b f", {
             output: "mathml"
         }))));
-        const b = m("g", attrs, highlight, shape, text, handle);
+        const b = m("g", attrs, highlight, m.trust(boxty.shape), text, handle);
         return m("g", b, ...portnodes);
     }
 }

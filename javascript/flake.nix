@@ -7,7 +7,7 @@
       in rec {
         # `nix develop`
         devShell = pkgs.mkShell {
-          nativeBuildInputs = with pkgs; [ nodejs ];
+          nativeBuildInputs = with pkgs; [ nodejs jre ];
           shellHook = "export PATH=$PWD/node_modules/.bin:$PATH";
         };
       });
