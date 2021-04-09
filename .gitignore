@@ -2,3 +2,6 @@
 /.log/
 /javascript/dist/
 /javascript/node_modules/
+/javascript/.log/
+/Manifest.toml
+.ipynb_checkpoints
