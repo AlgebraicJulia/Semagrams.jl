@@ -91,7 +91,8 @@ function svg_node(stx::Expr)
                          e.args[2]),
                     args)...),
            Expr(:vect, map(svg_node, body)...))
-    _ => error("expected a function call")
+    Expr(:$, expr) => expr
+    _ => error("expected a function call or an escape")
   end
 end
 

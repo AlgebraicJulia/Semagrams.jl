@@ -9,6 +9,7 @@ export WireVizSchema, AttachType,
 
 include("SVG.jl")
 include("Boxes.jl")
+include("Logo.jl")
 
 using Reexport
 
