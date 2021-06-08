@@ -5,7 +5,7 @@ import { BoxNode } from "./BoxNode";
 import { add2, hash } from "@thi.ng/vectors";
 import m from "mithril";
 import { HashMap } from "@thi.ng/associative";
-import { Attachment, hashAttachment } from "./WireViz";
+import { Attachment, hashAttachment } from "./Semagram";
 import { centerIndex } from "./Util";
 
 function makeMarker(id: string, color: string) {
@@ -28,20 +28,56 @@ function makeMarker(id: string, color: string) {
     )
 }
 
+const resistorMarker =
+    m("marker",
+        {
+            id: "resistor",
+            viewBox: "0 0 82.5 30",
+            refX: "45",
+            refY: "15",
+            markerWidth: "30",
+            markerHeight: "10",
+            orient: "auto",
+        },
+        m.trust("<g transform=\"translate(0 15)\"><rect width=\"90\" height=\"30\" x=\"0\" y=\"-15\" style=\"fill:black;stroke:none\"/><polyline points=\"0.0,0.0 15.0,0.0 22.5,-15.0 30.0,15.0 37.5,-15.0 45.0,15.0 52.5,-15.0 60.0,15.0 67.5,0.0 82.5,0.0\" style=\"stroke-width:2px;stroke:white;fill:none\"></polyline></g>")
+    );
+
+const capacitorLineStyle = "stroke-width:3px;stroke:white;fill:none"
+
+const capacitorMarker =
+    m("marker",
+        {
+            id: "capacitor",
+            viewBox: "0 0 60 60",
+            refX: "30",
+            refY: "30",
+            markerWidth: "20",
+            markerHeight: "20",
+            orient: "auto"
+        },
+        m("g", { "transform": "translate(30 30)" },
+            m("rect", { width: "60", height: "60", x: "-30", y: "-30", style: "stroke:none;fill:black" }),
+            m("polyline", { points: "-30,0 -10,0", style: capacitorLineStyle }),
+            m("polyline", { points: "30,0 10,0", style: capacitorLineStyle }),
+            m("polyline", { points: "-10,30 -10,-30", style: capacitorLineStyle }),
+            m("polyline", { points: "10,30 10,-30", style: capacitorLineStyle })
+        )
+    )
+
 const grid = m("pattern", {
     id: "grid",
-    width: "100",
-    height: "100",
+    width: "60",
+    height: "60",
     patternUnits: "userSpaceOnUse",
 },
     m("path", {
-        d: "M 100,0 L 0,0 L 0,100",
+        d: "M 60,0 L 0,0 L 0,60",
         fill: "none",
         stroke: "gray",
         "stroke-width": "1"
     }))
 
-const svgdefs = m("defs", grid, makeMarker("arrow-sel", "lightgrey"), makeMarker("arrow", "white"));
+const svgdefs = m("defs", grid, resistorMarker, capacitorMarker, makeMarker("arrow-sel", "lightgrey"), makeMarker("arrow", "white"));
 
 const MODAL_TL = [20, 20];
 const MODAL_WIDTH = 150;
@@ -51,18 +87,19 @@ const MODAL_YPADDING = 10;
 
 const ChoiceModal: m.Component<EditorAttrs> = {
     view({ attrs: { state } }) {
-        if (state.modal.ty != ModalState.Normal) {
+        const modal = state.dialogue.modal;
+        if (modal.ty != ModalState.Normal) {
             const bg = m("rect", {
                 x: MODAL_TL[0],
                 y: MODAL_TL[1],
                 width: MODAL_WIDTH,
-                height: MODAL_HEIGHT_PER_LINE * state.modal.choices.length + MODAL_YPADDING,
+                height: MODAL_HEIGHT_PER_LINE * modal.choices.length + MODAL_YPADDING,
                 stroke: "black",
                 fill: "white"
             });
             return m("g", {},
                 bg,
-                ...state.modal.choices.map((choice, i) => {
+                ...modal.choices.map((choice, i) => {
                     let pos = add2([],
                         MODAL_TL,
                         [MODAL_XPADDING, (i + 1) * MODAL_HEIGHT_PER_LINE])
@@ -89,11 +126,11 @@ export const Editor: m.Component<EditorAttrs> = {
     },
 
     view({ attrs: { state } }) {
-        const boxnodes = [...map(box_idx => m(BoxNode, { state, box_idx }), state.lw.wireviz.boxes.keys())];
+        const boxnodes = [...map(box_idx => m(BoxNode, { state, box_idx }), state.boxes())];
         const wires_by_src_tgt =
             new HashMap<[number, number], [number, boolean][]>(null, { hash });
-        for (const wire_idx of state.lw.wireviz.wires.keys()) {
-            const w = state.lw.wireviz.wires.get(wire_idx)!;
+        for (const wire_idx of state.wires()) {
+            const w = state.ls.sg.getWire(wire_idx)!;
             const s = hashAttachment(w.src);
             const t = hashAttachment(w.tgt);
             var key: [number, number];
@@ -123,7 +160,7 @@ export const Editor: m.Component<EditorAttrs> = {
         return m("svg", {
             width: "95%",
             height: "500px",
-            onmousemove: state.handlemousemove,
+            onmousemove: state.cursor.handlemousemove,
             onkeydown: state.handlekeydown,
             tabindex: "0",
             style: { "border-style": "solid", "stroke-width": "2px" },

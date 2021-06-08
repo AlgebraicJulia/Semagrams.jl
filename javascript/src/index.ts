@@ -1,13 +1,13 @@
 import { Editor } from './Editor';
 import { EditorState } from './EditorState';
-import { LocatedWireViz } from './LocatedWireViz';
+import { LocatedSemagram } from './LocatedSemagram';
 import m from "mithril";
-import { WireVizSchema } from './WireVizSchema';
+import { Schema } from './Schema';
 
 
-export function main(ws: WireVizSchema, divid: string, sendToJl: Function) {
+export function main(schema: Schema, divid: string, sendToJl: Function) {
     const dom = document.getElementById(divid)!;
-    const state = new EditorState(new LocatedWireViz(ws), sendToJl);
+    const state = new EditorState(new LocatedSemagram(schema), sendToJl);
 
     const App = {
         view() {

@@ -1,5 +1,6 @@
 import { add2, dist2, mulN2, rotate, sub2, Vec, Vec2Like, ZERO2 } from "@thi.ng/vectors";
 import { EditorState } from "./EditorState";
+import * as CS from "./ColorScheme";
 import m from "mithril";
 
 const WIREOFFSETCONSTANT = 60;
@@ -36,13 +37,13 @@ function curvePoints(p1: Vec2Like, p2: Vec2Like, offset: number): Array<[string,
 
 export const WireNode: m.Component<WireAttrs> = {
     view({ attrs: { state, wire_idx, offset } }) {
-        const e = state.lw.wireviz.wires.get(wire_idx)!;
-        const sloc = state.lw.getLoc(e.src)!;
-        const tloc = state.lw.getLoc(e.tgt)!;
+        const e = state.ls.sg.wires.get(wire_idx)!;
+        const sloc = state.ls.getLoc(e.src)!;
+        const tloc = state.ls.getLoc(e.tgt)!;
         return m("path", {
             d: svgPath(curvePoints(sloc, tloc, WIREOFFSETCONSTANT * offset)),
-            stroke: "black",
-            "marker-mid": "url(#arrow)",
+            stroke: CS.accent,
+            "marker-mid": `url(#arrow)`,
             fill: "none"
         });
     }

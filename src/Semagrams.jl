@@ -1,20 +1,21 @@
-module WireViz
-export WireVizSchema, AttachType,
+module Semagrams
+export SemagramSchema, Semagram, AttachType,
   BoxProperties, BoxStyle,
   PortProperties, PortStyle,
   WireProperties, WireStyle,
-  decode_from_wires,
-  @wirevizschema
+  decode_from_wires, @semagramschema, get_acset
 
 
 include("SVG.jl")
 include("Boxes.jl")
+include("Wires.jl")
 include("Logo.jl")
 
 using Reexport
 
 @reexport using .SVG
 @reexport using .Boxes
+@reexport using .Wires
 
 using WebIO
 using JSExpr
@@ -54,7 +55,7 @@ end
 
 to_json(x::WireProperties) = generic_to_json(x)
 
-struct WireVizSchema
+struct SemagramSchema
   box_types::Dict{Symbol, BoxProperties}
   port_types::Dict{Symbol, PortProperties}
   wire_types::Dict{Symbol, WireProperties}
@@ -87,8 +88,8 @@ struct WireDesc
   end
 end
 
-function pres_to_wiresschema(p, descs)
-  ws = WireVizSchema(Dict(),Dict(),Dict())
+function pres_to_semagramschema(p, descs)
+  ws = SemagramSchema(Dict(),Dict(),Dict())
   for desc in descs
     if typeof(desc)<:BoxDesc
       ws.box_types[desc.name] = BoxProperties([],write_svg(desc.shape),string(desc.name))
@@ -116,7 +117,7 @@ end
 
 q(x) = Expr(:quote,x)
 
-macro wirevizschema(head,body)
+macro semagramschema(head,body)
   descs = @match body begin
     Expr(:block,lines...) => map(lines) do line
       @match line begin
@@ -144,10 +145,10 @@ macro wirevizschema(head,body)
     Expr(:call, name, pres) => (name, pres)
     _ => error("the head must be a name and presentation")
   end
-  :($(esc(name)) = pres_to_wiresschema($(esc(pres)), $(esc(Expr(:vect, descs...)))))
+  :($(esc(name)) = pres_to_semagramschema($(esc(pres)), $(esc(Expr(:vect, descs...)))))
 end
 
-to_json(x::WireVizSchema) = generic_to_json(x)
+to_json(x::SemagramSchema) = generic_to_json(x)
 
 struct Port
   ty::Symbol
@@ -225,12 +226,12 @@ end
 
 from_json(d::Dict{String,Any},::Type{Wire}) = generic_from_json(d,Wire)
 
-struct WireVizData
+struct SemagramData
   boxes::Dict{Int, Box}
   wires::Dict{Int, Wire}
 end
 
-from_json(d::Dict{String,Any},::Type{WireVizData}) = generic_from_json(d,WireVizData)
+from_json(d::Dict{String,Any},::Type{SemagramData}) = generic_from_json(d,SemagramData)
 
 function lookup_attachment(box_map::Dict{Int,Int},
                            port_map::Dict{Tuple{Int,Int},Int},
@@ -241,7 +242,7 @@ function lookup_attachment(box_map::Dict{Int,Int},
   end
 end
 
-function to_acset(wd::WireVizData, ws::WireVizSchema, ::Type{T}) where {T <: AbstractACSet}
+function to_acset(wd::SemagramData, ws::SemagramSchema, ::Type{T}) where {T <: AbstractACSet}
   acs = T()
   box_map = Dict{Int,Int}()
   port_map = Dict{Tuple{Int,Int},Int}()
@@ -258,18 +259,18 @@ function to_acset(wd::WireVizData, ws::WireVizSchema, ::Type{T}) where {T <: Abs
     acs_src = lookup_attachment(box_map, port_map, wire.src)
     acs_tgt = lookup_attachment(box_map, port_map, wire.tgt)
     wire_props = ws.wire_types[wire.ty]
-    acs_i = add_part!(acs,wire.ty;
-                      Dict(wire_props.src_map => acs_src, wire_props.tgt_map => acs_tgt)...)
+    attrs = Dict(wire_props.src_map => acs_src, wire_props.tgt_map => acs_tgt)
+    add_part!(acs,wire.ty; attrs...)
   end
   acs
 end
 
-struct ControlWireViz{T <: AbstractACSet}
+struct Semagram{T <: AbstractACSet}
   divid::UUID
   scope::Scope
   handle::Observable{Dict{String,Any}}
-  ws::WireVizSchema
-  function ControlWireViz{T}(ws::WireVizSchema) where {T <: AbstractACSet}
+  ws::SemagramSchema
+  function Semagram{T}(ws::SemagramSchema) where {T <: AbstractACSet}
     divid = uuid4()
     deps = [
       "wires" => joinpath(@__DIR__, "..", "javascript", "dist", "app.bundle.js")
@@ -288,8 +289,12 @@ struct ControlWireViz{T <: AbstractACSet}
   end
 end
 
-function get_acset(cw::ControlWireViz{T}) where {T}
-  to_acset(from_json(cw.handle[], WireVizData),cw.ws, T)
+@WebIO.register_renderable(Semagram) do sg
+    return WebIO.render(sg.scope)
+end
+
+function get_acset(sema::Semagram{T}) where {T}
+  to_acset(from_json(sema.handle[], SemagramData), sema.ws, T)
 end
 
 end

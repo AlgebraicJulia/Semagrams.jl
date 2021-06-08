@@ -1,6 +1,6 @@
 import { equiv } from "@thi.ng/equiv";
 import { hash } from "@thi.ng/vectors";
-import { AttachType, WireVizSchema } from "./WireVizSchema"
+import { AttachType, Schema } from "./Schema"
 
 export interface BoxAttachment {
     ty: AttachType.Box
@@ -81,13 +81,13 @@ class IDGen {
     }
 }
 
-export class WireViz {
+export class Semagram {
     public boxes: Map<number, Box>
     public wires: Map<number, Wire>
     private gen: IDGen;
 
     constructor(
-        readonly schema: WireVizSchema,
+        readonly schema: Schema,
     ) {
         this.boxes = new Map();
         this.wires = new Map();
@@ -105,13 +105,26 @@ export class WireViz {
         }
     }
 
+    getBox(box_idx: number): Box | undefined {
+        return this.boxes.get(box_idx);
+    }
+
+    getPort(box_idx: number, port_idx: number): Port | undefined {
+        const box = this.boxes.get(box_idx);
+        return box && box.ports.get(port_idx);
+    }
+
+    getWire(wire_idx: number): Wire | undefined {
+        return this.wires.get(wire_idx);
+    }
+
     getAttachment(a: Attachment): Box | Port | undefined {
         switch (a.ty) {
             case AttachType.Box: {
-                return this.boxes.get(a.box_idx);
+                return this.getBox(a.box_idx);
             }
             case AttachType.Port: {
-                return this.boxes.get(a.box_idx)!.ports.get(a.port_idx);
+                return this.getPort(a.box_idx, a.port_idx)
             }
         }
     }

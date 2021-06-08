@@ -1,8 +1,6 @@
-export enum BoxStyle {
-    Square = "Square",
-    Circle = "Circle"
-}
-
+/**
+ * TODO: Style should be replaced by custom SVGs
+ */
 export enum PortStyle {
     Input = "Input",
     Output = "Output",
@@ -40,7 +38,7 @@ export interface WireProperties {
     style: WireStyle
 }
 
-export interface WireVizSchema {
+export interface Schema {
     box_types: Record<string, BoxProperties>,
     port_types: Record<string, PortProperties>,
     wire_types: Record<string, WireProperties>

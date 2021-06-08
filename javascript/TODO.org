@@ -1,0 +1,26 @@
+#+TITLE: TODO
+
+* Refactorings
+** TODO Use from the Julia REPL in browser, not just in Jupyter notebook, also standalone
+** TODO refactor styling into CSS
+** TODO break down functions
+*** DONE make methods on state
+** TODO consolidate constants into single module across Julia/Typescript
+** TODO Make all constants runtime-configurable
+** DONE Rename to Semagrams
+
+* Improvements
+** TODO get katex working for real
+** TODO Refactor the modal to be generic
+** TODO Write Documentation
+** TODO Add support for attributes
+*** TODO Real-valued attributes with a slider
+*** TODO Discrete-choice attributes with radio buttons
+*** TODO String/Symbol attributes with a text box
+** TODO Bidirectional communication with Julia
+*** TODO Initial layout in Julia
+*** TODO Long-term saving of Semagrams state
+** TODO Open Wires
+** TODO Zoom In/Out
+** TODO Recursive Editing of sub-diagrams
+** TODO Undo/Redo
