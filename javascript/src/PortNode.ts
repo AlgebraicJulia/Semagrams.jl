@@ -11,6 +11,9 @@ interface PortAttrs {
     port_idx: number
 }
 
+/**
+ * See the comment for BoxNode.
+ */
 export const PortNode: m.Component<PortAttrs> = {
     view({ attrs: { state, box_idx, port_idx } }) {
         const a = port_attach(box_idx, port_idx);

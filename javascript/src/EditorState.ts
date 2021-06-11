@@ -5,6 +5,9 @@ import { Attachment } from "./Semagram";
 import { AttachType, Schema } from "./Schema";
 import * as CS from "./ColorScheme";
 
+/**
+ * TODO: make these runtime-configurable.
+ */
 const GRIDSIZE = 60;
 const SNAPSIZE = 15;
 
@@ -17,12 +20,14 @@ function snapToGrid(p: Vec2Like): Vec2Like {
     }
 }
 
+/** What types of port can go on this box? */
 function compatiblePortTypes(schema: Schema, boxty: string): string[] {
     return Object.entries(schema.port_types)
         .filter(([_, portprops]) => portprops.box == boxty)
         .map(([portty, _]) => portty);
 }
 
+/** What types of wire can go between these two attachments? */
 function compatibleWireTypes(schema: Schema,
     srcty: [AttachType, string],
     tgtty: [AttachType, string]): string[] {
@@ -31,6 +36,11 @@ function compatibleWireTypes(schema: Schema,
         .map(([wirety, _]) => wirety);
 }
 
+/**
+ * This configures which default color is used when adding new ports/wires.
+ * Note, I believe that this is currently unused, and leftover from an earlier version.
+ * TODO: get colors working again, using colorAttribute.
+ */
 class InputConfig {
     color: string | undefined
 
@@ -39,6 +49,13 @@ class InputConfig {
     }
 }
 
+/**
+ * Sigh... I really wish there were a better way of doing sum types in Typescript.
+ * Currently, this represents the state of the modal that selects which type of
+ * box/port/wire to add.
+ * TODO: Modal should be refactored to just be a generic way of selecting from
+ * a list of options.
+ */
 export enum ModalState {
     Normal,
     SelectBox,
@@ -68,27 +85,24 @@ interface ModalSelectWire {
 
 type Modal = ModalNormal | ModalSelectBox | ModalSelectPort | ModalSelectWire;
 
-/*
- * Here are the main functions of EditorState
- * - What is currently *clicked* (and where it was originally clicked)
- * - Where the cursor is
- * - Current settings
- *   - What color should new things be?
- * - State of modal, for selecting the type of new ports/boxes/wires
- * - What the cursor is hovering over
- * - What has been selected as src/tgt
- * - What the instantiated UI element is
- * - What the state of the semagram is
- *
- * We can break this down a bit
- * - State of the Semagram
- * - State of the cursor
- * - State of commands that require several pieces of input
- */
 
 /**
- * The state of the cursor, and how it relates to the Semagram
- * All coordinates are relative to the SVG, computed using eventCoordsSVG
+ * The state of the cursor, and how it relates to the Semagram.
+ * Things we want to keep track of
+ * - The current position of the cursor (`cursor`)
+ * - Whether the cursor is dragging something currently, and if so what it is dragging (`dragState`)
+ * - What the cursor is hovering over (`hoveredAttachment`)
+ * - The SVG element that the semagrams UI is rendered in. This is used to convert
+ * between the coordinates that we get from events, and coordinates that we need to
+ * put into things in the SVG. All stored coordinates are relative to the SVG, computed using eventCoordsSVG which uses that SVG element. (`svgelt`)
+ *
+ * CursorState has several methods which are placed as callbacks on various UI nodes to allow us
+ * to keep track of all of this information.
+ *
+ * CursorState also gets passed in several callbacks, which it calls when appropriate
+ * to interact with the rest of the system (`setBoxLoc`, `getBoxLoc`, `mousedown`, `mouseup`)
+ *
+ * Note: if anyone has ideas for refactoring this to be less stateful, I'd love to hear them.
  */
 export class CursorState {
     /** State */
@@ -157,11 +171,28 @@ export class CursorState {
     }
 }
 
+/**
+ * This contains all of the "logical" state of the editor.
+ */
 export class DialogueState {
+    /** What attachment will be the src of a newly created wire */
     src: Attachment | null
+
+    /** What attachment will be the tgt of a newly created wire */
     tgt: Attachment | null
+
+    /* The current modal state */
     modal: Modal
+
+    /**
+     * What attachment is currently "selected", unused currently, but will
+     * be used for stuff like setting weights.
+     */
     selected: Attachment | null
+
+    /**
+     * Any other settings having to do with defaults for new boxes/ports/wires
+     */
     inputconfig: InputConfig
 
     constructor() {
@@ -173,12 +204,30 @@ export class DialogueState {
     }
 }
 
+/**
+ * This contains all of the state of the editor.
+ * It also has the main entrypoint to interacting with the editor,
+ * which is through keypresses, which are handled in "handlekeydown".
+ * These keypresses do different things depending on the current values of
+ * `cursor` and `dialogue`. For instance, if you press 's', then the
+ * current `hoveredAttachment` in `cursor` becomes the `src` in `dialogue`.
+ *
+ * When you press 'w', the current `src` and `tgt` in `dialogue` are used
+ * as the source and target of the newly created wire, which is added to `ls`,
+ * the LocatedSemagram that is currently being edited.
+ *
+ * TODO: Maybe `DialogueState` should be renamed to `LogicalState`?
+ *
+ * Finally, the editor has a function `sendToJl`, which it calls when
+ * you save the diagram. This function should send the diagram down a
+ * websocket to Julia, and the function should be passed in when creating
+ * an EditorState.
+ */
 export class EditorState {
     cursor: CursorState
     dialogue: DialogueState
     ls: LocatedSemagram
     sendToJl: Function
-    svgelt: SVGSVGElement | null
 
     constructor(sema: LocatedSemagram, sendToJl: Function) {
         this.ls = sema;
@@ -190,25 +239,38 @@ export class EditorState {
             (_a) => { }
         );
         this.sendToJl = sendToJl;
-        this.svgelt = null;
     }
 
+    /** Convenience function: an array of the indexes of all the boxes that currently exist. */
     boxes() {
         return this.ls.sg.boxes.keys();
     }
 
+    /** Convenience function: an array of the indexes of all the wires that currently exist. */
     wires() {
         return this.ls.sg.wires.keys();
     }
 
+    /**
+     * The next functions are all of the "actions" that one can do,
+     * and are bound to key presses.
+     */
+
+    /** Set `dialogue.src` to `cursor.hoveredAttachment` */
     setSrc() {
         this.dialogue.src = this.cursor.hoveredAttachment;
     }
 
+    /** Set `dialogue.tgt` to `cursor.hoveredAttachment` */
     setTgt() {
         this.dialogue.tgt = this.cursor.hoveredAttachment;
     }
 
+    /**
+     * Add a new box at the `cursor.cursor` location.
+     * If there's more than one type of box that could be added,
+     * go into a modal state.
+     */
     addBox() {
         const box_types = [...Object.keys(this.ls.sg.schema.box_types)];
         this.dialogue.modal = {
@@ -217,6 +279,7 @@ export class EditorState {
         };
     }
 
+    /** Add a new port to the `cursor.hoveredAttachment` box, assuming it's a box */
     addPort() {
         const a = this.cursor.hoveredAttachment;
         if (a != null) {
@@ -241,12 +304,14 @@ export class EditorState {
         }
     }
 
+    /** Remove `cursor.hoveredAttachment` */
     remAttachment() {
         if (this.cursor.hoveredAttachment != null) {
             this.ls.remAttachment(this.cursor.hoveredAttachment);
         }
     }
 
+    /** Add a new wire between `dialogue.src` and `dialogue.tgt` */
     addWire() {
         const s = this.dialogue.src;
         const t = this.dialogue.tgt;
@@ -272,14 +337,19 @@ export class EditorState {
         }
     }
 
+    /** Print out the current `ls` to the console */
     debug() {
         console.log(this.ls);
     }
 
+    /** Export the current `ls`, and send it down the wire! */
     save() {
         this.sendToJl(this.ls.sg.export());
     }
 
+    /**
+     * Handle a keypress when we are in a modal state, possibly completing the modal action.
+     */
     modalInput(c: string) {
         const choice = parseInt(c);
         if (this.dialogue.modal.ty == ModalState.Normal) {
@@ -316,6 +386,9 @@ export class EditorState {
         this.dialogue.modal = { ty: ModalState.Normal };
     }
 
+    /**
+     * This is the keypress handler.
+     */
     handlekeydown = (e: KeyboardEvent) => {
         if (this.dialogue.modal.ty == ModalState.Normal) {
             switch (e.key) {
@@ -368,11 +441,19 @@ export interface EditorContext {
     state: EditorState
 }
 
+/**
+ * We put data on DOM nodes, so that it can be accessed from events.
+ * For instance, we put the current Attachment on the dom nodes for ports/boxes,
+ * so that when a mouse event is triggered on them, we can know which port/box it
+ * was triggered on.
+ */
 function eventDataProperty(e: Event, prop: string): any {
     return JSON.parse((e.target as HTMLElement).getAttribute(prop)!);
 }
 
-
+/**
+ * What color should we color this attachment, to designate its current state.
+ */
 export function colorAttachment(state: EditorState, a: Attachment): string {
     if (equiv(state.dialogue.src, a)) {
         return CS.source;

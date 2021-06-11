@@ -5,9 +5,13 @@ import { BoxNode } from "./BoxNode";
 import { add2, hash } from "@thi.ng/vectors";
 import m from "mithril";
 import { HashMap } from "@thi.ng/associative";
-import { Attachment, hashAttachment } from "./Semagram";
+import { hashAttachment } from "./Semagram";
 import { centerIndex } from "./Util";
 
+/**
+ * Markers for the middle of wires.
+ * TODO: Markers are kind of restrictive... Maybe just put the shape in the middle of the wire manually?
+ */
 function makeMarker(id: string, color: string) {
     return m("marker",
         {
@@ -79,12 +83,18 @@ const grid = m("pattern", {
 
 const svgdefs = m("defs", grid, resistorMarker, capacitorMarker, makeMarker("arrow-sel", "lightgrey"), makeMarker("arrow", "white"));
 
+/**
+ * TODO: These should be runtime-configurable.
+ */
 const MODAL_TL = [20, 20];
 const MODAL_WIDTH = 150;
 const MODAL_HEIGHT_PER_LINE = 20;
 const MODAL_XPADDING = 10;
 const MODAL_YPADDING = 10;
 
+/**
+ * Component for the Modal. Shows up as a rectangle with the choices in it.
+ */
 const ChoiceModal: m.Component<EditorAttrs> = {
     view({ attrs: { state } }) {
         const modal = state.dialogue.modal;
@@ -120,9 +130,18 @@ const globalStyle = `
 .katex { font-size: 1.5em; }
 `;
 
+/**
+ * This is the root component for all the UI.
+ * It has children of
+ * - All boxes/wires/ports
+ * - the modal
+ * TODO: This should be refactored so that there is an "EditorPane",
+ * which displays the Semagram, and a "EditorUI", which has UI elements on top of
+ * the EditorPane.
+ */
 export const Editor: m.Component<EditorAttrs> = {
     oncreate({ dom, attrs: { state } }) {
-        state.svgelt = dom as SVGSVGElement;
+        state.cursor.svgelt = dom as SVGSVGElement;
     },
 
     view({ attrs: { state } }) {

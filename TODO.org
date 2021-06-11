@@ -1,18 +1,28 @@
 #+TITLE: TODO
 
+* Documentation
+** TODO Lots of comments
+** TODO Document key-bindings
+** TODO Document use in Jupyter
+** TODO Write tutorial
+** TODO Record tutorial
+** TODO Make website
+
 * Refactorings
+** TODO Make a consistent error story. I.e., where should we catch errors? Right now, some things are returning X | undefined, whereas other things are just returning X....
+** TODO Make colorAttribute a property in the schema that picks out an attribute to color by, instead of having a color property in box/port/wire.
 ** TODO Use from the Julia REPL in browser, not just in Jupyter notebook, also standalone
-** TODO refactor styling into CSS
+** TODO Refactor styling
 ** TODO break down functions
 *** DONE make methods on state
 ** TODO consolidate constants into single module across Julia/Typescript
 ** TODO Make all constants runtime-configurable
 ** DONE Rename to Semagrams
+** TODO Refactor the modal to be generic
+** TODO Break Julia code into more files
 
 * Improvements
 ** TODO get katex working for real
-** TODO Refactor the modal to be generic
-** TODO Write Documentation
 ** TODO Add support for attributes
 *** TODO Real-valued attributes with a slider
 *** TODO Discrete-choice attributes with radio buttons
@@ -21,6 +31,8 @@
 *** TODO Initial layout in Julia
 *** TODO Long-term saving of Semagrams state
 ** TODO Open Wires
-** TODO Zoom In/Out
+** TODO Zoom/Pan
+** TODO Menu of actions in addition to keypresses. Also, inline documentation.
 ** TODO Recursive Editing of sub-diagrams
 ** TODO Undo/Redo
+** TODO Get animation from trailer

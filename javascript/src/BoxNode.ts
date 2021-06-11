@@ -12,6 +12,21 @@ interface BoxAttrs {
     box_idx: number
 }
 
+/**
+ * Component displaying a box.
+ * Note: Our philosophy is that rather than passing in just the
+ * information relevant to the box, we pass in the entire EditorState
+ * and the index of the box that we want to draw.
+ * This seems like it could be overkill/violation of "separation of concerns".
+ *
+ * Maybe at some point we will decide that this is a bad philosophy, and we should
+ * factor out all of the stuff actually relevant to drawing a single box, and then
+ * have only that be the attributes passed into the BoxNode.
+ *
+ * TODO: get KaTeX working. This is blocked on first having a way of editting box attributes.
+ *
+ * Note: this is the parent of all of its ports.
+ */
 export const BoxNode: m.Component<BoxAttrs> = {
     view: function({ attrs: { state, box_idx } }) {
         const box = state.ls.sg.boxes.get(box_idx)!;

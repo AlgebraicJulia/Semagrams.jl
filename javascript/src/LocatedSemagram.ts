@@ -1,10 +1,18 @@
-import { Semagram, Attachment, BoxAttachment, PortAttachment } from "./Semagram";
+import { Semagram, Attachment, PortAttachment } from "./Semagram";
 import { Schema, AttachType, PortStyle } from "./Schema";
 import { Vec2Like, add2 } from "@thi.ng/vectors";
 import { centerIndex } from "./Util";
 
+/** TODO: This should be a runtime parameter */
 export const BOXRADIUS = 40;
 
+/**
+ * This stores a semagram along with the locations of all of its boxes and ports
+ * Note: the fact that this stores the port locations
+ * should be considered an implemenation detail, at least for now. The port locations
+ * are a pure function of the box locations and the number/ordering of the ports.
+ * They are recalculated whenever a box location changes.
+ */
 export class LocatedSemagram {
     sg: Semagram
     boxlocs: Map<number, Vec2Like>
@@ -16,11 +24,18 @@ export class LocatedSemagram {
         this.portlocs = new Map();
     }
 
+    /* Updates box location, and updates its corresponding ports too. */
     setBoxLoc(box_idx: number, loc: Vec2Like) {
         this.boxlocs.set(box_idx, loc);
         this.updatePortLocs(box_idx);
     }
 
+    /**
+     * Updates port locations for a specific box.
+     * TODO: This should be more generic; we shouldn't special case for the
+     * small number of port layout algorithms we have now, because in the
+     * future there might be more port layout algorithms we want.
+     */
     updatePortLocs(box_idx: number) {
         const box = this.sg.boxes.get(box_idx)!;
         const boxportlocs = this.portlocs.get(box_idx)!;
@@ -65,6 +80,10 @@ export class LocatedSemagram {
         });
     }
 
+    /**
+     * Gets the location of an attachment (i.e. box or port)
+     * Useful for figuring out where a wire starts/ends.
+     */
     getLoc(a: Attachment): Vec2Like | undefined {
         const boxloc = this.boxlocs.get(a.box_idx)!;
         switch (a.ty) {
@@ -82,6 +101,12 @@ export class LocatedSemagram {
         return this.boxlocs.get(box_idx)!;
     }
 
+    /**
+     * Wrappers around the functions on the underlying semagram that also deal with location
+     * These should be preferred over accessing the semagram directly.
+     * I don't know exactly how things will fail if you access the semagram directly,
+     * but probably something will go wrong as things come out of sync.
+     */
     addBox(ty: string, color: string | undefined, loc: Vec2Like): Attachment {
         const a = this.sg.addBox(ty, color);
         this.portlocs.set(a.box_idx, new Map());

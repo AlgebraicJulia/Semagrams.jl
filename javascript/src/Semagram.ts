@@ -13,8 +13,15 @@ export interface PortAttachment {
     port_idx: number
 }
 
+/**
+ * Wires can either be attached to boxes or ports.
+ * Thus, the src of a wire is an "Attachment"
+ */
 export type Attachment = BoxAttachment | PortAttachment;
 
+/**
+ * We use this to store attachments in hash tables
+ */
 export function hashAttachment(a: Attachment) {
     switch (a.ty) {
         case AttachType.Box: {
@@ -34,16 +41,29 @@ export function port_attach(i: number, j: number): PortAttachment {
     return { ty: AttachType.Port, box_idx: i, port_idx: j };
 }
 
+/**
+ * The data associated with a port.
+ * Note that ports are stored in an array for each box, so we don't need to store
+ * the index of the box.
+ */
 export class Port {
     constructor(
+        /** The ty refers to a PortProperties in the schema */
         readonly ty: string,
         public weights: Record<string, string>,
         public color?: string
     ) { }
 }
 
+/**
+ * The data associated with a box, including the ports.
+ * Note that the ports are not necessarily numbered sequentially:
+ * this is to make the logic for deleting easier. Port ids NEVER change
+ * after creation.
+ */
 export class Box {
     constructor(
+        /* The ty refers to a BoxProperties in the schema */
         readonly ty: string,
         public weights: Record<string, string>,
         public ports: Map<number, Port>,
@@ -60,8 +80,12 @@ export class Box {
     }
 }
 
+/**
+ * The data associated with a wire. Note that src and tgt are Attachments.
+ */
 export class Wire {
     constructor(
+        /* The ty refers to a WireProperties in the schema */
         readonly ty: string,
         public weights: Record<string, string>,
         public src: Attachment,
@@ -70,6 +94,11 @@ export class Wire {
     ) { }
 }
 
+
+/**
+ * Generates new ids for new objects in the Semagram.
+ * Right now, assigns them sequentially, but that is an implementation detail.
+ */
 class IDGen {
     private i: number
     constructor() {
@@ -81,6 +110,13 @@ class IDGen {
     }
 }
 
+/**
+ * This stores the actual data of a Semagram.
+ * All it is is two maps of boxes and wires (ports are stored within boxes),
+ * along with a schema and an ID generator.
+ * These are maps instead of arrays to simplify deleting logic, and to make sure
+ * that we never have to change ids.
+ */
 export class Semagram {
     public boxes: Map<number, Box>
     public wires: Map<number, Wire>
@@ -94,6 +130,9 @@ export class Semagram {
         this.gen = new IDGen();
     }
 
+    /**
+     * TODO: this should use colorAttribute from the schema
+     */
     getColor(a: Attachment): string | undefined {
         switch (a.ty) {
             case AttachType.Box: {
@@ -105,6 +144,7 @@ export class Semagram {
         }
     }
 
+    /** The getters are self-explanatory */
     getBox(box_idx: number): Box | undefined {
         return this.boxes.get(box_idx);
     }
@@ -129,10 +169,16 @@ export class Semagram {
         }
     }
 
+    /** The "type" here refers to the ty parameter of the box/port.
+     * TODO: This shouldn't return the ty parameter of the Attachment?
+     * Seems a bit redundant
+     */
     attachmentType(a: Attachment): [AttachType, string] {
         const node = this.getAttachment(a)!;
         return [a.ty, node.ty];
     }
+
+    /** The addX methods are self-explanatory */
 
     addWire(ty: string, src: Attachment, tgt: Attachment): number | undefined {
         const i = this.gen.next()
@@ -168,6 +214,8 @@ export class Semagram {
         this.boxes.set(i, new Box(ty, {}, new Map(), color));
         return box_attach(i);
     }
+
+    /** The remX methods are self-explanatory */
 
     remWire(i: number) {
         this.wires.delete(i);
