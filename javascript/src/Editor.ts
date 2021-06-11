@@ -8,6 +8,7 @@ import { HashMap } from "@thi.ng/associative";
 import { hashAttachment } from "./Semagram";
 import { centerIndex } from "./Util";
 
+
 /**
  * Markers for the middle of wires.
  * TODO: Markers are kind of restrictive... Maybe just put the shape in the middle of the wire manually?
@@ -135,6 +136,7 @@ const globalStyle = `
  * It has children of
  * - All boxes/wires/ports
  * - the modal
+ *
  * TODO: This should be refactored so that there is an "EditorPane",
  * which displays the Semagram, and a "EditorUI", which has UI elements on top of
  * the EditorPane.

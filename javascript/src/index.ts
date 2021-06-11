@@ -1,9 +1,11 @@
+/**
+ * @module
+ */
 import { Editor } from './Editor';
 import { EditorState } from './EditorState';
 import { LocatedSemagram } from './LocatedSemagram';
 import m from "mithril";
 import { Schema } from './Schema';
-
 
 /**
  * The main entrypoint into Semagrams. This makes a new Semagram based on
