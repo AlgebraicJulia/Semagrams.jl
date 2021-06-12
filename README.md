@@ -1,4 +1,4 @@
-[![Dev Docs](https://img.shields.io/badge/docs-dev-blue.svg)](https://algebraicjulia.github.io/Semagrams.jl)
+[![Dev Docs](https://img.shields.io/badge/docs-dev-blue.svg)](https://algebraicjulia.github.io/Semagrams.jl/dev)
 
 # Semagrams.jl
 
