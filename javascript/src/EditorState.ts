@@ -141,7 +141,6 @@ export class CursorState {
         const p = this.eventCoordsSVG(e);
         this.cursor = p;
         if (this.dragState != null) {
-            console.log("dragging");
             const { box_idx, offset } = this.dragState;
             this.setBoxLoc(box_idx, snapToGrid(add2([], p, offset) as Vec2Like));
         } else {
