@@ -36,3 +36,4 @@
 ** TODO Recursive Editing of sub-diagrams
 ** TODO Undo/Redo
 ** TODO Get animation from trailer
+** TODO Make library of preconfigured Semagrams

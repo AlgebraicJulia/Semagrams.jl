@@ -5,8 +5,9 @@ include("Boxes.jl")
 include("Logo.jl")
 include("JSON.jl")
 include("Schema.jl")
-include("SemagramData.jl")
+include("Data.jl")
 include("UI.jl")
+include("Examples.jl")
 
 using Reexport
 
@@ -15,7 +16,7 @@ using Reexport
 @reexport using .Logo
 @reexport using .JSON
 @reexport using .Schema
-@reexport using .SemagramData
+@reexport using .Data
 @reexport using .UI
 
 end

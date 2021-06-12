@@ -4,9 +4,11 @@ export BoxProperties, PortProperties, WireProperties,
   SemagramSchema, BoxDesc, PortDesc, WireDesc,
   @semagramschema
   
-
-using ..JSON
 import ..JSON: to_json
+using ..JSON
+using ..SVG
+using Catlab.Present, Catlab.Theories
+using MLStyle
 
 struct BoxProperties
   weights::Vector{Symbol}

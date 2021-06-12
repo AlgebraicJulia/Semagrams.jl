@@ -141,6 +141,7 @@ export class CursorState {
         const p = this.eventCoordsSVG(e);
         this.cursor = p;
         if (this.dragState != null) {
+            console.log("dragging");
             const { box_idx, offset } = this.dragState;
             this.setBoxLoc(box_idx, snapToGrid(add2([], p, offset) as Vec2Like));
         } else {
@@ -167,6 +168,7 @@ export class CursorState {
 
     handlemouseupbox = (e: MouseEvent) => {
         const a = eventDataProperty(e, "data-a") as Attachment;
+        this.dragState = null;
         this.mouseup(a);
     }
 }
@@ -233,9 +235,9 @@ export class EditorState {
         this.ls = sema;
         this.dialogue = new DialogueState();
         this.cursor = new CursorState(
-            this.ls.setBoxLoc,
-            this.ls.getBoxLoc,
-            (_a) => { },
+            (box_idx, loc) => this.ls.setBoxLoc(box_idx, loc),
+            (box_idx) => this.ls.getBoxLoc(box_idx),
+            (_a) => { }, /* This should set selected... */
             (_a) => { }
         );
         this.sendToJl = sendToJl;

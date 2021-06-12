@@ -2,10 +2,12 @@ module UI
 
 export Semagram, get_acset
 
+using JSExpr
+using UUIDs
 using WebIO
-using UUID
 using ..Schema
 using ..JSON
+using ..Data
 using Catlab.CSetDataStructures
 
 struct Semagram{T <: AbstractACSet}
