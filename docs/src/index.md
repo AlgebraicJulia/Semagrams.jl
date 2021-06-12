@@ -1,12 +1,28 @@
 # Semagrams.jl
 
+## Quickstart:
+
+In a Jupyter notebook
+
+```julia
+> using Semagrams, Semagrams.Examples
+
+> p = Semagram{Petri}(PetriSema)
+
+# Edit semagram (see below) AND SAVE
+
+> get_acset(p)
+```
+
+## Extended Introduction
+
 There are three steps to using Semagrams.
 
 Note: you have to set up WebIO support for your Jupyter notebook before Semagrams will work. This can be somewhat tricky: see https://juliagizmos.github.io/WebIO.jl/latest/providers/ijulia/ for more details.
 
 In the future, we hope to use the standalone support for WebIO to enable Semagrams support in a normal Julia repl, but we haven't done that yet.
 
-## Prepare schemas.
+### 1. Prepare schemas.
 
 This is the hardest part, and only has to be done when you are adding a *new* type of semagram; if you are using one of the semagrams supplied by this library (by `using Semagrams.Examples`) or another library, you can skip step 1.
 
@@ -67,7 +83,7 @@ end
 end
 ```
 
-## Create and edit the semagram.
+### 2. Create and edit the semagram.
 
 ```julia
 my_awesome_petri_net = Semagram{Petri}(PetriSema)
@@ -92,18 +108,18 @@ Currently the editor is very barebones; you have to refer here for the keybindin
 - `S` *saves* the semagram, which means that it sends the semagram from javascript back to Julia. You *must* do this before going on to the next step. I should probably add an indicator which says whether or not the latest changes to the semagram have been saved...
 - `D` prints the current value of the semagram to the javascript console. Useful for debugging.
 
-## Profit
+### 3. Profit
 
-Once you have editted (AND SAVED) your semagram, you can get an acset out of it using
+Once you have editted (**AND SAVED**) your semagram, you can get an acset out of it using
 
 ```julia
-to_acset(my_awesome_petri_net)
+get_acset(my_awesome_petri_net)
 ```
 
 or
 
 ```julia
-to_acset(my_awesome_dpg)
+get_acset(my_awesome_dpg)
 ```
 
 This will return the current value of the semagram as an acset. Then you can do all the acset-y good things that one does with acsets.
