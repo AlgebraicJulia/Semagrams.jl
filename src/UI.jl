@@ -68,7 +68,7 @@ inline in a Jupyter notebook).
 TODO: I currently don't know how to kill a task spawned by this...
 """
 function serve_semagram(s::Semagram; port=8000)
-  task = webio_serve(page("/", req -> node(:div, s)))
+  task = webio_serve(page("/", req -> node(:div, s)), port)
   sleep(1)
   DefaultApplication.open("http://localhost:$port")
   task

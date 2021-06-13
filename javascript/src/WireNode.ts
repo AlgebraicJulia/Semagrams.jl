@@ -4,11 +4,11 @@ import * as CS from "./ColorScheme";
 import m from "mithril";
 
 const WIREOFFSETCONSTANT = 60;
+const WIRE_HANDLE_RADIUS = 7;
 
 interface WireAttrs {
     state: EditorState
     wire_idx: number
-    offset: number
 }
 
 /**
@@ -28,6 +28,7 @@ function svgPath(segs: Array<[string, Array<Vec>]>) {
  * when we have multiple wires going between two attachments, they can curve away from each other.
  */
 function curvePoints(p1: Vec2Like, p2: Vec2Like, offset: number): Array<[string, Array<Vec>]> {
+    offset = WIREOFFSETCONSTANT * offset;
     const c = mulN2([], add2([], p1, p2), 1 / 2);
     const c1 = mulN2([], add2([], p1, c), 1 / 2);
     const c2 = mulN2([], add2([], c, p2), 1 / 2);
@@ -44,6 +45,36 @@ function curvePoints(p1: Vec2Like, p2: Vec2Like, offset: number): Array<[string,
     ];
 }
 
+function midpoint(p1: Vec2Like, p2: Vec2Like, offset: number): Vec {
+    offset = WIREOFFSETCONSTANT * offset;
+    const c = mulN2([], add2([], p1, p2), 1 / 2);
+    const dp = sub2([], p2, p1);
+    const dphat = mulN2([], dp, 1 / dist2(dp, ZERO2));
+    const dqhat = rotate([], dphat, Math.PI / 2);
+    const cup = add2([], c, mulN2([], dqhat, offset));
+    return cup;
+}
+
+export const WireHandle: m.Component<WireAttrs> = {
+    view({ attrs: { state, wire_idx } }) {
+        const offset = state.ls.getOffset(wire_idx);
+        const e = state.ls.sg.wires.get(wire_idx)!;
+        const sloc = state.ls.getLoc(e.src)!;
+        const tloc = state.ls.getLoc(e.tgt)!;
+        const mp = midpoint(sloc, tloc, offset);
+        return m("circle", {
+            r: WIRE_HANDLE_RADIUS,
+            cx: mp[0],
+            cy: mp[1],
+            "fill-opacity": "0",
+            "stroke-opacity": "0",
+            "data-w": wire_idx,
+            onmouseenter: state.cursor.handlemouseenterwire,
+            onmouseout: state.cursor.handlemouseoutwire
+        })
+    }
+}
+
 /**
  * The most important parameter here is "offset"; otherwise this is similar to BoxNode or PortNode.
  * Offset is calculated for all of the wires at once, which is why it is passed in
@@ -56,14 +87,16 @@ function curvePoints(p1: Vec2Like, p2: Vec2Like, offset: number): Array<[string,
  * Editor?
  */
 export const WireNode: m.Component<WireAttrs> = {
-    view({ attrs: { state, wire_idx, offset } }) {
+    view({ attrs: { state, wire_idx } }) {
+        const offset = state.ls.getOffset(wire_idx);
         const e = state.ls.sg.wires.get(wire_idx)!;
         const sloc = state.ls.getLoc(e.src)!;
         const tloc = state.ls.getLoc(e.tgt)!;
+        const marker = state.cursor.hoveredWire == wire_idx ? `url(#arrow-hovered)` : `url(#arrow)`;
         return m("path", {
-            d: svgPath(curvePoints(sloc, tloc, WIREOFFSETCONSTANT * offset)),
+            d: svgPath(curvePoints(sloc, tloc, offset)),
             stroke: CS.accent,
-            "marker-mid": `url(#arrow)`,
+            "marker-mid": marker,
             fill: "none"
         });
     }
