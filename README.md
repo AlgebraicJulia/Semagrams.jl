@@ -4,6 +4,10 @@
 
 A graphical editor for graph-like structures.
 
+## Trailer:
+
+https://www.youtube.com/watch?v=b1xiY9sznEo
+
 ## Quickstart:
 
 In a Jupyter notebook
