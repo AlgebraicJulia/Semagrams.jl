@@ -1,3 +1,6 @@
+"""
+The semagrams logo, rendered using our homegrown SVG library.
+"""
 module Logo
 
 using ..SVG

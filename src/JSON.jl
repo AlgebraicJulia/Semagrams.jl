@@ -1,11 +1,39 @@
+"""
+Our own little home-grown JSON conversion module
+
+Types should overload `to_json` to support serialization
+into json, and `from_json` to support deserialization out of json.
+
+`to_json` and `from_json` do not actually convert into the string
+format of json, they just convert into a subset of Julia types
+(i.e. Dict, Vector, String, Int, Bool) that map cleanly into json.
+
+WebIO handles the conversion between this and actual JSON.
+
+We provide `generic_to_json` and `generic_from_json` that do
+what one would expect on structs, mapping between a struct and a
+dictionary of fields, converting the fields into/out of json as well.
+"""
 module JSON
 
 export to_json, generic_to_json, from_json, generic_from_json
 
+"""
+For a lot of types, (i.e. Int, String, Bool, etc.) the correct behavior
+is for `to_json` to be the identity.
+"""
 to_json(x) = x
 
+"""
+If x is a struct, this converts x into a dictionary whose keys are
+the fieldnames of x, and whose values are the fields of x, converted.
+"""
 generic_to_json(x) = Dict(string(fn)=>to_json(getfield(x,fn)) for fn ∈ fieldnames(typeof(x)))
 
+"""
+`from_json` takes in a JSON value along with a type to convert into
+and and attempts to convert to the type passed in.
+"""
 from_json(x,T) = convert(T,x) # fallback
 from_json(x::String,::Type{Symbol}) = Symbol(x)
 

@@ -2,7 +2,7 @@ using Documenter
 using Semagrams
 
 makedocs(
-    sitename = "Semagrams",
+    sitename = "Semagrams.jl",
     format = Documenter.HTML(),
     modules = [Semagrams]
 )

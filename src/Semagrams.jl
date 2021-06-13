@@ -18,5 +18,7 @@ using Reexport
 @reexport using .Schema
 @reexport using .Data
 @reexport using .UI
+# Examples are *not* reexported by default,
+# because they could clash with similar definitions elsewhere
 
 end

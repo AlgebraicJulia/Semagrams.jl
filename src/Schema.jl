@@ -1,3 +1,12 @@
+"""
+This is a Julia translation of the schema expected by typescript.
+
+Calling [`to_json`](@ref) on a SemagramSchema should give a schema that
+typescript can understand.
+
+There is also a macro here for creating a SemagramSchema: [`@semagramschema`](@ref),
+which makes writing down a schema much more convenient.
+"""
 module Schema
 
 export BoxProperties, PortProperties, WireProperties,
@@ -43,6 +52,8 @@ struct SemagramSchema
   port_types::Dict{Symbol, PortProperties}
   wire_types::Dict{Symbol, WireProperties}
 end
+
+to_json(x::SemagramSchema) = generic_to_json(x)
 
 struct BoxDesc
   name::Symbol
@@ -100,6 +111,9 @@ end
 
 q(x) = Expr(:quote,x)
 
+"""
+See the examples/general documentation for how to use this.
+"""
 macro semagramschema(head,body)
   descs = @match body begin
     Expr(:block,lines...) => map(lines) do line
@@ -130,7 +144,5 @@ macro semagramschema(head,body)
   end
   :($(esc(name)) = pres_to_semagramschema($(esc(pres)), $(esc(Expr(:vect, descs...)))))
 end
-
-to_json(x::SemagramSchema) = generic_to_json(x)
 
 end

@@ -1,3 +1,6 @@
+"""
+Pre-fab acset schemas+semagrams schemas
+"""
 module Examples
 
 export TheoryPetri, Petri, PetriSema,

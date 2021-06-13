@@ -1,5 +1,8 @@
+"""
+Predefined SVGs for boxes
+"""
 module Boxes
-export Circle, Square
+export Circle, SmallCircle, Square
 
 using ..SVG
 
