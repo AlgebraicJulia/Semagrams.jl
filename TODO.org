@@ -11,7 +11,7 @@
 * Refactorings
 ** TODO Make a consistent error story. I.e., where should we catch errors? Right now, some things are returning X | undefined, whereas other things are just returning X....
 ** TODO Make colorAttribute a property in the schema that picks out an attribute to color by, instead of having a color property in box/port/wire.
-** TODO Use from the Julia REPL in browser, not just in Jupyter notebook, also standalone
+** DONE Use from the Julia REPL in browser, not just in Jupyter notebook, also standalone
 ** TODO Refactor styling
 ** TODO break down functions
 *** DONE make methods on state
@@ -19,7 +19,7 @@
 ** TODO Make all constants runtime-configurable
 ** DONE Rename to Semagrams
 ** TODO Refactor the modal to be generic
-** TODO Break Julia code into more files
+** DONE Break Julia code into more files
 
 * Improvements
 ** TODO get katex working for real
