@@ -18,10 +18,6 @@ In a Jupyter notebook
 
 There are three steps to using Semagrams.
 
-Note: you have to set up WebIO support for your Jupyter notebook before Semagrams will work. This can be somewhat tricky: see https://juliagizmos.github.io/WebIO.jl/latest/providers/ijulia/ for more details.
-
-In the future, we hope to use the standalone support for WebIO to enable Semagrams support in a normal Julia repl, but we haven't done that yet.
-
 ### 1. Prepare schemas.
 
 This is the hardest part, and only has to be done when you are adding a *new* type of semagram; if you are using one of the semagrams supplied by this library (by `using Semagrams.Examples`) or another library, you can skip step 1.
@@ -85,6 +81,8 @@ end
 
 ### 2. Create and edit the semagram.
 
+First you have to create the semagram.
+
 ```julia
 my_awesome_petri_net = Semagram{Petri}(PetriSema)
 ```
@@ -95,7 +93,15 @@ or
 my_awesome_dpg = Semagram{DPG}(DirectedPortGraphSema)
 ```
 
-When you run this line in a Jupyter notebook, the editor should pop up as the result.
+When you run this line in a Jupyter notebook, the editor should pop up as the result IF you have WebIO properly installed (which actually somewhat tricky, and WebIO is not supported for the latest version of Jupyter yet).
+
+If you are running in the Julia REPL, you have to do the following to interact with the Semagram:
+
+```julia
+serve_semagram(my_awesome_semagram)
+```
+
+By default, this will open a server on port 8000, you can change this port by passing in a `port` keyword argument to `serve_semagram`. It will also try to open a browser pointing to `http://localhost:$port` (`http://localhost:8000` by default).
 
 Currently the editor is very barebones; you have to refer here for the keybindings.
 

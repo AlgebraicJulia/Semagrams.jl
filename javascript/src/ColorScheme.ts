@@ -1,7 +1,7 @@
 /** TODO: This should be runtime-configurable */
 
-export const source = 'darkblue'
-export const target = 'darkred'
-export const over = '#333333'
-export const base = 'black'
-export const accent = 'white'
+export const source = 'lightblue'
+export const target = 'pink'
+export const over = 'lightgrey'
+export const base = 'white'
+export const accent = 'black'

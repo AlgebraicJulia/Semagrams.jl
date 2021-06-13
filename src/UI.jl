@@ -1,10 +1,12 @@
 module UI
 
-export Semagram, get_acset
+export Semagram, get_acset, serve_semagram
 
 using JSExpr
 using UUIDs
 using WebIO
+using Mux
+import DefaultApplication
 using ..Schema
 using ..JSON
 using ..Data
@@ -40,6 +42,14 @@ end
 
 function get_acset(sema::Semagram{T}) where {T}
   to_acset(from_json(sema.handle[], SemagramData), sema.ws, T)
+end
+
+# TODO: figure out how to kill the task spawned by this...
+function serve_semagram(s::Semagram; port=8000)
+  task = webio_serve(page("/", req -> node(:div, s)))
+  sleep(1)
+  DefaultApplication.open("http://localhost:$port")
+  task
 end
 
 end
