@@ -356,7 +356,7 @@ export class EditorState {
         if (this.dialogue.modal.ty == ModalState.Normal) {
             return;
         }
-        if (choice != NaN && 1 <= choice && choice <= this.dialogue.modal.choices.length) {
+        if (!isNaN(choice) && 1 <= choice && choice <= this.dialogue.modal.choices.length) {
             switch (this.dialogue.modal.ty) {
                 case ModalState.SelectPort: {
                     this.ls.addPort(this.dialogue.modal.choices[choice - 1],
