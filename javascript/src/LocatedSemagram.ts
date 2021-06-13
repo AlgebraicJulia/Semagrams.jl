@@ -1,4 +1,4 @@
-import { Semagram, Attachment, PortAttachment } from "./Semagram";
+import { Semagram, Attachment, PortAttachment, hashAttachment } from "./Semagram";
 import { Schema, AttachType, PortStyle } from "./Schema";
 import { Vec2Like, add2 } from "@thi.ng/vectors";
 import { centerIndex } from "./Util";
@@ -17,11 +17,13 @@ export class LocatedSemagram {
     sg: Semagram
     boxlocs: Map<number, Vec2Like>
     portlocs: Map<number, Map<number, Vec2Like>>
+    wireoffsets: Map<number, number>
 
     constructor(schema: Schema) {
         this.sg = new Semagram(schema);
         this.boxlocs = new Map();
         this.portlocs = new Map();
+        this.wireoffsets = new Map();
     }
 
     /* Updates box location, and updates its corresponding ports too. */
@@ -80,6 +82,21 @@ export class LocatedSemagram {
         });
     }
 
+    updateWireOffsets(src: Attachment, tgt: Attachment) {
+        if (hashAttachment(src) < hashAttachment(tgt)) {
+            [src, tgt] = [tgt, src];
+        }
+        const srctgt = this.sg.wiresBetween(src, tgt);
+        const tgtsrc = this.sg.wiresBetween(tgt, src);
+        const n = srctgt.length + tgtsrc.length;
+        for (var i = 0; i < srctgt.length; i++) {
+            this.wireoffsets.set(srctgt[i], centerIndex(i, n));
+        }
+        for (var i = 0; i < tgtsrc.length; i++) {
+            this.wireoffsets.set(tgtsrc[i], -centerIndex(srctgt.length + i, n));
+        }
+    }
+
     /**
      * Gets the location of an attachment (i.e. box or port)
      * Useful for figuring out where a wire starts/ends.
@@ -99,6 +116,10 @@ export class LocatedSemagram {
 
     getBoxLoc(box_idx: number): Vec2Like {
         return this.boxlocs.get(box_idx)!;
+    }
+
+    getOffset(w: number): number {
+        return this.wireoffsets.get(w)!;
     }
 
     /**
@@ -121,11 +142,17 @@ export class LocatedSemagram {
     }
 
     addWire(ty: string, src: Attachment, tgt: Attachment): number | undefined {
-        return this.sg.addWire(ty, src, tgt);
+        const i = this.sg.addWire(ty, src, tgt);
+        this.updateWireOffsets(src, tgt);
+        return i;
     }
 
     remWire(i: number) {
-        this.sg.remWire(i);
+        const wire = this.sg.getWire(i);
+        if (wire) {
+            this.sg.remWire(i);
+            this.updateWireOffsets(wire.src, wire.tgt);
+        }
     }
 
     remPort(box_idx: number, port_idx: number) {

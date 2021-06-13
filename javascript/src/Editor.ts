@@ -1,12 +1,7 @@
-import { map } from "@thi.ng/transducers";
-import { EditorState, ModalState } from "./EditorState";
-import { WireNode } from "./WireNode";
-import { BoxNode } from "./BoxNode";
-import { add2, hash } from "@thi.ng/vectors";
+import { EditorState } from "./EditorState";
 import m from "mithril";
-import { HashMap } from "@thi.ng/associative";
-import { hashAttachment } from "./Semagram";
-import { centerIndex } from "./Util";
+import { EditorPane } from "./EditorPane";
+import { EditorUI } from "./EditorUI";
 
 
 /**
@@ -82,46 +77,8 @@ const grid = m("pattern", {
         "stroke-width": "1"
     }))
 
-const svgdefs = m("defs", grid, resistorMarker, capacitorMarker, makeMarker("arrow-sel", "lightgrey"), makeMarker("arrow", "white"));
+const svgdefs = m("defs", grid, resistorMarker, capacitorMarker, makeMarker("arrow-hovered", "lightgrey"), makeMarker("arrow", "white"));
 
-/**
- * TODO: These should be runtime-configurable.
- */
-const MODAL_TL = [20, 20];
-const MODAL_WIDTH = 150;
-const MODAL_HEIGHT_PER_LINE = 20;
-const MODAL_XPADDING = 10;
-const MODAL_YPADDING = 10;
-
-/**
- * Component for the Modal. Shows up as a rectangle with the choices in it.
- */
-const ChoiceModal: m.Component<EditorAttrs> = {
-    view({ attrs: { state } }) {
-        const modal = state.dialogue.modal;
-        if (modal.ty != ModalState.Normal) {
-            const bg = m("rect", {
-                x: MODAL_TL[0],
-                y: MODAL_TL[1],
-                width: MODAL_WIDTH,
-                height: MODAL_HEIGHT_PER_LINE * modal.choices.length + MODAL_YPADDING,
-                stroke: "black",
-                fill: "white"
-            });
-            return m("g", {},
-                bg,
-                ...modal.choices.map((choice, i) => {
-                    let pos = add2([],
-                        MODAL_TL,
-                        [MODAL_XPADDING, (i + 1) * MODAL_HEIGHT_PER_LINE])
-                    return m("text", { x: pos[0], y: pos[1] }, `${i + 1}: ${choice}`)
-                })
-            );
-        } else {
-            return m("g");
-        }
-    }
-}
 
 interface EditorAttrs {
     state: EditorState
@@ -147,37 +104,6 @@ export const Editor: m.Component<EditorAttrs> = {
     },
 
     view({ attrs: { state } }) {
-        const boxnodes = [...map(box_idx => m(BoxNode, { state, box_idx }), state.boxes())];
-        const wires_by_src_tgt =
-            new HashMap<[number, number], [number, boolean][]>(null, { hash });
-        for (const wire_idx of state.wires()) {
-            const w = state.ls.sg.getWire(wire_idx)!;
-            const s = hashAttachment(w.src);
-            const t = hashAttachment(w.tgt);
-            var key: [number, number];
-            var val: [number, boolean];
-            if (s <= t) {
-                key = [s, t];
-                val = [wire_idx, true];
-            } else {
-                key = [t, s];
-                val = [wire_idx, false];
-            }
-            var wlist;
-            if (wlist = wires_by_src_tgt.get(key)) {
-                wlist.push(val);
-            } else {
-                wires_by_src_tgt.set(key, [val]);
-            }
-        }
-        const wirenodes = map((wlist) =>
-            wlist.map((w, i) => {
-                const offset = (w[1] ? 1 : -1) * centerIndex(i, wlist.length);
-                return m(WireNode, { state, wire_idx: w[0], offset })
-            }),
-            wires_by_src_tgt.values());
-        // const wirenodes = map(wire_idx => m(WireNode, { state, wire_idx }),
-        // state.lw.wireviz.wires.keys());
         return m("svg", {
             width: "95%",
             height: "500px",
@@ -189,9 +115,8 @@ export const Editor: m.Component<EditorAttrs> = {
             m("style", m.trust(globalStyle)),
             svgdefs,
             m("rect", { width: "100%", height: "100%", fill: "url(#grid)" }),
-            m(ChoiceModal, { state }),
-            ...wirenodes,
-            ...boxnodes,
+            m(EditorPane, { state }),
+            m(EditorUI, { state })
         );
     }
 }

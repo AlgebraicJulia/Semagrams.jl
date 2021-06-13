@@ -3,6 +3,7 @@ import { add2, dist2, round2, sub2, Vec2Like } from "@thi.ng/vectors";
 import { LocatedSemagram } from "./LocatedSemagram";
 import { Attachment } from "./Semagram";
 import { AttachType, Schema } from "./Schema";
+import { map, concat } from "@thi.ng/transducers";
 import * as CS from "./ColorScheme";
 
 /**
@@ -109,6 +110,7 @@ export class CursorState {
     cursor: Vec2Like
     dragState: { box_idx: number, offset: Vec2Like } | null
     hoveredAttachment: Attachment | null
+    hoveredWire: number | null
     svgelt: SVGSVGElement | null
 
     constructor(
@@ -120,6 +122,7 @@ export class CursorState {
         this.cursor = [0, 0];
         this.dragState = null;
         this.hoveredAttachment = null;
+        this.hoveredWire = null;
         this.svgelt = null;
     }
 
@@ -154,6 +157,14 @@ export class CursorState {
 
     handlemouseoutattachment = () => {
         this.hoveredAttachment = null;
+    }
+
+    handlemouseenterwire = (e: MouseEvent) => {
+        this.hoveredWire = eventDataProperty(e, "data-w");
+    }
+
+    handlemouseoutwire = () => {
+        this.hoveredWire = null;
     }
 
     handlemousedownbox = (e: MouseEvent) => {
@@ -252,6 +263,19 @@ export class EditorState {
         return this.ls.sg.wires.keys();
     }
 
+    /** Convenience function: an array of the indices of all the ports for a box */
+    ports_by_box(box_idx: number): IterableIterator<number> {
+        const box = this.ls.sg.boxes.get(box_idx)!;
+        return box.ports.keys();
+    }
+
+    ports(): IterableIterator<{ box_idx: number, port_idx: number }> {
+        return concat(
+            ...map(box_idx =>
+                map(port_idx => { return { box_idx, port_idx }; }, this.ports_by_box(box_idx)),
+                this.boxes()))
+    }
+
     /**
      * The next functions are all of the "actions" that one can do,
      * and are bound to key presses.
@@ -305,10 +329,12 @@ export class EditorState {
         }
     }
 
-    /** Remove `cursor.hoveredAttachment` */
-    remAttachment() {
+    /** Remove `cursor.hoveredAttachment` or `cursor.hoveredWire` */
+    remHovered() {
         if (this.cursor.hoveredAttachment != null) {
             this.ls.remAttachment(this.cursor.hoveredAttachment);
+        } else if (this.cursor.hoveredWire != null) {
+            this.ls.remWire(this.cursor.hoveredWire);
         }
     }
 
@@ -410,7 +436,7 @@ export class EditorState {
                     break;
                 }
                 case "d": {
-                    this.remAttachment();
+                    this.remHovered();
                     break;
                 }
                 case "w": {

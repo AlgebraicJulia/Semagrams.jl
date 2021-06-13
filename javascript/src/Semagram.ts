@@ -1,3 +1,4 @@
+import { HashMap } from "@thi.ng/associative";
 import { equiv } from "@thi.ng/equiv";
 import { hash } from "@thi.ng/vectors";
 import { AttachType, Schema } from "./Schema"
@@ -110,6 +111,15 @@ class IDGen {
     }
 }
 
+function remove<T>(xs: Array<T>, x: T): void {
+    for (var i = 0; i < xs.length; i++) {
+        if (xs[i] == x) {
+            xs.splice(i, 1);
+            break;
+        }
+    }
+}
+
 /**
  * This stores the actual data of a Semagram.
  * All it is is two maps of boxes and wires (ports are stored within boxes),
@@ -120,6 +130,7 @@ class IDGen {
 export class Semagram {
     public boxes: Map<number, Box>
     public wires: Map<number, Wire>
+    private src_tgt_index: HashMap<[Attachment, Attachment], Array<number>>
     private gen: IDGen;
 
     constructor(
@@ -128,6 +139,9 @@ export class Semagram {
         this.boxes = new Map();
         this.wires = new Map();
         this.gen = new IDGen();
+        this.src_tgt_index = new HashMap([], {
+            hash: ([a1, a2]) => hash([hashAttachment(a1), hashAttachment(a2)])
+        });
     }
 
     /**
@@ -195,6 +209,10 @@ export class Semagram {
             return undefined;
         }
         this.wires.set(i, new Wire(ty, {}, src, tgt, src_ob.color));
+        if (!this.src_tgt_index.has([src, tgt])) {
+            this.src_tgt_index.set([src, tgt], [])
+        }
+        this.src_tgt_index.get([src, tgt])!.push(i);
         return i;
     }
 
@@ -218,7 +236,11 @@ export class Semagram {
     /** The remX methods are self-explanatory */
 
     remWire(i: number) {
-        this.wires.delete(i);
+        const wire = this.getWire(i);
+        if (wire) {
+            remove(this.src_tgt_index.get([wire.src, wire.tgt])!, i);
+            this.wires.delete(i);
+        }
     }
 
     remPort(box_idx: number, port_idx: number) {
@@ -257,6 +279,15 @@ export class Semagram {
             this.remPort(a.box_idx, a.port_idx)
         } else {
             throw new Error("invalid attachment type")
+        }
+    }
+
+    wiresBetween(src: Attachment, tgt: Attachment): Array<number> {
+        const wire_list = this.src_tgt_index.get([src, tgt]);
+        if (wire_list) {
+            return wire_list;
+        } else {
+            return [];
         }
     }
 
