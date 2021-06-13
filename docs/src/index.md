@@ -1,19 +1,19 @@
 # Semagrams.jl
 
-## Installation:
+## Installation
 
 ```julia
 > using Pkg; Pkg.add("Semagrams"); Pkg.add("Catlab")
 > using Semagrams, Catlab
 ```
 
-Currently Semagrams.jl only works for JupyterLab version 2 (the latest version is version 3). Therefore, you must downgrade your jupyterlab installation. Hopefully this should be fixed upstream soon: https://github.com/JuliaGizmos/WebIO.jl/pull/457.
+Due to an [upstream issue](https://github.com/JuliaGizmos/WebIO.jl/issues/442), Semagrams.jl is currently only compatible with JupyterLab v2 (the latest version is v3). Therefore, you must downgrade your JupyterLab installation. For example, if you use Anaconda, you can do this by running `conda install jupyterlab=2.3.1`.
 
-If you can't figure out how to downgrade jupyterlab, then you can use the standalone version of Semagrams.jl, which serves semagrams from a standalone web server; see the rest of this guide for how to do this.
+As an alternative to JupyterLab, you can use the standalone version of Semagrams.jl, which serves the application from a standalone web server; see the rest of this guide for how to do this.
 
-## Quickstart:
+## Quickstart
 
-In a Jupyter notebook
+In a JupyterLab notebook:
 
 ```julia
 > using Semagrams, Semagrams.Examples
