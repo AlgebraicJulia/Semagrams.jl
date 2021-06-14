@@ -121,7 +121,7 @@ Currently the editor is very barebones; you have to refer here for the keybindin
 - `s` sets a port or box to be the current "source". When you select the source, it should turn *light blue*.
 - `t` sets a port or box to be the current "target". When you select the target it should turn *light red*.
 - `w` adds a new wire, using the ports/boxes selected as source and target. If there is no wire type compatible with the source/target pair, then this will remove the selection of source/target and not add a wire. If there is more than one wire type that could be added, it will pop up a modal asking you which type of wire you wish to add.
-- `d` deletes the wire, port or box under the cursor. Note: there is currently no way to delete wires other than deleting their source/target. Will fix this soon.
+- `d` deletes the wire, port or box under the cursor.
 - `D` prints the current value of the semagram to the javascript console. Useful for debugging.
 - `Escape` clears the current selection of the source/target
 - `?` brings up the help menu
