@@ -1,4 +1,5 @@
 import { EditorState } from "./EditorState";
+import { SVG_HEIGHT } from "./Constants";
 import m from "mithril";
 import { EditorPane } from "./EditorPane";
 import { EditorUI } from "./EditorUI";
@@ -106,7 +107,7 @@ export const Editor: m.Component<EditorAttrs> = {
     view({ attrs: { state } }) {
         return m("svg", {
             width: "95%",
-            height: "500px",
+            height: `${SVG_HEIGHT}px`,
             onmousemove: state.cursor.handlemousemove,
             onkeydown: state.handlekeydown,
             tabindex: "0",

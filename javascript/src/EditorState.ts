@@ -4,6 +4,7 @@ import { LocatedSemagram } from "./LocatedSemagram";
 import { Attachment } from "./Semagram";
 import { AttachType, Schema } from "./Schema";
 import { map, concat } from "@thi.ng/transducers";
+import { Command, DEFAULT_KEYBINDINGS } from "./Commands";
 import * as CS from "./ColorScheme";
 
 /**
@@ -207,12 +208,19 @@ export class DialogueState {
      */
     inputconfig: InputConfig
 
+    /**
+     * Whether or not the help window is showing
+     * TODO: This should drill down into the detailed descriptions
+     */
+    helpwindow: boolean
+
     constructor() {
         this.src = null;
         this.tgt = null;
         this.modal = { ty: ModalState.Normal };
         this.selected = null;
         this.inputconfig = new InputConfig();
+        this.helpwindow = false;
     }
 }
 
@@ -418,44 +426,51 @@ export class EditorState {
      */
     handlekeydown = (e: KeyboardEvent) => {
         if (this.dialogue.modal.ty == ModalState.Normal) {
-            switch (e.key) {
-                case "s": {
-                    this.setSrc();
-                    break;
-                }
-                case "t": {
-                    this.setTgt();
-                    break;
-                }
-                case "b": {
-                    this.addBox();
-                    break;
-                }
-                case "p": {
-                    this.addPort();
-                    break;
-                }
-                case "d": {
-                    this.remHovered();
-                    break;
-                }
-                case "w": {
-                    this.addWire();
-                    break;
-                }
-                case "D": {
-                    this.debug();
-                    break;
-                }
-                case "S": {
-                    this.save();
-                    break;
-                }
-                case "Escape": {
-                    this.dialogue.src = null;
-                    this.dialogue.tgt = null;
-                    this.dialogue.selected = null;
-                    break;
+            const cmd = DEFAULT_KEYBINDINGS.get(e.key);
+            if (cmd != undefined) {
+                switch (cmd) {
+                    case Command.SetSrc: {
+                        this.setSrc();
+                        break;
+                    }
+                    case Command.SetTgt: {
+                        this.setTgt();
+                        break;
+                    }
+                    case Command.AddBox: {
+                        this.addBox();
+                        break;
+                    }
+                    case Command.AddPort: {
+                        this.addPort();
+                        break;
+                    }
+                    case Command.AddWire: {
+                        this.addWire();
+                        break;
+                    }
+                    case Command.RemHovered: {
+                        this.remHovered();
+                        break;
+                    }
+                    case Command.Debug: {
+                        this.debug();
+                        break;
+                    }
+                    case Command.Save: {
+                        this.save();
+                        break;
+                    }
+                    case Command.Deselect: {
+                        this.dialogue.src = null;
+                        this.dialogue.tgt = null;
+                        this.dialogue.selected = null;
+                        break;
+                    }
+                    case Command.Help: {
+                        this.dialogue.helpwindow = !this.dialogue.helpwindow;
+                        break;
+                    }
                 }
             }
         } else {
