@@ -17,7 +17,7 @@ In a Jupyter notebook
 
 > p = Semagram{Petri}(PetriSema)
 
-# Edit semagram (see docs) AND SAVE
+# Edit semagram (see docs)
 
 > get_acset(p)
 ```
