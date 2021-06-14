@@ -6,7 +6,6 @@ export enum Command {
     AddWire,
     RemHovered,
     Debug,
-    Save,
     Deselect,
     Help
 }
@@ -19,7 +18,6 @@ export const DEFAULT_KEYBINDINGS: Map<string, Command> = new Map([
     ["w", Command.AddWire],
     ["d", Command.RemHovered],
     ["D", Command.Debug],
-    ["S", Command.Save],
     ["Escape", Command.Deselect],
     ["?", Command.Help]
 ])
@@ -53,10 +51,6 @@ export const COMMAND_DOCS: Map<Command, { long: string, short: string }> =
         [Command.Debug, {
             short: "debug",
             long: "prints internal state to the console"
-        }],
-        [Command.Save, {
-            short: "save",
-            long: "saves the current state of the semagram by sending it back to Julia"
         }],
         [Command.Deselect, {
             short: "deselect",

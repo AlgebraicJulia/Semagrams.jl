@@ -20,7 +20,7 @@ In a JupyterLab notebook:
 
 > p = Semagram{Petri}(PetriSema)
 
-# Edit semagram (see below) AND SAVE
+# Edit semagram (see below)
 
 > get_acset(p)
 ```
@@ -121,13 +121,14 @@ Currently the editor is very barebones; you have to refer here for the keybindin
 - `s` sets a port or box to be the current "source". When you select the source, it should turn *light blue*.
 - `t` sets a port or box to be the current "target". When you select the target it should turn *light red*.
 - `w` adds a new wire, using the ports/boxes selected as source and target. If there is no wire type compatible with the source/target pair, then this will remove the selection of source/target and not add a wire. If there is more than one wire type that could be added, it will pop up a modal asking you which type of wire you wish to add.
-- `d` deletes the port or box under the cursor. Note: there is currently no way to delete wires other than deleting their source/target. Will fix this soon.
-- `S` *saves* the semagram, which means that it sends the semagram from javascript back to Julia. You *must* do this before going on to the next step. I should probably add an indicator which says whether or not the latest changes to the semagram have been saved...
+- `d` deletes the wire, port or box under the cursor. Note: there is currently no way to delete wires other than deleting their source/target. Will fix this soon.
 - `D` prints the current value of the semagram to the javascript console. Useful for debugging.
+- `Escape` clears the current selection of the source/target
+- `?` brings up the help menu
 
 ### 3. Profit
 
-Once you have editted (**AND SAVED**) your semagram, you can get an acset out of it using
+Once you have edited your semagram, you can get an acset out of it using
 
 ```julia
 get_acset(my_awesome_petri_net)

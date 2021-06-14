@@ -457,10 +457,6 @@ export class EditorState {
                         this.debug();
                         break;
                     }
-                    case Command.Save: {
-                        this.save();
-                        break;
-                    }
                     case Command.Deselect: {
                         this.dialogue.src = null;
                         this.dialogue.tgt = null;
@@ -476,6 +472,7 @@ export class EditorState {
         } else {
             this.modalInput(e.key);
         }
+        this.save();
     }
 }
 
