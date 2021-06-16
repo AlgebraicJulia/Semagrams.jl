@@ -77,11 +77,11 @@ function to_acset(sd::SemagramData, schema::SemagramSchema, ::Type{T}) where {T 
   box_map = Dict{Int,Int}()
   port_map = Dict{Tuple{Int,Int},Int}()
   for (i,box) in sd.boxes
-    acs_i = add_part!(acs,box.ty)
+    acs_i = add_part!(acs, box.ty; box.weights...)
     box_map[i] = acs_i
     for (j,port) in box.ports
       port_props = schema.port_types[port.ty]
-      acs_j = add_part!(acs,port.ty;Dict(port_props.box_map => acs_i)...)
+      acs_j = add_part!(acs,port.ty;Dict(port_props.box_map => acs_i)..., port.weights...)
       port_map[(i,j)] = acs_j
     end
   end
@@ -90,7 +90,7 @@ function to_acset(sd::SemagramData, schema::SemagramSchema, ::Type{T}) where {T 
     acs_tgt = lookup_attachment(box_map, port_map, wire.tgt)
     wire_props = schema.wire_types[wire.ty]
     attrs = Dict(wire_props.src_map => acs_src, wire_props.tgt_map => acs_tgt)
-    add_part!(acs,wire.ty; attrs...)
+    add_part!(acs,wire.ty; attrs..., wire.weights...)
   end
   acs
 end

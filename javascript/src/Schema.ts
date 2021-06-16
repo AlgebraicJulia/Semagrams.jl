@@ -11,15 +11,19 @@ export enum WireStyle {
     Default = "DefaultWire"
 }
 
+export enum AttributeType {
+    Numeric = "Numeric",
+    Stringlike = "Stringlike"
+}
+
 /**
  * These are all interfaces (i.e., not structs) because 
  */
 
 export interface BoxProperties {
     /** These are the names of weights.
-     *  TODO: should also have the types of the weights
      */
-    weights: Array<string>,
+    weights: Array<[AttributeType, string]>
 
     /** This is a svg string */
     shape: string,
@@ -28,14 +32,17 @@ export interface BoxProperties {
     label: string
 }
 
-export enum AttachType {
-    Box = "AttachBox",
-    Port = "AttachPort"
+export enum EntityType {
+    Box = "Box",
+    Port = "Port",
+    Wire = "Wire"
 }
+
+export type AttachType  = EntityType.Box | EntityType.Port
 
 export interface PortProperties {
     /** See comment for box weights */
-    weights: Array<string>
+    weights: Array<[AttributeType, string]>
 
     /** The box type that this attaches to */
     box: string
@@ -49,7 +56,7 @@ export interface PortProperties {
 
 export interface WireProperties {
     /** See comment for box weights */
-    weights: Array<string>
+    weights: Array<[AttributeType, string]>
 
     /** The port/box that is the type for the source of this wire */
     src: [AttachType, string]

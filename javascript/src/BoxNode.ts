@@ -1,6 +1,7 @@
 import { colorAttachment, EditorState } from "./EditorState";
+import { equiv } from "@thi.ng/equiv";
 import { BOXRADIUS } from "./LocatedSemagram";
-import { box_attach } from "./Semagram";
+import { box_entity } from "./Semagram";
 import * as CS from "./ColorScheme";
 import m from 'mithril';
 
@@ -14,7 +15,7 @@ interface BoxAttrs {
  */
 export const BoxHandle: m.Component<BoxAttrs> = {
     view: function({ attrs: { state, box_idx } }) {
-        const a = box_attach(box_idx);
+        const a = box_entity(box_idx);
         const loc = state.ls.getLoc(a)!;
         return m("circle", {
             transform: `translate(${loc[0]} ${loc[1]})`,
@@ -49,7 +50,7 @@ export const BoxNode: m.Component<BoxAttrs> = {
     view: function({ attrs: { state, box_idx } }) {
         const box = state.ls.sg.boxes.get(box_idx)!;
         const boxty = state.ls.sg.schema.box_types[box.ty];
-        const a = box_attach(box_idx);
+        const a = box_entity(box_idx);
         const loc = state.ls.getLoc(a)!;
         const attrs = {
             fill: colorAttachment(state, a),
@@ -58,7 +59,7 @@ export const BoxNode: m.Component<BoxAttrs> = {
         };
         const highlight = m("g", {
             transform: "scale(1.1)",
-            fill: state.dialogue.selected == box_attach(box_idx) ? "yellow" : "none",
+            fill: equiv(state.dialogue.selected, box_entity(box_idx)) ? "yellow" : "none",
             stroke: "none",
         }, m.trust(boxty.shape));
         return m("g", attrs, highlight, m.trust(boxty.shape));

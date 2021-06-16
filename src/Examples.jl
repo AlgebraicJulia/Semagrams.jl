@@ -4,6 +4,7 @@ Pre-fab acset schemas+semagrams schemas
 module Examples
 
 export TheoryPetri, Petri, PetriSema,
+  TheoryRatePetri, RatePetri, RatePetriSema,
   TheoryDirectedPortGraph, DirectedPortGraph, DirectedPortGraphSema
 
 using Catlab.Present, Catlab.CSetDataStructures
@@ -21,6 +22,20 @@ end
 const Petri = CSetType(TheoryPetri)
 
 @semagramschema PetriSema(TheoryPetri) begin
+    @box S Circle
+    @box T Square
+    @wire I(is,it)
+    @wire O(ot,os)
+end
+
+@present TheoryRatePetri <: TheoryPetri begin
+  N::Data
+  rate::Attr(T,N)
+end
+
+const RatePetri = ACSetType(TheoryRatePetri)
+
+@semagramschema RatePetriSema(TheoryRatePetri) begin
     @box S Circle
     @box T Square
     @wire I(is,it)
