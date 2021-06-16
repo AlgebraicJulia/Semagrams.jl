@@ -14,6 +14,7 @@ using ..JSON
 import ..JSON: from_json
 using ..Schema
 using Catlab.CSetDataStructures
+using Catlab.Theories
 using MLStyle
 
 struct Port
@@ -39,7 +40,7 @@ from_json(d::Dict{String,Any},::Type{Box}) = generic_from_json(d,Box)
 end
 
 function from_json(d::Dict{String,Any},::Type{Attachment})
-  if d["ty"] == "AttachBox"
+  if d["ty"] == "Box"
     AttachBox(d["box_idx"])
   else
     AttachPort(d["box_idx"],d["port_idx"])
@@ -72,16 +73,28 @@ function lookup_attachment(box_map::Dict{Int,Int},
   end
 end
 
+function attribute_type(::Type{T}, attr::Symbol) where {CD, AD, Ts, T <: AbstractACSet{CD, AD, Ts}}
+  Ts.parameters[Theories.codom_num(AD, attr)]
+end
+
+function attributes_from_strings(weights::Dict{Symbol, String}, ::Type{T}) where {T <: AbstractACSet}
+  types = Dict([attr => attribute_type(T, attr) for attr in keys(weights)]...)
+  NamedTuple{(keys(types)...,),Tuple{values(types)...}}(
+    [from_json(weights[attr],types[attr]) for attr in keys(weights)]
+  )
+end
+
 function to_acset(sd::SemagramData, schema::SemagramSchema, ::Type{T}) where {T <: AbstractACSet}
   acs = T()
   box_map = Dict{Int,Int}()
   port_map = Dict{Tuple{Int,Int},Int}()
   for (i,box) in sd.boxes
-    acs_i = add_part!(acs,box.ty)
+    acs_i = add_part!(acs, box.ty; attributes_from_strings(box.weights, T)...)
     box_map[i] = acs_i
     for (j,port) in box.ports
       port_props = schema.port_types[port.ty]
-      acs_j = add_part!(acs,port.ty;Dict(port_props.box_map => acs_i)...)
+      acs_j = add_part!(acs,port.ty;Dict(port_props.box_map => acs_i)...,
+                        attributes_from_strings(port.weights, T)...)
       port_map[(i,j)] = acs_j
     end
   end
@@ -90,7 +103,7 @@ function to_acset(sd::SemagramData, schema::SemagramSchema, ::Type{T}) where {T 
     acs_tgt = lookup_attachment(box_map, port_map, wire.tgt)
     wire_props = schema.wire_types[wire.ty]
     attrs = Dict(wire_props.src_map => acs_src, wire_props.tgt_map => acs_tgt)
-    add_part!(acs,wire.ty; attrs...)
+    add_part!(acs,wire.ty; attrs..., attributes_from_strings(wire.weights, T)...)
   end
   acs
 end

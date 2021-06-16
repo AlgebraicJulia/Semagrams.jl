@@ -1,8 +1,8 @@
 import { equiv } from "@thi.ng/equiv";
 import { add2, dist2, round2, sub2, Vec2Like } from "@thi.ng/vectors";
 import { LocatedSemagram } from "./LocatedSemagram";
-import { Attachment } from "./Semagram";
-import { AttachType, Schema } from "./Schema";
+import { Attachment, Entity, wire_entity } from "./Semagram";
+import { AttachType, EntityType, Schema } from "./Schema";
 import { map, concat } from "@thi.ng/transducers";
 import { Command, DEFAULT_KEYBINDINGS } from "./Commands";
 import * as CS from "./ColorScheme";
@@ -110,8 +110,7 @@ export class CursorState {
     /** State */
     cursor: Vec2Like
     dragState: { box_idx: number, offset: Vec2Like } | null
-    hoveredAttachment: Attachment | null
-    hoveredWire: number | null
+    hoveredEntity: Entity | null
     svgelt: SVGSVGElement | null
 
     constructor(
@@ -122,8 +121,7 @@ export class CursorState {
     ) {
         this.cursor = [0, 0];
         this.dragState = null;
-        this.hoveredAttachment = null;
-        this.hoveredWire = null;
+        this.hoveredEntity = null;
         this.svgelt = null;
     }
 
@@ -153,19 +151,19 @@ export class CursorState {
     }
 
     handlemouseenterattachment = (e: MouseEvent) => {
-        this.hoveredAttachment = eventDataProperty(e, "data-a");
+        this.hoveredEntity = eventDataProperty(e, "data-a");
     }
 
     handlemouseoutattachment = () => {
-        this.hoveredAttachment = null;
+        this.hoveredEntity = null;
     }
 
     handlemouseenterwire = (e: MouseEvent) => {
-        this.hoveredWire = eventDataProperty(e, "data-w");
+        this.hoveredEntity = wire_entity(eventDataProperty(e, "data-w"));
     }
 
     handlemouseoutwire = () => {
-        this.hoveredWire = null;
+        this.hoveredEntity = null;
     }
 
     handlemousedownbox = (e: MouseEvent) => {
@@ -201,7 +199,7 @@ export class DialogueState {
      * What attachment is currently "selected", unused currently, but will
      * be used for stuff like setting weights.
      */
-    selected: Attachment | null
+    selected: Entity | null
 
     /**
      * Any other settings having to do with defaults for new boxes/ports/wires
@@ -255,7 +253,7 @@ export class EditorState {
         this.cursor = new CursorState(
             (box_idx, loc) => this.ls.setBoxLoc(box_idx, loc),
             (box_idx) => this.ls.getBoxLoc(box_idx),
-            (_a) => { }, /* This should set selected... */
+            (a) => { this.dialogue.selected = a; }, /* This should set selected... */
             (_a) => { }
         );
         this.sendToJl = sendToJl;
@@ -291,12 +289,22 @@ export class EditorState {
 
     /** Set `dialogue.src` to `cursor.hoveredAttachment` */
     setSrc() {
-        this.dialogue.src = this.cursor.hoveredAttachment;
+        if (this.cursor.hoveredEntity) {
+            if (this.cursor.hoveredEntity.ty == EntityType.Box
+                || this.cursor.hoveredEntity.ty == EntityType.Port) {
+                this.dialogue.src = this.cursor.hoveredEntity;
+            }
+        }
     }
 
     /** Set `dialogue.tgt` to `cursor.hoveredAttachment` */
     setTgt() {
-        this.dialogue.tgt = this.cursor.hoveredAttachment;
+        if (this.cursor.hoveredEntity) {
+            if (this.cursor.hoveredEntity.ty == EntityType.Box
+                || this.cursor.hoveredEntity.ty == EntityType.Port) {
+                this.dialogue.tgt = this.cursor.hoveredEntity;
+            }
+        }
     }
 
     /**
@@ -314,8 +322,8 @@ export class EditorState {
 
     /** Add a new port to the `cursor.hoveredAttachment` box, assuming it's a box */
     addPort() {
-        const a = this.cursor.hoveredAttachment;
-        if (a != null) {
+        const a = this.cursor.hoveredEntity;
+        if (a != null && a.ty == EntityType.Box) {
             const box_idx = a.box_idx;
             const box = this.ls.sg.boxes.get(box_idx)!;
             const port_types = compatiblePortTypes(this.ls.sg.schema, box.ty);
@@ -339,10 +347,8 @@ export class EditorState {
 
     /** Remove `cursor.hoveredAttachment` or `cursor.hoveredWire` */
     remHovered() {
-        if (this.cursor.hoveredAttachment != null) {
-            this.ls.remAttachment(this.cursor.hoveredAttachment);
-        } else if (this.cursor.hoveredWire != null) {
-            this.ls.remWire(this.cursor.hoveredWire);
+        if (this.cursor.hoveredEntity != null) {
+            this.ls.remEntity(this.cursor.hoveredEntity);
         }
     }
 
@@ -356,6 +362,7 @@ export class EditorState {
                 this.ls.sg.attachmentType(s),
                 this.ls.sg.attachmentType(t)
             );
+            console.log(wiretypeoptions);
             if (wiretypeoptions.length == 1) {
                 this.ls.addWire(wiretypeoptions[0], s, t);
                 this.dialogue.src = null;
@@ -498,7 +505,7 @@ export function colorAttachment(state: EditorState, a: Attachment): string {
         return CS.source;
     } else if (equiv(state.dialogue.tgt, a)) {
         return CS.target;
-    } else if (equiv(state.cursor.hoveredAttachment, a)) {
+    } else if (equiv(state.cursor.hoveredEntity, a)) {
         return CS.over;
     } else {
         return CS.base;

@@ -1,45 +1,59 @@
 import { HashMap } from "@thi.ng/associative";
 import { equiv } from "@thi.ng/equiv";
 import { hash } from "@thi.ng/vectors";
-import { AttachType, Schema } from "./Schema"
+import { AttachType, AttributeType, EntityType, Schema } from "./Schema"
 
-export interface BoxAttachment {
-    ty: AttachType.Box
+export interface BoxEntity {
+    ty: EntityType.Box
     box_idx: number
 }
 
-export interface PortAttachment {
-    ty: AttachType.Port
+export interface PortEntity {
+    ty: EntityType.Port
     box_idx: number
     port_idx: number
+}
+
+export interface WireEntity {
+    ty: EntityType.Wire
+    wire_idx: number
 }
 
 /**
  * Wires can either be attached to boxes or ports.
  * Thus, the src of a wire is an "Attachment"
  */
-export type Attachment = BoxAttachment | PortAttachment;
+export type Attachment = BoxEntity | PortEntity;
+
+export type Entity = BoxEntity | PortEntity | WireEntity;
 
 /**
  * We use this to store attachments in hash tables
  */
-export function hashAttachment(a: Attachment) {
+export function hashAttachment(a: Entity) {
     switch (a.ty) {
-        case AttachType.Box: {
+        case EntityType.Box: {
             return hash([0, a.box_idx]);
         }
-        case AttachType.Port: {
-            return hash([1, a.box_idx, a.port_idx])
+        case EntityType.Port: {
+            return hash([1, a.box_idx, a.port_idx]);
+        }
+        case EntityType.Wire: {
+            return hash([2, a.wire_idx]);
         }
     }
 }
 
-export function box_attach(i: number): BoxAttachment {
-    return { ty: AttachType.Box, box_idx: i };
+export function box_entity(i: number): BoxEntity {
+    return { ty: EntityType.Box, box_idx: i };
 }
 
-export function port_attach(i: number, j: number): PortAttachment {
-    return { ty: AttachType.Port, box_idx: i, port_idx: j };
+export function port_entity(i: number, j: number): PortEntity {
+    return { ty: EntityType.Port, box_idx: i, port_idx: j };
+}
+
+export function wire_entity(i: number): WireEntity {
+    return { ty: EntityType.Wire, wire_idx: i };
 }
 
 /**
@@ -149,10 +163,10 @@ export class Semagram {
      */
     getColor(a: Attachment): string | undefined {
         switch (a.ty) {
-            case AttachType.Box: {
+            case EntityType.Box: {
                 return this.boxes.get(a.box_idx)!.color;
             }
-            case AttachType.Port: {
+            case EntityType.Port: {
                 return this.boxes.get(a.box_idx)!.ports.get(a.port_idx)!.color;
             }
         }
@@ -172,13 +186,16 @@ export class Semagram {
         return this.wires.get(wire_idx);
     }
 
-    getAttachment(a: Attachment): Box | Port | undefined {
+    getEntity(a: Entity): Box | Port | Wire | undefined {
         switch (a.ty) {
-            case AttachType.Box: {
+            case EntityType.Box: {
                 return this.getBox(a.box_idx);
             }
-            case AttachType.Port: {
+            case EntityType.Port: {
                 return this.getPort(a.box_idx, a.port_idx)
+            }
+            case EntityType.Wire: {
+                return this.getWire(a.wire_idx)
             }
         }
     }
@@ -188,7 +205,7 @@ export class Semagram {
      * Seems a bit redundant
      */
     attachmentType(a: Attachment): [AttachType, string] {
-        const node = this.getAttachment(a)!;
+        const node = this.getEntity(a)!;
         return [a.ty, node.ty];
     }
 
@@ -197,8 +214,8 @@ export class Semagram {
     addWire(ty: string, src: Attachment, tgt: Attachment): number | undefined {
         const i = this.gen.next()
         const wireschema = this.schema.wire_types[ty];
-        const src_ob = this.getAttachment(src)!;
-        const tgt_ob = this.getAttachment(tgt)!;
+        const src_ob = this.getEntity(src)!;
+        const tgt_ob = this.getEntity(tgt)!;
         if (!(equiv([src.ty, src_ob.ty], wireschema.src))) {
             throw new Error(`The src of a wire of type ${ty} cannot be ${[src.ty, src_ob.ty]}`);
         }
@@ -216,7 +233,7 @@ export class Semagram {
         return i;
     }
 
-    addPort(ty: string, box_idx: number, color: string | undefined): PortAttachment {
+    addPort(ty: string, box_idx: number, color: string | undefined): PortEntity {
         const box = this.boxes.get(box_idx)!;
         const portschema = this.schema.port_types[ty];
         if (portschema.box != box.ty) {
@@ -224,13 +241,13 @@ export class Semagram {
         }
         const i = this.gen.next();
         box.ports.set(i, new Port(ty, {}, color));
-        return port_attach(box_idx, i);
+        return port_entity(box_idx, i);
     }
 
-    addBox(ty: string, color: string | undefined): BoxAttachment {
+    addBox(ty: string, color: string | undefined): BoxEntity {
         const i = this.gen.next();
         this.boxes.set(i, new Box(ty, {}, new Map(), color));
-        return box_attach(i);
+        return box_entity(i);
     }
 
     /** The remX methods are self-explanatory */
@@ -245,7 +262,7 @@ export class Semagram {
 
     remPort(box_idx: number, port_idx: number) {
         const box = this.boxes.get(box_idx)!;
-        const a = port_attach(box_idx, port_idx);
+        const a = port_entity(box_idx, port_idx);
         for (const i of this.wires.keys()) {
             const e = this.wires.get(i)!;
             if (equiv(e.src, a) || equiv(e.tgt, a)) {
@@ -262,7 +279,7 @@ export class Semagram {
             this.remPort(box_idx, port_idx);
         }
 
-        const a = box_attach(box_idx);
+        const a = box_entity(box_idx);
         for (const wire_idx of this.wires.keys()) {
             const e = this.wires.get(wire_idx)!;
             if (equiv(e.src, a) || equiv(e.tgt, a)) {
@@ -272,11 +289,13 @@ export class Semagram {
         this.boxes.delete(box_idx);
     }
 
-    remAttachment(a: Attachment) {
-        if (a.ty == AttachType.Box) {
+    remEntity(a: Entity) {
+        if (a.ty == EntityType.Box) {
             this.remBox(a.box_idx);
-        } else if (a.ty == AttachType.Port && a.port_idx !== undefined) {
+        } else if (a.ty == EntityType.Port && a.port_idx !== undefined) {
             this.remPort(a.box_idx, a.port_idx)
+        } else if (a.ty == EntityType.Wire) {
+            this.remWire(a.wire_idx)
         } else {
             throw new Error("invalid attachment type")
         }
@@ -289,6 +308,25 @@ export class Semagram {
         } else {
             return [];
         }
+    }
+
+    weightTypes(a: Entity): Array<[AttributeType, string]> | undefined {
+        const obj = this.getEntity(a);
+        if (obj == undefined) {
+            return undefined;
+        }
+        switch (a.ty) {
+            case EntityType.Box: {
+                return this.schema.box_types[obj.ty].weights;
+            }
+            case EntityType.Port: {
+                return this.schema.port_types[obj.ty].weights;
+            }
+            case EntityType.Port: {
+                return this.schema.wire_types[obj.ty].weights;
+            }
+        }
+        return undefined;
     }
 
     export() {

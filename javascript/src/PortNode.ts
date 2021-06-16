@@ -1,6 +1,6 @@
 import m from "mithril";
 import { colorAttachment, EditorState } from "./EditorState";
-import { port_attach } from "./Semagram";
+import { port_entity } from "./Semagram";
 import * as CS from "./ColorScheme";
 
 const PORTRADIUS = 7;
@@ -13,7 +13,7 @@ interface PortAttrs {
 
 export const PortHandle: m.Component<PortAttrs> = {
     view({ attrs: { state, box_idx, port_idx } }) {
-        const a = port_attach(box_idx, port_idx);
+        const a = port_entity(box_idx, port_idx);
         const loc = state.ls.getLoc(a)!;
         const attrs = {
             "fill-opacity": "0",
@@ -36,7 +36,7 @@ export const PortHandle: m.Component<PortAttrs> = {
  */
 export const PortNode: m.Component<PortAttrs> = {
     view({ attrs: { state, box_idx, port_idx } }) {
-        const a = port_attach(box_idx, port_idx);
+        const a = port_entity(box_idx, port_idx);
         const loc = state.ls.getLoc(a)!;
         const port = state.ls.sg.boxes.get(box_idx)!.ports.get(port_idx)!;
         const attrs = {

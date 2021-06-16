@@ -1,5 +1,5 @@
-import { Semagram, Attachment, PortAttachment, hashAttachment } from "./Semagram";
-import { Schema, AttachType, PortStyle } from "./Schema";
+import { Semagram, Attachment, PortEntity, hashAttachment, Entity } from "./Semagram";
+import { Schema, PortStyle, EntityType } from "./Schema";
 import { Vec2Like, add2 } from "@thi.ng/vectors";
 import { centerIndex } from "./Util";
 
@@ -104,10 +104,10 @@ export class LocatedSemagram {
     getLoc(a: Attachment): Vec2Like | undefined {
         const boxloc = this.boxlocs.get(a.box_idx)!;
         switch (a.ty) {
-            case AttachType.Box: {
+            case EntityType.Box: {
                 return boxloc;
             }
-            case AttachType.Port: {
+            case EntityType.Port: {
                 const portloc = this.portlocs.get(a.box_idx)!.get(a.port_idx)!;
                 return add2([], boxloc, portloc) as Vec2Like;
             }
@@ -167,14 +167,14 @@ export class LocatedSemagram {
         this.sg.remBox(box_idx);
     }
 
-    remAttachment(a: Attachment) {
+    remEntity(a: Entity) {
         switch (a.ty) {
-            case (AttachType.Box): {
+            case (EntityType.Box): {
                 this.remBox(a.box_idx);
                 break;
             }
-            case (AttachType.Port): {
-                this.remPort(a.box_idx, (a as PortAttachment).port_idx);
+            case (EntityType.Port): {
+                this.remPort(a.box_idx, (a as PortEntity).port_idx);
                 break;
             }
         }

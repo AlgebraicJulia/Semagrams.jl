@@ -1,2 +1,6 @@
 [deps]
-WireViz = "13530c0b-fe5b-42fd-9b7e-79367be16329"
+AlgebraicPetri = "4f99eebe-17bf-4e98-b6a1-2c4f205a959b"
+DifferentialEquations = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
+Interact = "c601a237-2ae4-5e1e-952c-7a85b0c7eef1"
+Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+Semagrams = "13530c0b-fe5b-42fd-9b7e-79367be16329"

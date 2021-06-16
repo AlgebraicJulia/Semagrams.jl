@@ -3,6 +3,7 @@ import { SVG_HEIGHT } from "./Constants";
 import m from "mithril";
 import { EditorPane } from "./EditorPane";
 import { EditorUI } from "./EditorUI";
+import { AttributeEditor } from "./AttributeEditor";
 
 
 /**
@@ -94,12 +95,8 @@ const globalStyle = `
  * It has children of
  * - All boxes/wires/ports
  * - the modal
- *
- * TODO: This should be refactored so that there is an "EditorPane",
- * which displays the Semagram, and a "EditorUI", which has UI elements on top of
- * the EditorPane.
  */
-export const Editor: m.Component<EditorAttrs> = {
+export const EditorSVG: m.Component<EditorAttrs> = {
     oncreate({ dom, attrs: { state } }) {
         state.cursor.svgelt = dom as SVGSVGElement;
     },
@@ -119,5 +116,14 @@ export const Editor: m.Component<EditorAttrs> = {
             m(EditorPane, { state }),
             m(EditorUI, { state })
         );
+    }
+}
+
+export const Editor: m.Component<EditorAttrs> = {
+    view({ attrs: { state } }) {
+        return m("div",
+            m(EditorSVG, { state }),
+            m(AttributeEditor, { state })
+        )
     }
 }

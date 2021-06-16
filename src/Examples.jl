@@ -3,48 +3,56 @@ Pre-fab acset schemas+semagrams schemas
 """
 module Examples
 
-export TheoryPetri, Petri, PetriSema,
+export TheoryPetri, ReactionNet, ReactionNetSema,
   TheoryDirectedPortGraph, DirectedPortGraph, DirectedPortGraphSema
 
 using Catlab.Present, Catlab.CSetDataStructures
 using ..Schema
 using ..Boxes
 
-@present TheoryPetri(FreeSchema) begin
-    (T,S,I,O)::Ob
-    it::Hom(I,T)
-    is::Hom(I,S)
-    ot::Hom(O,T)
-    os::Hom(O,S)
+@present TheoryReactionNet(FreeSchema) begin
+  (T,S,I,O)::Ob
+  it::Hom(I,T)
+  is::Hom(I,S)
+  ot::Hom(O,T)
+  os::Hom(O,S)
+  N::Data
+  rate::Attr(T,N)
+  concentration::Attr(S,N)
 end
 
-const Petri = CSetType(TheoryPetri)
+const ReactionNet = ACSetType(TheoryReactionNet)
 
-@semagramschema PetriSema(TheoryPetri) begin
-    @box S Circle
-    @box T Square
-    @wire I(is,it)
-    @wire O(ot,os)
+@semagramschema ReactionNetSema(TheoryReactionNet) begin
+  @box S Circle
+  @box T Square
+  @wire I(is,it)
+  @wire O(ot,os)
+  @data N Numeric
 end
 
 @present TheoryDirectedPortGraph(FreeSchema) begin
-    Box::Ob
-    IPort::Ob
-    OPort::Ob
-    Wire::Ob
-    ibox::Hom(IPort,Box)
-    obox::Hom(OPort,Box)
-    src::Hom(Wire,OPort)
-    tgt::Hom(Wire,IPort)
+  Box::Ob
+  IPort::Ob
+  OPort::Ob
+  Wire::Ob
+  ibox::Hom(IPort,Box)
+  obox::Hom(OPort,Box)
+  src::Hom(Wire,OPort)
+  tgt::Hom(Wire,IPort)
+
+  String::Data
+  label::Attr(Box,String)
 end
 
-const DirectedPortGraph = CSetType(TheoryDirectedPortGraph)
+const DirectedPortGraph = ACSetType(TheoryDirectedPortGraph)
 
 @semagramschema DirectedPortGraphSema(TheoryDirectedPortGraph) begin
-    @box Box Square
-    @port IPort(ibox) "Input"
-    @port OPort(obox) "Output"
-    @wire Wire(src,tgt)
+  @box Box Square
+  @port IPort(ibox) "Input"
+  @port OPort(obox) "Output"
+  @wire Wire(src,tgt)
+  @data String Stringlike
 end
 
 end

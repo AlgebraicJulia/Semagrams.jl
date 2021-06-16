@@ -35,15 +35,18 @@ This is the hardest part, and only has to be done when you are adding a *new* ty
 
 First of all, you have to make an acset. If you don't know how to do this, I can't help you; you gotta read the Catlab docs.
 
-We will use the running examples of *Directed Port Graphs* and *Petri nets*. These have the schemas
+We will use the running examples of *Labeled Directed Port Graphs* and *Reaction Nets*. These have the schemas
 
 ```julia
-@present TheoryPetri(FreeSchema) begin
-    (T,S,I,O)::Ob
-    it::Hom(I,T)
-    is::Hom(I,S)
-    ot::Hom(O,T)
-    os::Hom(O,S)
+@present TheoryReactionNet(FreeSchema) begin
+  (T,S,I,O)::Ob
+  it::Hom(I,T)
+  is::Hom(I,S)
+  ot::Hom(O,T)
+  os::Hom(O,S)
+  N::Data
+  rate::Attr(T,N)
+  concentration::Attr(S,N)
 end
 
 const Petri = CSetType(TheoryPetri)
@@ -53,11 +56,11 @@ and
 
 ```julia
 @present TheoryDirectedPortGraph(FreeSchema) begin
-    (Box,IPort,OPort,Wire)::Ob
-    ibox::Hom(IPort,Box)
-    obox::Hom(OPort,Box)
-    src::Hom(Wire,OPort)
-    tgt::Hom(Wire,IPort)
+  (Box,IPort,OPort,Wire)::Ob
+  ibox::Hom(IPort,Box)
+  obox::Hom(OPort,Box)
+  src::Hom(Wire,OPort)
+  tgt::Hom(Wire,IPort)
 end
 
 const DPG = CSetType(TheoryDirectedPortGraph)
@@ -67,26 +70,29 @@ Then you make a semagrams schema over the acset you made in step 1. The basic id
 1. Box
 2. Port
 3. Wire
-Boxes have no outgoing morphisms (though, they can have attributes once we implement this). Ports have exactly one outgoing morphism, to a box. Wires have two outgoing morphisms, one which gives the "source" of the wire, and another which gives the "target". These outgoing morphisms can go to *either* ports or boxes.
+4. Data
+Boxes have no outgoing morphisms (though, they can have attributes once we implement this). Ports have exactly one outgoing morphism, to a box. Wires have two outgoing morphisms, one which gives the "source" of the wire, and another which gives the "target". These outgoing morphisms can go to *either* ports or boxes. Data objects in the acset schema must be given input types. The two choices are `Stringlike` or `Numeric`, which correspond to text boxes and sliders respectively (the slider goes from 0 to 100, we will eventually have something to configure this range).
 
 You can designate a SVG object for each box. For instance, in a Petri net, you can make the species circles and the transitions squares. For the ports, you can designate a "style", which designates the placement of the ports. This can either be "Input", "Output", or "Circular", which places the ports vertically stacked on the left, vertically stacked on the right, and equally spaced around a circle.
 
 For our two running examples, this looks like
 ```julia
-@semagramschema PetriSema(TheoryPetri) begin
-    @box S Circle
-    @box T Square
-    @wire I(is,it)
-    @wire O(ot,os)
+@semagramschema ReactionNetSema(TheoryReactionNet) begin
+  @box S Circle
+  @box T Square
+  @wire I(is,it)
+  @wire O(ot,os)
+  @data N Numeric
 end
 ```
 
 ```julia
 @semagramschema DirectedPortGraphSema(TheoryDirectedPortGraph) begin
-    @box Box Square
-    @port IPort(ibox) "Input"
-    @port OPort(obox) "Output"
-    @wire Wire(src,tgt)
+  @box Box Square
+  @port IPort(ibox) "Input"
+  @port OPort(obox) "Output"
+  @wire Wire(src,tgt)
+  @data String Stringlike
 end
 ```
 
@@ -95,7 +101,7 @@ end
 First you have to create the semagram.
 
 ```julia
-my_awesome_petri_net = Semagram{Petri}(PetriSema)
+my_awesome_petri_net = Semagram{ReactionNet}(ReactionNetSema)
 ```
 
 or
@@ -125,6 +131,8 @@ Currently the editor is very barebones; you have to refer here for the keybindin
 - `D` prints the current value of the semagram to the javascript console. Useful for debugging.
 - `Escape` clears the current selection of the source/target
 - `?` brings up the help menu
+
+When you click on an entity, below the main window should pop up widgets that allow you to edit the attributes of that entity.
 
 ### 3. Profit
 
