@@ -58,7 +58,11 @@ end
 end
 
 function get_acset(sema::Semagram{T}) where {T}
-  to_acset(from_json(sema.handle[], SemagramData), sema.ws, T)
+  get_acset(sema.handle[], sema)
+end
+
+function get_acset(data::Dict{String,Any}, sema::Semagram{T}) where {T}
+  to_acset(from_json(data, SemagramData), sema.ws, T)
 end
 
 """

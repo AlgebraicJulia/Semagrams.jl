@@ -12,10 +12,20 @@ interface WidgetAttrs {
 
 export const AttributeWidget: m.Component<WidgetAttrs> = {
     view({ attrs: { attribute_type, oninput, curval, label } }) {
+        var input_type: string;
+        switch (attribute_type) {
+            case AttributeType.Stringlike: {
+                input_type = "text";
+            }
+            case AttributeType.Numeric: {
+                input_type = "range";
+            }
+        }
+        console.log(input_type);
         return m("label",
             `${label}: `,
             m("input", {
-                "type": "text",
+                "type": input_type,
                 value: curval,
                 oninput
             }));

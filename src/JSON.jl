@@ -57,6 +57,10 @@ function from_json(d::Dict{String,Any}, ::Type{Dict{Symbol,T}}) where {T}
   Dict(Symbol(k) => from_json(v,T) for (k,v) in d)
 end
 
+function from_json(s::String, ::Type{T}) where {T <: Real}
+  parse(T,s)
+end
+
 function generic_from_json(d::Dict{String,Any},::Type{T}) where {T}
   augmented = Dict{Symbol,Any}()
   for (i,fn) in enumerate(fieldnames(T))

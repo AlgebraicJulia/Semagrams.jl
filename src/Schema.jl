@@ -9,8 +9,9 @@ which makes writing down a schema much more convenient.
 """
 module Schema
 
-export BoxProperties, PortProperties, WireProperties,
-  SemagramSchema, BoxDesc, PortDesc, WireDesc,
+export AttributeType, Numeric, Stringlike,
+  BoxProperties, PortProperties, WireProperties,
+  SemagramSchema, BoxDesc, PortDesc, WireDesc, DataDesc,
   @semagramschema
   
 import ..JSON: to_json
@@ -92,14 +93,20 @@ struct WireDesc
   end
 end
 
-const EntityDesc = Union{BoxDesc, PortDesc, WireDesc}
+struct DataDesc
+  name::Symbol
+  type::AttributeType
+end
 
+const EntityDesc = Union{BoxDesc, PortDesc, WireDesc, DataDesc}
 
-function pres_to_semagramschema(p::Presentation, descs::Array{})
+function pres_to_semagramschema(p::Presentation, descs::Array)
   ws = SemagramSchema(Dict(),Dict(),Dict())
+  datadescs = filter(desc -> typeof(desc) <: DataDesc, descs)
+  datatypes = Dict(map(desc -> desc.name => desc.type, datadescs)...)
   function weights(ob::Symbol)
     attrs = filter(attr -> nameof(dom(attr)) == ob, p.generators[:Attr])
-    map(attr -> (Stringlike, nameof(attr)), attrs)
+    map(attr -> (get(datatypes, nameof(codom(attr)), Stringlike), nameof(attr)), attrs)
   end
   for desc in descs
     ob = desc.name
@@ -139,23 +146,27 @@ See the examples/general documentation for how to use this.
 """
 macro semagramschema(head,body)
   descs = @match body begin
-    Expr(:block,lines...) => map(lines) do line
-      @match line begin
-        Expr(:macrocall, mname, _, desc, args...) => begin
-          (name,morphs) = @match desc begin
-            name::Symbol => (name,[])
-            Expr(:call, name, args...) => (name,args)
+    Expr(:block,lines...) => begin
+      map(lines) do line
+        @match line begin
+          Expr(:macrocall, mname, _, desc, args...) => begin
+            (name,morphs) = @match desc begin
+              name::Symbol => (name,[])
+              Expr(:call, name, args...) => (name,args)
+            end
+            constructor = if mname == Symbol("@box")
+              BoxDesc
+            elseif mname == Symbol("@port")
+              PortDesc
+            elseif mname == Symbol("@wire")
+              WireDesc
+            elseif mname == Symbol("@data")
+              DataDesc
+            end
+            Expr(:call, constructor, q(name), q.(morphs)..., args...)
           end
-          constructor = if mname == Symbol("@box")
-            BoxDesc
-          elseif mname == Symbol("@port")
-            PortDesc
-          elseif mname == Symbol("@wire")
-            WireDesc
-          end
-          Expr(:call, constructor, q(name), q.(morphs)..., args...)
+          _ => missing
         end
-        _ => missing
       end
     end
     _ => error("the body must be a block")
