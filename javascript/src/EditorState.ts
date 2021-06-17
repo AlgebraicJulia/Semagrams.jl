@@ -362,7 +362,6 @@ export class EditorState {
                 this.ls.sg.attachmentType(s),
                 this.ls.sg.attachmentType(t)
             );
-            console.log(wiretypeoptions);
             if (wiretypeoptions.length == 1) {
                 this.ls.addWire(wiretypeoptions[0], s, t);
                 this.dialogue.src = null;

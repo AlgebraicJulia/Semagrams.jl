@@ -177,6 +177,10 @@ export class LocatedSemagram {
                 this.remPort(a.box_idx, (a as PortEntity).port_idx);
                 break;
             }
+            case (EntityType.Wire): {
+                this.remWire(a.wire_idx);
+                break;
+            }
         }
     }
 }
