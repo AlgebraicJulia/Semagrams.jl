@@ -21,7 +21,6 @@ export const AttributeWidget: m.Component<WidgetAttrs> = {
                 input_type = "range";
             }
         }
-        console.log(input_type);
         return m("label",
             `${label}: `,
             m("input", {
