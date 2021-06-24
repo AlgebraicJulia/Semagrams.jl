@@ -1,7 +1,8 @@
-import { HashMap } from "@thi.ng/associative";
 import { equiv } from "@thi.ng/equiv";
 import { hash } from "@thi.ng/vectors";
+import { iterator, map } from "@thi.ng/transducers";
 import { AttachType, AttributeType, EntityType, Schema } from "./Schema"
+import { SetMap } from "./Util";
 
 export interface BoxEntity {
     ty: EntityType.Box
@@ -30,7 +31,7 @@ export type Entity = BoxEntity | PortEntity | WireEntity;
 /**
  * We use this to store attachments in hash tables
  */
-export function hashAttachment(a: Entity) {
+export function hashEntity(a: Entity) {
     switch (a.ty) {
         case EntityType.Box: {
             return hash([0, a.box_idx]);
@@ -56,6 +57,11 @@ export function wire_entity(i: number): WireEntity {
     return { ty: EntityType.Wire, wire_idx: i };
 }
 
+export interface ExportedPort {
+    ty: string
+    weights: Record<string, string>
+}
+
 /**
  * The data associated with a port.
  * Note that ports are stored in an array for each box, so we don't need to store
@@ -66,8 +72,24 @@ export class Port {
         /** The ty refers to a PortProperties in the schema */
         readonly ty: string,
         public weights: Record<string, string>,
-        public color?: string
     ) { }
+
+    export(): ExportedPort {
+        return {
+            ty: this.ty,
+            weights: this.weights
+        };
+    }
+
+    static fromExported(e: ExportedPort): Port {
+        return new Port(e.ty, e.weights);
+    }
+}
+
+export interface ExportedBox {
+    ty: string
+    weights: Record<string, string>
+    ports: Array<[number, ExportedPort]>
 }
 
 /**
@@ -82,17 +104,27 @@ export class Box {
         readonly ty: string,
         public weights: Record<string, string>,
         public ports: Map<number, Port>,
-        public color?: string
     ) { }
 
-    export() {
+    export(): ExportedBox {
         return {
             ty: this.ty,
             weights: this.weights,
-            ports: Array.from(this.ports.entries()),
-            color: this.color
+            ports: Array.from(map(([port_idx, p]) => [port_idx, p.export()], this.ports.entries())),
         }
     }
+
+    static fromExported(e: ExportedBox): Box {
+        return new Box(e.ty, e.weights, new Map(
+            iterator(map(([port_idx, ep]) => [port_idx, Port.fromExported(ep)]), e.ports)));
+    }
+}
+
+export interface ExportedWire {
+    ty: string,
+    weights: Record<string, string>
+    src: Attachment,
+    tgt: Attachment
 }
 
 /**
@@ -105,10 +137,25 @@ export class Wire {
         public weights: Record<string, string>,
         public src: Attachment,
         public tgt: Attachment,
-        public color?: string
     ) { }
+
+    export(): ExportedWire {
+        return {
+            ty: this.ty,
+            weights: this.weights,
+            src: this.src,
+            tgt: this.tgt
+        }
+    }
+
+    static fromExported(e: ExportedWire): Wire {
+        return new Wire(e.ty, e.weights, e.src, e.tgt);
+    }
 }
 
+export interface ExportedIDGen {
+    i: number
+}
 
 /**
  * Generates new ids for new objects in the Semagram.
@@ -123,15 +170,21 @@ class IDGen {
     next() {
         return this.i++;
     }
+
+    export(): ExportedIDGen {
+        return { i: this.i }
+    }
+
+    static fromExported(e: ExportedIDGen): IDGen {
+        return Object.assign(new IDGen(), e);
+    }
 }
 
-function remove<T>(xs: Array<T>, x: T): void {
-    for (var i = 0; i < xs.length; i++) {
-        if (xs[i] == x) {
-            xs.splice(i, 1);
-            break;
-        }
-    }
+export interface ExportedSemagram {
+    boxes: Array<[number, ExportedBox]>,
+    wires: Array<[number, ExportedWire]>,
+    gen: ExportedIDGen
+    schema: Schema
 }
 
 /**
@@ -144,7 +197,7 @@ function remove<T>(xs: Array<T>, x: T): void {
 export class Semagram {
     public boxes: Map<number, Box>
     public wires: Map<number, Wire>
-    private src_tgt_index: HashMap<[Attachment, Attachment], Array<number>>
+    private src_tgt_index: SetMap<[Attachment, Attachment], number>
     private gen: IDGen;
 
     constructor(
@@ -153,23 +206,10 @@ export class Semagram {
         this.boxes = new Map();
         this.wires = new Map();
         this.gen = new IDGen();
-        this.src_tgt_index = new HashMap([], {
-            hash: ([a1, a2]) => hash([hashAttachment(a1), hashAttachment(a2)])
-        });
-    }
-
-    /**
-     * TODO: this should use colorAttribute from the schema
-     */
-    getColor(a: Attachment): string | undefined {
-        switch (a.ty) {
-            case EntityType.Box: {
-                return this.boxes.get(a.box_idx)!.color;
-            }
-            case EntityType.Port: {
-                return this.boxes.get(a.box_idx)!.ports.get(a.port_idx)!.color;
-            }
-        }
+        this.src_tgt_index = new SetMap(
+            ([a1, a2]) => hash([hashEntity(a1), hashEntity(a2)]),
+            (e1, e2) => Math.sign(e1 - e2)
+        );
     }
 
     /** The getters are self-explanatory */
@@ -222,31 +262,25 @@ export class Semagram {
         if (!(equiv([tgt.ty, tgt_ob.ty], wireschema.tgt))) {
             throw new Error(`The tgt of a wire of type ${ty} cannot be ${[tgt.ty, tgt_ob.ty]}`);
         }
-        if (src_ob.color != tgt_ob.color) {
-            return undefined;
-        }
-        this.wires.set(i, new Wire(ty, {}, src, tgt, src_ob.color));
-        if (!this.src_tgt_index.has([src, tgt])) {
-            this.src_tgt_index.set([src, tgt], [])
-        }
-        this.src_tgt_index.get([src, tgt])!.push(i);
+        this.wires.set(i, new Wire(ty, {}, src, tgt));
+        this.src_tgt_index.add([src, tgt], i);
         return i;
     }
 
-    addPort(ty: string, box_idx: number, color: string | undefined): PortEntity {
+    addPort(ty: string, box_idx: number): PortEntity {
         const box = this.boxes.get(box_idx)!;
         const portschema = this.schema.port_types[ty];
         if (portschema.box != box.ty) {
             throw new Error(`Cannot attach a port of type ${ty} to a box of type ${box.ty}`);
         }
         const i = this.gen.next();
-        box.ports.set(i, new Port(ty, {}, color));
+        box.ports.set(i, new Port(ty, {}));
         return port_entity(box_idx, i);
     }
 
-    addBox(ty: string, color: string | undefined): BoxEntity {
+    addBox(ty: string): BoxEntity {
         const i = this.gen.next();
-        this.boxes.set(i, new Box(ty, {}, new Map(), color));
+        this.boxes.set(i, new Box(ty, {}, new Map()));
         return box_entity(i);
     }
 
@@ -255,7 +289,7 @@ export class Semagram {
     remWire(i: number) {
         const wire = this.getWire(i);
         if (wire) {
-            remove(this.src_tgt_index.get([wire.src, wire.tgt])!, i);
+            this.src_tgt_index.delete([wire.src, wire.tgt], i);
             this.wires.delete(i);
         }
     }
@@ -304,7 +338,7 @@ export class Semagram {
     wiresBetween(src: Attachment, tgt: Attachment): Array<number> {
         const wire_list = this.src_tgt_index.get([src, tgt]);
         if (wire_list) {
-            return wire_list;
+            return [...wire_list.values()];
         } else {
             return [];
         }
@@ -329,10 +363,29 @@ export class Semagram {
         return undefined;
     }
 
-    export() {
+    export(): ExportedSemagram {
         return {
             boxes: Array.from(this.boxes.entries()).map(([i, box]) => [i, box.export()]),
-            wires: Array.from(this.wires.entries())
+            wires: Array.from(this.wires.entries()),
+            gen: this.gen.export(),
+            schema: this.schema
         }
+    }
+
+    static fromExported(e: ExportedSemagram): Semagram {
+        const src_tgt_index = new SetMap<[Attachment, Attachment], number>(
+            ([a1, a2]) => hash([hashEntity(a1), hashEntity(a2)]),
+            (e1, e2) => Math.sign(e1 - e2)
+        );
+        for (let [wire_idx, w] of e.wires) {
+            src_tgt_index.add([w.src, w.tgt], wire_idx);
+        }
+        return Object.assign(new Semagram(e.schema), {
+            boxes: new Map(map(([box_idx, b]) => [box_idx, Box.fromExported(b)], e.boxes)),
+            wires: new Map(map(([wire_idx, w]) => [wire_idx, Wire.fromExported(w)], e.wires)),
+            gen: IDGen.fromExported(e.gen),
+            src_tgt_index,
+            schema: e.schema
+        })
     }
 }

@@ -8,10 +8,10 @@ acset.
 """
 module Data
 
-export Box, Port, Wire, SemagramData, to_acset
+export Box, Port, Wire, SemagramData, LocatedSemagramData, to_acset
 
-using ..JSON
-import ..JSON: from_json
+using ..Muesli
+import ..Muesli: from_json, to_json
 using ..Schema
 using Catlab.CSetDataStructures
 using Catlab.Theories
@@ -20,30 +20,37 @@ using MLStyle
 struct Port
   ty::Symbol
   weights::Dict{Symbol, String}
-  color::Union{String, Missing}
 end
 
-from_json(d::Dict{String,Any},::Type{Port}) = generic_from_json(d,Port)
+from_json(d::Dict{String,<:Any},::Type{Port}) = generic_from_json(d,Port)
+to_json(p::Port) = generic_to_json(p)
 
 struct Box
   ty::Symbol
   weights::Dict{Symbol, String}
   ports::Dict{Int,Port}
-  color::Union{String, Missing}
 end
 
-from_json(d::Dict{String,Any},::Type{Box}) = generic_from_json(d,Box)
+from_json(d::Dict{String,<:Any},::Type{Box}) = generic_from_json(d,Box)
+to_json(b::Box) = generic_to_json(b)
 
 @data Attachment begin
   AttachBox(box_idx::Int)
   AttachPort(box_idx::Int, port_idx::Int)
 end
 
-function from_json(d::Dict{String,Any},::Type{Attachment})
+function from_json(d::Dict{String,<:Any},::Type{Attachment})
   if d["ty"] == "Box"
     AttachBox(d["box_idx"])
   else
     AttachPort(d["box_idx"],d["port_idx"])
+  end
+end
+
+function to_json(a::Attachment)
+  @match a begin
+    AttachBox(box_idx) => Dict(:ty => "Box", :box_idx => box_idx)
+    AttachPort(box_idx, port_idx) => Dict(:ty => "Port", :box_idx => box_idx, :port_idx => port_idx)
   end
 end
 
@@ -52,17 +59,47 @@ struct Wire
   weights::Dict{Symbol, String}
   src::Attachment
   tgt::Attachment
-  color::Union{String, Missing}
 end
 
-from_json(d::Dict{String,Any},::Type{Wire}) = generic_from_json(d,Wire)
+from_json(d::Dict{String,<:Any},::Type{Wire}) = generic_from_json(d,Wire)
+to_json(w::Wire) = generic_to_json(w)
+
+struct IDGen
+  i::Int
+end
+
+from_json(d::Dict{String,<:Any},::Type{IDGen}) = generic_from_json(d,IDGen)
+to_json(gen::IDGen) = generic_to_json(gen)
 
 struct SemagramData
   boxes::Dict{Int, Box}
   wires::Dict{Int, Wire}
+  gen::IDGen
+  schema::SemagramSchema
+  function SemagramData(schema::SemagramSchema)
+    new(Dict{Int,Box}(), Dict{Int,Wire}(), IDGen(0), schema)
+  end
+  function SemagramData(boxes, wires, gen, schema)
+    new(boxes, wires, gen, schema)
+  end
 end
 
-from_json(d::Dict{String,Any},::Type{SemagramData}) = generic_from_json(d,SemagramData)
+from_json(d::Dict{String,<:Any},::Type{SemagramData}) = generic_from_json(d,SemagramData)
+to_json(sd::SemagramData) = generic_to_json(sd)
+
+struct LocatedSemagramData
+  sg::SemagramData
+  boxlocs::Dict{Int, Tuple{Float64, Float64}}
+  function LocatedSemagramData(schema::SemagramSchema)
+    new(SemagramData(schema), Dict{Int, Tuple{Float64, Float64}}())
+  end
+  function LocatedSemagramData(sg, boxlocs)
+    new(sg, boxlocs)
+  end
+end
+
+from_json(d::Dict{String,<:Any},::Type{LocatedSemagramData}) = generic_from_json(d,LocatedSemagramData)
+to_json(ls::LocatedSemagramData) = generic_to_json(ls)
 
 function lookup_attachment(box_map::Dict{Int,Int},
                            port_map::Dict{Tuple{Int,Int},Int},
@@ -84,7 +121,9 @@ function attributes_from_strings(weights::Dict{Symbol, String}, ::Type{T}) where
   )
 end
 
-function to_acset(sd::SemagramData, schema::SemagramSchema, ::Type{T}) where {T <: AbstractACSet}
+function to_acset(ls::LocatedSemagramData, ::Type{T}) where {T <: AbstractACSet}
+  sd = ls.sg
+  schema = sd.schema
   acs = T()
   box_map = Dict{Int,Int}()
   port_map = Dict{Tuple{Int,Int},Int}()

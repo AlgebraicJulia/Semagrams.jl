@@ -1,11 +1,12 @@
 import { equiv } from "@thi.ng/equiv";
 import { add2, dist2, round2, sub2, Vec2Like } from "@thi.ng/vectors";
-import { LocatedSemagram } from "./LocatedSemagram";
+import { ExportedLocatedSemagram, LocatedSemagram } from "./LocatedSemagram";
 import { Attachment, Entity, wire_entity } from "./Semagram";
 import { AttachType, EntityType, Schema } from "./Schema";
 import { map, concat } from "@thi.ng/transducers";
 import { Command, DEFAULT_KEYBINDINGS } from "./Commands";
 import * as CS from "./ColorScheme";
+import m from "mithril";
 
 /**
  * TODO: make these runtime-configurable.
@@ -242,13 +243,22 @@ export class DialogueState {
  * an EditorState.
  */
 export class EditorState {
-    cursor: CursorState
-    dialogue: DialogueState
+    cursor!: CursorState
+    dialogue!: DialogueState
     ls: LocatedSemagram
     sendToJl: Function
 
     constructor(sema: LocatedSemagram, sendToJl: Function) {
         this.ls = sema;
+        this.sendToJl = sendToJl;
+        this.reset();
+    }
+
+    reset() {
+        var svgelt: SVGSVGElement | null = null;
+        if (this.cursor != undefined) {
+            svgelt = this.cursor.svgelt;
+        }
         this.dialogue = new DialogueState();
         this.cursor = new CursorState(
             (box_idx, loc) => this.ls.setBoxLoc(box_idx, loc),
@@ -256,7 +266,14 @@ export class EditorState {
             (a) => { this.dialogue.selected = a; }, /* This should set selected... */
             (_a) => { }
         );
-        this.sendToJl = sendToJl;
+        this.cursor.svgelt = svgelt;
+    }
+
+    resetWith(e: ExportedLocatedSemagram) {
+        this.ls = LocatedSemagram.fromExported(e);
+        this.reset();
+        this.save();
+        m.redraw();
     }
 
     /** Convenience function: an array of the indexes of all the boxes that currently exist. */
@@ -331,7 +348,6 @@ export class EditorState {
                 this.ls.addPort(
                     port_types[0],
                     a.box_idx,
-                    this.dialogue.inputconfig.color
                 );
             } else if (port_types.length == 0) {
                 // do nothing
@@ -385,7 +401,14 @@ export class EditorState {
 
     /** Export the current `ls`, and send it down the wire! */
     save() {
-        this.sendToJl(this.ls.sg.export());
+        this.sendToJl(this.ls.export());
+    }
+
+    roundtrip() {
+        this.ls = LocatedSemagram.fromExported(
+            JSON.parse(
+                JSON.stringify(this.ls.export())));
+        this.reset();
     }
 
     /**
@@ -400,8 +423,7 @@ export class EditorState {
             switch (this.dialogue.modal.ty) {
                 case ModalState.SelectPort: {
                     this.ls.addPort(this.dialogue.modal.choices[choice - 1],
-                        this.dialogue.modal.box_idx,
-                        this.dialogue.inputconfig.color);
+                        this.dialogue.modal.box_idx);
                     break;
                 }
                 case ModalState.SelectWire: {
@@ -414,7 +436,6 @@ export class EditorState {
                 }
                 case ModalState.SelectBox: {
                     this.ls.addBox(this.dialogue.modal.choices[choice - 1],
-                        this.dialogue.inputconfig.color,
                         this.cursor.cursor)
                     break;
                 }
@@ -471,6 +492,10 @@ export class EditorState {
                     }
                     case Command.Help: {
                         this.dialogue.helpwindow = !this.dialogue.helpwindow;
+                        break;
+                    }
+                    case Command.Roundtrip: {
+                        this.roundtrip();
                         break;
                     }
                 }

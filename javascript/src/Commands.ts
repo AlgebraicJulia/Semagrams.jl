@@ -7,7 +7,8 @@ export enum Command {
     RemHovered,
     Debug,
     Deselect,
-    Help
+    Help,
+    Roundtrip
 }
 
 export const DEFAULT_KEYBINDINGS: Map<string, Command> = new Map([
@@ -19,7 +20,8 @@ export const DEFAULT_KEYBINDINGS: Map<string, Command> = new Map([
     ["d", Command.RemHovered],
     ["D", Command.Debug],
     ["Escape", Command.Deselect],
-    ["?", Command.Help]
+    ["?", Command.Help],
+    ["R", Command.Roundtrip]
 ])
 
 export const COMMAND_DOCS: Map<Command, { long: string, short: string }> =
@@ -59,6 +61,10 @@ export const COMMAND_DOCS: Map<Command, { long: string, short: string }> =
         [Command.Help, {
             short: "help",
             long: "toggles the help bar"
+        }],
+        [Command.Roundtrip, {
+            short: "roundtrip",
+            long: "exports and imports the current data (testing loading and saving)"
         }]
     ])
 

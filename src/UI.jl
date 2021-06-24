@@ -5,15 +5,15 @@ It's mostly wrapped up in the Semagrams struct; see the documentation there.
 """
 module UI
 
-export Semagram, get_acset, serve_semagram
+export Semagram, get_acset, serve_semagram, save, load
 
 using JSExpr
-using UUIDs
 using WebIO
 using Mux
+import JSON
 import DefaultApplication
 using ..Schema
-using ..JSON
+using ..Muesli
 using ..Data
 using Catlab.CSetDataStructures
 
@@ -30,26 +30,30 @@ Contains:
    tells us how to interpret the data that we are getting back from typescript.
 """
 struct Semagram{T <: AbstractACSet}
-  divid::UUID
   scope::Scope
-  handle::Observable{Dict{String,Any}}
-  ws::SemagramSchema
-  function Semagram{T}(ws::SemagramSchema) where {T <: AbstractACSet}
-    divid = uuid4()
+  receiving::Observable{Dict{String,Any}}
+  sending::Observable{Dict{String,Any}}
+  function Semagram{T}(ls::LocatedSemagramData) where {T <: AbstractACSet}
     deps = [
       "wires" => joinpath(@__DIR__, "..", "javascript", "dist", "app.bundle.js")
     ]
-    scope = Scope(
-      imports=deps,
-      dom=dom"div"(id=string(divid))
-    )
-    handle = Observable(scope, "wires", Dict{String, Any}())
-    ws_json = to_json(ws)
-    onmount(scope, @js function()
-             @var wires = System.registry.get(System.resolveSync("wires"))
-             setTimeout(() -> wires.main($ws_json, $(string(divid)), (x) -> $handle[] = x), 20)
-             end)
-    new{T}(divid, scope, handle, ws)
+    scope = Scope(imports=deps, dom=dom"div"())
+    ls_json = to_json(ls)
+    receiving = Observable(scope, "receiving", ls_json)
+    sending = Observable(scope, "sending", ls_json)
+    onjs(sending, @js function (newls)
+      console.log(this)
+      this.state.resetWith(newls)
+    end)
+    on((newls) -> receiving[] = newls, scope, "sending")
+    mountfn = @js function ()
+      @var wires = System.registry.get(System.resolveSync("wires"))
+      @var scopeobj = this
+      setTimeout(() ->
+        wires.main($receiving[], scopeobj, (x) -> $receiving[] = x), 20)
+    end
+    onmount(scope, mountfn)
+    new{T}(scope, receiving, sending)
   end
 end
 
@@ -58,13 +62,35 @@ end
 end
 
 function get_acset(sema::Semagram{T}) where {T}
-  get_acset(sema.handle[], sema)
+  to_acset(save(sema), T)
 end
 
-function get_acset(data::Dict{String,Any}, sema::Semagram{T}) where {T}
-  to_acset(from_json(data, SemagramData), sema.ws, T)
+function save(sema::Semagram)
+  from_json(sema.receiving[], LocatedSemagramData)
 end
 
+function save(sema::Semagram, fn::String)
+  open(fn, "w") do f
+    write(f, JSON.json(sema.receiving[]))
+  end
+end
+
+function load(sema::Semagram, fn::String)
+  load(sema, load(fn))
+end
+
+function load(sema::Semagram, ls::LocatedSemagramData)
+  sema.sending[] = to_json(ls)
+end
+
+function load(fn::String)
+  v = Dict()
+  open(fn, "r") do f
+    v = JSON.parse(read(f, String))
+  end
+  from_json(v, LocatedSemagramData)
+end
+  
 """
 This serves a semagram in a standalone page (as opposed to having it displayed
 inline in a Jupyter notebook).
