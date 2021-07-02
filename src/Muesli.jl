@@ -1,5 +1,5 @@
 """
-Our own little home-grown JSON conversion module
+Our own little home-grown JSON conversion module (Muesli is a cereal...)
 
 Types should overload `to_json` to support serialization
 into json, and `from_json` to support deserialization out of json.
@@ -14,7 +14,7 @@ We provide `generic_to_json` and `generic_from_json` that do
 what one would expect on structs, mapping between a struct and a
 dictionary of fields, converting the fields into/out of json as well.
 """
-module JSON
+module Muesli
 
 export to_json, generic_to_json, from_json, generic_from_json
 
@@ -23,6 +23,11 @@ For a lot of types, (i.e. Int, String, Bool, etc.) the correct behavior
 is for `to_json` to be the identity.
 """
 to_json(x) = x
+
+"""
+For Dict{Int,X}, we want to convert to a vector of tuples
+"""
+to_json(x::Dict{Int,T}) where {T} = [(k,to_json(v)) for (k,v) in x]
 
 """
 If x is a struct, this converts x into a dictionary whose keys are
@@ -57,11 +62,15 @@ function from_json(d::Dict{String,Any}, ::Type{Dict{Symbol,T}}) where {T}
   Dict(Symbol(k) => from_json(v,T) for (k,v) in d)
 end
 
+function from_json(d::Vector{Tuple{Int,T}}, ::Type{Dict{Int,T}}) where {T}
+  Dict(Int(i) => x for (i,x) in d)
+end
+
 function from_json(s::String, ::Type{T}) where {T <: Real}
   parse(T,s)
 end
 
-function generic_from_json(d::Dict{String,Any},::Type{T}) where {T}
+function generic_from_json(d::Dict{String,<:Any},::Type{T}) where {T}
   augmented = Dict{Symbol,Any}()
   for (i,fn) in enumerate(fieldnames(T))
     sfn = string(fn)

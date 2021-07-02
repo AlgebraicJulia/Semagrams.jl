@@ -150,4 +150,16 @@ get_acset(my_awesome_dpg)
 
 This will return the current value of the semagram as an acset. Then you can do all the acset-y good things that one does with acsets.
 
-Note: currently you can take the acset out of the semagram, but you can't put it back in. It's actually non-trivial to do this, because automatic layout is tricky... This is a big TODO.
+If you want to save the semagram, you have to save more than the acset, because we don't have automatic layout algorithms. To save the current state of the acset to a file, run
+
+```julia
+save(my_awesome_dpg, "my_awesome_dpg.sema")
+```
+
+Then, later on you can run
+
+```julia
+load(my_awesome_dpg, "my_awesome_dpg.sema")
+```
+
+and it will load up whatever you saved earlier.

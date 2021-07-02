@@ -1,4 +1,4 @@
-import { Semagram, Attachment, PortEntity, hashAttachment, Entity } from "./Semagram";
+import { Semagram, Attachment, PortEntity, hashEntity, Entity, ExportedSemagram } from "./Semagram";
 import { Schema, PortStyle, EntityType } from "./Schema";
 import { Vec2Like, add2 } from "@thi.ng/vectors";
 import { centerIndex } from "./Util";
@@ -6,12 +6,20 @@ import { centerIndex } from "./Util";
 /** TODO: This should be a runtime parameter */
 export const BOXRADIUS = 40;
 
+export interface ExportedLocatedSemagram {
+    sg: ExportedSemagram,
+    boxlocs: Array<[number, Vec2Like]>
+}
+
 /**
  * This stores a semagram along with the locations of all of its boxes and ports
  * Note: the fact that this stores the port locations
  * should be considered an implemenation detail, at least for now. The port locations
  * are a pure function of the box locations and the number/ordering of the ports.
  * They are recalculated whenever a box location changes.
+ *
+ * The wireoffsets are a pure function of the wire ordering, and are also recalculated
+ * when wires are added/removed.
  */
 export class LocatedSemagram {
     sg: Semagram
@@ -24,6 +32,10 @@ export class LocatedSemagram {
         this.boxlocs = new Map();
         this.portlocs = new Map();
         this.wireoffsets = new Map();
+    }
+
+    static fromJSON(dat: ExportedLocatedSemagram) {
+        return;
     }
 
     /* Updates box location, and updates its corresponding ports too. */
@@ -82,8 +94,14 @@ export class LocatedSemagram {
         });
     }
 
+    updateAllPortLocs() {
+        for (const box_idx of this.sg.boxes.keys()) {
+            this.updatePortLocs(box_idx);
+        }
+    }
+
     updateWireOffsets(src: Attachment, tgt: Attachment) {
-        if (hashAttachment(src) < hashAttachment(tgt)) {
+        if (hashEntity(src) < hashEntity(tgt)) {
             [src, tgt] = [tgt, src];
         }
         const srctgt = this.sg.wiresBetween(src, tgt);
@@ -94,6 +112,12 @@ export class LocatedSemagram {
         }
         for (var i = 0; i < tgtsrc.length; i++) {
             this.wireoffsets.set(tgtsrc[i], -centerIndex(srctgt.length + i, n));
+        }
+    }
+
+    updateAllWireOffsets() {
+        for (const w of this.sg.wires.values()) {
+            this.updateWireOffsets(w.src, w.tgt);
         }
     }
 
@@ -128,15 +152,15 @@ export class LocatedSemagram {
      * I don't know exactly how things will fail if you access the semagram directly,
      * but probably something will go wrong as things come out of sync.
      */
-    addBox(ty: string, color: string | undefined, loc: Vec2Like): Attachment {
-        const a = this.sg.addBox(ty, color);
+    addBox(ty: string, loc: Vec2Like): Attachment {
+        const a = this.sg.addBox(ty);
         this.portlocs.set(a.box_idx, new Map());
         this.setBoxLoc(a.box_idx, loc);
         return a;
     }
 
-    addPort(ty: string, box_idx: number, color: string | undefined): Attachment {
-        const a = this.sg.addPort(ty, box_idx, color);
+    addPort(ty: string, box_idx: number): Attachment {
+        const a = this.sg.addPort(ty, box_idx);
         this.updatePortLocs(box_idx);
         return a;
     }
@@ -182,5 +206,21 @@ export class LocatedSemagram {
                 break;
             }
         }
+    }
+
+    export(): ExportedLocatedSemagram {
+        return {
+            sg: this.sg.export(),
+            boxlocs: Array.from(this.boxlocs.entries())
+        }
+    }
+
+    static fromExported(e: ExportedLocatedSemagram): LocatedSemagram {
+        const ls = new LocatedSemagram(e.sg.schema);
+        ls.sg = Semagram.fromExported(e.sg);
+        ls.boxlocs = new Map(e.boxlocs);
+        ls.updateAllPortLocs();
+        ls.updateAllWireOffsets();
+        return ls;
     }
 }

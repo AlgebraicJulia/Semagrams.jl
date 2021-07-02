@@ -14,8 +14,8 @@ export AttributeType, Numeric, Stringlike,
   SemagramSchema, BoxDesc, PortDesc, WireDesc, DataDesc,
   @semagramschema
   
-import ..JSON: to_json
-using ..JSON
+import ..Muesli: to_json, from_json
+using ..Muesli
 using ..SVG
 using Catlab.Present, Catlab.Theories
 using MLStyle
@@ -30,6 +30,13 @@ to_json(x::AttributeType) = @match x begin
   Stringlike => "Stringlike"
 end
 
+function from_json(d::Any, ::Type{AttributeType})
+  @match d begin
+    "Numeric" => Numeric
+    "Stringlike" => Stringlike
+  end
+end
+
 struct BoxProperties
   weights::Vector{Tuple{AttributeType, Symbol}}
   shape::String
@@ -37,6 +44,7 @@ struct BoxProperties
 end
 
 to_json(x::BoxProperties) = generic_to_json(x)
+from_json(d::Dict{String,<:Any}, ::Type{BoxProperties}) = generic_from_json(d, BoxProperties)
 
 struct PortProperties
   weights::Vector{Tuple{AttributeType, Symbol}}
@@ -46,6 +54,7 @@ struct PortProperties
 end
 
 to_json(x::PortProperties) = generic_to_json(x)
+from_json(d::Dict{String,<:Any}, ::Type{PortProperties}) = generic_from_json(d, PortProperties)
 
 struct WireProperties
   weights::Vector{Tuple{AttributeType, Symbol}}
@@ -57,6 +66,7 @@ struct WireProperties
 end
 
 to_json(x::WireProperties) = generic_to_json(x)
+from_json(d::Dict{String,<:Any}, ::Type{WireProperties}) = generic_from_json(d, WireProperties)
 
 struct SemagramSchema
   box_types::Dict{Symbol, BoxProperties}
@@ -65,6 +75,7 @@ struct SemagramSchema
 end
 
 to_json(x::SemagramSchema) = generic_to_json(x)
+from_json(d::Dict{String, <:Any}, ::Type{SemagramSchema}) = generic_from_json(d, SemagramSchema)
 
 struct BoxDesc
   name::Symbol

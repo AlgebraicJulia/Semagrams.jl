@@ -41,7 +41,7 @@ export const PortNode: m.Component<PortAttrs> = {
         const port = state.ls.sg.boxes.get(box_idx)!.ports.get(port_idx)!;
         const attrs = {
             fill: colorAttachment(state, a),
-            stroke: port.color ?? CS.accent,
+            stroke: CS.accent,
         };
         return m("circle", {
             r: PORTRADIUS,
@@ -50,5 +50,4 @@ export const PortNode: m.Component<PortAttrs> = {
             ...attrs
         });
     }
-
 }

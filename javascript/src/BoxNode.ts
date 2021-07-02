@@ -54,7 +54,7 @@ export const BoxNode: m.Component<BoxAttrs> = {
         const loc = state.ls.getLoc(a)!;
         const attrs = {
             fill: colorAttachment(state, a),
-            stroke: box.color ?? CS.accent,
+            stroke: CS.accent,
             transform: `translate(${loc[0]} ${loc[1]})`,
         };
         const highlight = m("g", {
