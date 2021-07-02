@@ -1,7 +1,7 @@
 import { Semagram, Attachment, PortEntity, hashEntity, Entity, ExportedSemagram } from "./Semagram";
 import { Schema, PortStyle, EntityType } from "./Schema";
 import { Vec2Like, add2 } from "@thi.ng/vectors";
-import { centerIndex } from "./Util";
+import { centerIndex, getDefault } from "./Util";
 
 /** TODO: This should be a runtime parameter */
 export const BOXRADIUS = 40;
@@ -52,7 +52,7 @@ export class LocatedSemagram {
      */
     updatePortLocs(box_idx: number) {
         const box = this.sg.boxes.get(box_idx)!;
-        const boxportlocs = this.portlocs.get(box_idx)!;
+        let boxportlocs = getDefault(this.portlocs, box_idx, new Map());
         const circular = [];
         const input = [];
         const output = [];

@@ -123,8 +123,8 @@ export class CursorState {
     constructor(
         private setBoxLoc: (box_idx: number, loc: Vec2Like) => void,
         private getBoxLoc: (box_idx: number) => Vec2Like,
-        private mousedown: (a: Attachment) => void,
-        private mouseup: (a: Attachment) => void
+        private mousedown: (e: Entity) => void,
+        private mouseup: (e: Entity) => void
     ) {
         this.cursor = [0, 0];
         this.dragState = null;
@@ -187,6 +187,22 @@ export class CursorState {
         this.dragState = null;
         this.mouseup(a);
     }
+
+    handlemousedownport = (e: MouseEvent) => {
+        this.mousedown(eventDataProperty(e,"data-a") as Attachment);
+    }
+
+    handlemouseupport = (e: MouseEvent) => {
+        this.mouseup(eventDataProperty(e,"data-a") as Attachment);
+    }
+
+    handlemousedownwire = (e: MouseEvent) => {
+        this.mousedown(wire_entity(eventDataProperty(e,"data-w")));
+    }
+
+    handlemouseupwire = (e: MouseEvent) => {
+        this.mouseup(wire_entity(eventDataProperty(e,"data-w")));
+    }
 }
 
 /**
@@ -203,8 +219,7 @@ export class DialogueState {
     modal: Modal
 
     /**
-     * What attachment is currently "selected", unused currently, but will
-     * be used for stuff like setting weights.
+     * What entity is currently "selected", used for stuff like setting weights.
      */
     selected: Entity | null
 

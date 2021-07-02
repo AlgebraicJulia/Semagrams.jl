@@ -11,37 +11,19 @@ interface WidgetAttrs {
     attribute: string
 }
 
-export const SliderWidget: m.Component<{ curval: string, oninput: Function }> = {
-    view({ attrs: { curval, oninput } }) {
-
-    }
-}
-
 export const AttributeWidget: m.Component<WidgetAttrs> = {
     view({ attrs: { state, entity, attribute_type, attribute } }) {
-        var input_elt: m.Vnode;
-        const curval = state.ls.sg.getEntity(entity)!.weights[attribute];
-        const oninput = (input: any) => {
-
+        const obj = state.ls.sg.getEntity(entity)!;
+        const curval = obj.weights[attribute];
+        const oninput = (s: any) => {
+            obj.weights[attribute] = s.target.value;
+            state.save();
         };
-        switch (attribute_type) {
-            case AttributeType.Stringlike: {
-                input_elt = m("input", {
-                    "type": "text",
-                    value: curval,
-                    oninput: oninput
-                });
-                break;
-            }
-            case AttributeType.Numeric: {
-                input_elt = m("input", {
-                    "type": "range",
-                    value: curval,
-                    oninput: oninput
-                });
-                break;
-            }
-        }
+        const input_elt = m("input", {
+            "type": "text",
+            value: curval,
+            oninput: oninput
+        });
         return m("label",
             `${attribute}: `,
             input_elt

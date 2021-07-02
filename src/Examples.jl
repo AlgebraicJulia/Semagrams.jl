@@ -4,7 +4,8 @@ Pre-fab acset schemas+semagrams schemas
 module Examples
 
 export TheoryPetri, ReactionNet, ReactionNetSema,
-  TheoryDirectedPortGraph, DirectedPortGraph, DirectedPortGraphSema
+  TheoryDirectedPortGraph, DirectedPortGraph, DirectedPortGraphSema,
+  TheoryColoredDPG, ColoredDPG, ColoredDPGSema
 
 using Catlab.Present, Catlab.CSetDataStructures
 using ..Schema
@@ -48,6 +49,23 @@ end
 const DirectedPortGraph = ACSetType(TheoryDirectedPortGraph)
 
 @semagramschema DirectedPortGraphSema(TheoryDirectedPortGraph) begin
+  @box Box Square
+  @port IPort(ibox) "Input"
+  @port OPort(obox) "Output"
+  @wire Wire(src,tgt)
+  @data String Stringlike
+end
+
+@present TheoryColoredDPG <: TheoryDirectedPortGraph begin
+  Color::Data
+  iportcolor::Attr(IPort,Color)
+  oportcolor::Attr(OPort,Color)
+  wirecolor::Attr(Wire,Color)
+end
+
+const ColoredDPG = ACSetType(TheoryColoredDPG)
+
+@semagramschema ColoredDPGSema(TheoryColoredDPG) begin
   @box Box Square
   @port IPort(ibox) "Input"
   @port OPort(obox) "Output"
