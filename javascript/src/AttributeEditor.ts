@@ -2,49 +2,63 @@ import { EditorState } from './EditorState';
 import { AttributeType } from './Schema';
 import m from 'mithril';
 import { map } from '@thi.ng/transducers';
+import { Entity } from './Semagram';
 
 interface WidgetAttrs {
+    state: EditorState,
+    entity: Entity,
     attribute_type: AttributeType,
-    oninput: Function,
-    curval: string,
-    label: string
+    attribute: string
+}
+
+export const SliderWidget: m.Component<{ curval: string, oninput: Function }> = {
+    view({ attrs: { curval, oninput } }) {
+
+    }
 }
 
 export const AttributeWidget: m.Component<WidgetAttrs> = {
-    view({ attrs: { attribute_type, oninput, curval, label } }) {
-        var input_type: string;
+    view({ attrs: { state, entity, attribute_type, attribute } }) {
+        var input_elt: m.Vnode;
+        const curval = state.ls.sg.getEntity(entity)!.weights[attribute];
+        const oninput = (input: any) => {
+
+        };
         switch (attribute_type) {
             case AttributeType.Stringlike: {
-                input_type = "text";
+                input_elt = m("input", {
+                    "type": "text",
+                    value: curval,
+                    oninput: oninput
+                });
+                break;
             }
             case AttributeType.Numeric: {
-                input_type = "range";
+                input_elt = m("input", {
+                    "type": "range",
+                    value: curval,
+                    oninput: oninput
+                });
+                break;
             }
         }
         return m("label",
-            `${label}: `,
-            m("input", {
-                "type": input_type,
-                value: curval,
-                oninput
-            }));
+            `${attribute}: `,
+            input_elt
+        )
     }
 }
 
 export const AttributeEditor: m.Component<{ state: EditorState }> = {
     view({ attrs: { state } }) {
         if (state.dialogue.selected != null) {
-            const obj = state.ls.sg.getEntity(state.dialogue.selected)!;
             return m("div",
                 ...map(([attrtype, a]) =>
                     m(AttributeWidget, {
+                        state: state,
+                        entity: state.dialogue.selected!,
                         attribute_type: attrtype,
-                        oninput: (s: any) => {
-                            obj.weights[a] = s.target.value;
-                            state.save();
-                        },
-                        curval: obj.weights[a] || "",
-                        label: a
+                        attribute: a,
                     }),
                     state.ls.sg.weightTypes(state.dialogue.selected)!))
         } else {

@@ -47,8 +47,14 @@ function compatibleWireTypes(schema: Schema,
 class InputConfig {
     color: string | undefined
 
+    /* These set the min and the max value on sliders */
+    minval: number
+    maxval: number
+
     constructor() {
         this.color = undefined;
+        this.minval = 0;
+        this.maxval = 100;
     }
 }
 
