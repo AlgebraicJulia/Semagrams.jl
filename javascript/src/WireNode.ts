@@ -72,7 +72,9 @@ export const WireHandle: m.Component<WireAttrs> = {
             "stroke-opacity": "0",
             "data-w": wire_idx,
             onmouseenter: state.cursor.handlemouseenterwire,
-            onmouseout: state.cursor.handlemouseoutwire
+            onmouseout: state.cursor.handlemouseoutwire,
+            onmousedown: state.cursor.handlemousedownwire,
+            onmouseup: state.cursor.handlemouseupwire,
         })
     }
 }
@@ -94,8 +96,10 @@ export const WireNode: m.Component<WireAttrs> = {
         const e = state.ls.sg.wires.get(wire_idx)!;
         const sloc = state.ls.getLoc(e.src)!;
         const tloc = state.ls.getLoc(e.tgt)!;
-        const marker = equiv(state.cursor.hoveredEntity, wire_entity(wire_idx))
-            ? `url(#arrow-hovered)` : `url(#arrow)`;
+        const marker = equiv(state.dialogue.selected, wire_entity(wire_idx))
+            ? `url(#arrow-selected)` :
+            (equiv(state.cursor.hoveredEntity, wire_entity(wire_idx))
+                ? `url(#arrow-hovered)` : `url(#arrow)`);
         return m("path", {
             d: svgPath(curvePoints(sloc, tloc, offset)),
             stroke: CS.accent,

@@ -37,3 +37,12 @@ export class SetMap<K, V> {
         }
     }
 }
+
+export function getDefault<K,V>(m: Map<K,V>, key: K, def: V): V {
+    const val = m.get(key);
+    if (val) {
+        return val;
+    }
+    m.set(key,def);
+    return def;
+}

@@ -79,7 +79,15 @@ const grid = m("pattern", {
         "stroke-width": "1"
     }))
 
-const svgdefs = m("defs", grid, resistorMarker, capacitorMarker, makeMarker("arrow-hovered", "lightgrey"), makeMarker("arrow", "white"));
+const svgdefs = m(
+    "defs",
+    grid,
+    resistorMarker,
+    capacitorMarker,
+    makeMarker("arrow-hovered", "lightgrey"),
+    makeMarker("arrow", "white"),
+    makeMarker("arrow-selected", "yellow")
+);
 
 
 interface EditorAttrs {
