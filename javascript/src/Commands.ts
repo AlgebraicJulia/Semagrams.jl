@@ -8,7 +8,9 @@ export enum Command {
     Debug,
     Deselect,
     Help,
-    Roundtrip
+    Roundtrip,
+    ZoomIn,
+    ZoomOut,
 }
 
 export const DEFAULT_KEYBINDINGS: Map<string, Command> = new Map([
@@ -21,7 +23,9 @@ export const DEFAULT_KEYBINDINGS: Map<string, Command> = new Map([
     ["D", Command.Debug],
     ["Escape", Command.Deselect],
     ["?", Command.Help],
-    ["R", Command.Roundtrip]
+    ["R", Command.Roundtrip],
+    ["+", Command.ZoomIn],
+    ["-", Command.ZoomOut]
 ])
 
 export const COMMAND_DOCS: Map<Command, { long: string, short: string }> =
@@ -65,6 +69,14 @@ export const COMMAND_DOCS: Map<Command, { long: string, short: string }> =
         [Command.Roundtrip, {
             short: "roundtrip",
             long: "exports and imports the current data (testing loading and saving)"
+        }],
+        [Command.ZoomIn, {
+            short: "zoom in",
+            long: "zooms in"
+        }],
+        [Command.ZoomOut, {
+            short: "zoom out",
+            long: "zooms out"
         }]
     ])
 

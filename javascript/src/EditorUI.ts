@@ -80,7 +80,24 @@ const ChoiceModal: m.Component<{ state: EditorState }> = {
     }
 }
 
-export const EditorUI: m.Component<{ state: EditorState }> = {
+export const PanHandle: m.Component<{ state: EditorState }> = {
+    view({ attrs: { state } }) {
+        return m(
+            "rect",
+            {
+                height: "100%",
+                width: "100%",
+                x: 0,
+                y: 0,
+                "fill-opacity": "0",
+                "stroke-opacity": "0",
+                onmousedown: state.cursor.handlemousedownpan,
+                onmouseup: state.cursor.handlemouseuppan,
+            })
+    }
+}
+
+export const EditorHandles: m.Component<{ state: EditorState }> = {
     view({ attrs: { state } }) {
         const boxhandles = map(box_idx => m(BoxHandle, { state, box_idx }),
             state.boxes());
@@ -92,7 +109,14 @@ export const EditorUI: m.Component<{ state: EditorState }> = {
         return m("g",
             ...wirehandles,
             ...boxhandles,
-            ...porthandles,
+            ...porthandles
+        );
+    }
+}
+
+export const EditorUI: m.Component<{ state: EditorState }> = {
+    view({ attrs: { state } }) {
+        return m("g",
             m(ChoiceModal, { state }),
             m(DocWindow, { state }));
     }
