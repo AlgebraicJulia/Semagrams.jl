@@ -1,5 +1,6 @@
 import { equiv } from "@thi.ng/equiv";
 import { add2, dist2, round2, sub2, Vec2Like } from "@thi.ng/vectors";
+import { identity33, Mat33Like, scale33 } from "@thi.ng/matrices";
 import { ExportedLocatedSemagram, LocatedSemagram } from "./LocatedSemagram";
 import { Attachment, Entity, wire_entity } from "./Semagram";
 import { AttachType, EntityType, Schema } from "./Schema";
@@ -7,6 +8,7 @@ import { map, concat } from "@thi.ng/transducers";
 import { Command, DEFAULT_KEYBINDINGS } from "./Commands";
 import * as CS from "./ColorScheme";
 import m from "mithril";
+import { AffineTrans } from "./AffineTrans";
 
 /**
  * TODO: make these runtime-configurable.
@@ -43,6 +45,7 @@ function compatibleWireTypes(schema: Schema,
  * This configures which default color is used when adding new ports/wires.
  * Note, I believe that this is currently unused, and leftover from an earlier version.
  * TODO: get colors working again, using colorAttribute.
+ * TODO: get sliders working again
  */
 class InputConfig {
     color: string | undefined
@@ -94,6 +97,29 @@ interface ModalSelectWire {
 
 type Modal = ModalNormal | ModalSelectBox | ModalSelectPort | ModalSelectWire;
 
+enum DragStates {
+    Box,
+    Background,
+    Empty
+}
+
+interface DragBox {
+    ty: DragStates.Box
+    box_idx: number
+    offset: Vec2Like
+}
+
+interface DragBackground {
+    ty: DragStates.Background
+    offset: Vec2Like
+}
+
+interface NoDrag {
+    ty: DragStates.Empty
+}
+
+type DragState = DragBox | DragBackground | NoDrag;
+
 
 /**
  * The state of the cursor, and how it relates to the Semagram.
@@ -116,9 +142,10 @@ type Modal = ModalNormal | ModalSelectBox | ModalSelectPort | ModalSelectWire;
 export class CursorState {
     /** State */
     cursor: Vec2Like
-    dragState: { box_idx: number, offset: Vec2Like } | null
+    dragState: DragState
     hoveredEntity: Entity | null
     svgelt: SVGSVGElement | null
+    affineTrans: AffineTrans
 
     constructor(
         private setBoxLoc: (box_idx: number, loc: Vec2Like) => void,
@@ -127,9 +154,10 @@ export class CursorState {
         private mouseup: (e: Entity) => void
     ) {
         this.cursor = [0, 0];
-        this.dragState = null;
+        this.dragState = { ty: DragStates.Empty };
         this.hoveredEntity = null;
         this.svgelt = null;
+        this.affineTrans = new AffineTrans(0.5, [0, 0]);
     }
 
     eventCoordsSVG(e: MouseEvent): Vec2Like {
@@ -140,7 +168,7 @@ export class CursorState {
 
             const svgP = pt.matrixTransform((this.svgelt as any).getScreenCTM().inverse());
 
-            return [svgP.x, svgP.y];
+            return this.affineTrans.apply_inv([svgP.x, svgP.y]);
         } else {
             return [0, 0];
         }
@@ -149,11 +177,21 @@ export class CursorState {
     handlemousemove = (e: MouseEvent) => {
         const p = this.eventCoordsSVG(e);
         this.cursor = p;
-        if (this.dragState != null) {
-            const { box_idx, offset } = this.dragState;
-            this.setBoxLoc(box_idx, snapToGrid(add2([], p, offset) as Vec2Like));
-        } else {
-            (e as any).redraw = false;
+        switch (this.dragState.ty) {
+            case (DragStates.Box): {
+                const { box_idx, offset } = this.dragState;
+                this.setBoxLoc(box_idx, snapToGrid(add2([], p, offset) as Vec2Like));
+                break;
+            }
+            case (DragStates.Background): {
+                const { offset } = this.dragState;
+                this.affineTrans.translate = this.affineTrans.apply(sub2([], p, offset) as Vec2Like);
+                break;
+            }
+            case (DragStates.Empty): {
+                (e as any).redraw = false;
+                break;
+            }
         }
     }
 
@@ -178,30 +216,38 @@ export class CursorState {
         const box_idx = a.box_idx;
         const loc = this.getBoxLoc(box_idx);
         const offset = sub2([], loc, this.eventCoordsSVG(e)) as Vec2Like;
-        this.dragState = { box_idx, offset };
+        this.dragState = { ty: DragStates.Box, box_idx, offset };
         this.mousedown(a);
     }
 
     handlemouseupbox = (e: MouseEvent) => {
         const a = eventDataProperty(e, "data-a") as Attachment;
-        this.dragState = null;
+        this.dragState = { ty: DragStates.Empty };
         this.mouseup(a);
     }
 
     handlemousedownport = (e: MouseEvent) => {
-        this.mousedown(eventDataProperty(e,"data-a") as Attachment);
+        this.mousedown(eventDataProperty(e, "data-a") as Attachment);
     }
 
     handlemouseupport = (e: MouseEvent) => {
-        this.mouseup(eventDataProperty(e,"data-a") as Attachment);
+        this.mouseup(eventDataProperty(e, "data-a") as Attachment);
     }
 
     handlemousedownwire = (e: MouseEvent) => {
-        this.mousedown(wire_entity(eventDataProperty(e,"data-w")));
+        this.mousedown(wire_entity(eventDataProperty(e, "data-w")));
     }
 
     handlemouseupwire = (e: MouseEvent) => {
-        this.mouseup(wire_entity(eventDataProperty(e,"data-w")));
+        this.mouseup(wire_entity(eventDataProperty(e, "data-w")));
+    }
+
+    handlemousedownpan = (e: MouseEvent) => {
+        this.dragState = { ty: DragStates.Background, offset: this.eventCoordsSVG(e) };
+    }
+
+    handlemouseuppan = (_: MouseEvent) => {
+        this.dragState = { ty: DragStates.Empty };
     }
 }
 
@@ -517,6 +563,14 @@ export class EditorState {
                     }
                     case Command.Roundtrip: {
                         this.roundtrip();
+                        break;
+                    }
+                    case Command.ZoomIn: {
+                        this.cursor.affineTrans.zoomFrom(this.cursor.cursor, 1.1);
+                        break;
+                    }
+                    case Command.ZoomOut: {
+                        this.cursor.affineTrans.zoomFrom(this.cursor.cursor, 1 / 1.1);
                         break;
                     }
                 }

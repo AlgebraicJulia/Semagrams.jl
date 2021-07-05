@@ -2,8 +2,10 @@ import { EditorState } from "./EditorState";
 import { SVG_HEIGHT } from "./Constants";
 import m from "mithril";
 import { EditorPane } from "./EditorPane";
-import { EditorUI } from "./EditorUI";
+import { EditorHandles, EditorUI, PanHandle } from "./EditorUI";
 import { AttributeEditor } from "./AttributeEditor";
+import { Mat33Like } from "@thi.ng/matrices";
+import { AffineTrans } from "./AffineTrans";
 
 
 /**
@@ -66,28 +68,38 @@ const capacitorMarker =
         )
     )
 
-const grid = m("pattern", {
-    id: "grid",
-    width: "60",
-    height: "60",
-    patternUnits: "userSpaceOnUse",
-},
-    m("path", {
-        d: "M 60,0 L 0,0 L 0,60",
-        fill: "none",
-        stroke: "gray",
-        "stroke-width": "1"
-    }))
+const grid = (T: AffineTrans) => {
+    const k = T.zoom * 60;
+    return m("pattern", {
+        id: "grid",
+        width: k,
+        height: k,
+        x: T.translate[0],
+        y: T.translate[1],
+        patternUnits: "userSpaceOnUse",
+    },
+        m("path", {
+            d: `M ${k},0 L 0,0 L 0,${k}`,
+            fill: "none",
+            stroke: "gray",
+            "stroke-width": "1"
+        })
+    );
+}
 
-const svgdefs = m(
-    "defs",
-    grid,
-    resistorMarker,
-    capacitorMarker,
-    makeMarker("arrow-hovered", "lightgrey"),
-    makeMarker("arrow", "white"),
-    makeMarker("arrow-selected", "yellow")
-);
+const SvgDefs: m.Component<EditorAttrs> = {
+    view({ attrs: { state } }) {
+        return m(
+            "defs",
+            grid(state.cursor.affineTrans),
+            resistorMarker,
+            capacitorMarker,
+            makeMarker("arrow-hovered", "lightgrey"),
+            makeMarker("arrow", "white"),
+            makeMarker("arrow-selected", "yellow")
+        );
+    }
+}
 
 
 interface EditorAttrs {
@@ -119,9 +131,21 @@ export const EditorSVG: m.Component<EditorAttrs> = {
             style: { "border-style": "solid", "stroke-width": "2px" },
         },
             m("style", m.trust(globalStyle)),
-            svgdefs,
+            m(SvgDefs, { state }),
             m("rect", { width: "100%", height: "100%", fill: "url(#grid)" }),
-            m(EditorPane, { state }),
+            m("g",
+                {
+                    transform: state.cursor.affineTrans.svgExport()
+                },
+                m(EditorPane, { state }),
+            ),
+            m(PanHandle, { state }),
+            m("g",
+                {
+                    transform: state.cursor.affineTrans.svgExport()
+                },
+                m(EditorHandles, { state })
+            ),
             m(EditorUI, { state })
         );
     }
