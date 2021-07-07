@@ -71,6 +71,7 @@ const ColoredDPG = ACSetType(TheoryColoredDPG)
   @port OPort(obox) "Output"
   @wire Wire(src,tgt)
   @data String Stringlike
+  @data Color Stringlike
 end
 
 end
