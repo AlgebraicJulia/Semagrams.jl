@@ -1,5 +1,5 @@
 import { EditorState } from './EditorState';
-import { AttributeType } from './Schema';
+import { AttributeType, EntityType } from './Schema';
 import m from 'mithril';
 import { map } from '@thi.ng/transducers';
 import { Entity } from './Semagram';
@@ -34,6 +34,9 @@ export const AttributeWidget: m.Component<WidgetAttrs> = {
 export const AttributeEditor: m.Component<{ state: EditorState }> = {
     view({ attrs: { state } }) {
         if (state.dialogue.selected != null) {
+            if (state.dialogue.selected.ty == EntityType.Wire) {
+                console.log(state.dialogue.selected);
+            }
             return m("div",
                 ...map(([attrtype, a]) =>
                     m(AttributeWidget, {

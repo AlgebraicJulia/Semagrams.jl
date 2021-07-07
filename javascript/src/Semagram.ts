@@ -230,12 +230,15 @@ export class Semagram {
         switch (a.ty) {
             case EntityType.Box: {
                 return this.getBox(a.box_idx);
+                break;
             }
             case EntityType.Port: {
                 return this.getPort(a.box_idx, a.port_idx)
+                break;
             }
             case EntityType.Wire: {
                 return this.getWire(a.wire_idx)
+                break;
             }
         }
     }
@@ -352,12 +355,15 @@ export class Semagram {
         switch (a.ty) {
             case EntityType.Box: {
                 return this.schema.box_types[obj.ty].weights;
+                break;
             }
             case EntityType.Port: {
                 return this.schema.port_types[obj.ty].weights;
+                break;
             }
-            case EntityType.Port: {
+            case EntityType.Wire: {
                 return this.schema.wire_types[obj.ty].weights;
+                break;
             }
         }
         return undefined;
