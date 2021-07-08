@@ -2,7 +2,7 @@ name = "Semagrams"
 uuid = "13530c0b-fe5b-42fd-9b7e-79367be16329"
 license = "MIT"
 authors = ["Owen Lynch <root@owenlynch.org>"]
-version = "0.0.1"
+version = "0.1.0"
 
 [deps]
 Blink = "ad839575-38b3-5650-b840-f874b8c74a25"
