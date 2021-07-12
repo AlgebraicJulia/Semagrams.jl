@@ -3,6 +3,7 @@ on: push
 
 jobs:
   publish:
+    environment: npm-publish
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
