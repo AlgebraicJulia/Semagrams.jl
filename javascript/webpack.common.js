@@ -39,16 +39,5 @@ module.exports = {
       open: true,
   },
 
-  plugins: [
-      new CopyPlugin({
-          patterns: [
-              {
-                  from: 'index.html',
-              },
-              {
-                  from: 'assets/**/*',
-              },
-          ]
-      }),
-  ],
+  plugins: [],
 }
