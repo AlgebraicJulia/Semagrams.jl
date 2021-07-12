@@ -18,7 +18,7 @@ In a JupyterLab notebook:
 ```julia
 > using Semagrams, Semagrams.Examples
 
-> p = Semagram{Petri}(PetriSema)
+> p = Semagram{ReactionNet{Float64}}(ReactionNetSema)
 
 # Edit semagram (see below)
 
@@ -33,7 +33,7 @@ There are three steps to using Semagrams.
 
 This is the hardest part, and only has to be done when you are adding a *new* type of semagram; if you are using one of the semagrams supplied by this library (by `using Semagrams.Examples`) or another library, you can skip step 1.
 
-First of all, you have to make an acset. If you don't know how to do this, I can't help you; you gotta read the Catlab docs.
+First of all, you have to make an acset. Documentation for this can be found in [Catlab](https://algebraicjulia.github.io/Catlab.jl/dev/apis/categorical_algebra/#Acsets).
 
 We will use the running examples of *Labeled Directed Port Graphs* and *Reaction Nets*. These have the schemas
 
@@ -49,7 +49,7 @@ We will use the running examples of *Labeled Directed Port Graphs* and *Reaction
   concentration::Attr(S,N)
 end
 
-const Petri = CSetType(TheoryPetri)
+const ReactionNet = CSetType(TheoryReactionNet)
 ```
 
 and
@@ -66,12 +66,12 @@ end
 const DPG = CSetType(TheoryDirectedPortGraph)
 ```
 
-Then you make a semagrams schema over the acset you made in step 1. The basic idea behind this is that you have to tell Semagrams.jl what role the objects in your acset play. Currently the three roles are
+After making an acset, you must make a semagrams schema for the acset you made in step 1. The basic idea behind this is that you have to tell Semagrams.jl what role the objects in your acset play. Currently the three roles are
 1. Box
 2. Port
 3. Wire
 4. Data
-Boxes have no outgoing morphisms (though, they can have attributes once we implement this). Ports have exactly one outgoing morphism, to a box. Wires have two outgoing morphisms, one which gives the "source" of the wire, and another which gives the "target". These outgoing morphisms can go to *either* ports or boxes. Data objects in the acset schema must be given input types. The two choices are `Stringlike` or `Numeric`, which correspond to text boxes and sliders respectively (the slider goes from 0 to 100, we will eventually have something to configure this range).
+Boxes have no outgoing morphisms (though, they can have attributes). Ports have exactly one outgoing morphism, to a box. Wires have two outgoing morphisms, one which gives the "source" of the wire, and another which gives the "target". These outgoing morphisms can go to *either* ports or boxes. Data objects in the acset schema must be given input types. The two choices are `Stringlike` or `Numeric`, which correspond to text boxes and sliders respectively (the slider goes from 0 to 100, we will eventually have something to configure this range).
 
 You can designate a SVG object for each box. For instance, in a Petri net, you can make the species circles and the transitions squares. For the ports, you can designate a "style", which designates the placement of the ports. This can either be "Input", "Output", or "Circular", which places the ports vertically stacked on the left, vertically stacked on the right, and equally spaced around a circle.
 
@@ -101,7 +101,7 @@ end
 First you have to create the semagram.
 
 ```julia
-my_awesome_petri_net = Semagram{ReactionNet}(ReactionNetSema)
+my_awesome_petri_net = Semagram{ReactionNet{Float64}}(ReactionNetSema)
 ```
 
 or

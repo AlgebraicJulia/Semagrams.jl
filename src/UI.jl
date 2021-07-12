@@ -42,9 +42,9 @@ struct Semagram{T <: AbstractACSet}
     receiving = Observable(scope, "receiving", ls_json)
     sending = Observable(scope, "sending", ls_json)
     onjs(sending, @js function (newls)
-      console.log(this)
-      this.state.resetWith(newls)
-    end)
+           console.log(this)
+           this.state.resetWith(newls)
+         end)
     on((newls) -> receiving[] = newls, scope, "sending")
     mountfn = @js function ()
       @var wires = System.registry.get(System.resolveSync("wires"))
@@ -55,6 +55,11 @@ struct Semagram{T <: AbstractACSet}
     onmount(scope, mountfn)
     new{T}(scope, receiving, sending)
   end
+end
+
+function Semagram{T}(s::SemagramSchema) where {T <: AbstractACSet}
+  ls = LocatedSemagramData(s)
+  Semagram{T}(ls)
 end
 
 @WebIO.register_renderable(Semagram) do sg
