@@ -35,7 +35,7 @@ struct Semagram{T <: AbstractACSet}
   sending::Observable{Dict{String,Any}}
   function Semagram{T}(ls::LocatedSemagramData) where {T <: AbstractACSet}
     deps = [
-      "wires" => joinpath(@__DIR__, "..", "javascript", "dist", "app.bundle.js")
+      "semagrams" => joinpath(@__DIR__, "..", "deps", "bundles", "app.bundle.js")
     ]
     scope = Scope(imports=deps, dom=dom"div"())
     ls_json = to_json(ls)
@@ -47,10 +47,10 @@ struct Semagram{T <: AbstractACSet}
          end)
     on((newls) -> receiving[] = newls, scope, "sending")
     mountfn = @js function ()
-      @var wires = System.registry.get(System.resolveSync("wires"))
+      @var semagrams = System.registry.get(System.resolveSync("semagrams"))
       @var scopeobj = this
       setTimeout(() ->
-        wires.main($receiving[], scopeobj, (x) -> $receiving[] = x), 20)
+        semagrams.main($receiving[], scopeobj, (x) -> $receiving[] = x), 20)
     end
     onmount(scope, mountfn)
     new{T}(scope, receiving, sending)
