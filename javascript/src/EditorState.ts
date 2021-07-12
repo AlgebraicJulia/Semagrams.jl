@@ -1,6 +1,5 @@
 import { equiv } from "@thi.ng/equiv";
 import { add2, dist2, round2, sub2, Vec2Like } from "@thi.ng/vectors";
-import { identity33, Mat33Like, scale33 } from "@thi.ng/matrices";
 import { ExportedLocatedSemagram, LocatedSemagram } from "./LocatedSemagram";
 import { Attachment, Entity, wire_entity } from "./Semagram";
 import { AttachType, EntityType, Schema } from "./Schema";

@@ -4,7 +4,6 @@ import m from "mithril";
 import { EditorPane } from "./EditorPane";
 import { EditorHandles, EditorUI, PanHandle } from "./EditorUI";
 import { AttributeEditor } from "./AttributeEditor";
-import { Mat33Like } from "@thi.ng/matrices";
 import { AffineTrans } from "./AffineTrans";
 
 
