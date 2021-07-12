@@ -14,4 +14,4 @@ jobs:
       - run: npm run build
       - uses: JS-DevTools/npm-publish@v1
         with:
-          token: ${{ secretes.NPM_ACCESS_TOKEN }}
+          token: ${{ secrets.NPM_ACCESS_TOKEN }}
