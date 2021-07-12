@@ -6,7 +6,6 @@
   "repository": "git@github.com:AlgebraicJulia/Semagrams.jl",
   "author": "Owen Lynch <root@owenlynch.org>",
   "license": "MIT",
-  "private": "true",
   "scripts": {
     "build": "webpack --config webpack.prod.js",
     "devbuild": "webpack --config webpack.dev.js",
