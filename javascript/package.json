@@ -1,6 +1,6 @@
 {
   "name": "semagrams",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "The typescript component of Semagrams.jl",
   "main": "src/index.ts",
   "repository": "git@github.com:AlgebraicJulia/Semagrams.jl",
