@@ -9,9 +9,11 @@ jobs:
       - uses: actions/setup-node@v1
         with:
           node-version: 10
-      - run: cd javascript
       - run: npm install
+        working-directory: ./javascript
       - run: npm run build
+        working-directory: ./javascript
       - uses: JS-DevTools/npm-publish@v1
+        working-directory: ./javascript
         with:
           token: ${{ secrets.NPM_ACCESS_TOKEN }}
