@@ -3,6 +3,7 @@
         "downlevelIteration": true,
         "esModuleInterop": true,
         "importHelpers": true,
+        "resolveJsonModule": true,
         "lib": ["dom", "es2015"],
         "outDir": "./dist/",
         "sourceMap": true,

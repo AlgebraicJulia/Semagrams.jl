@@ -4,7 +4,8 @@ const CopyPlugin = require('copy-webpack-plugin');
 
 module.exports = {
   entry: {
-      app: './src/index.ts',
+    app: './src/index.ts',
+    demo: './src/demo.ts'
   },
 
   module: {
@@ -13,7 +14,7 @@ module.exports = {
         test: /\.tsx?$/,
         use: 'ts-loader',
         exclude: /node_modules/,
-      },
+      }
     ],
   },
   devtool: 'inline-source-map',
@@ -23,7 +24,7 @@ module.exports = {
   },
 
   output: {
-    filename: 'app.bundle.js',
+    filename: '[name].bundle.js',
     path: path.resolve(__dirname, 'dist'),
     library: {
       name: 'app',
