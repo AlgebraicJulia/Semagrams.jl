@@ -5,6 +5,7 @@ on:
       - main
 jobs:
   build-website:
+    needs: build-docs
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
@@ -45,7 +46,6 @@ jobs:
         BRANCH: gh-pages
         FOLDER: page/__site
   build-docs:
-    needs: build-website
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
