@@ -15,7 +15,7 @@ In a Jupyter notebook
 ``` julia
 > using Semagrams, Semagrams.Examples
 
-> p = Semagram{Petri}(PetriSema)
+> p = Semagram{ReactionNet{Float}}(ReactionNetSema)
 
 # Edit semagram (see docs)
 
