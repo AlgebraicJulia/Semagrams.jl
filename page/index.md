@@ -14,6 +14,8 @@
 
 \begin{section}{title="Demo", name="Demo"}
 
+Press "?" for a short list of commands. This is a heavily restricted form of Semagrams; unlike the full version it is not connected to a running Julia repl, so you can't save diagrams or change the schema; it is stuck to the schema for directed port graphs. If you are intrigued by this demo, however, I encourage you to try out the real thing!
+
 ~~~
 <div id="semagrams-demo"></div>
 <script src="assets/demo.bundle.js">
