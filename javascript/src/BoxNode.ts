@@ -4,6 +4,7 @@ import { BOXRADIUS } from "./LocatedSemagram";
 import { box_entity } from "./Semagram";
 import * as CS from "./ColorScheme";
 import m from 'mithril';
+import katex from 'katex';
 
 interface BoxAttrs {
     state: EditorState,
@@ -28,6 +29,27 @@ export const BoxHandle: m.Component<BoxAttrs> = {
             onmousedown: state.cursor.handlemousedownbox,
             onmouseup: state.cursor.handlemouseupbox,
         });
+    }
+}
+
+const KaTeXNode: m.Component<{ s: string }> = {
+    view: function({ attrs: { s } }) {
+        return m("foreignObject", {
+            x: "-40px",
+            y: "-40px",
+            width: "80px",
+            height: "80px",
+        }, m("div", {
+            xmlns: "http://www.w3.org/1999/xhtml",
+            style: `display:flex;
+                    justify-content: center;
+                    align-items: center;
+                    height:100%;
+                    width:100%`
+        }, m.trust(katex.renderToString(s, {
+            output: "mathml",
+            throwOnError: false
+        }))));
     }
 }
 
@@ -62,6 +84,9 @@ export const BoxNode: m.Component<BoxAttrs> = {
             fill: equiv(state.dialogue.selected, box_entity(box_idx)) ? "yellow" : "none",
             stroke: "none",
         }, m.trust(boxty.shape));
-        return m("g", attrs, highlight, m.trust(boxty.shape));
+        const label = boxty.label != undefined && typeof(box.weights[boxty.label]) == "string" ?
+            m(KaTeXNode, { s: box.weights[boxty.label]} ) :
+            m("g");
+        return m("g", attrs, highlight, m.trust(boxty.shape), label);
     }
 }

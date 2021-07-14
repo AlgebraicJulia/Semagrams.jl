@@ -40,7 +40,7 @@ end
 struct BoxProperties
   weights::Vector{Tuple{AttributeType, Symbol}}
   shape::String
-  label::String
+  label::Union{Symbol,Missing}
 end
 
 to_json(x::BoxProperties) = generic_to_json(x)
@@ -80,8 +80,9 @@ from_json(d::Dict{String, <:Any}, ::Type{SemagramSchema}) = generic_from_json(d,
 struct BoxDesc
   name::Symbol
   shape::SVGNode
-  function BoxDesc(name,shape=Circle)
-    new(name,shape)
+  label::Union{Symbol,Missing}
+  function BoxDesc(name,shape=Circle,label=missing)
+    new(name,shape, label)
   end
 end
 
@@ -122,7 +123,7 @@ function pres_to_semagramschema(p::Presentation, descs::Array)
   for desc in descs
     ob = desc.name
     if typeof(desc)<:BoxDesc
-      ws.box_types[ob] = BoxProperties(weights(ob),write_svg(desc.shape),string(ob))
+      ws.box_types[ob] = BoxProperties(weights(ob),write_svg(desc.shape),desc.label)
     elseif typeof(desc)<:PortDesc
       box = nameof(codom(p[desc.box_map]))
       ws.port_types[ob] = PortProperties(weights(ob),box,desc.box_map,desc.style)

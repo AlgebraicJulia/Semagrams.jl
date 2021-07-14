@@ -2,7 +2,7 @@ name = "Semagrams"
 uuid = "13530c0b-fe5b-42fd-9b7e-79367be16329"
 license = "MIT"
 authors = ["Owen Lynch <root@owenlynch.org>"]
-version = "0.1.0"
+version = "0.1.1"
 
 [deps]
 Catlab = "134e5e36-593f-5add-ad60-77f754baafbe"

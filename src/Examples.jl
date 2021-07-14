@@ -49,7 +49,7 @@ end
 const DirectedPortGraph = ACSetType(TheoryDirectedPortGraph)
 
 @semagramschema DirectedPortGraphSema(TheoryDirectedPortGraph) begin
-  @box Box Square
+  @box Box Square :label
   @port IPort(ibox) "Input"
   @port OPort(obox) "Output"
   @wire Wire(src,tgt)
@@ -66,7 +66,7 @@ end
 const ColoredDPG = ACSetType(TheoryColoredDPG)
 
 @semagramschema ColoredDPGSema(TheoryColoredDPG) begin
-  @box Box Square
+  @box Box Square :label
   @port IPort(ibox) "Input"
   @port OPort(obox) "Output"
   @wire Wire(src,tgt)

@@ -29,7 +29,7 @@ export interface BoxProperties {
     shape: string,
 
     /** This records which weight is a label */
-    label: string
+    label: string | undefined
 }
 
 export enum EntityType {
