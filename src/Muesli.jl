@@ -40,7 +40,9 @@ generic_to_json(x) = Dict(string(fn)=>to_json(getfield(x,fn)) for fn ∈ fieldna
 and and attempts to convert to the type passed in.
 """
 from_json(x,T) = convert(T,x) # fallback
-from_json(x::String,::Type{Symbol}) = Symbol(x)
+from_json(x::String, ::Type{Symbol}) = Symbol(x)
+from_json(x::String, ::Type{Union{Symbol, Nothing}}) = Symbol(x)
+from_json(x::Symbol, ::Type{String}) = string(x)
 
 function from_json(x::Vector{Any},::Type{Vector{T}}) where {T}
   map(y -> from_json(y,T), x)
@@ -62,8 +64,8 @@ function from_json(d::Dict{String,Any}, ::Type{Dict{Symbol,T}}) where {T}
   Dict(Symbol(k) => from_json(v,T) for (k,v) in d)
 end
 
-function from_json(d::Vector{Tuple{Int,T}}, ::Type{Dict{Int,T}}) where {T}
-  Dict(Int(i) => x for (i,x) in d)
+function from_json(d::Vector{Tuple{Int,T}}, ::Type{Dict{Int,S}}) where {T,S}
+  Dict(Int(i) => from_json(x,S) for (i,x) in d)
 end
 
 function from_json(s::String, ::Type{T}) where {T <: Real}
@@ -75,7 +77,7 @@ function generic_from_json(d::Dict{String,<:Any},::Type{T}) where {T}
   for (i,fn) in enumerate(fieldnames(T))
     sfn = string(fn)
     if sfn ∈ keys(d)
-      augmented[fn] = from_json(d[string(fn)],fieldtypes(T)[i])
+      augmented[fn] = from_json(d[sfn],fieldtypes(T)[i])
     else
       augmented[fn] = missing
     end

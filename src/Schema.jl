@@ -40,7 +40,7 @@ end
 struct BoxProperties
   weights::Vector{Tuple{AttributeType, Symbol}}
   shape::String
-  label::Union{Symbol,Missing}
+  label::Union{Symbol,Nothing}
 end
 
 to_json(x::BoxProperties) = generic_to_json(x)
@@ -80,8 +80,8 @@ from_json(d::Dict{String, <:Any}, ::Type{SemagramSchema}) = generic_from_json(d,
 struct BoxDesc
   name::Symbol
   shape::SVGNode
-  label::Union{Symbol,Missing}
-  function BoxDesc(name,shape=Circle,label=missing)
+  label::Union{Symbol,Nothing}
+  function BoxDesc(name,shape=Circle,label=nothing)
     new(name,shape, label)
   end
 end

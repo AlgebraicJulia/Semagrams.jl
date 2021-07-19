@@ -18,15 +18,18 @@ using ..Boxes
   ot::Hom(O,T)
   os::Hom(O,S)
   N::Data
+  L::Data
   rate::Attr(T,N)
   concentration::Attr(S,N)
+  species_label::Attr(S,L)
+  transitions_label::Attr(T,L)
 end
 
 const ReactionNet = ACSetType(TheoryReactionNet)
 
 @semagramschema ReactionNetSema(TheoryReactionNet) begin
-  @box S Circle
-  @box T Square
+  @box S Circle :species_label
+  @box T Square :transitions_label
   @wire I(is,it)
   @wire O(ot,os)
   @data N Numeric
