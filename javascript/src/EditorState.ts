@@ -397,10 +397,16 @@ export class EditorState {
      */
     addBox() {
         const box_types = [...Object.keys(this.ls.sg.schema.box_types)];
-        this.dialogue.modal = {
-            ty: ModalState.SelectBox,
-            choices: box_types
-        };
+        if (box_types.length == 1) {
+            this.ls.addBox(box_types[0], this.cursor.cursor);
+        } else if (box_types.length == 0) {
+            // do nothing
+        } else {
+            this.dialogue.modal = {
+                ty: ModalState.SelectBox,
+                choices: box_types
+            };
+        }
     }
 
     /** Add a new port to the `cursor.hoveredAttachment` box, assuming it's a box */
