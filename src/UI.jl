@@ -34,6 +34,16 @@ struct Semagram{T <: AbstractACSet}
   receiving::Observable{Dict{String,Any}}
   sending::Observable{Dict{String,Any}}
   function Semagram{T}(ls::LocatedSemagramData) where {T <: AbstractACSet}
+    try
+      T()
+    catch e
+      error("""
+        error: all type parameters to the acset type must be fully instantiated.
+
+        Right: Semagram{WeightedGraph{Int}}(WeightedGraphSema)
+        Wrong: Semagram{WeightedGraph}(WeightedGraphSema)
+      """)
+    end
     deps = [
       "semagrams" => joinpath(@__DIR__, "..", "deps", "bundles", "app.bundle.js")
     ]
