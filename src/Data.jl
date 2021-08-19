@@ -17,9 +17,34 @@ using Catlab.CSetDataStructures
 using Catlab.Theories
 using MLStyle
 
+@data Entity begin
+  BoxEntity(box_idx::Int)
+  PortEntity(box_idx::Int, port_idx::Int)
+  WireEntity(wire_idx::Int)
+end
+
+const Attachment = Union{BoxEntity,PortEntity}
+
+function from_json(d::Dict{String,<:Any},::Type{<:Entity})
+  @match d["ty"] begin
+    "Box" => BoxEntity(d["box_idx"])
+    "Port" => PortEntity(d["box_idx"],d["port_idx"])
+    "Wire" => WireEntity(d["wire_idx"])
+  end
+end
+
+function to_json(a::Entity)
+  @match a begin
+    BoxEntity(box_idx) => Dict(:ty => "Box", :box_idx => box_idx)
+    PortEntity(box_idx, port_idx) => Dict(:ty => "Port", :box_idx => box_idx, :port_idx => port_idx)
+    WireEntity(wire_idx) => Dict(:ty => "Wire", :wire_idx => wire_idx)
+  end
+end
+
 struct Port
   ty::Symbol
   weights::Dict{Symbol, String}
+  homs::Dict{Symbol, Entity}
 end
 
 from_json(d::Dict{String,<:Any},::Type{Port}) = generic_from_json(d,Port)
@@ -28,35 +53,18 @@ to_json(p::Port) = generic_to_json(p)
 struct Box
   ty::Symbol
   weights::Dict{Symbol, String}
+  homs::Dict{Symbol, Entity}
   ports::Dict{Int,Port}
 end
 
 from_json(d::Dict{String,<:Any},::Type{Box}) = generic_from_json(d,Box)
 to_json(b::Box) = generic_to_json(b)
 
-@data Attachment begin
-  AttachBox(box_idx::Int)
-  AttachPort(box_idx::Int, port_idx::Int)
-end
-
-function from_json(d::Dict{String,<:Any},::Type{Attachment})
-  if d["ty"] == "Box"
-    AttachBox(d["box_idx"])
-  else
-    AttachPort(d["box_idx"],d["port_idx"])
-  end
-end
-
-function to_json(a::Attachment)
-  @match a begin
-    AttachBox(box_idx) => Dict(:ty => "Box", :box_idx => box_idx)
-    AttachPort(box_idx, port_idx) => Dict(:ty => "Port", :box_idx => box_idx, :port_idx => port_idx)
-  end
-end
 
 struct Wire
   ty::Symbol
   weights::Dict{Symbol, String}
+  homs::Dict{Symbol, Entity}
   src::Attachment
   tgt::Attachment
 end
@@ -105,8 +113,8 @@ function lookup_attachment(box_map::Dict{Int,Int},
                            port_map::Dict{Tuple{Int,Int},Int},
                            a::Attachment)
   @match a begin
-    AttachBox(box_idx) => box_map[box_idx]
-    AttachPort(box_idx,port_idx) => port_map[(box_idx,port_idx)]
+    BoxEntity(box_idx) => box_map[box_idx]
+    PortEntity(box_idx,port_idx) => port_map[(box_idx,port_idx)]
   end
 end
 
@@ -137,12 +145,24 @@ function to_acset(ls::LocatedSemagramData, ::Type{T}) where {T <: AbstractACSet}
       port_map[(i,j)] = acs_j
     end
   end
+
   for (i,wire) in sd.wires
     acs_src = lookup_attachment(box_map, port_map, wire.src)
     acs_tgt = lookup_attachment(box_map, port_map, wire.tgt)
     wire_props = schema.wire_types[wire.ty]
     attrs = Dict(wire_props.src_map => acs_src, wire_props.tgt_map => acs_tgt)
     add_part!(acs,wire.ty; attrs..., attributes_from_strings(wire.weights, T)...)
+  end
+
+  for (i,box) in sd.boxes
+    for (hom, e) in box.homs
+      set_subpart!(acs, box_map[i], hom, lookup_attachment(box_map, port_map, e))
+    end
+    for (j,port) in box.ports
+      for (hom, e) in port.homs
+        set_subpart!(acs, port_map[(i,j)], hom, lookup_attachment(box_map, port_map, e))
+      end
+    end
   end
   acs
 end

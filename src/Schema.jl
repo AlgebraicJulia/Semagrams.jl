@@ -13,7 +13,7 @@ export AttributeType, Numeric, Stringlike,
   BoxProperties, PortProperties, WireProperties,
   SemagramSchema, BoxDesc, PortDesc, WireDesc, DataDesc,
   @semagramschema
-  
+
 import ..Muesli: to_json, from_json
 using ..Muesli
 using ..SVG
@@ -37,8 +37,38 @@ function from_json(d::Any, ::Type{AttributeType})
   end
 end
 
+@enum EntityType begin
+  Box
+  Port
+  Wire
+end
+
+to_json(x::EntityType) = @match x begin
+  Box => "Box"
+  Port => "Port"
+  Wire => "Wire"
+end
+
+function from_json(d::Any, ::Type{EntityType})
+  @match d begin
+    "Box" => Box
+    "Port" => Port
+    "Wire" => Wire
+  end
+end
+
+struct OutgoingHom
+  name::Symbol
+  codom::Symbol
+  codom_ty::EntityType
+end
+  
+to_json(x::OutgoingHom) = generic_to_json(x)
+from_json(d::Dict{String, <:Any}, ::Type{OutgoingHom}) = generic_from_json(d, OutgoingHom)
+
 struct BoxProperties
   weights::Vector{Tuple{AttributeType, Symbol}}
+  homs::Vector{OutgoingHom}
   shape::String
   label::Union{Symbol,Nothing}
 end
@@ -48,6 +78,7 @@ from_json(d::Dict{String,<:Any}, ::Type{BoxProperties}) = generic_from_json(d, B
 
 struct PortProperties
   weights::Vector{Tuple{AttributeType, Symbol}}
+  homs::Vector{OutgoingHom}
   box::Symbol
   box_map::Symbol
   style::String
@@ -58,9 +89,10 @@ from_json(d::Dict{String,<:Any}, ::Type{PortProperties}) = generic_from_json(d, 
 
 struct WireProperties
   weights::Vector{Tuple{AttributeType, Symbol}}
-  src::Tuple{String, Symbol}
+  homs::Vector{OutgoingHom}
+  src::Tuple{EntityType, Symbol}
   src_map::Symbol
-  tgt::Tuple{String, Symbol}
+  tgt::Tuple{EntityType, Symbol}
   tgt_map::Symbol
   style::String
 end
@@ -114,36 +146,54 @@ const EntityDesc = Union{BoxDesc, PortDesc, WireDesc, DataDesc}
 
 function pres_to_semagramschema(p::Presentation, descs::Array)
   ws = SemagramSchema(Dict(),Dict(),Dict())
+
   datadescs = filter(desc -> typeof(desc) <: DataDesc, descs)
   datatypes = Dict(map(desc -> desc.name => desc.type, datadescs)...)
+
+  obtypes = Dict{Symbol, EntityType}(
+    desc.name => @match typeof(desc) begin
+      BoxDesc => Box
+      PortDesc => Port
+      WireDesc => Wire
+    end
+    for desc in descs)
+    
   function weights(ob::Symbol)
     attrs = filter(attr -> nameof(dom(attr)) == ob, p.generators[:Attr])
-    map(attr -> (get(datatypes, nameof(codom(attr)), Stringlike), nameof(attr)), attrs)
+    [(get(datatypes, nameof(codom(attr)), Stringlike), nameof(attr)) for attr in attrs]
   end
+
+  function homs(ob::Symbol, excluding::Vector{Symbol})
+    outgoing = filter(f -> nameof(dom(f)) == ob && !(nameof(f) ∈ excluding), p.generators[:Hom])
+    [OutgoingHom(nameof(f), nameof(codom(f)), obtypes[nameof(codom(f))]) for f in outgoing]
+  end
+
   for desc in descs
     ob = desc.name
     if typeof(desc)<:BoxDesc
-      ws.box_types[ob] = BoxProperties(weights(ob),write_svg(desc.shape),desc.label)
+      ws.box_types[ob] = BoxProperties(
+        weights(ob),
+        homs(ob,Symbol[]),
+        write_svg(desc.shape),
+        desc.label
+      )
     elseif typeof(desc)<:PortDesc
       box = nameof(codom(p[desc.box_map]))
-      ws.port_types[ob] = PortProperties(weights(ob),box,desc.box_map,desc.style)
+      ws.port_types[ob] = PortProperties(
+        weights(ob),
+        homs(ob, [desc.box_map]),
+        box,
+        desc.box_map,
+        desc.style
+      )
     elseif typeof(desc)<:WireDesc
       src = nameof(codom(p[desc.src_map]))
-      src_type = if src ∈ keys(ws.box_types)
-        "Box"
-      else
-        "Port"
-      end
       tgt = nameof(codom(p[desc.tgt_map]))
-      tgt_type = if src ∈ keys(ws.box_types)
-        "Box"
-      else
-        "Port"
-      end
       ws.wire_types[ob] = WireProperties(
         weights(ob),
-        (src_type, src), desc.src_map,
-        (tgt_type, tgt), desc.tgt_map,
+        homs(ob, [desc.src_map, desc.tgt_map]),
+        (obtypes[src], src), desc.src_map,
+        (obtypes[tgt], tgt), desc.tgt_map,
         desc.style
       )
     end

@@ -24,6 +24,12 @@ is for `to_json` to be the identity.
 """
 to_json(x) = x
 
+to_json(x::Symbol) = string(x)
+
+to_json(x::Dict) = Dict(to_json(k) => to_json(v) for (k,v) in x)
+
+to_json(x::Vector) = to_json.(x)
+
 """
 For Dict{Int,X}, we want to convert to a vector of tuples
 """

@@ -5,6 +5,7 @@ export enum Command {
     AddPort,
     AddWire,
     RemHovered,
+    SetHom,
     Debug,
     Deselect,
     Help,
@@ -20,6 +21,7 @@ export const DEFAULT_KEYBINDINGS: Map<string, Command> = new Map([
     ["p", Command.AddPort],
     ["w", Command.AddWire],
     ["d", Command.RemHovered],
+    ["h", Command.SetHom],
     ["D", Command.Debug],
     ["Escape", Command.Deselect],
     ["?", Command.Help],
@@ -53,6 +55,10 @@ export const COMMAND_DOCS: Map<Command, { long: string, short: string }> =
         [Command.RemHovered, {
             short: "delete",
             long: "removes whatever the cursor is hovering over"
+        }],
+        [Command.SetHom, {
+            short: "set hom",
+            long: "connects the source and target with a hom relation"
         }],
         [Command.Debug, {
             short: "debug",

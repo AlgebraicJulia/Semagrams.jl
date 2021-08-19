@@ -4,6 +4,7 @@ import { WireNode } from "./WireNode";
 import { BoxNode } from "./BoxNode";
 import { PortNode } from "./PortNode";
 import m from 'mithril';
+import { HomNode } from "./Homs";
 
 export const EditorPane: m.Component<{ state: EditorState }> = {
     view({ attrs: { state } }) {
@@ -18,6 +19,8 @@ export const EditorPane: m.Component<{ state: EditorState }> = {
             state.ports())
         const wirenodes = map(wire_idx => m(WireNode, { state, wire_idx }),
             state.wires());
-        return m("g", ...wirenodes, ...boxnodes, ...portnodes);
+        const homnodes = map(([src, tgt]) => m(HomNode, { state, src, tgt }),
+            state.homs());
+        return m("g", ...homnodes, ...wirenodes, ...boxnodes, ...portnodes);
     }
 }

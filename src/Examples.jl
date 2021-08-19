@@ -5,7 +5,9 @@ module Examples
 
 export TheoryPetri, ReactionNet, ReactionNetSema,
   TheoryDirectedPortGraph, DirectedPortGraph, DirectedPortGraphSema,
-  TheoryColoredDPG, ColoredDPG, ColoredDPGSema
+  TheoryColoredDPG, ColoredDPG, ColoredDPGSema,
+  TheoryDDS, DDS, DDSSema,
+  TheoryUWD, UWD, UWDSema
 
 using Catlab.Present, Catlab.CSetDataStructures
 using ..Schema
@@ -75,6 +77,36 @@ const ColoredDPG = ACSetType(TheoryColoredDPG)
   @wire Wire(src,tgt)
   @data String Stringlike
   @data Color Stringlike
+end
+
+@present TheoryDDS(FreeSchema) begin
+  X::Ob
+  next::Hom(X,X)
+end
+
+const DDS = ACSetType(TheoryDDS)
+
+@semagramschema DDSSema(TheoryDDS) begin
+  @box X Square
+end
+
+@present TheoryUWD(FreeSchema) begin
+  Box::Ob
+  Port::Ob
+  Junction::Ob
+  OuterPort::Ob
+  box::Hom(Port,Box)
+  junction::Hom(Port,Junction)
+  outer_junction::Hom(OuterPort, Junction)
+end
+
+const UWD = ACSetType(TheoryUWD)
+
+@semagramschema UWDSema(TheoryUWD) begin
+  @box Box Circle
+  @port Port(box) "Circular"
+  @box Junction TinyCircle
+  @box OuterPort SmallCircle
 end
 
 end

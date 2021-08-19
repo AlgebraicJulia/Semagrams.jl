@@ -16,14 +16,28 @@ export enum AttributeType {
     Stringlike = "Stringlike"
 }
 
+export enum EntityType {
+    Box = "Box",
+    Port = "Port",
+    Wire = "Wire"
+}
+
+export interface OutgoingHom {
+    name: string,
+    codom: string,
+    codom_ty: EntityType
+}
+
 /**
- * These are all interfaces (i.e., not structs) because 
+ * These are all interfaces (i.e., not structs) because
  */
 
 export interface BoxProperties {
     /** These are the names of weights.
      */
     weights: Array<[AttributeType, string]>
+
+    homs: Array<OutgoingHom>
 
     /** This is a svg string */
     shape: string,
@@ -32,17 +46,14 @@ export interface BoxProperties {
     label: string | undefined
 }
 
-export enum EntityType {
-    Box = "Box",
-    Port = "Port",
-    Wire = "Wire"
-}
 
-export type AttachType  = EntityType.Box | EntityType.Port
+export type AttachType = EntityType.Box | EntityType.Port
 
 export interface PortProperties {
     /** See comment for box weights */
     weights: Array<[AttributeType, string]>
+
+    homs: Array<OutgoingHom>
 
     /** The box type that this attaches to */
     box: string
@@ -57,6 +68,8 @@ export interface PortProperties {
 export interface WireProperties {
     /** See comment for box weights */
     weights: Array<[AttributeType, string]>
+
+    homs: Array<OutgoingHom>
 
     /** The port/box that is the type for the source of this wire */
     src: [AttachType, string]

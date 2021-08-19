@@ -208,6 +208,10 @@ export class LocatedSemagram {
         }
     }
 
+    setHom(ty: string, src: Entity, tgt: Entity) {
+        this.sg.getEntity(src)!.homs[ty] = tgt;
+    }
+
     export(): ExportedLocatedSemagram {
         return {
             sg: this.sg.export(),

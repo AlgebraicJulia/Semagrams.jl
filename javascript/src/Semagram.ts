@@ -60,6 +60,7 @@ export function wire_entity(i: number): WireEntity {
 export interface ExportedPort {
     ty: string
     weights: Record<string, string>
+    homs: Record<string, Entity>
 }
 
 /**
@@ -72,23 +73,26 @@ export class Port {
         /** The ty refers to a PortProperties in the schema */
         readonly ty: string,
         public weights: Record<string, string>,
+        public homs: Record<string, Entity>
     ) { }
 
     export(): ExportedPort {
         return {
             ty: this.ty,
-            weights: this.weights
+            weights: this.weights,
+            homs: this.homs
         };
     }
 
     static fromExported(e: ExportedPort): Port {
-        return new Port(e.ty, e.weights);
+        return new Port(e.ty, e.weights, e.homs);
     }
 }
 
 export interface ExportedBox {
     ty: string
     weights: Record<string, string>
+    homs: Record<string, Entity>
     ports: Array<[number, ExportedPort]>
 }
 
@@ -103,6 +107,7 @@ export class Box {
         /* The ty refers to a BoxProperties in the schema */
         readonly ty: string,
         public weights: Record<string, string>,
+        public homs: Record<string, Entity>,
         public ports: Map<number, Port>,
     ) { }
 
@@ -110,12 +115,13 @@ export class Box {
         return {
             ty: this.ty,
             weights: this.weights,
+            homs: this.homs,
             ports: Array.from(map(([port_idx, p]) => [port_idx, p.export()], this.ports.entries())),
         }
     }
 
     static fromExported(e: ExportedBox): Box {
-        return new Box(e.ty, e.weights, new Map(
+        return new Box(e.ty, e.weights, e.homs, new Map(
             iterator(map(([port_idx, ep]) => [port_idx, Port.fromExported(ep)]), e.ports)));
     }
 }
@@ -123,6 +129,7 @@ export class Box {
 export interface ExportedWire {
     ty: string,
     weights: Record<string, string>
+    homs: Record<string, Entity>
     src: Attachment,
     tgt: Attachment
 }
@@ -135,6 +142,7 @@ export class Wire {
         /* The ty refers to a WireProperties in the schema */
         readonly ty: string,
         public weights: Record<string, string>,
+        public homs: Record<string, Entity>,
         public src: Attachment,
         public tgt: Attachment,
     ) { }
@@ -143,13 +151,14 @@ export class Wire {
         return {
             ty: this.ty,
             weights: this.weights,
+            homs: this.homs,
             src: this.src,
             tgt: this.tgt
         }
     }
 
     static fromExported(e: ExportedWire): Wire {
-        return new Wire(e.ty, e.weights, e.src, e.tgt);
+        return new Wire(e.ty, e.weights, e.homs, e.src, e.tgt);
     }
 }
 
@@ -230,15 +239,12 @@ export class Semagram {
         switch (a.ty) {
             case EntityType.Box: {
                 return this.getBox(a.box_idx);
-                break;
             }
             case EntityType.Port: {
                 return this.getPort(a.box_idx, a.port_idx)
-                break;
             }
             case EntityType.Wire: {
                 return this.getWire(a.wire_idx)
-                break;
             }
         }
     }
@@ -265,7 +271,7 @@ export class Semagram {
         if (!(equiv([tgt.ty, tgt_ob.ty], wireschema.tgt))) {
             throw new Error(`The tgt of a wire of type ${ty} cannot be ${[tgt.ty, tgt_ob.ty]}`);
         }
-        this.wires.set(i, new Wire(ty, {}, src, tgt));
+        this.wires.set(i, new Wire(ty, {}, {}, src, tgt));
         this.src_tgt_index.add([src, tgt], i);
         return i;
     }
@@ -277,13 +283,13 @@ export class Semagram {
             throw new Error(`Cannot attach a port of type ${ty} to a box of type ${box.ty}`);
         }
         const i = this.gen.next();
-        box.ports.set(i, new Port(ty, {}));
+        box.ports.set(i, new Port(ty, {}, {}));
         return port_entity(box_idx, i);
     }
 
     addBox(ty: string): BoxEntity {
         const i = this.gen.next();
-        this.boxes.set(i, new Box(ty, {}, new Map()));
+        this.boxes.set(i, new Box(ty, {}, {}, new Map()));
         return box_entity(i);
     }
 
@@ -355,18 +361,14 @@ export class Semagram {
         switch (a.ty) {
             case EntityType.Box: {
                 return this.schema.box_types[obj.ty].weights;
-                break;
             }
             case EntityType.Port: {
                 return this.schema.port_types[obj.ty].weights;
-                break;
             }
             case EntityType.Wire: {
                 return this.schema.wire_types[obj.ty].weights;
-                break;
             }
         }
-        return undefined;
     }
 
     export(): ExportedSemagram {

@@ -95,7 +95,8 @@ const SvgDefs: m.Component<EditorAttrs> = {
             capacitorMarker,
             makeMarker("arrow-hovered", "lightgrey"),
             makeMarker("arrow", "white"),
-            makeMarker("arrow-selected", "yellow")
+            makeMarker("arrow-selected", "yellow"),
+            makeMarker("arrow-solid", "black")
         );
     }
 }

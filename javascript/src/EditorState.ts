@@ -1,7 +1,7 @@
 import { equiv } from "@thi.ng/equiv";
 import { add2, dist2, round2, sub2, Vec2Like } from "@thi.ng/vectors";
 import { ExportedLocatedSemagram, LocatedSemagram } from "./LocatedSemagram";
-import { Attachment, Entity, wire_entity } from "./Semagram";
+import { Attachment, box_entity, Entity, port_entity, wire_entity } from "./Semagram";
 import { AttachType, EntityType, Schema } from "./Schema";
 import { map, concat } from "@thi.ng/transducers";
 import { Command, DEFAULT_KEYBINDINGS } from "./Commands";
@@ -40,6 +40,23 @@ function compatibleWireTypes(schema: Schema,
         .map(([wirety, _]) => wirety);
 }
 
+function compatibleHomTypes(schema: Schema,
+    srcty: [AttachType, string],
+    tgtty: [AttachType, string]): string[] {
+    switch (srcty[0]) {
+        case EntityType.Box: {
+            return schema.box_types[srcty[1]].homs
+                .filter((hom) => hom.codom == tgtty[1])
+                .map((hom) => hom.name);
+        }
+        case EntityType.Port: {
+            return schema.port_types[srcty[1]].homs
+                .filter((hom) => hom.codom == tgtty[1])
+                .map((hom) => hom.name);
+        }
+    }
+}
+
 /**
  * This configures which default color is used when adding new ports/wires.
  * Note, I believe that this is currently unused, and leftover from an earlier version.
@@ -69,32 +86,20 @@ class InputConfig {
  */
 export enum ModalState {
     Normal,
-    SelectBox,
-    SelectPort,
-    SelectWire
+    Select
 }
 
 interface ModalNormal {
     ty: ModalState.Normal
 }
 
-interface ModalSelectBox {
-    ty: ModalState.SelectBox
+interface ModalSelect {
+    ty: ModalState.Select
     choices: string[]
+    continuation: (choice: string) => void
 }
 
-interface ModalSelectPort {
-    ty: ModalState.SelectPort
-    choices: string[]
-    box_idx: number
-}
-
-interface ModalSelectWire {
-    ty: ModalState.SelectWire
-    choices: string[]
-}
-
-type Modal = ModalNormal | ModalSelectBox | ModalSelectPort | ModalSelectWire;
+type Modal = ModalNormal | ModalSelect
 
 enum DragStates {
     Box,
@@ -352,6 +357,23 @@ export class EditorState {
         return this.ls.sg.wires.keys();
     }
 
+    homs() {
+        const homs: Array<[Entity, Entity]> = [];
+        for (const [box_idx, box] of this.ls.sg.boxes.entries()) {
+            const src = box_entity(box_idx);
+            for (const tgt of Object.values(box.homs)) {
+                homs.push([src, tgt]);
+            }
+            for (const [port_idx, port] of box.ports.entries()) {
+                const src = port_entity(box_idx, port_idx);
+                for (const tgt of Object.values(port.homs)) {
+                    homs.push([src, tgt]);
+                }
+            }
+        }
+        return homs;
+    }
+
     /** Convenience function: an array of the indices of all the ports for a box */
     ports_by_box(box_idx: number): IterableIterator<number> {
         const box = this.ls.sg.boxes.get(box_idx)!;
@@ -403,8 +425,11 @@ export class EditorState {
             // do nothing
         } else {
             this.dialogue.modal = {
-                ty: ModalState.SelectBox,
-                choices: box_types
+                ty: ModalState.Select,
+                choices: box_types,
+                continuation: (choice: string) => {
+                    this.ls.addBox(choice, this.cursor.cursor);
+                }
             };
         }
     }
@@ -425,9 +450,11 @@ export class EditorState {
                 // do nothing
             } else {
                 this.dialogue.modal = {
-                    ty: ModalState.SelectPort,
+                    ty: ModalState.Select,
                     choices: port_types,
-                    box_idx: box_idx
+                    continuation: (choice: string) => {
+                        this.ls.addPort(choice, box_idx);
+                    }
                 };
             }
         }
@@ -459,8 +486,45 @@ export class EditorState {
                 this.dialogue.tgt = null;
             } else {
                 this.dialogue.modal = {
-                    ty: ModalState.SelectWire,
-                    choices: wiretypeoptions
+                    ty: ModalState.Select,
+                    choices: wiretypeoptions,
+                    continuation: (choice: string) => {
+                        this.ls.addWire(choice, s, t);
+                        this.dialogue.src = null;
+                        this.dialogue.tgt = null;
+                    }
+                };
+            }
+        }
+    }
+
+    /** Set the homomorphism on src to point to tgt */
+    setHom() {
+        const s = this.dialogue.src;
+        const t = this.dialogue.tgt;
+        if ((s != undefined) && (t != undefined)) {
+            const homtypeoptions = compatibleHomTypes(
+                this.ls.sg.schema,
+                this.ls.sg.attachmentType(s),
+                this.ls.sg.attachmentType(t)
+            );
+            console.log(homtypeoptions);
+            if (homtypeoptions.length == 1) {
+                this.ls.setHom(homtypeoptions[0], s, t);
+                this.dialogue.src = null;
+                this.dialogue.tgt = null;
+            } else if (homtypeoptions.length == 0) {
+                this.dialogue.src = null;
+                this.dialogue.tgt = null;
+            } else {
+                this.dialogue.modal = {
+                    ty: ModalState.Select,
+                    choices: homtypeoptions,
+                    continuation: (choice: string) => {
+                        this.ls.setHom(choice, s, t);
+                        this.dialogue.src = null;
+                        this.dialogue.tgt = null;
+                    }
                 };
             }
         }
@@ -492,26 +556,7 @@ export class EditorState {
             return;
         }
         if (!isNaN(choice) && 1 <= choice && choice <= this.dialogue.modal.choices.length) {
-            switch (this.dialogue.modal.ty) {
-                case ModalState.SelectPort: {
-                    this.ls.addPort(this.dialogue.modal.choices[choice - 1],
-                        this.dialogue.modal.box_idx);
-                    break;
-                }
-                case ModalState.SelectWire: {
-                    this.ls.addWire(this.dialogue.modal.choices[choice - 1],
-                        this.dialogue.src!,
-                        this.dialogue.tgt!)
-                    this.dialogue.src = null;
-                    this.dialogue.tgt = null;
-                    break;
-                }
-                case ModalState.SelectBox: {
-                    this.ls.addBox(this.dialogue.modal.choices[choice - 1],
-                        this.cursor.cursor)
-                    break;
-                }
-            }
+            this.dialogue.modal.continuation(this.dialogue.modal.choices[choice - 1]);
         } else if (c == "Escape") {
             // Do nothing, just exit
         } else {
@@ -550,6 +595,10 @@ export class EditorState {
                     }
                     case Command.RemHovered: {
                         this.remHovered();
+                        break;
+                    }
+                    case Command.SetHom: {
+                        this.setHom();
                         break;
                     }
                     case Command.Debug: {
