@@ -31,6 +31,11 @@ to_json(x::Dict) = Dict(to_json(k) => to_json(v) for (k,v) in x)
 to_json(x::Vector) = to_json.(x)
 
 """
+For Dict{Symbol,X}, we want to convert to a dictionary with string keys
+"""
+to_json(x::Dict{Symbol,T}) where {T} = Dict(string(k)=>to_json(v) for (k,v) in x)
+
+"""
 For Dict{Int,X}, we want to convert to a vector of tuples
 """
 to_json(x::Dict{Int,T}) where {T} = [(k,to_json(v)) for (k,v) in x]
@@ -50,23 +55,23 @@ from_json(x::String, ::Type{Symbol}) = Symbol(x)
 from_json(x::String, ::Type{Union{Symbol, Nothing}}) = Symbol(x)
 from_json(x::Symbol, ::Type{String}) = string(x)
 
-function from_json(x::Vector{Any},::Type{Vector{T}}) where {T}
+function from_json(x::Vector{<:Any},::Type{Vector{T}}) where {T}
   map(y -> from_json(y,T), x)
 end
 
-function from_json(x::Vector{Any},::Type{Tuple{A,B}}) where {A,B}
+function from_json(x::Vector{<:Any},::Type{Tuple{A,B}}) where {A,B}
   (from_json(x[1],A),from_json(x[2],B))
 end
 
-function from_json(x::Vector{Any},::Type{Pair{A,B}}) where {A,B}
+function from_json(x::Vector{<:Any},::Type{Pair{A,B}}) where {A,B}
   from_json(x[1],A) => from_json(x[2],B)
 end
 
-function from_json(x::Vector{Any},::Type{Dict{Int,T}}) where {T}
+function from_json(x::Vector{<:Any},::Type{Dict{Int,T}}) where {T}
   Dict{Int,T}(from_json(x,Vector{Pair{Int,T}})...)
 end
 
-function from_json(d::Dict{String,Any}, ::Type{Dict{Symbol,T}}) where {T}
+function from_json(d::Dict{String,<:Any}, ::Type{Dict{Symbol,T}}) where {T}
   Dict(Symbol(k) => from_json(v,T) for (k,v) in d)
 end
 

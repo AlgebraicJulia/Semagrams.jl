@@ -35,9 +35,9 @@ end
 
 function to_json(a::Entity)
   @match a begin
-    BoxEntity(box_idx) => Dict(:ty => "Box", :box_idx => box_idx)
-    PortEntity(box_idx, port_idx) => Dict(:ty => "Port", :box_idx => box_idx, :port_idx => port_idx)
-    WireEntity(wire_idx) => Dict(:ty => "Wire", :wire_idx => wire_idx)
+    BoxEntity(box_idx) => Dict("ty" => "Box", "box_idx" => box_idx)
+    PortEntity(box_idx, port_idx) => Dict("ty" => "Port", "box_idx" => box_idx, "port_idx" => port_idx)
+    WireEntity(wire_idx) => Dict("ty" => "Wire", "wire_idx" => wire_idx)
   end
 end
 
