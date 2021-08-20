@@ -35,6 +35,9 @@ function compatiblePortTypes(schema: Schema, boxty: string): string[] {
 function compatibleWireTypes(schema: Schema,
     srcty: [AttachType, string],
     tgtty: [AttachType, string]): string[] {
+    console.log(Object.entries(schema.wire_types));
+    console.log(srcty);
+    console.log(tgtty);
     return Object.entries(schema.wire_types)
         .filter(([_, wireprops]) => equiv(wireprops.src, srcty) && equiv(wireprops.tgt, tgtty))
         .map(([wirety, _]) => wirety);
@@ -477,6 +480,7 @@ export class EditorState {
                 this.ls.sg.attachmentType(s),
                 this.ls.sg.attachmentType(t)
             );
+            console.log(wiretypeoptions);
             if (wiretypeoptions.length == 1) {
                 this.ls.addWire(wiretypeoptions[0], s, t);
                 this.dialogue.src = null;

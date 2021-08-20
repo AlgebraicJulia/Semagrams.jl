@@ -44,6 +44,9 @@ export interface BoxProperties {
 
     /** This records which weight is a label */
     label: string | undefined
+
+    /** this string should be evaled to product a function */
+    style_fn: string
 }
 
 
@@ -63,6 +66,8 @@ export interface PortProperties {
 
     /** TODO: this should be a custom SVG */
     style: PortStyle
+
+    style_fn: string
 }
 
 export interface WireProperties {
@@ -85,6 +90,8 @@ export interface WireProperties {
 
     /**  TODO: this should be a custom SVG */
     style: WireStyle
+
+    style_fn: string
 }
 
 /**

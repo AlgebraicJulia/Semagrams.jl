@@ -189,6 +189,20 @@ class IDGen {
     }
 }
 
+function initStyleFns(schema: Schema): Record<string, Function> {
+    const style_fns: Record<string, Function> = {};
+    for (const [name, box_props] of Object.entries(schema.box_types)) {
+        style_fns[name] = eval(box_props.style_fn) as Function;
+    }
+    for (const [name, port_props] of Object.entries(schema.port_types)) {
+        style_fns[name] = eval(port_props.style_fn) as Function;
+    }
+    for (const [name, wire_props] of Object.entries(schema.wire_types)) {
+        style_fns[name] = eval(wire_props.style_fn) as Function;
+    }
+    return style_fns;
+}
+
 export interface ExportedSemagram {
     boxes: Array<[number, ExportedBox]>,
     wires: Array<[number, ExportedWire]>,
@@ -208,6 +222,7 @@ export class Semagram {
     public wires: Map<number, Wire>
     private src_tgt_index: SetMap<[Attachment, Attachment], number>
     private gen: IDGen;
+    public style_fns: Record<string, Function>
 
     constructor(
         readonly schema: Schema,
@@ -219,6 +234,7 @@ export class Semagram {
             ([a1, a2]) => hash([hashEntity(a1), hashEntity(a2)]),
             (e1, e2) => Math.sign(e1 - e2)
         );
+        this.style_fns = initStyleFns(schema);
     }
 
     /** The getters are self-explanatory */

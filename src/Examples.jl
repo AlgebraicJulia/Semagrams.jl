@@ -3,13 +3,14 @@ Pre-fab acset schemas+semagrams schemas
 """
 module Examples
 
-export TheoryPetri, ReactionNet, ReactionNetSema,
+export TheoryReactionNet, ReactionNet, ReactionNetSema,
   TheoryDirectedPortGraph, DirectedPortGraph, DirectedPortGraphSema,
   TheoryColoredDPG, ColoredDPG, ColoredDPGSema,
   TheoryDDS, DDS, DDSSema,
   TheoryUWD, UWD, UWDSema
 
 using Catlab.Present, Catlab.CSetDataStructures
+using JSExpr
 using ..Schema
 using ..Boxes
 
@@ -30,8 +31,8 @@ end
 const ReactionNet = ACSetType(TheoryReactionNet)
 
 @semagramschema ReactionNetSema(TheoryReactionNet) begin
-  @box S Circle :species_label
-  @box T Square :transitions_label
+  @box S Circle label=:species_label
+  @box T Square label=:transitions_label
   @wire I(is,it)
   @wire O(ot,os)
   @data N Numeric
@@ -54,9 +55,9 @@ end
 const DirectedPortGraph = ACSetType(TheoryDirectedPortGraph)
 
 @semagramschema DirectedPortGraphSema(TheoryDirectedPortGraph) begin
-  @box Box Square :label
-  @port IPort(ibox) "Input"
-  @port OPort(obox) "Output"
+  @box Box Square label=:label
+  @port IPort(ibox) style="Input"
+  @port OPort(obox) style="Output"
   @wire Wire(src,tgt)
   @data String Stringlike
 end
@@ -70,11 +71,13 @@ end
 
 const ColoredDPG = ACSetType(TheoryColoredDPG)
 
+color(attr) = js"weights => { return { stroke: weights[$attr] }; }"
+
 @semagramschema ColoredDPGSema(TheoryColoredDPG) begin
-  @box Box Square :label
-  @port IPort(ibox) "Input"
-  @port OPort(obox) "Output"
-  @wire Wire(src,tgt)
+  @box Box Square label=:label
+  @port IPort(ibox) style="Input" style_fn=color(:iportcolor)
+  @port OPort(obox) style="Output" style_fn=color(:oportcolor)
+  @wire Wire(src,tgt) style_fn=color(:wirecolor)
   @data String Stringlike
   @data Color Stringlike
 end
@@ -104,7 +107,7 @@ const UWD = ACSetType(TheoryUWD)
 
 @semagramschema UWDSema(TheoryUWD) begin
   @box Box Circle
-  @port Port(box) "Circular"
+  @port Port(box) style="Circular"
   @box Junction TinyCircle
   @box OuterPort SmallCircle
 end

@@ -52,7 +52,8 @@ export const WireNode: m.Component<WireAttrs> = {
             d: svgPath(curvePoints(sloc, tloc, offset)),
             stroke: CS.accent,
             "marker-mid": marker,
-            fill: "none"
+            fill: "none",
+            ...state.ls.sg.style_fns[e.ty](e.weights)
         });
     }
 }

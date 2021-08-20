@@ -78,14 +78,15 @@ export const BoxNode: m.Component<BoxAttrs> = {
             fill: colorAttachment(state, a),
             stroke: CS.accent,
             transform: `translate(${loc[0]} ${loc[1]})`,
+            ...state.ls.sg.style_fns[box.ty](box.weights)
         };
         const highlight = m("g", {
             transform: "scale(1.1)",
             fill: equiv(state.dialogue.selected, box_entity(box_idx)) ? "yellow" : "none",
             stroke: "none",
         }, m.trust(boxty.shape));
-        const label = boxty.label != undefined && typeof(box.weights[boxty.label]) == "string" ?
-            m(KaTeXNode, { s: box.weights[boxty.label]} ) :
+        const label = boxty.label != undefined && typeof (box.weights[boxty.label]) == "string" ?
+            m(KaTeXNode, { s: box.weights[boxty.label] }) :
             m("g");
         return m("g", attrs, highlight, m.trust(boxty.shape), label);
     }

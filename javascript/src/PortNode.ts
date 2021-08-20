@@ -41,9 +41,11 @@ export const PortNode: m.Component<PortAttrs> = {
     view({ attrs: { state, box_idx, port_idx } }) {
         const a = port_entity(box_idx, port_idx);
         const loc = state.ls.getLoc(a)!;
+        const port = state.ls.sg.getPort(box_idx, port_idx)!;
         const attrs = {
             fill: colorAttachment(state, a),
             stroke: CS.accent,
+            ...state.ls.sg.style_fns[port.ty](port.weights)
         };
         const portnode = m("circle", {
             r: PORTRADIUS,

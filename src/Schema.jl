@@ -19,6 +19,7 @@ using ..Muesli
 using ..SVG
 using Catlab.Present, Catlab.Theories
 using MLStyle
+using JSExpr
 
 @enum AttributeType begin
   Numeric
@@ -71,6 +72,7 @@ struct BoxProperties
   homs::Vector{OutgoingHom}
   shape::String
   label::Union{Symbol,Nothing}
+  style_fn::String
 end
 
 to_json(x::BoxProperties) = generic_to_json(x)
@@ -82,6 +84,7 @@ struct PortProperties
   box::Symbol
   box_map::Symbol
   style::String
+  style_fn::String
 end
 
 to_json(x::PortProperties) = generic_to_json(x)
@@ -95,6 +98,7 @@ struct WireProperties
   tgt::Tuple{EntityType, Symbol}
   tgt_map::Symbol
   style::String
+  style_fn::String
 end
 
 to_json(x::WireProperties) = generic_to_json(x)
@@ -113,8 +117,9 @@ struct BoxDesc
   name::Symbol
   shape::SVGNode
   label::Union{Symbol,Nothing}
-  function BoxDesc(name,shape=Circle,label=nothing)
-    new(name,shape, label)
+  style_fn::JSString
+  function BoxDesc(name,shape=Circle; label=nothing, style_fn=@js _ -> $(Dict()))
+    new(name,shape,label,style_fn)
   end
 end
 
@@ -122,8 +127,9 @@ struct PortDesc
   name::Symbol
   box_map::Symbol
   style::String
-  function PortDesc(name,box_map,style="Circular")
-    new(name,box_map,style)
+  style_fn::JSString
+  function PortDesc(name,box_map; style="Circular", style_fn=@js _ -> $(Dict()))
+    new(name,box_map,style,style_fn)
   end
 end
 
@@ -132,8 +138,9 @@ struct WireDesc
   src_map::Symbol
   tgt_map::Symbol
   style::String
-  function WireDesc(name,src_map,tgt_map,style="DefaultWire")
-    new(name,src_map,tgt_map,style)
+  style_fn::JSString
+  function WireDesc(name,src_map,tgt_map; style="DefaultWire", style_fn=@js _ -> $(Dict()))
+    new(name,src_map,tgt_map,style,style_fn)
   end
 end
 
@@ -151,13 +158,16 @@ function pres_to_semagramschema(p::Presentation, descs::Array)
   datatypes = Dict(map(desc -> desc.name => desc.type, datadescs)...)
 
   obtypes = Dict{Symbol, EntityType}(
-    desc.name => @match typeof(desc) begin
-      BoxDesc => Box
-      PortDesc => Port
-      WireDesc => Wire
-    end
+    desc.name =>
+      if typeof(desc) <: BoxDesc
+        Box
+      elseif typeof(desc) <: PortDesc
+        Port
+      else
+        Wire
+      end
     for desc in descs)
-    
+
   function weights(ob::Symbol)
     attrs = filter(attr -> nameof(dom(attr)) == ob, p.generators[:Attr])
     [(get(datatypes, nameof(codom(attr)), Stringlike), nameof(attr)) for attr in attrs]
@@ -175,7 +185,8 @@ function pres_to_semagramschema(p::Presentation, descs::Array)
         weights(ob),
         homs(ob,Symbol[]),
         write_svg(desc.shape),
-        desc.label
+        desc.label,
+        string(desc.style_fn),
       )
     elseif typeof(desc)<:PortDesc
       box = nameof(codom(p[desc.box_map]))
@@ -184,7 +195,8 @@ function pres_to_semagramschema(p::Presentation, descs::Array)
         homs(ob, [desc.box_map]),
         box,
         desc.box_map,
-        desc.style
+        desc.style,
+        string(desc.style_fn),
       )
     elseif typeof(desc)<:WireDesc
       src = nameof(codom(p[desc.src_map]))
@@ -194,7 +206,8 @@ function pres_to_semagramschema(p::Presentation, descs::Array)
         homs(ob, [desc.src_map, desc.tgt_map]),
         (obtypes[src], src), desc.src_map,
         (obtypes[tgt], tgt), desc.tgt_map,
-        desc.style
+        desc.style,
+        string(desc.style_fn),
       )
     end
   end
@@ -202,6 +215,14 @@ function pres_to_semagramschema(p::Presentation, descs::Array)
 end
 
 q(x) = Expr(:quote,x)
+
+equals_to_kw(x) = x
+equals_to_kw(x::Expr) =
+  if x.head == :(=)
+    Expr(:kw, x.args...)
+  else
+    x
+  end
 
 """
 See the examples/general documentation for how to use this.
@@ -225,7 +246,7 @@ macro semagramschema(head,body)
             elseif mname == Symbol("@data")
               DataDesc
             end
-            Expr(:call, constructor, q(name), q.(morphs)..., args...)
+            Expr(:call, constructor, q(name), q.(morphs)..., equals_to_kw.(args)...)
           end
           _ => missing
         end
