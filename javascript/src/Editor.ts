@@ -86,7 +86,7 @@ const grid = (T: AffineTrans) => {
     );
 }
 
-const SvgDefs: m.Component<EditorAttrs> = {
+export const SvgDefs: m.Component<EditorAttrs> = {
     view({ attrs: { state } }) {
         return m(
             "defs",
@@ -106,7 +106,7 @@ interface EditorAttrs {
     state: EditorState
 }
 
-const globalStyle = `
+export const globalStyle = `
 .katex { font-size: 1.5em; }
 `;
 
@@ -137,7 +137,7 @@ export const EditorSVG: m.Component<EditorAttrs> = {
                 {
                     transform: state.cursor.affineTrans.svgExport()
                 },
-                m(EditorPane, { state }),
+                m(EditorPane, { state, isExport: false }),
             ),
             m(PanHandle, { state }),
             m("g",
@@ -151,11 +151,19 @@ export const EditorSVG: m.Component<EditorAttrs> = {
     }
 }
 
+const ExportedIndicator: m.Component<{ state: EditorState }> = {
+    view({ attrs: { state } }) {
+        return m("p", {}, state.exported ? "exported: ✓" : "exported: ❌");
+    }
+}
+
+
 export const Editor: m.Component<EditorAttrs> = {
     view({ attrs: { state } }) {
         return m("div",
             m(EditorSVG, { state }),
-            m(AttributeEditor, { state })
+            m(AttributeEditor, { state }),
+            m(ExportedIndicator, { state })
         )
     }
 }

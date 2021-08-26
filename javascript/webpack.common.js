@@ -40,7 +40,11 @@ module.exports = {
       open: true,
   },
 
-  plugins: [],
+  plugins: [
+    new webpack.optimize.LimitChunkCountPlugin({
+      maxChunks: 1
+    })
+  ],
 
   performance: {
     hints: false,

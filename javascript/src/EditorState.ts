@@ -8,6 +8,9 @@ import { Command, DEFAULT_KEYBINDINGS } from "./Commands";
 import * as CS from "./ColorScheme";
 import m from "mithril";
 import { AffineTrans } from "./AffineTrans";
+import { EditorPane } from "./EditorPane";
+import { globalStyle, SvgDefs } from "./Editor";
+import { SVG_HEIGHT } from "./Constants";
 
 /**
  * TODO: make these runtime-configurable.
@@ -35,9 +38,6 @@ function compatiblePortTypes(schema: Schema, boxty: string): string[] {
 function compatibleWireTypes(schema: Schema,
     srcty: [AttachType, string],
     tgtty: [AttachType, string]): string[] {
-    console.log(Object.entries(schema.wire_types));
-    console.log(srcty);
-    console.log(tgtty);
     return Object.entries(schema.wire_types)
         .filter(([_, wireprops]) => equiv(wireprops.src, srcty) && equiv(wireprops.tgt, tgtty))
         .map(([wirety, _]) => wirety);
@@ -321,11 +321,38 @@ export class EditorState {
     dialogue!: DialogueState
     ls: LocatedSemagram
     sendToJl: Function
+    exportToJl: Function
+    exported: boolean
 
-    constructor(sema: LocatedSemagram, sendToJl: Function) {
+    constructor(sema: LocatedSemagram, sendToJl: Function, exportToJl: Function) {
         this.ls = sema;
         this.sendToJl = sendToJl;
+        this.exportToJl = exportToJl;
+        this.exported = false;
         this.reset();
+    }
+
+    exportSVG() {
+        const svg = document.createElement("div");
+        const pane = m(
+            "svg", { width: "95%", height: `${SVG_HEIGHT}px` },
+            m("style", m.trust(globalStyle)),
+            m(SvgDefs, { state: this }),
+            m("g",
+                {
+                    transform: this.cursor.affineTrans.svgExport()
+                },
+                m(EditorPane, { state: this, isExport: true }),
+            ));
+        m.render(svg, pane);
+        const serializer = new XMLSerializer();
+        const source = serializer.serializeToString(svg.children[0]);
+        return source;
+    }
+
+    runExport() {
+        this.exportToJl(this.exportSVG());
+        this.exported = true;
     }
 
     reset() {
@@ -335,8 +362,14 @@ export class EditorState {
         }
         this.dialogue = new DialogueState();
         this.cursor = new CursorState(
-            (box_idx, loc) => this.ls.setBoxLoc(box_idx, loc),
-            (box_idx) => this.ls.getBoxLoc(box_idx),
+            (box_idx, loc) => {
+                this.exported = false;
+                return this.ls.setBoxLoc(box_idx, loc);
+            },
+            (box_idx) => {
+                this.exported = false;
+                return this.ls.getBoxLoc(box_idx);
+            },
             (a) => { this.dialogue.selected = a; }, /* This should set selected... */
             (_a) => { }
         );
@@ -480,7 +513,6 @@ export class EditorState {
                 this.ls.sg.attachmentType(s),
                 this.ls.sg.attachmentType(t)
             );
-            console.log(wiretypeoptions);
             if (wiretypeoptions.length == 1) {
                 this.ls.addWire(wiretypeoptions[0], s, t);
                 this.dialogue.src = null;
@@ -512,7 +544,6 @@ export class EditorState {
                 this.ls.sg.attachmentType(s),
                 this.ls.sg.attachmentType(t)
             );
-            console.log(homtypeoptions);
             if (homtypeoptions.length == 1) {
                 this.ls.setHom(homtypeoptions[0], s, t);
                 this.dialogue.src = null;
@@ -533,8 +564,6 @@ export class EditorState {
             }
         }
     }
-
-    /** Print out the current `ls` to the console */
     debug() {
         console.log(this.ls);
     }
@@ -573,6 +602,7 @@ export class EditorState {
      * This is the keypress handler.
      */
     handlekeydown = (e: KeyboardEvent) => {
+        this.exported = false;
         if (this.dialogue.modal.ty == ModalState.Normal) {
             const cmd = DEFAULT_KEYBINDINGS.get(e.key);
             if (cmd != undefined) {
@@ -603,6 +633,10 @@ export class EditorState {
                     }
                     case Command.SetHom: {
                         this.setHom();
+                        break;
+                    }
+                    case Command.Export: {
+                        this.runExport();
                         break;
                     }
                     case Command.Debug: {

@@ -6,6 +6,7 @@ export enum Command {
     AddWire,
     RemHovered,
     SetHom,
+    Export,
     Debug,
     Deselect,
     Help,
@@ -22,6 +23,7 @@ export const DEFAULT_KEYBINDINGS: Map<string, Command> = new Map([
     ["w", Command.AddWire],
     ["d", Command.RemHovered],
     ["h", Command.SetHom],
+    ["e", Command.Export],
     ["D", Command.Debug],
     ["Escape", Command.Deselect],
     ["?", Command.Help],
@@ -59,6 +61,10 @@ export const COMMAND_DOCS: Map<Command, { long: string, short: string }> =
         [Command.SetHom, {
             short: "set hom",
             long: "connects the source and target with a hom relation"
+        }],
+        [Command.Export, {
+            short: "export",
+            long: "exports the current picture as an svg"
         }],
         [Command.Debug, {
             short: "debug",

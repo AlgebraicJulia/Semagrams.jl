@@ -5,7 +5,7 @@ It's mostly wrapped up in the Semagrams struct; see the documentation there.
 """
 module UI
 
-export Semagram, get_acset, serve_semagram, save, load
+export Semagram, get_acset, serve_semagram, save, load, export_html, export_pdf
 
 using JSExpr
 using WebIO
@@ -33,6 +33,7 @@ struct Semagram{T <: AbstractACSet}
   scope::Scope
   receiving::Observable{Dict{String,Any}}
   sending::Observable{Dict{String,Any}}
+  exported::Observable{String}
   function Semagram{T}(ls::LocatedSemagramData) where {T <: AbstractACSet}
     try
       T()
@@ -51,19 +52,23 @@ struct Semagram{T <: AbstractACSet}
     ls_json = to_json(ls)
     receiving = Observable(scope, "receiving", ls_json)
     sending = Observable(scope, "sending", ls_json)
+    exported = Observable(scope, "exported", "")
     onjs(sending, @js function (newls)
-           console.log(this)
            this.state.resetWith(newls)
          end)
-    on((newls) -> receiving[] = newls, scope, "sending")
+    on((newls) -> receiving[] = newls, sending)
     mountfn = @js function ()
       @var semagrams = System.registry.get(System.resolveSync("semagrams"))
       @var scopeobj = this
       setTimeout(() ->
-        semagrams.main($receiving[], scopeobj, (x) -> $receiving[] = x), 20)
+        semagrams.main(
+          $receiving[],
+          scopeobj,
+          (x) -> $receiving[] = x,
+          (x) -> $exported[] = x), 20)
     end
     onmount(scope, mountfn)
-    new{T}(scope, receiving, sending)
+    new{T}(scope, receiving, sending, exported)
   end
 end
 
@@ -105,7 +110,48 @@ function load(fn::String)
   end
   from_json(v, LocatedSemagramData)
 end
-  
+
+HTML_WRAPPING = """
+<!doctype html>
+
+<html>
+<head>
+  <meta charset="UTF-8">
+</head>
+<body>
+  @SVG@
+</body>
+</html>
+"""
+
+function export_html(sema::Semagram;
+                     standalone::Union{Bool,Nothing}=nothing,
+                     file::Union{String,Nothing}=nothing)
+  # standalone defaults to true if we are writing to a file,
+  # false otherwise
+  standalone = standalone == nothing ? file != nothing : standalone
+  body = sema.exported[]
+  html = if standalone
+    replace(HTML_WRAPPING, "@SVG@" => body)
+  else
+    body
+  end
+  if file == nothing
+    HTML(html)
+  else
+    open(file, "w") do f
+      write(f, html)
+    end;
+  end
+end
+
+function export_pdf(sema::Semagram, file::String)
+  htmlfile = tempname() * ".html"
+  export_html(sema; file=htmlfile)
+  run(`wkhtmltopdf -s A6 -O Landscape $htmlfile $file`)
+end
+
+
 """
 This serves a semagram in a standalone page (as opposed to having it displayed
 inline in a Jupyter notebook).

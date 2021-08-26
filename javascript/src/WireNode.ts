@@ -8,6 +8,7 @@ import { curvePoints, midpoint, svgPath } from "./ArrowUtils";
 interface WireAttrs {
     state: EditorState
     wire_idx: number
+    isExport: boolean
 }
 
 const WIRE_HANDLE_RADIUS = 7;
@@ -39,7 +40,7 @@ export const WireHandle: m.Component<WireAttrs> = {
  * multiple wires going between the same pair of attachments.
  */
 export const WireNode: m.Component<WireAttrs> = {
-    view({ attrs: { state, wire_idx } }) {
+    view({ attrs: { state, wire_idx, isExport } }) {
         const offset = state.ls.getOffset(wire_idx);
         const e = state.ls.sg.wires.get(wire_idx)!;
         const sloc = state.ls.getLoc(e.src)!;
@@ -48,10 +49,11 @@ export const WireNode: m.Component<WireAttrs> = {
             ? `url(#arrow-selected)` :
             (equiv(state.cursor.hoveredEntity, wire_entity(wire_idx))
                 ? `url(#arrow-hovered)` : `url(#arrow)`);
+        const realmarker = isExport ? `url(#arrow)` : marker;
         return m("path", {
             d: svgPath(curvePoints(sloc, tloc, offset)),
             stroke: CS.accent,
-            "marker-mid": marker,
+            "marker-mid": realmarker,
             fill: "none",
             ...state.ls.sg.style_fns[e.ty](e.weights)
         });

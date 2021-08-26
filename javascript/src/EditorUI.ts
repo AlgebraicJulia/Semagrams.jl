@@ -99,12 +99,12 @@ export const PanHandle: m.Component<{ state: EditorState }> = {
 
 export const EditorHandles: m.Component<{ state: EditorState }> = {
     view({ attrs: { state } }) {
-        const boxhandles = map(box_idx => m(BoxHandle, { state, box_idx }),
+        const boxhandles = map(box_idx => m(BoxHandle, { state, box_idx, isExport: false }),
             state.boxes());
         const porthandles = map(
-            ({ box_idx, port_idx }) => m(PortHandle, { state, box_idx, port_idx }),
+            ({ box_idx, port_idx }) => m(PortHandle, { state, box_idx, port_idx, isExport: false }),
             state.ports());
-        const wirehandles = map(wire_idx => m(WireHandle, { state, wire_idx }),
+        const wirehandles = map(wire_idx => m(WireHandle, { state, wire_idx, isExport: false }),
             state.wires());
         return m("g",
             ...wirehandles,

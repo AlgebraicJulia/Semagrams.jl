@@ -7,9 +7,10 @@ import { equiv } from "@thi.ng/equiv";
 const PORTRADIUS = 7;
 
 interface PortAttrs {
-    state: EditorState,
-    box_idx: number,
+    state: EditorState
+    box_idx: number
     port_idx: number
+    isExport: boolean
 }
 
 export const PortHandle: m.Component<PortAttrs> = {
@@ -38,7 +39,7 @@ export const PortHandle: m.Component<PortAttrs> = {
  * See the comment for BoxNode.
  */
 export const PortNode: m.Component<PortAttrs> = {
-    view({ attrs: { state, box_idx, port_idx } }) {
+    view({ attrs: { state, box_idx, port_idx, isExport } }) {
         const a = port_entity(box_idx, port_idx);
         const loc = state.ls.getLoc(a)!;
         const port = state.ls.sg.getPort(box_idx, port_idx)!;
@@ -53,13 +54,13 @@ export const PortNode: m.Component<PortAttrs> = {
             cy: loc[1],
             ...attrs
         });
-        const highlight = m("circle", {
+        const highlight = !isExport ? m("circle", {
             fill: equiv(state.dialogue.selected, a) ? "yellow" : "none",
             stroke: "none",
             r: PORTRADIUS * 1.5,
             cx: loc[0],
             cy: loc[1],
-        });
+        }) : m("g");
         return m("g", highlight, portnode);
     }
 }

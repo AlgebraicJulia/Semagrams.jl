@@ -6,7 +6,8 @@ import { curvePoints, svgPath } from "./ArrowUtils";
 interface HomAttrs {
     state: EditorState,
     src: Entity,
-    tgt: Entity
+    tgt: Entity,
+    isExport: boolean
 }
 
 export const HomNode: m.Component<HomAttrs> = {

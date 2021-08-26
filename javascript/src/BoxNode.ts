@@ -9,6 +9,7 @@ import katex from 'katex';
 interface BoxAttrs {
     state: EditorState,
     box_idx: number
+    isExport: boolean
 }
 
 /**
@@ -69,7 +70,7 @@ const KaTeXNode: m.Component<{ s: string }> = {
  * Note: this is the parent of all of its ports.
  */
 export const BoxNode: m.Component<BoxAttrs> = {
-    view: function({ attrs: { state, box_idx } }) {
+    view: function({ attrs: { state, box_idx, isExport } }) {
         const box = state.ls.sg.boxes.get(box_idx)!;
         const boxty = state.ls.sg.schema.box_types[box.ty];
         const a = box_entity(box_idx);
@@ -80,11 +81,11 @@ export const BoxNode: m.Component<BoxAttrs> = {
             transform: `translate(${loc[0]} ${loc[1]})`,
             ...state.ls.sg.style_fns[box.ty](box.weights)
         };
-        const highlight = m("g", {
+        const highlight = (!isExport) ? m("g", {
             transform: "scale(1.1)",
             fill: equiv(state.dialogue.selected, box_entity(box_idx)) ? "yellow" : "none",
             stroke: "none",
-        }, m.trust(boxty.shape));
+        }, m.trust(boxty.shape)) : m("g");
         const label = boxty.label != undefined && typeof (box.weights[boxty.label]) == "string" ?
             m(KaTeXNode, { s: box.weights[boxty.label] }) :
             m("g");

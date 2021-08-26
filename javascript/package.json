@@ -22,15 +22,9 @@
     "tslib": "^2.1.0"
   },
   "devDependencies": {
-    "@ert78gb/jasmine-ts": "^0.3.2",
-    "@types/jasmine": "^3.6.7",
     "@types/katex": "^0.11.0",
     "@types/mithril": "^2.0.7",
-    "closure-webpack-plugin": "^2.5.0",
     "copy-webpack-plugin": "^8.1.0",
-    "google-closure-compiler": "^20210302.0.0",
-    "jasmine": "^3.7.0",
-    "jasmine-spec-reporter": "^6.0.0",
     "ts-loader": "^8.0.18",
     "ts-node": "^9.1.1",
     "typedoc": "^0.20.36",
