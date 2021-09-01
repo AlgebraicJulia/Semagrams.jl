@@ -8,3 +8,4 @@
 /deps/build.log
 /deps/bundles/
 /page/node_modules
+**/.bloop
