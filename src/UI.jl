@@ -5,7 +5,7 @@ It's mostly wrapped up in the Semagrams struct; see the documentation there.
 """
 module UI
 
-export Semagram, get_acset, serve_semagram, save, load, export_html, export_pdf
+export Semagram, get_acset, serve_semagram, save, load, close!, export_html, export_pdf
 
 using JSExpr
 using WebIO
@@ -111,6 +111,20 @@ function load(fn::String)
   from_json(v, LocatedSemagramData)
 end
 
+
+# NOTE: Not sure how to catch all the errors associated with WebSockets
+
+function close!(sema_task::Task)
+  try
+    schedule(sema_task,ErrorException("stop"),error=true)
+  catch e
+    @warn "Semagram server closed"
+  end
+end
+
+
+
+
 HTML_WRAPPING = """
 <!doctype html>
 
@@ -165,4 +179,5 @@ function serve_semagram(s::Semagram; port=8000)
   task
 end
 
-end
+
+end # module UI
