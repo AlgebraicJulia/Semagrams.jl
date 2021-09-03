@@ -17,6 +17,7 @@ export AttributeType, Numeric, Stringlike,
 import ..Muesli: to_json, from_json
 using ..Muesli
 using ..SVG
+using ..Boxes
 using Catlab.Present, Catlab.Theories
 using MLStyle
 using JSExpr
@@ -63,7 +64,7 @@ struct OutgoingHom
   codom::Symbol
   codom_ty::EntityType
 end
-  
+
 to_json(x::OutgoingHom) = generic_to_json(x)
 from_json(d::Dict{String, <:Any}, ::Type{OutgoingHom}) = generic_from_json(d, OutgoingHom)
 
