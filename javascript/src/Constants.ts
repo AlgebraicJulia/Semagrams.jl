@@ -1,1 +1,1 @@
-export const SVG_HEIGHT = 300;
+export const SVG_HEIGHT = 600;

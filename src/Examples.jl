@@ -6,6 +6,7 @@ module Examples
 export TheoryReactionNet, ReactionNet, ReactionNetSema,
   TheoryDirectedPortGraph, DirectedPortGraph, DirectedPortGraphSema,
   TheoryColoredDPG, ColoredDPG, ColoredDPGSema,
+  TheoryCircuitGraph, CircuitGraph, CircuitGraphSema,
   TheoryDDS, DDS, DDSSema,
   TheoryUWD, UWD, UWDSema
 
@@ -80,6 +81,30 @@ color(attr) = js"weights => { return { stroke: weights[$attr] }; }"
   @wire Wire(src,tgt) style_fn=color(:wirecolor)
   @data String Stringlike
   @data Color Stringlike
+end
+
+@present TheoryCircuitGraph(FreeSchema) begin
+  Box::Ob
+  Port::Ob
+  Wire::Ob
+  box::Hom(Port,Box)
+  src::Hom(Wire,Port)
+  tgt::Hom(Wire,Port)
+
+  Resistance::Data
+  R::Attr(Wire, Resistance)
+  Voltage::Data
+  V::Attr(Port, Voltage)
+end
+
+const CircuitGraph = ACSetType(TheoryCircuitGraph)
+
+@semagramschema CircuitGraphSema(TheoryCircuitGraph) begin
+  @box Box Circle
+  @port Port(box) style="Circular"
+  @wire Wire(src, tgt)
+  @data Resistance Stringlike
+  @data Voltage Stringlike
 end
 
 @present TheoryDDS(FreeSchema) begin
