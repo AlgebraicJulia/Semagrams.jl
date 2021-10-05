@@ -18,7 +18,7 @@ In a JupyterLab notebook:
 ```julia
 > using Semagrams, Semagrams.Examples
 
-> p = Semagram{ReactionNet{Float64}}(ReactionNetSema)
+> p = Semagram{ReactionNet{Float64,String}}(ReactionNetSema)
 
 # Edit semagram (see below)
 
