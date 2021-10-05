@@ -38,6 +38,9 @@ First of all, you have to make an acset. Documentation for this can be found in 
 We will use the running examples of *Labeled Directed Port Graphs* and *Reaction Nets*. These have the schemas
 
 ```julia
+using Catlab.Present.@present
+using Catlab.CategoricalAlgebra.FreeSchema
+
 @present TheoryReactionNet(FreeSchema) begin
   (T,S,I,O)::Ob
   it::Hom(I,T)
