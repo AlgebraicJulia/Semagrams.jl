@@ -47,12 +47,12 @@ using Catlab.CategoricalAlgebra.FreeSchema
   is::Hom(I,S)
   ot::Hom(O,T)
   os::Hom(O,S)
-  N::Data
+  N::AttrType
   rate::Attr(T,N)
   concentration::Attr(S,N)
 end
 
-const ReactionNet = CSetType(TheoryReactionNet)
+@acset_type ReactionNet(TheoryReactionNet)
 ```
 
 and
@@ -66,7 +66,7 @@ and
   tgt::Hom(Wire,IPort)
 end
 
-const DPG = CSetType(TheoryDirectedPortGraph)
+@acset_type DPG(TheoryDirectedPortGraph)
 ```
 
 After making an acset, you must make a semagrams schema for the acset you made in step 1. The basic idea behind this is that you have to tell Semagrams.jl what role the objects in your acset play. Currently the three roles are

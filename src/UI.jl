@@ -29,12 +29,12 @@ Contains:
 - `ws`, the schema of the semagram. This gets passed to typescript, and also
    tells us how to interpret the data that we are getting back from typescript.
 """
-struct Semagram{T <: AbstractACSet}
+struct Semagram{T <: ACSet}
   scope::Scope
   receiving::Observable{Dict{String,Any}}
   sending::Observable{Dict{String,Any}}
   exported::Observable{String}
-  function Semagram{T}(ls::LocatedSemagramData) where {T <: AbstractACSet}
+  function Semagram{T}(ls::LocatedSemagramData) where {T <: ACSet}
     try
       T()
     catch e
@@ -72,7 +72,7 @@ struct Semagram{T <: AbstractACSet}
   end
 end
 
-function Semagram{T}(s::SemagramSchema) where {T <: AbstractACSet}
+function Semagram{T}(s::SemagramSchema) where {T <: ACSet}
   ls = LocatedSemagramData(s)
   Semagram{T}(ls)
 end
