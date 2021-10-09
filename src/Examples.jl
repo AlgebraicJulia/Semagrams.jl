@@ -10,7 +10,7 @@ export TheoryReactionNet, ReactionNet, ReactionNetSema,
   TheoryDDS, DDS, DDSSema,
   TheoryUWD, UWD, UWDSema
 
-using Catlab.Present, Catlab.CSetDataStructures
+using Catlab, Catlab.CategoricalAlgebra
 using JSExpr
 using ..Schema
 using ..Boxes
@@ -21,15 +21,15 @@ using ..Boxes
   is::Hom(I,S)
   ot::Hom(O,T)
   os::Hom(O,S)
-  N::Data
-  L::Data
+  N::AttrType
+  L::AttrType
   rate::Attr(T,N)
   concentration::Attr(S,N)
   species_label::Attr(S,L)
   transitions_label::Attr(T,L)
 end
 
-const ReactionNet = ACSetType(TheoryReactionNet)
+@acset_type ReactionNet(TheoryReactionNet, index=[:it,:is,:ot,:os])
 
 @semagramschema ReactionNetSema(TheoryReactionNet) begin
   @box S Circle label=:species_label
@@ -49,11 +49,12 @@ end
   src::Hom(Wire,OPort)
   tgt::Hom(Wire,IPort)
 
-  String::Data
+  String::AttrType
   label::Attr(Box,String)
 end
 
-const DirectedPortGraph = ACSetType(TheoryDirectedPortGraph)
+@acset_type DirectedPortGraph(TheoryDirectedPortGraph,
+                              index=[:ibox,:obox,:src,:tgt])
 
 @semagramschema DirectedPortGraphSema(TheoryDirectedPortGraph) begin
   @box Box Square label=:label
@@ -64,13 +65,13 @@ const DirectedPortGraph = ACSetType(TheoryDirectedPortGraph)
 end
 
 @present TheoryColoredDPG <: TheoryDirectedPortGraph begin
-  Color::Data
+  Color::AttrType
   iportcolor::Attr(IPort,Color)
   oportcolor::Attr(OPort,Color)
   wirecolor::Attr(Wire,Color)
 end
 
-const ColoredDPG = ACSetType(TheoryColoredDPG)
+@acset_type ColoredDPG(TheoryColoredDPG, index=[:ibox,:obox,:src,:tgt])
 
 color(attr) = js"weights => { return { stroke: weights[$attr] }; }"
 
@@ -91,13 +92,13 @@ end
   src::Hom(Wire,Port)
   tgt::Hom(Wire,Port)
 
-  Resistance::Data
+  Resistance::AttrType
   R::Attr(Wire, Resistance)
-  Voltage::Data
+  Voltage::AttrType
   V::Attr(Port, Voltage)
 end
 
-const CircuitGraph = ACSetType(TheoryCircuitGraph)
+@acset_type CircuitGraph(TheoryCircuitGraph, index=[:box,:src,:tgt])
 
 @semagramschema CircuitGraphSema(TheoryCircuitGraph) begin
   @box Box Circle
@@ -112,7 +113,7 @@ end
   next::Hom(X,X)
 end
 
-const DDS = ACSetType(TheoryDDS)
+@acset_type DDS(TheoryDDS)
 
 @semagramschema DDSSema(TheoryDDS) begin
   @box X Square
@@ -128,7 +129,7 @@ end
   outer_junction::Hom(OuterPort, Junction)
 end
 
-const UWD = ACSetType(TheoryUWD)
+@acset_type UWD(TheoryUWD, index=[:box,:junction,:outer_junction])
 
 @semagramschema UWDSema(TheoryUWD) begin
   @box Box Circle

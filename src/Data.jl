@@ -118,18 +118,18 @@ function lookup_attachment(box_map::Dict{Int,Int},
   end
 end
 
-function attribute_type(::Type{T}, attr::Symbol) where {CD, AD, Ts, T <: AbstractACSet{CD, AD, Ts}}
-  Ts.parameters[Theories.codom_num(AD, attr)]
+function attribute_type(::Type{T}, attr::Symbol) where {S, Ts, T <: StructACSet{S,Ts}}
+  Ts.parameters[Theories.codom_num(S, attr)]
 end
 
-function attributes_from_strings(weights::Dict{Symbol, String}, ::Type{T}) where {T <: AbstractACSet}
+function attributes_from_strings(weights::Dict{Symbol, String}, ::Type{T}) where {T <: ACSet}
   types = Dict([attr => attribute_type(T, attr) for attr in keys(weights)]...)
   NamedTuple{(keys(types)...,),Tuple{values(types)...}}(
     [from_json(weights[attr],types[attr]) for attr in keys(weights)]
   )
 end
 
-function to_acset(ls::LocatedSemagramData, ::Type{T}) where {T <: AbstractACSet}
+function to_acset(ls::LocatedSemagramData, ::Type{T}) where {T <: ACSet}
   sd = ls.sg
   schema = sd.schema
   acs = T()
