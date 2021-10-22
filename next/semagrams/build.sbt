@@ -12,14 +12,14 @@ lazy val root = (project in file("."))
       ("org.scala-js" %%% "scalajs-dom" % "1.2.0")
         .cross(CrossVersion.for3Use2_13),
       "com.raquo" %%% "laminar" % "0.13.1",
-      "com.lihaoyi" %%% "utest" % "0.7.10" % "test",
       "org.typelevel" %%% "cats-core" % "2.6.1",
       "org.typelevel" %%% "cats-kernel" % "2.6.1",
+      "org.typelevel" %%% "cats-parse" % "0.3.4",
       "dev.optics" %%% "monocle-core" % "3.0.0",
-      "dev.optics" %%% "monocle-macro" % "3.0.0"
+      "dev.optics" %%% "monocle-macro" % "3.0.0",
+      "com.lihaoyi" %%% "utest" % "0.7.10" % "test",
+      "org.scalacheck" %%% "scalacheck" % "1.15.4" % "test",
     ),
     testFrameworks += new TestFramework("utest.runner.Framework")
   )
   .enablePlugins(ScalaJSPlugin)
-
-// See https://www.scala-sbt.org/1.x/docs/Using-Sonatype.html for instructions on how to publish to Sonatype.
