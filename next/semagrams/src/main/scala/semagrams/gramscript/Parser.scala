@@ -1,7 +1,8 @@
 package semagrams.gramscript
 
 import cats.parse.{Parser0, Parser => P, Numbers}
-import semagrams.gramscript.Syntax._
+import Syntax._
+import Associativities._
 
 object Parser {
     /* Edna voice: NO TABS */
@@ -38,10 +39,10 @@ object Parser {
         .orElse(P.string("false").as(Literal.B(false)))
 
     private[this] val alphaSymStr = (
-        P.charWhere(alphaIdentBeginChar) ~ P.charWhere(alphaIdentChar)
+        P.charWhere(alphaIdentBeginChar) ~ P.charWhere(alphaIdentChar).rep0
     ).map({ case (c,cs) => (c::cs).mkString })
 
-    private[this] val specialSymStr = P.charWhere(specialChar).rep.map(_.mkString)
+    private[this] val specialSymStr = P.charWhere(specialChar).rep.map(_.toList.mkString)
 
     private[this] val symStr = alphaSymStr.orElse(specialSymStr)
 
@@ -59,7 +60,9 @@ object Parser {
 
     val lit = literal.map(Expr.Lit(_))
 
-    val identifier = symStr.filter(s => !reserved.contains(s)).map(Expr.Id(_))
+    val identifier = symStr.filter(s => !reserved.contains(s)).map(mkId)
+
+    val binop = P.stringIn(precedences.keySet)
 
     def interp(expr: P[Expr]): P[Expr] = {
         // Not going to worry about escaping yet
@@ -68,19 +71,19 @@ object Parser {
 
         val interpSeg = for {
             _ <- P.string("${")
-            e <- recurse
+            e <- expr
             _ <- P.char('}')
         } yield e
 
-        val seg = str_body.map(Left(_)).
-            orElse(interp_body.map(Right(_)))
+        val seg = strSeg.map(Left(_)).
+            orElse(interpSeg.map(Right(_)))
 
         for {
             _ <- P.char('"')
             segs <- seg.rep0
             _ <- P.char('"')
         } yield Expr.Call(
-            Expr.Id("concat"),
+            mkId("concat"),
             segs.toSeq.map(
                 {
                     case Left(s) => Expr.Lit(Literal.S(s))
@@ -91,19 +94,18 @@ object Parser {
     def block(expr: P[Expr]): P[Expr] = {
         for {
             name <- P.stringIn(block_keywords).backtrack
-            _ <- spaces
-            head <- recurse
+            head <- (spaces *> expr).?
             _ <- newline
-            body <- (recurse <* newline).rep0
+            body <- (expr <* newline).rep0
             _ <- end
-        } yield Expr.Block(name, Some(head), body.toSeq)
+        } yield Expr.Block(name, head, body.toSeq)
     }
 
     val expr: P[Expr] = P.recursive[Expr] { recurse =>
         val subexpr = recurse.between(P.char('('), P.char(')'))
             .orElse(lit)
             .orElse(interp(recurse))
-            .orElse(id)
+            .orElse(identifier)
             .backtrack
 
         val funcArgs = for {
@@ -123,8 +125,12 @@ object Parser {
 
         val opExpr = for {
             e <- call
-            ops <- (call ~ call).rep0
-        } yield e
+            ops <- (binop.between(anyspaces0, anyspaces0).backtrack ~ call).rep0
+            res <- associate(e, ops) match {
+                case Some(f) => P.pure(f)
+                case None => P.failWith("Could not reassociate operations")
+            }
+        } yield res
 
         block(recurse).orElse(opExpr)
     }

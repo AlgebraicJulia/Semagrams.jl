@@ -1,14 +1,18 @@
 package semagrams.gramscript
 
 import scala.collection.mutable
+import cats.instances.try_
 
 object Syntax {
+    /* We may at some point upgrade this to support dot paths, like a.b, and also machine-generated names */
+    case class Identifier(label: String)
+
     enum Expr:
         case Block(name: String, head: Option[Expr], body: Seq[Expr])
         case Call(head: Expr, args: Seq[Expr])
         case Special(name: String, args: Seq[Expr])
         case Lit(value: Literal)
-        case Id(name: String)
+        case Id(name: Identifier)
 
         def toInput(b: mutable.StringBuilder, indent: Int): Unit = this match {
             case Block(name, head, body) => {
@@ -49,7 +53,7 @@ object Syntax {
                 b += ')'
             }
             case Lit(value) => value.toInput(b)
-            case Id(name) => b ++= name
+            case Id(name) => b ++= name.label
         }
 
         def toInput: String = {
@@ -57,6 +61,8 @@ object Syntax {
             this.toInput(b, 0)
             b.toString
         }
+    
+    def mkId(label: String) = Expr.Id(Identifier(label))
 
     enum Literal:
         case I(v: Int)
@@ -73,20 +79,16 @@ object Syntax {
             case S(v) => "\"" + v + "\""
         }
 
-    
     val block_keywords = Seq(
         "function",
         "view", "query", "mutate",
         "schema",
-        "type"
+        "type",
+        "let"
     );
 
     val reserved = block_keywords ++ Seq("end")
 
-    val ops = Map("::" -> 20, "=" -> 20,
-                  "->" -> 30,
-                  "&&" -> 40, "||" -> 40,
-                  "+" -> 50, "-" -> 50,
-                  "*" -> 60, "/" -> 60,
-                  "^" -> 70)
+    val special_ops = Seq("=", "::", "->")
+
 }

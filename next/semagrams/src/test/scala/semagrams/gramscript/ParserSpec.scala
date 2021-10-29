@@ -5,9 +5,9 @@ import org.scalacheck.Prop._
 import org.scalacheck.Prop
 import org.scalacheck.Gen
 
-import semagrams.gramscript.Parser._
-import semagrams.gramscript.Syntax._
-import semagrams.gramscript.ParseError
+import Parser._
+import Syntax._
+import Associativities._
 
 object ParserSpec extends Properties("Parser") {
     // Not going to deal with prefix operators yet
@@ -70,11 +70,23 @@ object ParserSpec extends Properties("Parser") {
             Gen.oneOf(idGen, litGen)
         }
         for {
-            op <- Gen.oneOf(ops.keys)
+            op <- Gen.oneOf(precedences.keys)
             lhs <- subgenerator
             rhs <- subgenerator
-        } yield Expr.BinOp(op, lhs, rhs)
+        } yield Expr.Call(Expr.Id(op), Seq(lhs, rhs))
     }
 
     property("binops") = forAll(opGen(2)) { checkExpr }
+
+    def manualCheck(p: (String, Expr)) = p match {
+        case (s,e) => expr.parseAll(s) == Right(e)
+    } 
+
+    val examples = Seq(
+        ("1+1+1",
+        Expr.Call(Expr.Id("+"),
+            Seq(Expr.Call(Expr.Id("+"),
+                          Seq(Expr.Lit(Literal.I(1)), Expr.Lit(Literal.I(1)))),
+                Expr.Lit(Literal.I(1)))))
+    )
 }
