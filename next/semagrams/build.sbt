@@ -1,5 +1,5 @@
-ThisBuild / scalaVersion := "3.0.1"
-ThisBuild / crossScalaVersions ++= Seq("2.13.6", "3.0.1")
+ThisBuild / scalaVersion := "3.1.0"
+ThisBuild / crossScalaVersions ++= Seq("2.13.6", "3.1.0")
 ThisBuild / version := "0.1.0-SNAPSHOT"
 ThisBuild / organization := "org.algebraicjulia"
 ThisBuild / organizationName := "AlgebraicJulia"
