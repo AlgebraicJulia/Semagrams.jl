@@ -14,10 +14,9 @@
           nativeBuildInputs = with pkgs; [
             nodejs
             sbt
-            metals
             openjdk
-            (vscode.fhsWithPackages
-              (pkgs: with pkgs; [ nodejs sbt metals openjdk ]))
+            metals
+            bloop
           ];
           shellHook = "export PATH=$PWD/node_modules/.bin:$PATH";
         };
