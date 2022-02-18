@@ -15,6 +15,7 @@ lazy val root = (project in file("."))
       "org.typelevel" %%% "cats-core" % "2.6.1",
       "org.typelevel" %%% "cats-kernel" % "2.6.1",
       "org.typelevel" %%% "cats-parse" % "0.3.4",
+      "org.typelevel" %%% "cats-effect" % "3.3.5",
       "dev.optics" %%% "monocle-core" % "3.0.0",
       "dev.optics" %%% "monocle-macro" % "3.0.0",
       "com.lihaoyi" %%% "utest" % "0.7.10" % "test",

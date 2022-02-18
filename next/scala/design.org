@@ -37,3 +37,5 @@
   - Subscribe to the outbox of other controllers
   - Send things to the inbox of other controllers
 - Controllers are accessed through a ControllerRegistry, via ControllerHandles
+
+- Basically, this is smalltalk

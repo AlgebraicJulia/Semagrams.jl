@@ -1,16 +1,16 @@
 package semagrams
 
-import semagrams.examples.StaticBoxes
+import semagrams.examples._
 import semagrams.sprites._
 import semagrams.util.Complex
 import org.scalajs.dom
 import com.raquo.laminar.api.L._
 
 object Main {
-  val boxes = Map(Entity("box", 1) -> BoxData(Complex(50,50), Complex(50,50)))
+  val boxes = Boxes()
 
   def main(args: Array[String]): Unit = {
-    val appDiv = new StaticBoxes().start(boxes)
+    val appDiv = StaticBoxes(Var(boxes)).present()
     render(dom.document.querySelector("#appContainer"), appDiv)
   }
 }
