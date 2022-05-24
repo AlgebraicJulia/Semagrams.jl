@@ -10,6 +10,10 @@ import semagrams.util._
 import semagrams._
 import org.scalajs.dom.raw.KeyboardEvent
 import com.raquo.laminar.nodes.ReactiveElement
+import io.laminext.websocket.WebSocket
+import io.laminext.websocket.upickle._
+import upickle.default.{ReadWriter => RW, _}
+
 
 case class EditorState[Model](
   mouse: MouseController,
@@ -26,12 +30,14 @@ object EditorState {
     val drag = DragController(mouse)
     val hover = HoverController()
     val keyboard = KeyboardController()
+    // val ws = WebSocket.url(url).json[In,Out].build(managed=true)
 
     elt.amend(
       mouse,
       drag,
       hover,
-      keyboard
+      keyboard,
+      // ws.connect
     )
 
     new EditorState(mouse, drag, hover, keyboard, $model, elt)

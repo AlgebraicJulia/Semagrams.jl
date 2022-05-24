@@ -5,7 +5,6 @@ import semagrams.sprites._
 import semagrams._
 import semagrams.util._
 import semagrams.controllers._
-import com.raquo.domtypes.generic.codecs.StringAsIsCodec
 import cats.data._
 import cats.syntax.all._
 
@@ -43,14 +42,17 @@ val remBoxAction: Action[Boxes, Unit] = (for {
   _ <- OptionT.liftF(updateModel[Boxes](_.remBox(ent.id)))
 } yield {}).value.map(_ => {})
 
+val bindings = KeyBindings(
+  Map(
+    "a" -> addBoxAction,
+    "d" -> remBoxAction
+  )
+)
+
+
 case class StaticBoxes($state: Var[Boxes]) {
   def present() = {
-    val elt = svg.svg(
-      svg.width := "400",
-      svg.height := "400",
-      svg.customSvgAttr("tabindex", StringAsIsCodec) := "0",
-    )
-
+    val elt = baseSvg
     val es = EditorState($state, elt)
 
     val boxEvents = EventBus[BoxEvent]()
@@ -62,15 +64,7 @@ case class StaticBoxes($state: Var[Boxes]) {
       boxSprites
     )
 
-    val bindings = KeyBindings(
-      Map(
-        "a" -> addBoxAction,
-        "d" -> remBoxAction
-      )
-    )
-
     runAction(es, bindings.run.foreverM)
-
     elt
   }
 }
