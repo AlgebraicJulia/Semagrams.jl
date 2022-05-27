@@ -64,27 +64,22 @@ case class BareACSet(
 
   def subpart[X <: Ob, Y <: Ob](s: Schema, f: Hom[X, Y], x: Elt[X]): Option[Elt[Y]] = {
     assert(s.homs contains f)
-    _homs(f.asInstanceOf[Hom[Ob,Ob]]).asInstanceOf[Map[Elt[X], Elt[Y]]].get(x)
+    _homs(f).asInstanceOf[Map[Elt[X], Elt[Y]]].get(x)
   }
 
   def subpart[X <: Ob, T](s: Schema, f: Attr[X, T], x: Elt[X]): Option[T] = {
     assert(s.attrs contains f)
-    _attrs(f.asInstanceOf[Attr[Ob,Any]]).asInstanceOf[Map[Elt[X], T]].get(x)
+    _attrs(f).asInstanceOf[Map[Elt[X], T]].get(x)
   }
 
   def setSubpart[X <: Ob, Y <: Ob](s: Schema, f: Hom[X, Y], x: Elt[X], y: Elt[Y]): BareACSet = {
     assert(s.homs contains f)
-    val xp = x.asInstanceOf[Elt[Ob]]
-    val yp = y.asInstanceOf[Elt[Ob]]
-    val fp = f.asInstanceOf[Hom[Ob, Ob]]
-    homs.modify(_.focus(_.index(fp)).modify(_ + (xp -> yp)))(this)
+    homs.modify(_.focus(_.index(f)).modify(_ + (x -> y)))(this)
   }
 
   def setSubpart[X <: Ob, T](s: Schema, f: Attr[X, T], x: Elt[X], y: T): BareACSet = {
     assert(s.attrs contains f)
-    val xp = x.asInstanceOf[Elt[Ob]]
-    val fp = f.asInstanceOf[Attr[Ob, Any]]
-    attrs.modify(_.focus(_.index(fp)).modify(_ + (xp -> y)))(this)
+    attrs.modify(_.focus(_.index(f)).modify(_ + (x -> y)))(this)
   }
 }
 
