@@ -13,15 +13,15 @@ case class Weight[T]() extends Attr[E, T]
 
 trait HasGraph[A: ACSet] {
   extension(a: A)
-    def vertices(): Set[Entity[V]] = a.parts(V())
-    def edges(): Set[Entity[E]] = a.parts(E())
+    def vertices(): Set[Elt[V]] = a.parts(V())
+    def edges(): Set[Elt[E]] = a.parts(E())
 
-    def src(e: Entity[E]): Option[Entity[V]] = a.subpart(Src(), e)
-    def tgt(e: Entity[E]): Option[Entity[V]] = a.subpart(Tgt(), e)
+    def src(e: Elt[E]): Option[Elt[V]] = a.subpart(Src(), e)
+    def tgt(e: Elt[E]): Option[Elt[V]] = a.subpart(Tgt(), e)
 }
 
-def addVertex[A: HasGraph: ACSet](): State[A, Entity[V]] = addPart(V())
-def addEdge[A: HasGraph: ACSet](s: Entity[V], t: Entity[V]): State[A, Entity[E]] =
+def addVertex[A: HasGraph: ACSet](): State[A, Elt[V]] = addPart(V())
+def addEdge[A: HasGraph: ACSet](s: Elt[V], t: Elt[V]): State[A, Elt[E]] =
   for {
     e <- addPart(E())
     _ <- setSubpart(Src(), e, s)
