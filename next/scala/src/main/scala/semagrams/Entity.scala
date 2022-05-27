@@ -1,3 +1,3 @@
 package semagrams
 
-case class Entity(typ: String, id: Int)
+abstract class Entity

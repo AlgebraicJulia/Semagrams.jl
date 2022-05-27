@@ -33,7 +33,7 @@ enum Side {
   case Left
   case Right
 
-  def sideData(thickness: Double): BoxData => BoxData = {
+  def sideBox(thickness: Double): BoxData => BoxData = {
     this match {
       case Top => { case BoxData(dims, pos) => BoxData(Complex(dims.x, thickness), Complex(pos.x, pos.y - thickness / 2)) }
       case Bottom => { case BoxData(dims, pos) => BoxData(Complex(dims.x, thickness), Complex(pos.x, pos.y + dims.y - thickness / 2)) }
@@ -81,7 +81,7 @@ case class Box(
   def makeSide(ent: Entity, model: L.Var[Model], side: Side) = {
     val resize = side.resize
     rect(
-      boxData <-- model.signal.map(side.sideData(10)),
+      boxData <-- model.signal.map(side.sideBox(10)),
       stroke := "none",
       fill := "#fff",
       fillOpacity := "0",
