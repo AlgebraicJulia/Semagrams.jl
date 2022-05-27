@@ -20,7 +20,7 @@ abstract class Hom[Dom <: Ob, Codom <: Ob] extends GenHom
 abstract class GenAttr
 abstract class Attr[Dom <: Ob, Codom] extends GenAttr
 
-case class Schema(obs: List[Ob], homs: List[Hom[Ob, Ob]], attrs: List[Attr[Ob, Any]])
+case class Schema(obs: List[Ob], homs: List[GenHom], attrs: List[GenAttr])
 
 object Schema {
   def apply(args: Any*) = {
@@ -28,10 +28,10 @@ object Schema {
       case (x: Ob) => x
     }
     val homs = args.collect {
-      case (f: Hom[?, ?]) => f.asInstanceOf[Hom[Ob,Ob]]
+      case (f: GenHom) => f
     }
     val attrs = args.collect {
-      case (f: Attr[?, ?]) => f.asInstanceOf[Attr[Ob,Any]]
+      case (f: GenAttr) => f
     }
     new Schema(obs.toList, homs.toList, attrs.toList)
   }
