@@ -164,7 +164,7 @@ export class CursorState {
         this.dragState = { ty: DragStates.Empty };
         this.hoveredEntity = null;
         this.svgelt = null;
-        this.affineTrans = new AffineTrans(0.5, [0, 0]);
+        this.affineTrans = new AffineTrans(1.5, [0, 0]);
     }
 
     eventCoordsSVG(e: MouseEvent): Vec2Like {
@@ -323,12 +323,14 @@ export class EditorState {
     sendToJl: Function
     exportToJl: Function
     exported: boolean
+    gridid: string
 
     constructor(sema: LocatedSemagram, sendToJl: Function, exportToJl: Function) {
         this.ls = sema;
         this.sendToJl = sendToJl;
         this.exportToJl = exportToJl;
         this.exported = false;
+        this.gridid = Math.random().toString(16).substr(2, 8);
         this.reset();
     }
 
@@ -374,6 +376,11 @@ export class EditorState {
             (_a) => { }
         );
         this.cursor.svgelt = svgelt;
+    }
+
+    setZoom(z: number) {
+        this.cursor.affineTrans.zoom = z;
+        m.redraw();
     }
 
     resetWith(e: ExportedLocatedSemagram) {
@@ -570,6 +577,7 @@ export class EditorState {
 
     /** Export the current `ls`, and send it down the wire! */
     save() {
+        console.log(JSON.stringify(this.ls.export()))
         this.sendToJl(this.ls.export());
     }
 

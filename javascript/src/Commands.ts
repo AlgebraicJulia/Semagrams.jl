@@ -19,6 +19,7 @@ export const DEFAULT_KEYBINDINGS: Map<string, Command> = new Map([
     ["s", Command.SetSrc],
     ["t", Command.SetTgt],
     ["b", Command.AddBox],
+    ["a", Command.AddBox],
     ["p", Command.AddPort],
     ["w", Command.AddWire],
     ["d", Command.RemHovered],

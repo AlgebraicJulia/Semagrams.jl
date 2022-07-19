@@ -67,10 +67,10 @@ const capacitorMarker =
         )
     )
 
-const grid = (T: AffineTrans) => {
+const grid = (T: AffineTrans, gridid: string) => {
     const k = T.zoom * 60;
     return m("pattern", {
-        id: "grid",
+        id: gridid,
         width: k,
         height: k,
         x: T.translate[0],
@@ -90,7 +90,7 @@ export const SvgDefs: m.Component<EditorAttrs> = {
     view({ attrs: { state } }) {
         return m(
             "defs",
-            grid(state.cursor.affineTrans),
+            grid(state.cursor.affineTrans, state.gridid),
             resistorMarker,
             capacitorMarker,
             makeMarker("arrow-hovered", "lightgrey"),
@@ -132,7 +132,7 @@ export const EditorSVG: m.Component<EditorAttrs> = {
         },
             m("style", m.trust(globalStyle)),
             m(SvgDefs, { state }),
-            m("rect", { width: "100%", height: "100%", fill: "url(#grid)" }),
+            m("rect", { width: "100%", height: "100%", fill: `url(#${state.gridid})` }),
             m("g",
                 {
                     transform: state.cursor.affineTrans.svgExport()
@@ -162,8 +162,7 @@ export const Editor: m.Component<EditorAttrs> = {
     view({ attrs: { state } }) {
         return m("div",
             m(EditorSVG, { state }),
-            m(AttributeEditor, { state }),
-            m(ExportedIndicator, { state })
+            m(AttributeEditor, { state })
         )
     }
 }
