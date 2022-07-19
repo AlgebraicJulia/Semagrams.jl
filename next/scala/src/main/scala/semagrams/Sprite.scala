@@ -72,21 +72,21 @@ trait Sprite {
   ): SvgElement
 }
 
-class SpriteCollection(
-  val S: Sprite,
-  val sprites: Signal[List[(Entity, S.Model)]]
-) extends Modifier[SvgElement] {
-  def present(): Signal[List[SvgElement]] = {
-    sprites.split(_._1)({ case (ent, init, updates) => S.present(ent, init._2, updates.map(_._2))})
-  }
+// class SpriteCollection(
+//   val S: Sprite,
+//   val sprites: Signal[List[(Entity, S.Model)]]
+// ) extends Modifier[SvgElement] {
+//   def present(): Signal[List[SvgElement]] = {
+//     sprites.split(_._1)({ case (ent, init, updates) => S.present(ent, init._2, updates.map(_._2))})
+//   }
 
-  override def apply(el: SvgElement) = el.amend(
-    children <-- present()
-  )
-}
+//   override def apply(el: SvgElement) = el.amend(
+//     children <-- present()
+//   )
+// }
 
-object SpriteCollection {
-  def apply(S: Sprite, sprites: Signal[List[(Entity, S.Model)]]) = {
-    new SpriteCollection(S, sprites)
-  }
-}
+// object SpriteCollection {
+//   def apply(S: Sprite, sprites: Signal[List[(Entity, S.Model)]]) = {
+//     new SpriteCollection(S, sprites)
+//   }
+// }

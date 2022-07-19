@@ -69,42 +69,40 @@ enum Side {
   }
 }
 
+// case class Box(
+//   hover: HoverController,
+//   drag: DragController,
+//   updater: L.Observer[BoxEvent]
+// ) extends Sprite {
+//   type Model = BoxData
 
+//   def makeSide(ent: Entity, model: L.Var[Model], side: Side) = {
+//     val resize = side.resize
+//     rect(
+//       boxData <-- model.signal.map(side.sideBox(10)),
+//       stroke := "none",
+//       fill := "#fff",
+//       fillOpacity := "0",
+//       style := "cursor:"+(if side.vertical then "ns-resize" else "ew-resize"),
+//       drag.draggable(model.signal.map(side.sidePos), updater.contramap((pos: Complex) => BoxEvent.NewParams(ent, resize(pos, model.now()))))
+//     )
+//   }
 
-case class Box(
-  hover: HoverController,
-  drag: DragController,
-  updater: L.Observer[BoxEvent]
-) extends Sprite {
-  type Model = BoxData
-
-  def makeSide(ent: Entity, model: L.Var[Model], side: Side) = {
-    val resize = side.resize
-    rect(
-      boxData <-- model.signal.map(side.sideBox(10)),
-      stroke := "none",
-      fill := "#fff",
-      fillOpacity := "0",
-      style := "cursor:"+(if side.vertical then "ns-resize" else "ew-resize"),
-      drag.draggable(model.signal.map(side.sidePos), updater.contramap((pos: Complex) => BoxEvent.NewParams(ent, resize(pos, model.now()))))
-    )
-  }
-
-  def present(ent: Entity, initModel: Model, updates: L.Signal[Model]) = {
-    val model = L.Var(initModel)
-    g(
-      rect(
-        updates --> model.writer,
-        boxData <-- updates,
-        stroke := "black",
-        fill <-- hover.switchState(ent, "lightgrey", "white"),
-        drag.draggable(updates.map(_.pos), updater.contramap(pos => BoxEvent.NewParams(ent, model.now().copy(pos = pos)))),
-        hover.hoverable(ent),
-      ),
-      makeSide(ent, model, Side.Top),
-      makeSide(ent, model, Side.Bottom),
-      makeSide(ent, model, Side.Left),
-      makeSide(ent, model, Side.Right),
-    )
-  }
-}
+//   def present(ent: Entity, initModel: Model, updates: L.Signal[Model]) = {
+//     val model = L.Var(initModel)
+//     g(
+//       rect(
+//         updates --> model.writer,
+//         boxData <-- updates,
+//         stroke := "black",
+//         fill <-- hover.switchState(ent, "lightgrey", "white"),
+//         drag.draggable(updates.map(_.pos), updater.contramap(pos => BoxEvent.NewParams(ent, model.now().copy(pos = pos)))),
+//         hover.hoverable(ent),
+//       ),
+//       makeSide(ent, model, Side.Top),
+//       makeSide(ent, model, Side.Bottom),
+//       makeSide(ent, model, Side.Left),
+//       makeSide(ent, model, Side.Right),
+//     )
+//   }
+// }
