@@ -12,6 +12,17 @@ case class BoxData(
   pos: Complex
 )
 
+object BoxData {
+  def fromProps(props: PropMap): BoxData = {
+    val center = props(Center())
+    val width = props(MinimumWidth())
+    val height = props(MinimumHeight())
+    val dims = Complex(width, height)
+    val pos = center - dims / 2
+    BoxData(dims, pos)
+  }
+}
+
 class BoxDataAttr extends CustomSvgAttr[BoxData] {
   def applyAttrs(binder: SvgBinder[BoxData]): Unit = {
     binder(width, _.dims.x.toString)
