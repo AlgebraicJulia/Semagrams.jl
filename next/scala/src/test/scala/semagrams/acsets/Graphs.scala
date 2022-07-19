@@ -47,5 +47,22 @@ object ACSetSpec extends TestSuite {
       assert(g.subpart(Weight(), l) == Some("bar"))
     }
 
+    test("incident") {
+      val mkpath = for {
+        x <- addVertex[Graph]()
+        y <- addVertex()
+        z <- addVertex()
+        k <- addEdge(x, y)
+        l <- addEdge(y, z)
+      } yield (x,y,z,k,l)
+
+      val (g,(x,y,z,k,l)) = mkpath.run(Graph()).value
+
+      assert(g.incident(Src(), x) == Set(k))
+      assert(g.incident(Tgt(), x) == Set())
+      assert(g.incident(Src(), y) == Set(l))
+      assert(g.incident(Tgt(), y) == Set(k))
+    }
   }
+
 }

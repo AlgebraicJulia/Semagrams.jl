@@ -12,7 +12,6 @@ import semagrams.Entity
 import java.awt.Canvas
 import cats.syntax.validated
 import semagrams.acsets.ACSet
-import scala.util.CommandLineParser.FromString.given_FromString_Int
 import cats.kernel.compat.scalaVersionSpecific
 
 /**
@@ -150,6 +149,16 @@ case class BareACSet(
     _attrs(f).asInstanceOf[Map[Elt[X], T]].get(x)
   }
 
+  /**
+   * We use an implicit in order to pass in the singleton instance of the type X
+   * so that we can look it up in the _obs map.
+   */
+  def incident[X <: Ob, Y <: Ob](s: Schema, f: Hom[X, Y], y: Elt[Y])(implicit xob: X): Set[Elt[X]] = {
+    assert(s.homs contains f)
+    val f_map = _homs(f).asInstanceOf[Map[Elt[X], Elt[Y]]]
+    _obs(xob).asInstanceOf[Set[Elt[X]]].filter(x => f_map(x) == y)
+  }
+
   def setSubpart[X <: Ob, Y <: Ob](s: Schema, f: Hom[X, Y], x: Elt[X], y: Elt[Y]): BareACSet = {
     assert(s.homs contains f)
     homs.modify(_.focus(_.index(f)).modify(_ + (x -> y)))(this)
@@ -228,6 +237,10 @@ trait ACSet[A] {
 
     def subpart[X <: Ob, T](f: Attr[X, T], x: Elt[X]): Option[T] = {
       bare.get(a).subpart(schema, f, x)
+    }
+
+    def incident[X <: Ob, Y <: Ob](f: Hom[X,Y], y: Elt[Y])(implicit xob: X): Set[Elt[X]] = {
+      bare.get(a).incident(schema, f, y)
     }
 
     def setSubpart[X <: Ob, Y <: Ob](f: Hom[X, Y], x: Elt[X], y: Elt[Y]): A = {

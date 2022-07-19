@@ -4,10 +4,16 @@ import monocle.macros.GenIso
 import cats.data.State
 
 case class E() extends Ob
+given E_instance: E = E()
+
 case class V() extends Ob
+given V_instance: V = V()
 
 case class Src() extends Hom[E, V]
+given Src_instance: Src = Src()
+
 case class Tgt() extends Hom[E, V]
+given Tgt_instance: Tgt = Tgt()
 
 case class Weight[T]() extends Attr[E, T]
 
