@@ -7,6 +7,7 @@ import semagrams._
 import semagrams.util.CustomAttr.CustomSvgAttr
 import semagrams.util.CustomAttr.SvgBinder
 
+//FIXME: Move these into util
 class XYAttr extends CustomSvgAttr[Complex] {
   def applyAttrs(binder: SvgBinder[Complex]): Unit = {
     binder(x, _.x.toString)

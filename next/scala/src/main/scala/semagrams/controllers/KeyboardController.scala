@@ -1,12 +1,17 @@
 package semagrams.controllers
 
 import com.raquo.laminar.api.L._
-import java.util.BitSet
 import org.scalajs.dom.raw.KeyboardEvent
-import cats.effect._
-import cats.data._
-import com.raquo.airstream.ownership.OneTimeOwner
 
+/**
+ * Like the MouseController, this both provides a subscription
+ * to keyboard events and also keeps track of the current state of
+ * the keyboard itself.
+ */
+
+/**
+ * This is a data structure representing the current state of the keyboard.
+ */
 case class KeyState(
   keys: Set[String],
   ctrl: Boolean,
@@ -42,6 +47,9 @@ object KeyState {
   }
 }
 
+/**
+ * This attaches the right listeners to the toplevel SVG
+ */
 case class KeyboardController(
   keydowns: EventBus[KeyboardEvent],
   keyups: EventBus[KeyboardEvent],
