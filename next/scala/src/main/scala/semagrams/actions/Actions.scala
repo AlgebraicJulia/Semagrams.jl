@@ -154,6 +154,16 @@ def updateModel[Model](f: Model => Model): Action[Model, Unit] = {
   } yield {}
 }
 
+def updateModel[Model,A](updater: State[Model, A]): Action[Model, A] = {
+  val L = actionLiftIO[Model]
+  for {
+    $model <- ReaderT.ask.map(_.$model)
+    model <- L.liftIO(IO($model.now()))
+    (newModel, a) = updater.run(model).value
+    _ <- L.liftIO(IO($model.set(newModel)))
+  } yield a
+}
+
 def mousePos[Model]: Action[Model, Complex] =
   ReaderT.ask.map(_.mouse.$state.now().pos)
 
