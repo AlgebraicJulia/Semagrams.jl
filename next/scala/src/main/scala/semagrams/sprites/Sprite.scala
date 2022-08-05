@@ -1,4 +1,4 @@
-package semagrams
+package semagrams.sprites
 
 import semagrams.Entity
 import com.raquo.laminar.api.L.{*, given}
