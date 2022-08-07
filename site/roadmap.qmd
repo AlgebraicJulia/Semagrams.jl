@@ -1,0 +1,74 @@
+---
+title: "Roadmap"
+---
+
+On this page, I lay out the development priorities for Semagrams. As of yet, concrete dates, or even an order of development, have not been set.
+
+This is organized in two "dimensions." One dimension is by full-stack experiences (i.e. top-down planning), and one is by features (i.e. bottom-up planning).
+
+# Full-stack experiences
+
+## Box-Port-Wire ACSet Editing
+
+Essentially the functionality of Semagrams Legacy.
+
+## Undirected Wiring Diagram Operads
+
+We should be able to draw undirected wiring diagrams, and then fill them with either other undirected wiring diagrams or elements of an algebra of undirected wiring diagrams.
+
+## Process diagrams
+
+From a palette of processes, we should be able to create directed wiring diagrams, and compose them vertically, horizontally, and operadically.
+
+## String diagrams
+
+Essentially the functionality of [homotopy.io](https://homotopy.io/), but integrated with Catlab.
+
+## Petri Nets
+
+To some extend petri nets fall under box-port-wire editing. But there are probably some custom features that would be useful to do with them.
+
+# Features
+
+## Editing
+
+- Add/remove entities
+- Connect entities
+- Edit attributes
+- Palettes
+- Chained deletion (i.e., delete connected wires or leave them dangling)
+
+## Interaction
+
+- Hovering
+- Multiple selections
+- Keypresses
+- Dialogues
+- Forms inputs
+
+## Layout
+
+- Force-based layout
+- Hierarchical (tree-based)
+- Manual adjustments to automatic layout
+
+## Nested Semagrams
+
+- Zooming in/out
+- Expanding/collapsing parts of a diagram
+
+## TikZ Export
+
+The representation of sprites should be abstract enough that it can be "exported" to SVG (i.e. displayed in a web browser) or exported to TikZ.
+
+## APIs
+
+- Websocket API for backends (like Julia)
+- Javascript API for embedding
+- Standalone saving/loading files
+
+## API functionality
+
+- Saving and loading diagrams
+- Rewriting
+- Controlling limits/colimits/oapply
