@@ -1,0 +1,168 @@
+---
+title: "Semagrams: A Flexible UI Paradigm"
+author: "Owen Lynch"
+format: revealjs
+format:
+  revealjs:
+    incremental: true
+    logo: topos_logo.jpg
+max-scale: 1.0
+width: 1500
+execute:
+  echo: false
+  output: false
+---
+
+# Overview
+
+- What does Semagrams look like?
+- How does it work?
+- Where is it going?
+
+# What does it look like?
+
+## Example: Petri Net Screenshot
+
+```{ojs}
+semagrams = require(await FileAttachment("./app.bundle.js").url())
+enzyme = await FileAttachment("./enzyme.json").json()
+semagrams.main(enzyme,
+    { state: null, element: document.getElementById("semagrams-demo1") },
+    (_state) => { },
+    (_state) => { })
+```
+
+<div id="semagrams-demo1" style="all:initial" tabindex="0" width="500">
+</div>
+
+## Example: Wiring Diagram Screenshot
+
+```{ojs}
+cooking = await FileAttachment("./cooking.json").json()
+semagrams.main(cooking,
+    { state: null, element: document.getElementById("semagrams-demo2") },
+    (_state) => { },
+    (_state) => { })
+```
+
+<div id="semagrams-demo2" style="all:initial" tabindex="0" width="500">
+</div>
+
+## Example: Jupyter Notebook
+
+(external tab)
+
+# How does it work?
+
+## Philosophy
+
+- A diagram is a collection of *sprites*, organized by *constraints*
+- This is a graphical representation of a collection of *entities* and *relations* between them
+-   | Logical  | Graphical  |
+    |----------|------------|
+    | Entity   | Sprite     |
+    | Relation | Constraint |
+
+## Petri nets
+
+```{ojs}
+context3 = ({
+    state: null,
+    element: document.getElementById("semagrams-demo3"),
+})
+semagrams.main(enzyme, context3, (_state) => { }, (_state) => { })
+```
+
+
+:::: {.columns}
+
+::: {.column width="60%"}
+| Entity     | Sprite        |
+|------------|---------------|
+| Species    | Round box     |
+| Transition | Square box    |
+| Input      | Directed wire |
+| Output     | Directed wire |
+  
+- The relations are not so neat
+- Example: the relation that an input comes from a species gets mapped to the constraint that the start of a wire has to be at the box corresponding to that species
+:::
+
+::: {.column width="40%"}
+<div id="semagrams-demo3" style="all:initial" tabindex="0" width="500">
+</div>
+:::
+
+::::
+
+## Wiring Diagrams
+
+```{ojs}
+context4 = ({
+    state: null,
+    element: document.getElementById("semagrams-demo4"),
+})
+semagrams.main(cooking, context4, (_state) => { }, (_state) => { })
+context4.state.setZoom(0.5)
+```
+
+:::: {.columns}
+
+::: {.column width="60%"}
+| Entity     | Sprite        |
+|------------|---------------|
+| Process    | Square box    |
+| Input      | Left Port     |
+| Output     | Right Port    |
+| Connection | Directed wire |
+
+- Input/Output ports are *constrained* to live on their process boxes
+- Connections are *constrained* so that their start/end is on the ports that they connect
+:::
+
+::: {.column width="40%"}
+<div id="semagrams-demo4" style="all:initial" tabindex="0" width="500">
+</div>
+:::
+
+::::
+
+
+## Technology
+
+- Frontend-backend communication
+- Web technologies for UI: everything drawn in SVG
+- Semagrams Legacy: Typescript frontend, Julia backend (or no backend)
+- Semagrams Next: Scala.js frontend, variety of backends (including Julia)
+
+# Where is it going?
+
+## Where is it now?
+
+- Semagrams Legacy is a very useful demo
+  - Built over the course of a couple months
+  - Special-purpose
+  - Inflexible architecture
+- Semagrams Next
+  - Carefully designed based on lessons from Semagrams Legacy
+  - General-purpose
+  - Flexible architecture
+
+## What is the goal?
+
+- Easily spin up custom UI for...
+  - Anything that can be put in the "entity-relation" framework
+  - As a corollary, many many parts of Catlab
+- *Interactive* integration with Catlab
+  - Input and output of calculations expressed graphically
+  - Step-by-step "wizards" for scientific computing
+- Integration with scientific communication
+  - Jupyter notebooks
+  - Presentations
+  - Webpages
+
+# Questions
+
+# Thank you!
+
+Owen Lynch, Topos Institute, [owenlynch.org](https://owenlynch.org)
