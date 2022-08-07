@@ -20,8 +20,8 @@ jobs:
           path: site
 
       - run: |
-          mkdir next
-          mv site/_site next/
+          mkdir -p next/next
+          mv site/_site/* next/next/
 
       - name: GitHub Pages action
         uses: peaceiris/actions-gh-pages@v3.7.3
