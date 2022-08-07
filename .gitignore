@@ -15,3 +15,5 @@
 /next/semagrams/.scalafmt.conf
 /next/.direnv/
 /next/.envrc
+
+/.quarto/
