@@ -13,6 +13,13 @@ jobs:
 
       - name: Set up Quarto
         uses: quarto-dev/quarto-actions/setup@v2
+
+      - name: Set up SBT
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'sbt'
       
       - name: Publish to GitHub Pages (and render)
         uses: quarto-dev/quarto-actions/render@v2
@@ -20,8 +27,13 @@ jobs:
           path: site
 
       - run: |
+          cd scala
+          sbt doc
+
+      - run: |
           mkdir -p next/next
           mv site/_site/* next/next/
+          mv scala/target/scala-3.1.0/api next/next/scaladoc
 
       - name: GitHub Pages action
         uses: peaceiris/actions-gh-pages@v3.7.3
