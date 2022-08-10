@@ -67,6 +67,13 @@ type Action[Model, A] = ReaderT[IO, EditorState[Model], A]
 
 implicit def actionLiftIO[Model]: LiftIO[[A] =>> Action[Model,A]] = LiftIO.catsKleisliLiftIO
 
+def runAction[Model](
+  state: EditorState[Model],
+  action: Action[Model, Unit]
+): Unit = {
+  action.run(state).unsafeRunAndForget()(IORuntime.global)
+}
+
 /**
  * This takes in an event stream and a callback, and provides a binder that will
  * bind the next event thrown by the event stream to be passed into the
@@ -128,13 +135,6 @@ def nextKeydownIn[Model](set: Set[String]): Action[Model, KeyboardEvent] = for {
   keyboard <- ReaderT.ask.map(_.keyboard)
   evt <- nextEvent(keyboard.keydowns.events.filter(evt => set(evt.key)))
 } yield evt
-
-def runAction[Model, A](
-  state: EditorState[Model],
-  action: Action[Model, Unit]
-): Unit = {
-  action.run(state).unsafeRunAndForget()(IORuntime.global)
-}
 
 case class KeyBindings[Model](bindings: Map[String, Action[Model, Unit]]) {
   /**
