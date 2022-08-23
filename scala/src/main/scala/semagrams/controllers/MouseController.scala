@@ -5,6 +5,8 @@ import org.scalajs.dom
 import com.raquo.laminar.api.L._
 import scala.collection.immutable.BitSet
 import com.raquo.domtypes.jsdom.defs.events.TypedTargetMouseEvent
+import org.scalajs.dom.SVGElement
+import org.scalajs.dom.SVGSVGElement
 
 /**
  * The MouseController provides two functionalities. One is to keep
@@ -40,17 +42,25 @@ enum MouseEvent:
   case MouseMove(pos: Complex)
 
 object MouseEvent {
-  def mouseDown(ev: TypedTargetMouseEvent[dom.Element]) =
-    MouseDown(Complex(ev.clientX, ev.clientY), MouseButton.fromJS(ev.button))
+  def svgCoords(el: dom.SVGSVGElement, ev: dom.MouseEvent): Complex = {
+    val pt = el.createSVGPoint()
+    pt.x = ev.clientX
+    pt.y = ev.clientY
+    val svgP = pt.matrixTransform(el.getScreenCTM().inverse())
+    Complex(svgP.x, svgP.y)
+  }
 
-  def mouseUp(ev: TypedTargetMouseEvent[dom.Element]) =
-    MouseUp(Complex(ev.clientX, ev.clientY), MouseButton.fromJS(ev.button))
+  def mouseDown(el: dom.SVGSVGElement)(ev: TypedTargetMouseEvent[dom.Element]) =
+    MouseDown(svgCoords(el, ev), MouseButton.fromJS(ev.button))
 
-  def mouseLeave(ev: TypedTargetMouseEvent[dom.Element]) =
-    MouseLeave(Complex(ev.clientX, ev.clientY))
+  def mouseUp(el: dom.SVGSVGElement)(ev: TypedTargetMouseEvent[dom.Element]) =
+    MouseUp(svgCoords(el, ev), MouseButton.fromJS(ev.button))
 
-  def mouseMove(ev: TypedTargetMouseEvent[dom.Element]) =
-    MouseMove(Complex(ev.clientX, ev.clientY))
+  def mouseLeave(el: dom.SVGSVGElement)(ev: TypedTargetMouseEvent[dom.Element]) =
+    MouseLeave(svgCoords(el, ev))
+
+  def mouseMove(el: dom.SVGSVGElement)(ev: TypedTargetMouseEvent[dom.Element]) =
+    MouseMove(svgCoords(el, ev))
 }
 
 /**
@@ -80,18 +90,20 @@ object MouseState {
 
 case class MouseController(
   $state: Var[MouseState],
-  mouseEvents: EventBus[MouseEvent]
+  mouseEvents: EventBus[MouseEvent],
 ) extends Modifier[SvgElement] {
+
   /**
    * This attaches the necessary event listeners to the main window
    */
   override def apply(el: SvgElement) = {
     import MouseEvent._
+    val svgEl = el.ref.asInstanceOf[SVGSVGElement]
     el.amend(
-      onMouseDown.map(MouseEvent.mouseDown) --> mouseEvents,
-      onMouseUp.map(MouseEvent.mouseUp) --> mouseEvents,
-      onMouseLeave.map(MouseEvent.mouseLeave) --> mouseEvents,
-      onMouseMove.map(MouseEvent.mouseMove) --> mouseEvents,
+      onMouseDown.map(MouseEvent.mouseDown(svgEl)) --> mouseEvents,
+      onMouseUp.map(MouseEvent.mouseUp(svgEl)) --> mouseEvents,
+      onMouseLeave.map(MouseEvent.mouseLeave(svgEl)) --> mouseEvents,
+      onMouseMove.map(MouseEvent.mouseMove(svgEl)) --> mouseEvents,
       mouseEvents --> $state.updater[MouseEvent]((state, evt) => state.processEvent(evt))
     )
   }

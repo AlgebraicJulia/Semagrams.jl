@@ -51,11 +51,13 @@ case class Box() extends Sprite {
     )
   }
 
-  def present(ent: Entity, init: PropMap, updates: L.Signal[PropMap]) = {
-    rect(
+  def present(ent: Entity, init: PropMap, updates: L.Signal[PropMap]): RenderedSprite = {
+    val root = rect(
       geomUpdater(updates),
       styleUpdater(updates)
     )
+
+    RenderedSprite(root, Map(MainHandle() -> root))
   }
 
   def boundaryPt(data: PropMap, dir: Double) = {

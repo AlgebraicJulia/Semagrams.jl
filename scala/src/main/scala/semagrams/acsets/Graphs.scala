@@ -9,10 +9,16 @@ given E_instance: E = E()
 case class V() extends Ob
 given V_instance: V = V()
 
-case class Src() extends Hom[E, V]
+case class Src() extends Hom[E, V] {
+  def dom = E()
+  def codom = V()
+}
 given Src_instance: Src = Src()
 
-case class Tgt() extends Hom[E, V]
+case class Tgt() extends Hom[E, V] {
+  def dom = E()
+  def codom = V()
+}
 given Tgt_instance: Tgt = Tgt()
 
 case class Weight[T]() extends Attr[E, T]
@@ -27,6 +33,7 @@ trait HasGraph[A: ACSet] {
 }
 
 def addVertex[A: HasGraph: ACSet](): State[A, Elt[V]] = addPart(V())
+
 def addEdge[A: HasGraph: ACSet](s: Elt[V], t: Elt[V]): State[A, Elt[E]] =
   for {
     e <- addPart(E())
@@ -64,3 +71,27 @@ object WeightedGraph {
 }
 
 given weightedGraphHasGraph[T]: HasGraph[WeightedGraph[T]] = new HasGraph {}
+
+case class Label[T]() extends Attr[V, T]
+
+case class LabeledGraph[T](acset: BareACSet)
+
+given labeledGraphACSet[T]: ACSet[LabeledGraph[T]] with
+  val bare = GenIso[LabeledGraph[T], BareACSet]
+  val schema = Schema(
+    E(), V(),
+    Src(), Tgt(),
+    Label[T]()
+  )
+
+object LabeledGraph {
+  def apply[T]() = labeledGraphACSet[T].empty
+}
+
+given labeledGraphHasGraph[T]: HasGraph[LabeledGraph[T]] = new HasGraph {}
+
+def addLabeledVertex[T](label: T): State[LabeledGraph[T], Elt[V]] =
+  for {
+    v <- addVertex()
+    _ <- setSubpart(Label[T](), v, label)
+  } yield v

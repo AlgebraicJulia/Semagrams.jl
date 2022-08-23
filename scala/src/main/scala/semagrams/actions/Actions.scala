@@ -1,6 +1,7 @@
 package semagrams.actions
 
 import com.raquo.laminar.api.L._
+import cats.Monad
 import cats.data._
 import semagrams.controllers._
 import cats.effect._
@@ -131,6 +132,8 @@ def nextKeydown[Model]: Action[Model, KeyboardEvent] = for {
   evt <- nextEvent(keyboard.keydowns.events)
 } yield evt
 
+def nextKey[Model]: Action[Model, String] = nextKeydown.map(_.key)
+
 def nextKeydownIn[Model](set: Set[String]): Action[Model, KeyboardEvent] = for {
   keyboard <- ReaderT.ask.map(_.keyboard)
   evt <- nextEvent(keyboard.keydowns.events.filter(evt => set(evt.key)))
@@ -144,6 +147,11 @@ case class KeyBindings[Model](bindings: Map[String, Action[Model, Unit]]) {
    */
   def run: Action[Model, Unit] =
     nextKeydownIn(bindings.keySet).flatMap((evt: KeyboardEvent) => bindings(evt.key))
+
+  def runForever: Action[Model, Unit] = {
+    val T = implicitly[Monad[[X] =>> Action[Model, X]]]
+    T.foreverM(run)
+  }
 }
 
 def updateModel[Model](f: Model => Model): Action[Model, Unit] = {
@@ -154,7 +162,7 @@ def updateModel[Model](f: Model => Model): Action[Model, Unit] = {
   } yield {}
 }
 
-def updateModel[Model,A](updater: State[Model, A]): Action[Model, A] = {
+def updateModelS[Model,A](updater: State[Model, A]): Action[Model, A] = {
   val L = actionLiftIO[Model]
   for {
     $model <- ReaderT.ask.map(_.$model)
@@ -162,6 +170,14 @@ def updateModel[Model,A](updater: State[Model, A]): Action[Model, A] = {
     (newModel, a) = updater.run(model).value
     _ <- L.liftIO(IO($model.set(newModel)))
   } yield a
+}
+
+def addChild[Model](child: SvgElement): Action[Model, Unit] = {
+  val L = actionLiftIO[Model]
+  for {
+    elt <- ReaderT.ask.map(_.elt)
+    _ <- L.liftIO(IO(elt.amend(child)))
+  } yield ()
 }
 
 def mousePos[Model]: Action[Model, Complex] =

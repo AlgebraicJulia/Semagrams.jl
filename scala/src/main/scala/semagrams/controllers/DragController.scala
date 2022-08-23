@@ -5,6 +5,7 @@ import semagrams.util._
 
 import com.raquo.laminar.api.L._
 import monocle.std.these
+import com.raquo.airstream.state.ObservedSignal
 
 /**
  * This is meant to be a bit of global state that keeps track of
@@ -60,18 +61,23 @@ case class DragController(
   /**
    * This is used to make an element draggable.
    */
-  def draggable[El<:SvgElement](
-    center: StrictSignal[Complex],
+  def draggable[El <: Element](
+    center: Signal[Complex],
     updates: Observer[Complex]
-  ) = {
-    onMouseDown.map(
-      ev => {
-        val c = center.now()
-        val init = Complex(ev.clientX, ev.clientY)
-        val offset = c - init
-        Some(updates.contramap[Complex](offset + _))
-      }) --> $state.writer
-  }
+  ) = CustomModifier[El](
+    el => {
+      val curCenter = Var(Complex(0,0))
+      el.amend(
+        center --> curCenter.writer,
+        onMouseDown.map(
+          ev => {
+            val c = curCenter.now()
+            val init = mouse.$state.now().pos
+            val offset = c - init
+            Some(updates.contramap[Complex](offset + _))
+          }) --> $state.writer
+      )
+    })
 
   /**
    * This is used to attach the mouse move event handlers to the

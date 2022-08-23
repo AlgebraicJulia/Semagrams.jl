@@ -13,6 +13,8 @@ import java.awt.Canvas
 import cats.syntax.validated
 import semagrams.acsets.ACSet
 import cats.kernel.compat.scalaVersionSpecific
+import cats.Monad
+import cats.Traverse
 
 /**
  * We use a somewhat hacky mapping of schemas into scala types in order to
@@ -40,7 +42,10 @@ abstract class Ob
  * We then have a superclass of all homs, so that we can have containers
  * whose elements could be homs of different types.
  */
-abstract class AbstractHom
+abstract class AbstractHom {
+  def dom: Ob
+  def codom: Ob
+}
 abstract class Hom[Dom <: Ob, Codom <: Ob] extends AbstractHom
 
 /**
@@ -167,6 +172,16 @@ case class BareACSet(
   def setSubpart[X <: Ob, T](s: Schema, f: Attr[X, T], x: Elt[X], y: T): BareACSet = {
     assert(s.attrs contains f)
     attrs.modify(_.focus(_.index(f)).modify(_ + (x -> y)))(this)
+  }
+
+  def remPart[X <: Ob](s: Schema, x: Elt[X])(implicit xob: X): BareACSet = {
+    val M = implicitly(Monad[[X] =>> State[BareACSet,X]])
+    val L = implicitly(Traverse[List])
+    val state: State[BareACSet, Unit] = for {
+      _ <- State.modify(obs.modify(_.focus(_.index(xob)).modify(_ - x)))
+      _ <- L.traverse_(s.homs.filter(f => f.dom == xob))(f => M.pure(()))
+    } yield ()
+    state.run(this).value._1
   }
 }
 
