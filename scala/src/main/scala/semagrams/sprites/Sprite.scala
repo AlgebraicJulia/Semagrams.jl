@@ -9,17 +9,14 @@ abstract class AbstractProperty
 
 abstract class Property[String] extends AbstractProperty
 
-/**
- * Should use objects instead of singleton case classes
- */
-case class Fill() extends Property[String]
-case class Stroke() extends Property[String]
-case class InnerSep() extends Property[Double]
-case class MinimumSize() extends Property[Double]
-case class MinimumWidth() extends Property[Double]
-case class MinimumHeight() extends Property[Double]
-case class Content() extends Property[String]
-case class Center() extends Property[Complex]
+object Fill extends Property[String]
+object Stroke extends Property[String]
+object InnerSep extends Property[Double]
+object MinimumSize extends Property[Double]
+object MinimumWidth extends Property[Double]
+object MinimumHeight extends Property[Double]
+object Content extends Property[String]
+object Center extends Property[Complex]
 
 case class PropMap(map: Map[AbstractProperty, Any]) {
   def apply[T](p: Property[T]): T = {
@@ -47,7 +44,7 @@ object PropMap {
 
 abstract class Handle
 
-case class MainHandle() extends Handle
+object MainHandle extends Handle
 
 /**
  * A RenderedSprite consists of an SVGElement that should be mounted to the DOM, and

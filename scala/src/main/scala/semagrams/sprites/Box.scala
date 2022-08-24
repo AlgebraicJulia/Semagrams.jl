@@ -31,9 +31,9 @@ extension[A,B] (s: L.Signal[Tuple2[A,B]])
 
 case class Box() extends Sprite {
   def geom(data: PropMap): (Complex, Complex) = {
-    val center = data(Center())
-    val width = data(MinimumWidth())
-    val height = data(MinimumHeight())
+    val center = data(Center)
+    val width = data(MinimumWidth)
+    val height = data(MinimumHeight)
     val dims = Complex(width, height)
     val pos = center - dims / 2
     (pos, dims)
@@ -46,8 +46,8 @@ case class Box() extends Sprite {
 
   def styleUpdater(data: L.Signal[PropMap]) = {
     List(
-      fill <-- data.map(_(Fill())),
-      stroke <-- data.map(_(Stroke()))
+      fill <-- data.map(_(Fill)),
+      stroke <-- data.map(_(Stroke))
     )
   }
 
@@ -57,7 +57,7 @@ case class Box() extends Sprite {
       styleUpdater(updates)
     )
 
-    RenderedSprite(root, Map(MainHandle() -> root))
+    RenderedSprite(root, Map(MainHandle -> root))
   }
 
   def boundaryPt(ent: Entity, data: PropMap, dir: Double) = {

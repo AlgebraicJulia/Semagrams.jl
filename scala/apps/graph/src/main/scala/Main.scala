@@ -49,19 +49,14 @@ def renderBoxes(
   val boxSprite = WithMiddleware(
     Box(),
     Stack(
-      WithDefaults(PropMap() + (MinimumWidth(), 50) + (MinimumHeight(), 50) + (Fill(), "white") + (Stroke(), "black")),
-      Hoverable(hover, MainHandle(), PropMap() + (Fill(), "lightgray") + (Stroke(), "yellow")),
-      Draggable(
-        drag,
-        ent => $boxes.signal.map(_.subpart(Label[Complex], ent.asInstanceOf[Elt[V.type]]).get),
-        (ent,v) => $boxes.update(_.setSubpart(Label[Complex], ent.asInstanceOf[Elt[V.type]], v)),
-        MainHandle()
-      )
+      WithDefaults(PropMap() + (MinimumWidth, 50) + (MinimumHeight, 50) + (Fill, "white") + (Stroke, "black")),
+      Hoverable(hover, MainHandle, PropMap() + (Fill, "lightgray")),
+      Draggable.dragPart(drag, $boxes, Label[Complex], MainHandle)
     )
   )
   val renderedBoxes = $boxes.signal.map(_.labeledVertices()).split(_._1)(
     (v, init, $state) => {
-      boxSprite.present(v, PropMap() + (Center(), init._2), $state.map(c => PropMap() + (Center(), c._2))).root
+      boxSprite.present(v, PropMap() + (Center, init._2), $state.map(c => PropMap() + (Center, c._2))).root
     })
 
   svg.g(

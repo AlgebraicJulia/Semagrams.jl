@@ -2,6 +2,7 @@ package semagrams.sprites
 
 import com.raquo.laminar.api.L._
 import semagrams._
+import semagrams.acsets._
 import semagrams.util._
 import semagrams.controllers._
 
@@ -16,5 +17,20 @@ case class Draggable(
       drag.draggable(center(ent), Observer(c => update(ent, c)))
     )
     rs
+  }
+}
+
+object Draggable {
+  def dragPart[X <: Ob: ValueOf, A: ACSet](
+    drag: DragController,
+    $state: Var[A],
+    attr: Attr[X, Complex],
+    handle: Handle): Draggable = {
+      Draggable(
+        drag,
+        ent => $state.signal.map(_.subpart(attr, ent.asInstanceOf[Elt[X]]).get),
+        (ent,v) => $state.update(_.setSubpart(attr, ent.asInstanceOf[Elt[X]], v)),
+        handle
+      )
   }
 }
