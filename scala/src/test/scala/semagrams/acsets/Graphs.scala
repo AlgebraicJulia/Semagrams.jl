@@ -37,14 +37,14 @@ object ACSetSpec extends TestSuite {
         z <- addVertex()
         k <- addEdge(x, y)
         l <- addEdge(y, z)
-        _ <- setSubpart(Weight[String](), k, "foo")
-        _ <- setSubpart(Weight[String](), l, "bar")
+        _ <- setSubpart(Weight[String], k, "foo")
+        _ <- setSubpart(Weight[String], l, "bar")
       } yield (x,y,z,k,l)
 
       val (g,(x,y,z,k,l)) = mkpath.run(WeightedGraph[String]()).value
 
-      assert(g.subpart(Weight(), k) == Some("foo"))
-      assert(g.subpart(Weight(), l) == Some("bar"))
+      assert(g.subpart(Weight[String], k) == Some("foo"))
+      assert(g.subpart(Weight[String], l) == Some("bar"))
     }
 
     test("incident") {
@@ -58,10 +58,10 @@ object ACSetSpec extends TestSuite {
 
       val (g,(x,y,z,k,l)) = mkpath.run(Graph()).value
 
-      assert(g.incident(Src(), x) == Set(k))
-      assert(g.incident(Tgt(), x) == Set())
-      assert(g.incident(Src(), y) == Set(l))
-      assert(g.incident(Tgt(), y) == Set(k))
+      assert(g.incident(Src, x) == Set(k))
+      assert(g.incident(Tgt, x) == Set())
+      assert(g.incident(Src, y) == Set(l))
+      assert(g.incident(Tgt, y) == Set(k))
     }
   }
 

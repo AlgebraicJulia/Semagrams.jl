@@ -1,3 +1,5 @@
 package semagrams
 
-abstract class Entity
+abstract class Entity {
+  def entityType: Any
+}

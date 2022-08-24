@@ -31,7 +31,12 @@ import cats.Traverse
 /**
  * Objects of schema categories are given by singleton types that extend Ob.
  */
-abstract class Ob
+abstract class AbstractOb
+
+type Ob = AbstractOb & Singleton
+
+extension (ent: Entity)
+  def asElt[X <: Ob: ValueOf] = if (ent.entityType == valueOf[X]) then Some(ent.asInstanceOf[Elt[X]]) else None
 
 /**
  * In the mapping of schemas into scala types, to encode morphisms
@@ -46,7 +51,11 @@ abstract class AbstractHom {
   def dom: Ob
   def codom: Ob
 }
-abstract class Hom[Dom <: Ob, Codom <: Ob] extends AbstractHom
+
+abstract class Hom[Dom <: Ob: ValueOf, Codom <: Ob: ValueOf] extends AbstractHom {
+  def dom = valueOf[Dom]
+  def codom = valueOf[Codom]
+}
 
 /**
  * A similar strategy to [[semagrams.acsets.AbstractHom]] is used
@@ -78,7 +87,7 @@ object Schema {
    */
   def apply(args: (Ob | AbstractHom | AbstractAttr)*) = {
     val obs = args.collect {
-      case (x: Ob) => x
+      case (x: AbstractOb) => x
     }
     val homs = args.collect {
       case (f: AbstractHom) => f
@@ -86,7 +95,7 @@ object Schema {
     val attrs = args.collect {
       case (f: AbstractAttr) => f
     }
-    new Schema(obs.toList, homs.toList, attrs.toList)
+    new Schema(obs.toList.map(_.asInstanceOf[Ob]), homs.toList, attrs.toList)
   }
 }
 
@@ -95,7 +104,9 @@ object Schema {
  * It extends [[semagrams.Entity]], which means that it can be used
  * as a key for sprites in Semagrams.
  */
-case class Elt[Ob](id: Int) extends Entity
+case class Elt[X <: Ob: ValueOf](id: Int) extends Entity {
+  def entityType = valueOf[X]
+}
 
 /**
  * This is the data of an acset, represented dynamically.
@@ -120,68 +131,74 @@ case class Elt[Ob](id: Int) extends Entity
  * instead return a new acset.
  */
 case class BareACSet(
-  _nextId: Int,
-  _obs: Map[Ob, Set[Entity]],
-  _homs: Map[AbstractHom, Map[Entity, Entity]],
-  _attrs: Map[AbstractAttr, Map[Entity, Any]]
+  nextId: Int,
+  obs: Map[Ob, Set[Entity]],
+  homs: Map[AbstractHom, Map[Entity, Entity]],
+  attrs: Map[AbstractAttr, Map[Entity, Any]]
 ) {
-  val nextId = GenLens[BareACSet](_._nextId)
-  val obs = GenLens[BareACSet](_._obs)
-  val homs = GenLens[BareACSet](_._homs)
-  val attrs = GenLens[BareACSet](_._attrs)
-
   def parts[X <: Ob](s: Schema, ob: X): Set[Elt[X]] = {
     assert(s.obs contains ob)
-    _obs(ob).asInstanceOf[Set[Elt[X]]]
+    obs(ob).asInstanceOf[Set[Elt[X]]]
   }
 
-  def addPart[X <: Ob](s: Schema, ob: X): (Elt[X], BareACSet) = {
+  def addPart[X <: Ob: ValueOf](s: Schema, ob: X): (Elt[X], BareACSet) = {
     assert(s.obs contains ob)
-    val e = Elt[X](_nextId)
+    val e = Elt[X](nextId)
     (
       e,
-      nextId.modify(_ + 1)(obs.modify(_.focus(_.index(ob)).modify(_ + e))(this))
+      this.copy(
+        nextId = nextId + 1,
+        obs = obs + (ob -> (obs(ob) + e))
+      )
     )
   }
 
   def subpart[X <: Ob, Y <: Ob](s: Schema, f: Hom[X, Y], x: Elt[X]): Option[Elt[Y]] = {
     assert(s.homs contains f)
-    _homs(f).asInstanceOf[Map[Elt[X], Elt[Y]]].get(x)
+    homs(f).asInstanceOf[Map[Elt[X], Elt[Y]]].get(x)
   }
 
   def subpart[X <: Ob, T](s: Schema, f: Attr[X, T], x: Elt[X]): Option[T] = {
     assert(s.attrs contains f)
-    _attrs(f).asInstanceOf[Map[Elt[X], T]].get(x)
+    attrs(f).asInstanceOf[Map[Elt[X], T]].get(x)
   }
 
   /**
    * We use an implicit in order to pass in the singleton instance of the type X
    * so that we can look it up in the _obs map.
    */
-  def incident[X <: Ob, Y <: Ob](s: Schema, f: Hom[X, Y], y: Elt[Y])(implicit xob: X): Set[Elt[X]] = {
+  def incident[X <: Ob: ValueOf, Y <: Ob](s: Schema, f: Hom[X, Y], y: Elt[Y]): Set[Elt[X]] = {
+    val xob = valueOf[X]
     assert(s.homs contains f)
-    val f_map = _homs(f).asInstanceOf[Map[Elt[X], Elt[Y]]]
-    _obs(xob).asInstanceOf[Set[Elt[X]]].filter(x => f_map(x) == y)
+    val f_map = homs(f).asInstanceOf[Map[Elt[X], Elt[Y]]]
+    obs(xob).asInstanceOf[Set[Elt[X]]].filter(x => f_map(x) == y)
   }
 
   def setSubpart[X <: Ob, Y <: Ob](s: Schema, f: Hom[X, Y], x: Elt[X], y: Elt[Y]): BareACSet = {
     assert(s.homs contains f)
-    homs.modify(_.focus(_.index(f)).modify(_ + (x -> y)))(this)
+    this.copy(
+      homs = homs + (f -> (homs(f) + (x -> y)))
+    )
   }
 
   def setSubpart[X <: Ob, T](s: Schema, f: Attr[X, T], x: Elt[X], y: T): BareACSet = {
     assert(s.attrs contains f)
-    attrs.modify(_.focus(_.index(f)).modify(_ + (x -> y)))(this)
+    this.copy(
+      attrs = attrs + (f -> (attrs(f) + (x -> y)))
+    )
   }
 
-  def remPart[X <: Ob](s: Schema, x: Elt[X])(implicit xob: X): BareACSet = {
-    val M = implicitly(Monad[[X] =>> State[BareACSet,X]])
-    val L = implicitly(Traverse[List])
-    val state: State[BareACSet, Unit] = for {
-      _ <- State.modify(obs.modify(_.focus(_.index(xob)).modify(_ - x)))
-      _ <- L.traverse_(s.homs.filter(f => f.dom == xob))(f => M.pure(()))
-    } yield ()
-    state.run(this).value._1
+  /**
+   * We could speed this up by just removing from maps that have X as their
+   * domain or codomain, but this is the quick and dirty way.
+   */
+  def remPart[X <: Ob: ValueOf](s: Schema, x: Elt[X]): BareACSet = {
+    val xob = valueOf[X]
+    this.copy(
+      obs = obs + (xob -> (obs(xob) - x)),
+      homs = homs.map((f,vals) => (f, vals.filter((a,b) => a != x && b != x))),
+      attrs = attrs.map((f,vals) => (f, vals.filter((a,b) => a != x)))
+    )
   }
 }
 
@@ -242,8 +259,8 @@ trait ACSet[A] {
       bare.get(a).parts(schema, ob)
     }
 
-    def addPart[X <: Ob](ob: X): (Elt[X], A) = {
-      bare.modifyF(_.addPart(schema, ob))(a)
+    def addPart[X <: Ob: ValueOf](ob: X): (Elt[X], A) = {
+      bare.modifyF(_.addPart(schema, valueOf[X]))(a)
     }
 
     def subpart[X <: Ob, Y <: Ob](f: Hom[X, Y], x: Elt[X]): Option[Elt[Y]] = {
@@ -254,7 +271,7 @@ trait ACSet[A] {
       bare.get(a).subpart(schema, f, x)
     }
 
-    def incident[X <: Ob, Y <: Ob](f: Hom[X,Y], y: Elt[Y])(implicit xob: X): Set[Elt[X]] = {
+    def incident[X <: Ob: ValueOf, Y <: Ob](f: Hom[X,Y], y: Elt[Y]): Set[Elt[X]] = {
       bare.get(a).incident(schema, f, y)
     }
 
@@ -265,6 +282,10 @@ trait ACSet[A] {
     def setSubpart[X <: Ob, T](f: Attr[X, T], x: Elt[X], y: T): A = {
       bare.modify(_.setSubpart(schema, f, x, y))(a)
     }
+
+    def remPart[X <: Ob: ValueOf](x: Elt[X]): A = {
+      bare.modify(_.remPart(schema, x))(a)
+    }
 }
 
 /**
@@ -273,11 +294,14 @@ trait ACSet[A] {
  * mutation in an imperative way.
  */
 
-def addPart[A: ACSet, X <: Ob](ob: X): State[A, Elt[X]] =
-  State(_.addPart(ob).swap)
+def addPart[A: ACSet, X <: Ob: ValueOf](ob: X): State[A, Elt[X]] =
+  State(_.addPart(valueOf[X]).swap)
 
 def setSubpart[A: ACSet, X <: Ob, Y <: Ob](f: Hom[X, Y], x: Elt[X], y: Elt[Y]): State[A,Unit] =
   State.modify(_.setSubpart(f, x, y))
 
 def setSubpart[A: ACSet, X <: Ob, T](f: Attr[X, T], x: Elt[X], y: T): State[A,Unit] =
   State.modify(_.setSubpart(f, x, y))
+
+def remPart[A: ACSet, X <: Ob: ValueOf](x: Elt[X]): State[A, Unit] =
+  State.modify(_.remPart(x))

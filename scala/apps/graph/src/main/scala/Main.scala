@@ -19,14 +19,15 @@ val addBox: Action[Boxes, Unit] = for {
   _ <- updateModelS(addLabeledVertex(pos))
 } yield {}
 
-// val remBox: Action[Boxes, Unit] = (for {
-//   ent <- OptionT(hovered)
-//   _ <- OptionT.liftF(updateModel(remVertex(ent.id)))
-// } yield {}).value.map(_ => {})
+val remBox: Action[Boxes, Unit] = (for {
+  v <- OptionT(hovered.map(_.flatMap(_.asElt[V.type])))
+  _ <- OptionT.liftF(updateModel[Boxes](_.remPart(v)))
+} yield {}).value.map(_ => {})
 
 val bindings = KeyBindings(
   Map(
     "a" -> addBox,
+    "d" -> remBox
   )
 )
 
@@ -34,15 +35,10 @@ type M[T] = Action[Boxes, T]
 val L = actionLiftIO[Boxes]
 val A = implicitly[Monad[[X] =>> Action[LabeledGraph[Complex],X]]]
 
-val MyBox = WithDefaults(
-  Box(),
-  PropMap() + (MinimumWidth(), 50) + (MinimumHeight(), 50) + (Fill(), "white") + (Stroke(), "black")
-)
-
 extension(b: Boxes)
   def labeledVertices() = {
     val vs = b.vertices().toList
-    vs.map(v => (v, b.subpart(Label[Complex](), v).get))
+    vs.map(v => (v, b.subpart(Label[Complex], v).get))
   }
 
 def renderBoxes(
@@ -50,22 +46,22 @@ def renderBoxes(
   hover: HoverController,
   drag: DragController
 ) = {
+  val boxSprite = WithMiddleware(
+    Box(),
+    Stack(
+      WithDefaults(PropMap() + (MinimumWidth(), 50) + (MinimumHeight(), 50) + (Fill(), "white") + (Stroke(), "black")),
+      Hoverable(hover, MainHandle(), PropMap() + (Fill(), "lightgray") + (Stroke(), "yellow")),
+      Draggable(
+        drag,
+        ent => $boxes.signal.map(_.subpart(Label[Complex], ent.asInstanceOf[Elt[V.type]]).get),
+        (ent,v) => $boxes.update(_.setSubpart(Label[Complex], ent.asInstanceOf[Elt[V.type]], v)),
+        MainHandle()
+      )
+    )
+  )
   val renderedBoxes = $boxes.signal.map(_.labeledVertices()).split(_._1)(
     (v, init, $state) => {
-      val hoverStream = hover.switchState(v, PropMap() + (Fill(), "lightgray"), PropMap())
-      val rendered = MyBox.present(
-        v, PropMap() + (Center(), init._2),
-        $state.map(c => PropMap() + (Center(), c._2)).combineWith(hoverStream).map(_ ++ _)
-      )
-      val handle = rendered.handles(MainHandle())
-      handle.amend(
-        hover.hoverable(v),
-        drag.draggable(
-          $boxes.signal.map(_.subpart(Label[Complex](), v).get),
-          Observer(pos => $boxes.update(g => g.setSubpart(Label[Complex](), v, pos)))
-        )
-      )
-      rendered.root
+      boxSprite.present(v, PropMap() + (Center(), init._2), $state.map(c => PropMap() + (Center(), c._2))).root
     })
 
   svg.g(

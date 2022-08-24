@@ -60,7 +60,7 @@ case class Box() extends Sprite {
     RenderedSprite(root, Map(MainHandle() -> root))
   }
 
-  def boundaryPt(data: PropMap, dir: Double) = {
+  def boundaryPt(ent: Entity, data: PropMap, dir: Double) = {
     Complex(0,0)
   }
 }

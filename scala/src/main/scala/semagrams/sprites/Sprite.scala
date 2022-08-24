@@ -9,6 +9,9 @@ abstract class AbstractProperty
 
 abstract class Property[String] extends AbstractProperty
 
+/**
+ * Should use objects instead of singleton case classes
+ */
 case class Fill() extends Property[String]
 case class Stroke() extends Property[String]
 case class InnerSep() extends Property[Double]
@@ -73,6 +76,7 @@ trait Sprite {
   ): RenderedSprite
 
   def boundaryPt(
+    ent: Entity,
     data: PropMap,
     dir: Double
   ): Complex

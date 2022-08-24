@@ -3,42 +3,41 @@ package semagrams.acsets
 import monocle.macros.GenIso
 import cats.data.State
 
-case class E() extends Ob
-given E_instance: E = E()
+object E extends AbstractOb
 
-case class V() extends Ob
-given V_instance: V = V()
+object V extends AbstractOb
 
-case class Src() extends Hom[E, V] {
-  def dom = E()
-  def codom = V()
+object Src extends Hom[E.type, V.type]
+
+object Tgt extends Hom[E.type, V.type]
+
+/**
+ * This is a hack in order to have a "typed object"
+ */
+trait WeightImpl[T] extends Attr[E.type, T] {
+  this: Weight.type =>
 }
-given Src_instance: Src = Src()
 
-case class Tgt() extends Hom[E, V] {
-  def dom = E()
-  def codom = V()
+object Weight extends WeightImpl[Nothing] {
+  def apply[T] = this.asInstanceOf[WeightImpl[T]]
 }
-given Tgt_instance: Tgt = Tgt()
-
-case class Weight[T]() extends Attr[E, T]
 
 trait HasGraph[A: ACSet] {
   extension(a: A)
-    def vertices(): Set[Elt[V]] = a.parts(V())
-    def edges(): Set[Elt[E]] = a.parts(E())
+    def vertices(): Set[Elt[V.type]] = a.parts(V)
+    def edges(): Set[Elt[E.type]] = a.parts(E)
 
-    def src(e: Elt[E]): Option[Elt[V]] = a.subpart(Src(), e)
-    def tgt(e: Elt[E]): Option[Elt[V]] = a.subpart(Tgt(), e)
+    def src(e: Elt[E.type]): Option[Elt[V.type]] = a.subpart(Src, e)
+    def tgt(e: Elt[E.type]): Option[Elt[V.type]] = a.subpart(Tgt, e)
 }
 
-def addVertex[A: HasGraph: ACSet](): State[A, Elt[V]] = addPart(V())
+def addVertex[A: HasGraph: ACSet](): State[A, Elt[V.type]] = addPart(V)
 
-def addEdge[A: HasGraph: ACSet](s: Elt[V], t: Elt[V]): State[A, Elt[E]] =
+def addEdge[A: HasGraph: ACSet](s: Elt[V.type], t: Elt[V.type]): State[A, Elt[E.type]] =
   for {
-    e <- addPart(E())
-    _ <- setSubpart(Src(), e, s)
-    _ <- setSubpart(Tgt(), e, t)
+    e <- addPart(E)
+    _ <- setSubpart(Src, e, s)
+    _ <- setSubpart(Tgt, e, t)
   } yield e
 
 case class Graph(acset: BareACSet)
@@ -46,8 +45,8 @@ case class Graph(acset: BareACSet)
 given graphACSet: ACSet[Graph] with
   val bare = GenIso[Graph, BareACSet]
   val schema = Schema(
-    E(), V(),
-    Src(), Tgt()
+    E, V,
+    Src, Tgt
   )
 
 object Graph {
@@ -61,9 +60,9 @@ case class WeightedGraph[T](acset: BareACSet)
 given weightedGraphACSet[T]: ACSet[WeightedGraph[T]] with
   val bare = GenIso[WeightedGraph[T], BareACSet]
   val schema = Schema(
-    E(), V(),
-    Src(), Tgt(),
-    Weight[T]()
+    E, V,
+    Src, Tgt,
+    Weight[T]
   )
 
 object WeightedGraph {
@@ -72,16 +71,22 @@ object WeightedGraph {
 
 given weightedGraphHasGraph[T]: HasGraph[WeightedGraph[T]] = new HasGraph {}
 
-case class Label[T]() extends Attr[V, T]
+trait LabelImpl[T] extends Attr[V.type, T] {
+  this: Label.type =>
+}
+
+object Label extends LabelImpl[Nothing] {
+  def apply[T] = this.asInstanceOf[LabelImpl[T]]
+}
 
 case class LabeledGraph[T](acset: BareACSet)
 
 given labeledGraphACSet[T]: ACSet[LabeledGraph[T]] with
   val bare = GenIso[LabeledGraph[T], BareACSet]
   val schema = Schema(
-    E(), V(),
-    Src(), Tgt(),
-    Label[T]()
+    E, V,
+    Src, Tgt,
+    Label[T]
   )
 
 object LabeledGraph {
@@ -90,8 +95,8 @@ object LabeledGraph {
 
 given labeledGraphHasGraph[T]: HasGraph[LabeledGraph[T]] = new HasGraph {}
 
-def addLabeledVertex[T](label: T): State[LabeledGraph[T], Elt[V]] =
+def addLabeledVertex[T](label: T): State[LabeledGraph[T], Elt[V.type]] =
   for {
     v <- addVertex()
-    _ <- setSubpart(Label[T](), v, label)
+    _ <- setSubpart(Label[T], v, label)
   } yield v
