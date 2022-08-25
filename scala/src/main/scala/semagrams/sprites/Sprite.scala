@@ -17,6 +17,8 @@ object MinimumWidth extends Property[Double]
 object MinimumHeight extends Property[Double]
 object Content extends Property[String]
 object Center extends Property[Complex]
+object Start extends Property[Complex]
+object End extends Property[Complex]
 
 case class PropMap(map: Map[AbstractProperty, Any]) {
   def apply[T](p: Property[T]): T = {
@@ -79,6 +81,18 @@ trait Sprite {
   ): Complex
 }
 
-/**
- * Sprites should also possibly have default properties?
- */
+type Extractor[S] = (S, Entity) => PropMap
+
+case class SpriteMaker[S](
+  sprite: Sprite,
+  middleware: Middleware,
+  extractor: Extractor[S]
+) {
+  def propMap(ent: Entity, s: S): PropMap = {
+    middleware.updateProps(ent, extractor(s, ent))
+  }
+
+  def propMapS(ent: Entity, $s: Signal[S]): Signal[PropMap] = {
+    middleware.updatePropsS(ent, $s.map(extractor(_, ent)))
+  }
+}

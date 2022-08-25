@@ -4,6 +4,7 @@ import com.raquo.laminar.api.L._
 import cats.Monad
 import cats.data._
 import semagrams.controllers._
+import semagrams.acsets._
 import cats.effect._
 import cats.effect.unsafe.IORuntime
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -183,5 +184,13 @@ def addChild[Model](child: SvgElement): Action[Model, Unit] = {
 def mousePos[Model]: Action[Model, Complex] =
   ReaderT.ask.map(_.mouse.$state.now().pos)
 
+def mouseDown[Model](b: MouseButton): Action[Model, Complex] = for {
+  mouse <- ReaderT.ask.map(_.mouse)
+  pos <- nextEvent(mouse.mouseEvents.events.collect({ case MouseEvent.MouseDown(pos, `b`) => pos }))
+} yield pos
+
 def hovered[Model]: Action[Model, Option[Entity]] =
   ReaderT.ask.map(_.hover.$state.now().state)
+
+def hoveredPart[Model, X <: Ob: ValueOf]: Action[Model, Option[Elt[X]]] =
+  hovered.map(_.flatMap(_.asElt[X]))
