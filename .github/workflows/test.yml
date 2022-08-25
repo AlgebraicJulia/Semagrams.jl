@@ -1,0 +1,23 @@
+on:
+  push:
+    branches: next
+
+name: Tests
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Set up SBT
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'sbt'
+
+      - run: |
+          cd scala
+          sbt test
