@@ -43,6 +43,7 @@ pages = [{"l":"index.html#","e":false,"n":"semagrams","t":"semagrams","d":"","k"
 {"l":"semagrams/acsets/BareACSet.html#incident-387","e":false,"n":"incident","t":"incident[X <: Ob : ValueOf, Y <: Ob](s: Schema, f: Hom[X, Y], y: Elt[Y]): Set[Elt[X]]","d":"semagrams/acsets/BareACSet","k":"def"},
 {"l":"semagrams/acsets/BareACSet.html#parts-553","e":false,"n":"parts","t":"parts[X <: Ob](s: Schema, ob: X): Set[Elt[X]]","d":"semagrams/acsets/BareACSet","k":"def"},
 {"l":"semagrams/acsets/BareACSet.html#remPart-266","e":false,"n":"remPart","t":"remPart[X <: Ob : ValueOf](s: Schema, x: Elt[X]): BareACSet","d":"semagrams/acsets/BareACSet","k":"def"},
+{"l":"semagrams/acsets/BareACSet.html#remPartOnly-266","e":false,"n":"remPartOnly","t":"remPartOnly[X <: Ob : ValueOf](s: Schema, x: Elt[X]): BareACSet","d":"semagrams/acsets/BareACSet","k":"def"},
 {"l":"semagrams/acsets/BareACSet.html#setSubpart-fffff094","e":false,"n":"setSubpart","t":"setSubpart[X <: Ob, Y <: Ob](s: Schema, f: Hom[X, Y], x: Elt[X], y: Elt[Y]): BareACSet","d":"semagrams/acsets/BareACSet","k":"def"},
 {"l":"semagrams/acsets/BareACSet.html#setSubpart-fffff1ea","e":false,"n":"setSubpart","t":"setSubpart[X <: Ob, T](s: Schema, f: Attr[X, T], x: Elt[X], y: T): BareACSet","d":"semagrams/acsets/BareACSet","k":"def"},
 {"l":"semagrams/acsets/BareACSet.html#subpart-9bc","e":false,"n":"subpart","t":"subpart[X <: Ob, Y <: Ob](s: Schema, f: Hom[X, Y], x: Elt[X]): Option[Elt[Y]]","d":"semagrams/acsets/BareACSet","k":"def"},
