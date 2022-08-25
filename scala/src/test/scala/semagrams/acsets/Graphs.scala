@@ -63,6 +63,24 @@ object ACSetSpec extends TestSuite {
       assert(g.incident(Src, y) == Set(l))
       assert(g.incident(Tgt, y) == Set(k))
     }
+
+    test("removing parts") {
+      val makeAndRemove = for {
+        x <- addVertex[Graph]()
+        y <- addVertex()
+        z <- addVertex()
+        k <- addEdge(x, y)
+        l <- addEdge(y, z)
+        _ <- remPart(y)
+      } yield (x, y, z, k, l)
+
+      val (g,(x,y,z,k,l)) = makeAndRemove.run(Graph()).value
+
+      assert(g.parts(V) contains x)
+      assert(g.parts(V) contains z)
+      assert(!(g.parts(V) contains y))
+      assert(g.parts(E).isEmpty)
+    }
   }
 
 }

@@ -15,6 +15,7 @@ import semagrams.acsets.ACSet
 import cats.kernel.compat.scalaVersionSpecific
 import cats.Monad
 import cats.Traverse
+import scala.collection.mutable
 
 /**
  * We use a somewhat hacky mapping of schemas into scala types in order to
@@ -189,10 +190,40 @@ case class BareACSet(
   }
 
   /**
-   * We could speed this up by just removing from maps that have X as their
-   * domain or codomain, but this is the quick and dirty way.
+   * Strategy: do a traversal of the undirected graph of the category of elements
+   * starting at x, and then delete everything that we touch.
    */
   def remPart[X <: Ob: ValueOf](s: Schema, x: Elt[X]): BareACSet = {
+    val visited = mutable.HashSet[Entity]()
+    val next = mutable.Stack[Entity](x)
+    while (!next.isEmpty) {
+      val y = next.pop()
+      if (!(visited contains y)) {
+        visited.add(y)
+        val yob = y.entityType.asInstanceOf[Ob]
+        for (f <- s.homs) {
+          if (f.codom == yob) {
+            for (z <- obs(f.dom)) {
+              if (homs(f).get(z) == Some(y)) {
+                next.push(z)
+              }
+            }
+          }
+        }
+      }
+    }
+    this.copy(
+      obs = obs.mapValues(_.filter(y => !(visited contains y))).toMap,
+      homs = homs.mapValues(_.filter((k,v) => !(visited contains k) && !(visited contains v))).toMap,
+      attrs = attrs.mapValues(_.filter((k,v) => !(visited contains k))).toMap,
+    )
+  }
+
+  /**
+   * This is a version of remPart that does not remove parts that are related
+   * to x
+   */
+  def remPartOnly[X <: Ob: ValueOf](s: Schema, x: Elt[X]): BareACSet = {
     val xob = valueOf[X]
     this.copy(
       obs = obs + (xob -> (obs(xob) - x)),
