@@ -19,23 +19,13 @@ trait Middleware {
    * This should only be overridden to add extra properties to the sprite that
    * are for the purpose of interaction, because any properties added here will
    * not be in TikZ output, and will not be used to compute boundaries.
+   *
+   * Both updateProps and updatePropsS are called: first updateProps and then
+   * updatePropsS
    */
-  def updatePropsS(ent: Entity, $p: Signal[PropMap]): Signal[PropMap] = $p.map(updateProps(ent, _))
+  def updatePropsS(ent: Entity, $p: Signal[PropMap]): Signal[PropMap] = $p
 
   def modifyRendered(ent: Entity, s: RenderedSprite): RenderedSprite = s
-}
-
-case class WithMiddleware(s: Sprite, m: Middleware) extends Sprite {
-  def present(ent: Entity, p: PropMap, $p: Signal[PropMap]) = {
-    val q = m.updateProps(ent, p)
-    val $q = m.updatePropsS(ent, $p)
-    val rendered = s.present(ent, q, $q)
-     m.modifyRendered(ent, rendered)
-  }
-
-  def boundaryPt(ent: Entity, p: PropMap, dir: Double): Complex = {
-    s.boundaryPt(ent, m.updateProps(ent, p), dir)
-  }
 }
 
 case class Stack(ms: List[Middleware]) extends Middleware {

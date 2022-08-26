@@ -80,19 +80,3 @@ trait Sprite {
     dir: Double
   ): Complex
 }
-
-type Extractor[S] = (S, Entity) => PropMap
-
-case class SpriteMaker[S](
-  sprite: Sprite,
-  middleware: Middleware,
-  extractor: Extractor[S]
-) {
-  def propMap(ent: Entity, s: S): PropMap = {
-    middleware.updateProps(ent, extractor(s, ent))
-  }
-
-  def propMapS(ent: Entity, $s: Signal[S]): Signal[PropMap] = {
-    middleware.updatePropsS(ent, $s.map(extractor(_, ent)))
-  }
-}

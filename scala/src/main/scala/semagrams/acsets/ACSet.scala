@@ -8,7 +8,7 @@ import monocle.function.Index
 import cats.implicits._
 import cats.data.State
 
-import semagrams.Entity
+import semagrams._
 import java.awt.Canvas
 import cats.syntax.validated
 import semagrams.acsets.ACSet
@@ -32,7 +32,7 @@ import scala.collection.mutable
 /**
  * Objects of schema categories are given by singleton types that extend Ob.
  */
-abstract class AbstractOb
+abstract class AbstractOb extends EntityType
 
 type Ob = AbstractOb & Singleton
 

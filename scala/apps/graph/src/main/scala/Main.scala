@@ -20,6 +20,21 @@ import semagrams.controllers._
  * - Recursive deletion
  * - Prettier edges
  * - Dialogue for edge creation
+ *
+ *
+ * What do I need?
+ *
+ * Basically, I want something like split, but it keeps track of a map of things
+ * rather than a list. I feel like this should be possible using a Var containing
+ * a map, and then an updater for that Var that takes in a new list of things,
+ * and then updates the map based on new entities.
+ *
+ * The values in the map should be the rendered sprite, and then also a signal
+ * of the propmap used for that rendered sprite, along with the initial values
+ * of that propmap.
+ *
+ * This signal of PropMaps for each entity can then be used in later entity types,
+ * using Signal.combine.
  */
 
 /**
@@ -68,52 +83,36 @@ def renderPosGraph(
   hover: HoverController,
   drag: DragController
 ) = {
-  val boxSpriteMaker = SpriteMaker[PosGraph](
+  val boxMap = SpriteMap[PosGraph, Elt[V.type]](
+    $posGraph.signal,
     Box(),
+    s => {
+      s.parts(V).toList.map(v => (v, PropMap() + (Center, s.subpart(Label[Complex], v).get)))
+    },
     Stack(
       WithDefaults(PropMap() + (MinimumWidth, 50) + (MinimumHeight, 50) + (Fill, "white") + (Stroke, "black")),
       Hoverable(hover, MainHandle, PropMap() + (Fill, "lightgray")),
       Draggable.dragPart(drag, $posGraph, Label[Complex], MainHandle)
     ),
-    (s, ent) => PropMap() + (Center, s.subpart(Label[Complex], ent.asInstanceOf[Elt[V.type]]).get)
   )
 
-  val edgeSprite = Arrow()
-
-  val $boxData = $posGraph.signal.map(
-    posGraph => posGraph.parts(V).toList.map(v => (v, boxSpriteMaker.extractor(posGraph, v)))
-  ).split(_._1)(
-    { case (ent, (_, p), updates) => {
-       val q = boxSpriteMaker.middleware.updateProps(ent, p)
-       val qs = boxSpriteMaker.middleware.updatePropsS(ent, updates.map(_._2))
-       val rs = boxSpriteMaker.middleware.modifyRendered(ent, boxSpriteMaker.sprite.present(ent, p, qs))
-       (ent, (qs, rs))
-     }
-    }
-  )
-
-  val edges = Signal.combine($boxData.map(_.toMap), $posGraph.signal).map(
-    (boxData, posGraph) => {
-      posGraph.parts(E).toList.map(
-        e => {
-          val s = posGraph.subpart(Src, e).get
-          val t = posGraph.subpart(Tgt, e).get
-          val (sps,_) = boxData(s)
-          val (tps,_) = boxData(t)
-          (e, Signal.combine(sps, tps).map({ case (sp, tp) => PropMap() + (Stroke, "black") + (Start, sp(Center)) + (End, tp(Center)) }))
-        }
-      )
-    }
-  ).split(_._1)(
-    { case (ent, (_, ps), _) => {
-       edgeSprite.present(ent, PropMap(), ps).root
-     }
-    }
+  val arrowMap = SpriteMap[(PosGraph, Map[Elt[V.type], PropMap]), Elt[E.type]](
+    Signal.combine($posGraph.signal, boxMap.$propMaps),
+    Arrow(),
+    { case (s, boxes) => {
+       s.parts(E).toList.map(
+         e => {
+           val src = s.subpart(Src, e).get
+           val tgt = s.subpart(Tgt, e).get
+           (e, PropMap() + (Start, boxes(src)(Center)) + (End, boxes(tgt)(Center)))
+         }
+       )}},
+    WithDefaults(PropMap() + (Stroke, "black"))
   )
 
   svg.g(
-    children <-- edges,
-    children <-- $boxData.map(_.map({ case (_, (_, rs)) => rs.root }))
+    boxMap.attach,
+    arrowMap.attach
   )
 }
 
