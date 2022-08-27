@@ -17,3 +17,8 @@
 /next/.envrc
 
 /.quarto/
+/target/
+/site/_site/
+/project/
+/.direnv/
+/.bsp/

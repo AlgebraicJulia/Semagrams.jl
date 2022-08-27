@@ -1,9 +1,10 @@
 package graph
 
-import semagrams.*
-import semagrams.util.*
+import semagrams._
+import semagrams.util._
 import semagrams.acsets.{*, given}
-import semagrams.actions.*
+import semagrams.actions._
+import semagrams.text._
 import cats.data._
 import cats.Monad
 import cats.effect.IO
@@ -17,31 +18,22 @@ import semagrams.controllers._
  * - Clean up use of OptionT[Action[PosGraph,_],A]
  * - Prettier edges
  * - Dialogue for edge creation
+ * - Dialogue for content editing
+ * - Content centering and box resizing in response to label
  *
- *
- * What do I need?
- *
- * Basically, I want something like split, but it keeps track of a map of things
- * rather than a list. I feel like this should be possible using a Var containing
- * a map, and then an updater for that Var that takes in a new list of things,
- * and then updates the map based on new entities.
- *
- * The values in the map should be the rendered sprite, and then also a signal
- * of the propmap used for that rendered sprite, along with the initial values
- * of that propmap.
- *
- * This signal of PropMaps for each entity can then be used in later entity types,
- * using Signal.combine.
+ * Notes:
+ * The simplest and easiest way to convert ACSets to be displayable might be by
+ * just adding a PropMap attribute to each part...
  */
 
 /**
  * A positioned graph
  */
-type PosGraph = LabeledGraph[Complex]
+type PosGraph = LabeledGraph[PropMap]
 
 val addBox: Action[PosGraph, Unit] = for {
   pos <- mousePos
-  _ <- updateModelS(addLabeledVertex(pos))
+  _ <- updateModelS(addLabeledVertex(PropMap() + (Center, pos) + (Content, "Hi")))
 } yield {}
 
 val remBox: Action[PosGraph, Unit] = (for {
@@ -76,7 +68,7 @@ extension(b: PosGraph)
   }
 
 def renderPosGraph(
-  $posGraph: Var[LabeledGraph[Complex]],
+  $posGraph: Var[PosGraph],
   hover: HoverController,
   drag: DragController
 ) = {
@@ -86,11 +78,11 @@ def renderPosGraph(
     List(
       SpriteMaker[PosGraph](
         Box(),
-        (s, _) => s.parts(V).toList.map(v => (v, PropMap() + (Center, s.subpart(Label[Complex], v).get))),
+        (s, _) => s.parts(V).toList.map(v => (v, s.subpart(Label[PropMap], v).get)),
         Stack(
           WithDefaults(PropMap() + (MinimumWidth, 50) + (MinimumHeight, 50) + (Fill, "white") + (Stroke, "black")),
           Hoverable(hover, MainHandle, PropMap() + (Fill, "lightgray")),
-          Draggable.dragPart(drag, $posGraph, Label[Complex], MainHandle)
+          Draggable.dragPart(drag, $posGraph, Label[PropMap], Center, MainHandle)
         )
       ),
       SpriteMaker[PosGraph](
@@ -130,6 +122,6 @@ object Main {
       _ <- bindings.runForever
     } yield ()
 
-    mountWithAction("app-container", LabeledGraph[Complex](), action)
+    mountWithAction("app-container", LabeledGraph[PropMap](), action)
   }
 }

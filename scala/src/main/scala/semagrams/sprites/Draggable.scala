@@ -24,12 +24,13 @@ object Draggable {
   def dragPart[X <: Ob: ValueOf, A: ACSet](
     drag: DragController,
     $state: Var[A],
-    attr: Attr[X, Complex],
+    attr: Attr[X, PropMap],
+    prop: Property[Complex],
     handle: Handle): Draggable = {
       Draggable(
         drag,
-        ent => $state.now().subpart(attr, ent.asInstanceOf[Elt[X]]).get,
-        (ent,v) => $state.update(_.setSubpart(attr, ent.asInstanceOf[Elt[X]], v)),
+        ent => $state.now().subpart(attr, ent.asInstanceOf[Elt[X]]).get(prop),
+        (ent,v) => $state.update(_.updateSubpart(attr, ent.asInstanceOf[Elt[X]], _ + (prop, v))),
         handle
       )
   }

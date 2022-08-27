@@ -52,9 +52,17 @@ case class Box() extends Sprite {
   }
 
   def present(ent: Entity, init: PropMap, updates: L.Signal[PropMap]): RenderedSprite = {
-    val root = rect(
+    val box = rect(
       geomUpdater(updates),
-      styleUpdater(updates)
+      styleUpdater(updates),
+    )
+    val text = L.svg.text(
+      xy <-- updates.map(_(Center)),
+      L.child <-- updates.map(p => L.textToNode(p.get(Content).getOrElse("")))
+    )
+    val root = g(
+      box,
+      text
     )
 
     RenderedSprite(root, Map(MainHandle -> root))

@@ -314,6 +314,15 @@ trait ACSet[A] {
       bare.modify(_.setSubpart(schema, f, x, y))(a)
     }
 
+    def updateSubpart[X <: Ob, T](f: Attr[X, T], x: Elt[X], fun: T => T): A = {
+      bare.modify(s =>
+        {
+          val prev = s.subpart(schema, f, x)
+          prev.map(v => s.setSubpart(schema, f, x, fun(v))).getOrElse(s)
+        }
+      )(a)
+    }
+
     def remPart[X <: Ob: ValueOf](x: Elt[X]): A = {
       bare.modify(_.remPart(schema, x))(a)
     }
