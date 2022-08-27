@@ -12,10 +12,11 @@ case class Arrow() extends Sprite {
       y1 <-- $p.map(_(Start).y.toString),
       x2 <-- $p.map(_(End).x.toString),
       y2 <-- $p.map(_(End).y.toString),
-      stroke <-- $p.map(_(Stroke))
+      stroke <-- $p.map(_(Stroke)),
+      markerEnd := "url(#arrowhead)"
     )
     RenderedSprite(root, Map())
   }
 
-  def boundaryPt(ent: Entity, data: PropMap, dir: Double): Complex = Complex(0,0)
+  def boundaryPt(ent: Entity, data: PropMap, dir: Complex): Complex = Complex(0,0)
 }

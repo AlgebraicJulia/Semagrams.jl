@@ -14,10 +14,7 @@ import semagrams.controllers._
 
 /**
  * TODO:
- * - Clean up creation of boxData from boxSpriteMaker and $posGraph
  * - Clean up use of OptionT[Action[PosGraph,_],A]
- * - Clean up use of boxData in edges
- * - Recursive deletion
  * - Prettier edges
  * - Dialogue for edge creation
  *
@@ -83,36 +80,43 @@ def renderPosGraph(
   hover: HoverController,
   drag: DragController
 ) = {
-  val boxMap = SpriteMap[PosGraph, Elt[V.type]](
-    $posGraph.signal,
-    Box(),
-    s => {
-      s.parts(V).toList.map(v => (v, PropMap() + (Center, s.subpart(Label[Complex], v).get)))
-    },
-    Stack(
-      WithDefaults(PropMap() + (MinimumWidth, 50) + (MinimumHeight, 50) + (Fill, "white") + (Stroke, "black")),
-      Hoverable(hover, MainHandle, PropMap() + (Fill, "lightgray")),
-      Draggable.dragPart(drag, $posGraph, Label[Complex], MainHandle)
-    ),
-  )
 
-  val arrowMap = SpriteMap[(PosGraph, Map[Elt[V.type], PropMap]), Elt[E.type]](
-    Signal.combine($posGraph.signal, boxMap.$propMaps),
-    Arrow(),
-    { case (s, boxes) => {
-       s.parts(E).toList.map(
-         e => {
-           val src = s.subpart(Src, e).get
-           val tgt = s.subpart(Tgt, e).get
-           (e, PropMap() + (Start, boxes(src)(Center)) + (End, boxes(tgt)(Center)))
-         }
-       )}},
-    WithDefaults(PropMap() + (Stroke, "black"))
+  val spriteMaps = SpriteMaps[PosGraph](
+    $posGraph.signal,
+    List(
+      SpriteMaker[PosGraph](
+        Box(),
+        (s, _) => s.parts(V).toList.map(v => (v, PropMap() + (Center, s.subpart(Label[Complex], v).get))),
+        Stack(
+          WithDefaults(PropMap() + (MinimumWidth, 50) + (MinimumHeight, 50) + (Fill, "white") + (Stroke, "black")),
+          Hoverable(hover, MainHandle, PropMap() + (Fill, "lightgray")),
+          Draggable.dragPart(drag, $posGraph, Label[Complex], MainHandle)
+        )
+      ),
+      SpriteMaker[PosGraph](
+        Arrow(),
+        (s, propMap) => s.parts(E).toList.map(
+          e => {
+            val srcEnt = s.subpart(Src, e).get
+            val tgtEnt = s.subpart(Tgt, e).get
+            val srcCenter = propMap(srcEnt)(Center)
+            val tgtCenter = propMap(tgtEnt)(Center)
+            val dir = tgtCenter - srcCenter
+            val src = Box().boundaryPt(srcEnt, propMap(srcEnt), dir)
+            val tgt = Box().boundaryPt(tgtEnt, propMap(tgtEnt), -dir)
+            (e, PropMap() + (Start, src) + (End, tgt))
+          }
+        ),
+        Stack(
+          WithDefaults(PropMap() + (Stroke, "black")),
+          Shorten(5)
+        )
+      )
+    )
   )
 
   svg.g(
-    boxMap.attach,
-    arrowMap.attach
+    spriteMaps.attach
   )
 }
 

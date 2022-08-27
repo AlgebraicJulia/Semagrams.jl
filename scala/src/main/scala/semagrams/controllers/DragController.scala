@@ -62,16 +62,14 @@ case class DragController(
    * This is used to make an element draggable.
    */
   def draggable[El <: Element](
-    center: Signal[Complex],
+    center: () => Complex,
     updates: Observer[Complex]
   ) = CustomModifier[El](
     el => {
-      val curCenter = Var(Complex(0,0))
       el.amend(
-        center --> curCenter.writer,
         onMouseDown.map(
           ev => {
-            val c = curCenter.now()
+            val c = center()
             val init = mouse.$state.now().pos
             val offset = c - init
             Some(updates.contramap[Complex](offset + _))

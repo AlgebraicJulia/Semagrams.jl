@@ -77,6 +77,6 @@ trait Sprite {
   def boundaryPt(
     ent: Entity,
     data: PropMap,
-    dir: Double
+    dir: Complex
   ): Complex
 }

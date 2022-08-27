@@ -8,13 +8,13 @@ import semagrams.controllers._
 
 case class Draggable(
   drag: DragController,
-  center: Entity => Signal[Complex],
+  center: Entity => Complex,
   update: (Entity, Complex) => Unit,
   handle: Handle
 ) extends Middleware {
   override def modifyRendered(ent: Entity, rs: RenderedSprite) = {
     rs.handles(handle).amend(
-      drag.draggable(center(ent), Observer(c => update(ent, c)))
+      drag.draggable(() => center(ent), Observer(c => update(ent, c)))
     )
     rs
   }
@@ -28,7 +28,7 @@ object Draggable {
     handle: Handle): Draggable = {
       Draggable(
         drag,
-        ent => $state.signal.map(_.subpart(attr, ent.asInstanceOf[Elt[X]]).get),
+        ent => $state.now().subpart(attr, ent.asInstanceOf[Elt[X]]).get,
         (ent,v) => $state.update(_.setSubpart(attr, ent.asInstanceOf[Elt[X]], v)),
         handle
       )

@@ -10,6 +10,19 @@ def baseSvg = svg.svg(
   svg.height := "400",
   svg.customSvgAttr("tabindex", StringAsIsCodec) := "0",
   svg.style := "border:black;border-style:solid",
+  svg.defs(
+    svg.marker(
+      svg.idAttr := "arrowhead",
+      svg.markerWidth := "10",
+      svg.markerHeight := "7",
+      svg.refX := "10",
+      svg.refY := "3.5",
+      svg.orient := "auto",
+      svg.polygon(
+        svg.points := "0 0, 10 3.5, 0 7"
+      )
+    )
+  )
 )
 
 def mountWithAction[Model](id: String, initModel: Model, action: Action[Model, Unit]) = {

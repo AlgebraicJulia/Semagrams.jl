@@ -60,7 +60,18 @@ case class Box() extends Sprite {
     RenderedSprite(root, Map(MainHandle -> root))
   }
 
-  def boundaryPt(ent: Entity, data: PropMap, dir: Double) = {
-    Complex(0,0)
+  def boundaryPt(ent: Entity, data: PropMap, dir: Complex) = {
+    // Normalize to first quadrant
+    val q1dir = Complex(dir.x.abs, dir.y.abs)
+    val q1pt = if (q1dir.x == 0) {
+      Complex(0, data(MinimumHeight) / 2)
+    } else if (q1dir.y == 0) {
+      Complex(data(MinimumWidth) / 2, 0)
+    } else if (q1dir.x > q1dir.y) {
+      Complex(data(MinimumWidth) / 2, (q1dir.y / q1dir.x) * data(MinimumHeight) / 2)
+    } else {
+      Complex((q1dir.x / q1dir.y) * data(MinimumWidth) / 2, data(MinimumHeight) / 2)
+    }
+    Complex(q1pt.x * dir.x.sign, q1pt.y * dir.y.sign) + data(Center)
   }
 }
