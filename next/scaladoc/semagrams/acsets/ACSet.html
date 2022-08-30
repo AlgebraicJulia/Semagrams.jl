@@ -3,21 +3,23 @@ Scala's type system.</p>
 <p>A typed ACSet is essentially a newtype wrapper around a BareACSet, i.e.</p>
 <div class="snippet" scala-snippet=""><div class="buttons"></div><pre><code class="language-scala"><span id="0" class=""><span class="tooltip-container" ></span>case class WeightedGraph[T](acset: BareACSet)
 </span></code></pre></div>
-<p>Then to use this newtype wrapper, one declares a trait implementation
-that has an Iso between the newtype wrapper and a BareACSet (essentially
-witnessing that the type is in fact just a wrapper around a BareACSet)
-and then also provide a schema that should be used for all operations.</p>
+<p>Then to use this newtype wrapper, one declares a trait implementation that
+has an Iso between the newtype wrapper and a BareACSet (essentially
+witnessing that the type is in fact just a wrapper around a BareACSet) and
+then also provide a schema that should be used for all operations.</p>
 <p>For instance,</p>
 <div class="snippet" scala-snippet=""><div class="buttons"></div><pre><code class="language-scala"><span id="0" class=""><span class="tooltip-container" ></span>given weightedGraphACSet[T]: ACSet[WeightedGraph[T]] with
 </span><span id="1" class=""><span class="tooltip-container" ></span> val bare = GenIso[WeightedGraph[T], BareACSet]
 </span><span id="2" class=""><span class="tooltip-container" ></span> val schema = Schema(
-</span><span id="3" class=""><span class="tooltip-container" ></span>   E(), V(),
-</span><span id="4" class=""><span class="tooltip-container" ></span>   Src(), Tgt(),
-</span><span id="5" class=""><span class="tooltip-container" ></span>   Weight[T]()
-</span><span id="6" class=""><span class="tooltip-container" ></span> )
+</span><span id="3" class=""><span class="tooltip-container" ></span>   E(),
+</span><span id="4" class=""><span class="tooltip-container" ></span>   V(),
+</span><span id="5" class=""><span class="tooltip-container" ></span>   Src(),
+</span><span id="6" class=""><span class="tooltip-container" ></span>   Tgt(),
+</span><span id="7" class=""><span class="tooltip-container" ></span>   Weight[T]()
+</span><span id="8" class=""><span class="tooltip-container" ></span> )
 </span></code></pre></div>
-<p>This trait then provides extension methods for the newtype wrapper that
-pass in the schema to the functions on the BareACSet.</p>
+<p>This trait then provides extension methods for the newtype wrapper that pass
+in the schema to the functions on the BareACSet.</p>
 </div><dl class="attributes"></dl></div><div class="tabs single"><div class="names"><button data-togglable="graph" class="tab showGraph">Graph</button><button data-togglable="supertypes" class="tab ">Supertypes</button><button data-togglable="subtypes" class="tab ">Known subtypes</button></div><div class="contents"><div data-togglable="graph" class="tab showGraph"><div id="inheritance-diagram" class="diagram-class showGraph"><input value="Reset zoom" type="button" class="btn" onclick="zoomOut()"></input><svg id="graph"></svg><script type="text/dot" id="dot"> digraph g {
  node0 [id=node0, label="<span style=\"color: #FFFFFF;\">trait <a href=\"ACSet.html\" t=\"t\">ACSet</a>[<span t=\"t\">A</span>]</span>", style="fill: #1CAACF;"];
 node1 [id=node1, label="<span style=\"color: #FFFFFF;\">class <span data-unresolved-link=\"\" t=\"t\">Object</span></span>", style="fill: #45AD7D;"];
