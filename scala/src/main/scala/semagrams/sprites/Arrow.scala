@@ -6,7 +6,11 @@ import semagrams.util._
 import semagrams._
 
 case class Arrow() extends Sprite {
-  def present(ent: Entity, p: PropMap, $p: L.Signal[PropMap]): RenderedSprite = {
+  def present(
+      ent: Entity,
+      p: PropMap,
+      $p: L.Signal[PropMap]
+  ): RenderedSprite = {
     val root = line(
       x1 <-- $p.map(_(Start).x.toString),
       y1 <-- $p.map(_(Start).y.toString),
@@ -18,5 +22,6 @@ case class Arrow() extends Sprite {
     RenderedSprite(root, Map())
   }
 
-  def boundaryPt(ent: Entity, data: PropMap, dir: Complex): Complex = Complex(0,0)
+  def boundaryPt(ent: Entity, data: PropMap, dir: Complex): Complex =
+    Complex(0, 0)
 }

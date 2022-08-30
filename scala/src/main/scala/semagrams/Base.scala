@@ -6,7 +6,7 @@ import semagrams.actions.*
 import org.scalajs.dom
 
 def baseSvg = svg.svg(
-  svg.width := "400",
+  svg.width := "600",
   svg.height := "400",
   svg.customSvgAttr("tabindex", StringAsIsCodec) := "0",
   svg.style := "border:black;border-style:solid",
@@ -25,7 +25,11 @@ def baseSvg = svg.svg(
   )
 )
 
-def mountWithAction[Model](id: String, initModel: Model, action: Action[Model, Unit]) = {
+def mountWithAction[Model](
+    id: String,
+    initModel: Model,
+    action: Action[Model, Unit]
+) = {
   dom.document.addEventListener(
     "DOMContentLoaded",
     (_: dom.Event) => {
@@ -38,5 +42,6 @@ def mountWithAction[Model](id: String, initModel: Model, action: Action[Model, U
       val editorState = EditorState($model, appElement)
 
       runAction(editorState, action)
-    })
+    }
+  )
 }

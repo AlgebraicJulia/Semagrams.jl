@@ -11,9 +11,8 @@ object Src extends Hom[E.type, V.type]
 
 object Tgt extends Hom[E.type, V.type]
 
-/**
- * This is a hack in order to have a "typed object"
- */
+/** This is a hack in order to have a "typed object"
+  */
 trait WeightImpl[T] extends Attr[E.type, T] {
   this: Weight.type =>
 }
@@ -23,7 +22,7 @@ object Weight extends WeightImpl[Nothing] {
 }
 
 trait HasGraph[A: ACSet] {
-  extension(a: A)
+  extension (a: A)
     def vertices(): Set[Elt[V.type]] = a.parts(V)
     def edges(): Set[Elt[E.type]] = a.parts(E)
 
@@ -33,7 +32,10 @@ trait HasGraph[A: ACSet] {
 
 def addVertex[A: HasGraph: ACSet](): State[A, Elt[V.type]] = addPart(V)
 
-def addEdge[A: HasGraph: ACSet](s: Elt[V.type], t: Elt[V.type]): State[A, Elt[E.type]] =
+def addEdge[A: HasGraph: ACSet](
+    s: Elt[V.type],
+    t: Elt[V.type]
+): State[A, Elt[E.type]] =
   for {
     e <- addPart(E)
     _ <- setSubpart(Src, e, s)
@@ -45,8 +47,10 @@ case class Graph(acset: BareACSet)
 given graphACSet: ACSet[Graph] with
   val bare = GenIso[Graph, BareACSet]
   val schema = Schema(
-    E, V,
-    Src, Tgt
+    E,
+    V,
+    Src,
+    Tgt
   )
 
 object Graph {
@@ -60,8 +64,10 @@ case class WeightedGraph[T](acset: BareACSet)
 given weightedGraphACSet[T]: ACSet[WeightedGraph[T]] with
   val bare = GenIso[WeightedGraph[T], BareACSet]
   val schema = Schema(
-    E, V,
-    Src, Tgt,
+    E,
+    V,
+    Src,
+    Tgt,
     Weight[T]
   )
 
@@ -84,8 +90,10 @@ case class LabeledGraph[T](acset: BareACSet)
 given labeledGraphACSet[T]: ACSet[LabeledGraph[T]] with
   val bare = GenIso[LabeledGraph[T], BareACSet]
   val schema = Schema(
-    E, V,
-    Src, Tgt,
+    E,
+    V,
+    Src,
+    Tgt,
     Label[T]
   )
 

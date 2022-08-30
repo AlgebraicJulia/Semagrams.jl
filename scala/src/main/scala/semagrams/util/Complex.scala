@@ -4,7 +4,8 @@ import scala.math.{*}
 
 case class Complex(x: Double, y: Double) {
   def +(other: Complex): Complex = Complex(x + other.x, y + other.y)
-  def *(other: Complex): Complex = Complex(x*other.x - y*other.y, x*other.y + y*other.x)
+  def *(other: Complex): Complex =
+    Complex(x * other.x - y * other.y, x * other.y + y * other.x)
   def -(other: Complex): Complex = Complex(x - other.x, y - other.y)
   def /(other: Complex): Complex = {
     val d = other.abssq
@@ -21,7 +22,7 @@ case class Complex(x: Double, y: Double) {
 
   def cong = Complex(x, -y)
 
-  def abssq = x*x + y*y
+  def abssq = x * x + y * y
 
   def abs = sqrt(abssq)
 }
@@ -29,5 +30,5 @@ case class Complex(x: Double, y: Double) {
 implicit def realToComplex(x: Double): Complex = Complex(x, 0)
 
 object Complex {
-  val im = Complex(0,1)
+  val im = Complex(0, 1)
 }

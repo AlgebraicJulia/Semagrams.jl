@@ -26,7 +26,7 @@ class WHAttr extends CustomSvgAttr[Complex] {
 
 val wh = new WHAttr()
 
-extension[A,B] (s: L.Signal[Tuple2[A,B]])
+extension [A, B](s: L.Signal[Tuple2[A, B]])
   def splitTuple: Tuple2[L.Signal[A], L.Signal[B]] = (s.map(_._1), s.map(_._2))
 
 case class Box() extends Sprite {
@@ -51,10 +51,14 @@ case class Box() extends Sprite {
     )
   }
 
-  def present(ent: Entity, init: PropMap, updates: L.Signal[PropMap]): RenderedSprite = {
+  def present(
+      ent: Entity,
+      init: PropMap,
+      updates: L.Signal[PropMap]
+  ): RenderedSprite = {
     val box = rect(
       geomUpdater(updates),
-      styleUpdater(updates),
+      styleUpdater(updates)
     )
     val text = L.svg.text(
       xy <-- updates.map(_(Center)),
@@ -76,9 +80,15 @@ case class Box() extends Sprite {
     } else if (q1dir.y == 0) {
       Complex(data(MinimumWidth) / 2, 0)
     } else if (q1dir.x > q1dir.y) {
-      Complex(data(MinimumWidth) / 2, (q1dir.y / q1dir.x) * data(MinimumHeight) / 2)
+      Complex(
+        data(MinimumWidth) / 2,
+        (q1dir.y / q1dir.x) * data(MinimumHeight) / 2
+      )
     } else {
-      Complex((q1dir.x / q1dir.y) * data(MinimumWidth) / 2, data(MinimumHeight) / 2)
+      Complex(
+        (q1dir.x / q1dir.y) * data(MinimumWidth) / 2,
+        data(MinimumHeight) / 2
+      )
     }
     Complex(q1pt.x * dir.x.sign, q1pt.y * dir.y.sign) + data(Center)
   }

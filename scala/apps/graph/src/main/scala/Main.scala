@@ -33,7 +33,7 @@ type PosGraph = LabeledGraph[PropMap]
 
 val addBox: Action[PosGraph, Unit] = for {
   pos <- mousePos
-  _ <- updateModelS(addLabeledVertex(PropMap() + (Center, pos) + (Content, "Hi")))
+  _ <- updateModelS(addLabeledVertex(PropMap() + (Center, pos) + (Content, "")))
 } yield {}
 
 val remBox: Action[PosGraph, Unit] = (for {

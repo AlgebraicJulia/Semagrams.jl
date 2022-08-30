@@ -19,9 +19,9 @@ object ACSetSpec extends TestSuite {
         z <- addVertex()
         k <- addEdge(x, y)
         l <- addEdge(y, z)
-      } yield (x,y,z,k,l)
+      } yield (x, y, z, k, l)
 
-      val (g,(x,y,z,k,l)) = mkpath.run(Graph()).value
+      val (g, (x, y, z, k, l)) = mkpath.run(Graph()).value
 
       assert(g.vertices() contains x)
       assert(g.vertices() contains y)
@@ -39,9 +39,9 @@ object ACSetSpec extends TestSuite {
         l <- addEdge(y, z)
         _ <- setSubpart(Weight[String], k, "foo")
         _ <- setSubpart(Weight[String], l, "bar")
-      } yield (x,y,z,k,l)
+      } yield (x, y, z, k, l)
 
-      val (g,(x,y,z,k,l)) = mkpath.run(WeightedGraph[String]()).value
+      val (g, (x, y, z, k, l)) = mkpath.run(WeightedGraph[String]()).value
 
       assert(g.subpart(Weight[String], k) == Some("foo"))
       assert(g.subpart(Weight[String], l) == Some("bar"))
@@ -54,9 +54,9 @@ object ACSetSpec extends TestSuite {
         z <- addVertex()
         k <- addEdge(x, y)
         l <- addEdge(y, z)
-      } yield (x,y,z,k,l)
+      } yield (x, y, z, k, l)
 
-      val (g,(x,y,z,k,l)) = mkpath.run(Graph()).value
+      val (g, (x, y, z, k, l)) = mkpath.run(Graph()).value
 
       assert(g.incident(Src, x) == Set(k))
       assert(g.incident(Tgt, x) == Set())
@@ -74,7 +74,7 @@ object ACSetSpec extends TestSuite {
         _ <- remPart(y)
       } yield (x, y, z, k, l)
 
-      val (g,(x,y,z,k,l)) = makeAndRemove.run(Graph()).value
+      val (g, (x, y, z, k, l)) = makeAndRemove.run(Graph()).value
 
       assert(g.parts(V) contains x)
       assert(g.parts(V) contains z)

@@ -8,17 +8,14 @@ import com.raquo.domtypes.jsdom.defs.events.TypedTargetMouseEvent
 import org.scalajs.dom.SVGElement
 import org.scalajs.dom.SVGSVGElement
 
-/**
- * The MouseController provides two functionalities. One is to keep
- * track of the current position of the mouse, and the buttons pressed.
- * The other is to provide an event stream for mouse events on the global
- * window.
- */
+/** The MouseController provides two functionalities. One is to keep track of
+  * the current position of the mouse, and the buttons pressed. The other is to
+  * provide an event stream for mouse events on the global window.
+  */
 
-/**
- * We provide our own enum for mouse buttons, so that we don't have to
- * remember JavaScript's
- */
+/** We provide our own enum for mouse buttons, so that we don't have to remember
+  * JavaScript's
+  */
 enum MouseButton:
   case LeftButton
   case MiddleButton
@@ -32,9 +29,8 @@ object MouseButton {
   }
 }
 
-/**
- * We simplify the mouse API to just these events
- */
+/** We simplify the mouse API to just these events
+  */
 enum MouseEvent:
   case MouseDown(pos: Complex, button: MouseButton)
   case MouseUp(pos: Complex, button: MouseButton)
@@ -56,46 +52,48 @@ object MouseEvent {
   def mouseUp(el: dom.SVGSVGElement)(ev: TypedTargetMouseEvent[dom.Element]) =
     MouseUp(svgCoords(el, ev), MouseButton.fromJS(ev.button))
 
-  def mouseLeave(el: dom.SVGSVGElement)(ev: TypedTargetMouseEvent[dom.Element]) =
+  def mouseLeave(el: dom.SVGSVGElement)(
+      ev: TypedTargetMouseEvent[dom.Element]
+  ) =
     MouseLeave(svgCoords(el, ev))
 
   def mouseMove(el: dom.SVGSVGElement)(ev: TypedTargetMouseEvent[dom.Element]) =
     MouseMove(svgCoords(el, ev))
 }
 
-/**
- * The state of the mouse is simply its positions and
- * what buttons are currently pressed.
- *
- * It processes mouse events to keep this updated.
- */
+/** The state of the mouse is simply its positions and what buttons are
+  * currently pressed.
+  *
+  * It processes mouse events to keep this updated.
+  */
 case class MouseState(
-  pos: Complex,
-  pressed: BitSet
+    pos: Complex,
+    pressed: BitSet
 ) {
   def processEvent(evt: MouseEvent): MouseState = {
     import MouseEvent._
     evt match {
-      case MouseDown(pos, button) => this.copy(pos = pos, pressed = pressed + button.ordinal)
-      case MouseUp(pos, button) => this.copy(pos = pos, pressed = pressed - button.ordinal)
+      case MouseDown(pos, button) =>
+        this.copy(pos = pos, pressed = pressed + button.ordinal)
+      case MouseUp(pos, button) =>
+        this.copy(pos = pos, pressed = pressed - button.ordinal)
       case MouseLeave(pos) => this.copy(pos = pos)
-      case MouseMove(pos) => this.copy(pos = pos)
+      case MouseMove(pos)  => this.copy(pos = pos)
     }
   }
 }
 
 object MouseState {
-  def apply() = new MouseState(Complex(0,0), BitSet())
+  def apply() = new MouseState(Complex(0, 0), BitSet())
 }
 
 case class MouseController(
-  $state: Var[MouseState],
-  mouseEvents: EventBus[MouseEvent],
+    $state: Var[MouseState],
+    mouseEvents: EventBus[MouseEvent]
 ) extends Modifier[SvgElement] {
 
-  /**
-   * This attaches the necessary event listeners to the main window
-   */
+  /** This attaches the necessary event listeners to the main window
+    */
   override def apply(el: SvgElement) = {
     import MouseEvent._
     val svgEl = el.ref.asInstanceOf[SVGSVGElement]
@@ -104,7 +102,9 @@ case class MouseController(
       onMouseUp.map(MouseEvent.mouseUp(svgEl)) --> mouseEvents,
       onMouseLeave.map(MouseEvent.mouseLeave(svgEl)) --> mouseEvents,
       onMouseMove.map(MouseEvent.mouseMove(svgEl)) --> mouseEvents,
-      mouseEvents --> $state.updater[MouseEvent]((state, evt) => state.processEvent(evt))
+      mouseEvents --> $state.updater[MouseEvent]((state, evt) =>
+        state.processEvent(evt)
+      )
     )
   }
 }

@@ -49,7 +49,6 @@ package semagrams.examples
 //   )
 // )
 
-
 // case class StaticBoxes($state: Var[Boxes]) {
 //   def present() = {
 //     val elt = baseSvg
