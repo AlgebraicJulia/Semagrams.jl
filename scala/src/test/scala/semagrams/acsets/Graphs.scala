@@ -2,6 +2,8 @@ package semagrams.acsets
 
 import utest._
 import semagrams.acsets._
+import semagrams.acsets.{given}
+import upickle.default._
 import scala.collection.immutable.HashMap
 
 object ACSetSpec extends TestSuite {
@@ -37,14 +39,14 @@ object ACSetSpec extends TestSuite {
         z <- addVertex()
         k <- addEdge(x, y)
         l <- addEdge(y, z)
-        _ <- setSubpart(Weight[String], k, "foo")
-        _ <- setSubpart(Weight[String], l, "bar")
+        _ <- setSubpart(Weight[String](), k, "foo")
+        _ <- setSubpart(Weight[String](), l, "bar")
       } yield (x, y, z, k, l)
 
       val (g, (x, y, z, k, l)) = mkpath.run(WeightedGraph[String]()).value
 
-      assert(g.subpart(Weight[String], k) == Some("foo"))
-      assert(g.subpart(Weight[String], l) == Some("bar"))
+      assert(g.subpart(Weight[String](), k) == Some("foo"))
+      assert(g.subpart(Weight[String](), l) == Some("bar"))
     }
 
     test("incident") {
@@ -80,6 +82,21 @@ object ACSetSpec extends TestSuite {
       assert(g.parts(V) contains z)
       assert(!(g.parts(V) contains y))
       assert(g.parts(E).isEmpty)
+    }
+
+    test("serialization") {
+      val mkpath = for {
+        x <- addVertex[Graph]()
+        y <- addVertex()
+        z <- addVertex()
+        k <- addEdge(x, y)
+        l <- addEdge(y, z)
+      } yield (x, y, z, k, l)
+
+      val (g, (x, y, z, k, l)) = mkpath.run(Graph()).value
+      val gnew = read(write(g)(graphACSet.rw))(graphACSet.rw)
+
+      assert(gnew == g)
     }
   }
 

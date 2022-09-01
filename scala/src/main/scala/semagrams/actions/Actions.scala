@@ -195,5 +195,5 @@ def mouseDown[Model](b: MouseButton): Action[Model, Complex] = for {
 def hovered[Model]: Action[Model, Option[Entity]] =
   ReaderT.ask.map(_.hover.$state.now().state)
 
-def hoveredPart[Model, X <: Ob: ValueOf]: Action[Model, Option[Elt[X]]] =
-  hovered.map(_.flatMap(_.asElt[X]))
+def hoveredPart[Model, X <: Ob](x: X): Action[Model, Option[Elt[X]]] =
+  hovered.map(_.flatMap(_.asElt(x)))

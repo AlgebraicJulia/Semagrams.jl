@@ -10,8 +10,29 @@ import monocle._
 import monocle.syntax.all._
 import semagrams._
 import semagrams.acsets.ACSet
+import upickle.default.{ReadWriter, macroRW}
 
-import java.awt.Canvas
+/** The next step is to support serializability for ACSets.
+  *
+  * There has to be some way of serializing and deserializing the keys. To do
+  * this, each key (i.e. Ob, Hom, Attr) should be able to be converted into a
+  * string. Then the schema should provide a map from strings to keys.
+  *
+  * Other thoughts: we need to support "dynamic" keys, i.e. keys that are not
+  * just case objects. So the "ValueOf" constraints need to go away.
+  *
+  * We can do this by having Elt store the key not only in the type but also as
+  * a value. And then we could have something like
+  *
+  * def apply[T: ValueOf](x: Int) = Elt[T](T.valueOf, x)
+  *
+  * for the case that the key is a singleton.
+  *
+  * This will be relevant for "sliced" acsets, where the schema is partially
+  * static (i.e., what we are slicing over is static) and partially dynamic (the
+  * thing that we are slicing is dynamic).
+  */
+
 import scala.collection.mutable
 
 /** We use a somewhat hacky mapping of schemas into scala types in order to
@@ -25,14 +46,12 @@ import scala.collection.mutable
   * strategy because javascript is untyped anyways.
   */
 
-/** Objects of schema categories are given by singleton types that extend Ob.
+/** Objects of schema categories are given by types that extend Ob
   */
-abstract class AbstractOb extends EntityType
-
-type Ob = AbstractOb & Singleton
+abstract class Ob extends EntityType
 
 extension (ent: Entity)
-  def asElt[X <: Ob: ValueOf] = if (ent.entityType == valueOf[X]) then
+  def asElt[X <: Ob](x: X) = if (ent.entityType == x) then
     Some(ent.asInstanceOf[Elt[X]])
   else None
 
@@ -45,14 +64,14 @@ extension (ent: Entity)
   * elements could be homs of different types.
   */
 abstract class AbstractHom {
-  def dom: Ob
-  def codom: Ob
+  val dom: Ob
+  val codom: Ob
 }
 
-abstract class Hom[Dom <: Ob: ValueOf, Codom <: Ob: ValueOf]
-    extends AbstractHom {
-  def dom = valueOf[Dom]
-  def codom = valueOf[Codom]
+abstract class Hom[Dom <: Ob, Codom <: Ob] extends AbstractHom {}
+
+abstract class AttrType {
+  type Value
 }
 
 /** A similar strategy to [[semagrams.acsets.AbstractHom]] is used for
@@ -63,20 +82,22 @@ abstract class Hom[Dom <: Ob: ValueOf, Codom <: Ob: ValueOf]
   * case class Weight[T]() extends Attr[E, T]
   * ```
   */
-abstract class AbstractAttr
+abstract class AbstractAttr {
+  val dom: Ob
+  val codom: AttrType
+}
 abstract class Attr[Dom <: Ob, Codom] extends AbstractAttr
 
-/** A Schema is simply a bunch of object, morphisms, and attributes.
-  *
-  * Note that we do not have attribute types like in Julia; rather attributes
-  * themselves are typed by their codomain type.
-  *
-  * N.B. maybe we should change this?
+
+/** A Schema is simply a bunch of object, morphisms, attributes, and attrtypes.
+ *
+ * The purpose of the attrtypes is to control serialization: when we serialize and
+ * deserialize we use a map of attrtypes to serializers/deserializers
   */
 case class Schema(
-    obs: List[Ob],
-    homs: List[AbstractHom],
-    attrs: List[AbstractAttr]
+    obs: Map[String, Ob],
+    homs: Map[String, AbstractHom],
+    attrs: Map[String, AbstractAttr],
 )
 
 object Schema {
@@ -85,7 +106,7 @@ object Schema {
     * splits them out for the user.
     */
   def apply(args: (Ob | AbstractHom | AbstractAttr)*) = {
-    val obs = args.collect { case (x: AbstractOb) =>
+    val obs = args.collect { case (x: Ob) =>
       x
     }
     val homs = args.collect { case (f: AbstractHom) =>
@@ -94,7 +115,11 @@ object Schema {
     val attrs = args.collect { case (f: AbstractAttr) =>
       f
     }
-    new Schema(obs.toList.map(_.asInstanceOf[Ob]), homs.toList, attrs.toList)
+    new Schema(
+      obs.map(x => (x.toString, x)).toMap,
+      homs.map(x => (x.toString, x)).toMap,
+      attrs.map(x => (x.toString, x)).toMap,
+    )
   }
 }
 
@@ -102,8 +127,8 @@ object Schema {
   * [[semagrams.Entity]], which means that it can be used as a key for sprites
   * in Semagrams.
   */
-case class Elt[X <: Ob: ValueOf](id: Int) extends Entity {
-  def entityType = valueOf[X]
+case class Elt[X <: Ob](ty: X, id: Int) extends Entity {
+  def entityType = ty
 }
 
 /** This is the data of an acset, represented dynamically.
@@ -133,13 +158,13 @@ case class BareACSet(
     attrs: Map[AbstractAttr, Map[Entity, Any]]
 ) {
   def parts[X <: Ob](s: Schema, ob: X): Set[Elt[X]] = {
-    assert(s.obs contains ob)
+    assert(s.obs.values.toList contains ob)
     obs(ob).asInstanceOf[Set[Elt[X]]]
   }
 
-  def addPart[X <: Ob: ValueOf](s: Schema, ob: X): (Elt[X], BareACSet) = {
-    assert(s.obs contains ob)
-    val e = Elt[X](nextId)
+  def addPart[X <: Ob](s: Schema, ob: X): (Elt[X], BareACSet) = {
+    assert(s.obs.values.toList contains ob)
+    val e = Elt[X](ob, nextId)
     (
       e,
       this.copy(
@@ -154,25 +179,25 @@ case class BareACSet(
       f: Hom[X, Y],
       x: Elt[X]
   ): Option[Elt[Y]] = {
-    assert(s.homs contains f)
+    assert(s.homs.values.toList contains f)
     homs(f).asInstanceOf[Map[Elt[X], Elt[Y]]].get(x)
   }
 
   def subpart[X <: Ob, T](s: Schema, f: Attr[X, T], x: Elt[X]): Option[T] = {
-    assert(s.attrs contains f)
+    assert(s.attrs.values.toList contains f)
     attrs(f).asInstanceOf[Map[Elt[X], T]].get(x)
   }
 
   /** We use an implicit in order to pass in the singleton instance of the type
     * X so that we can look it up in the _obs map.
     */
-  def incident[X <: Ob: ValueOf, Y <: Ob](
+  def incident[X <: Ob, Y <: Ob](
       s: Schema,
       f: Hom[X, Y],
       y: Elt[Y]
   ): Set[Elt[X]] = {
-    val xob = valueOf[X]
-    assert(s.homs contains f)
+    val xob = f.dom
+    assert(s.homs.values.toList contains f)
     val f_map = homs(f).asInstanceOf[Map[Elt[X], Elt[Y]]]
     obs(xob).asInstanceOf[Set[Elt[X]]].filter(x => f_map(x) == y)
   }
@@ -183,7 +208,7 @@ case class BareACSet(
       x: Elt[X],
       y: Elt[Y]
   ): BareACSet = {
-    assert(s.homs contains f)
+    assert(s.homs.values.toList contains f)
     this.copy(
       homs = homs + (f -> (homs(f) + (x -> y)))
     )
@@ -195,7 +220,7 @@ case class BareACSet(
       x: Elt[X],
       y: T
   ): BareACSet = {
-    assert(s.attrs contains f)
+    assert(s.attrs.values.toList contains f)
     this.copy(
       attrs = attrs + (f -> (attrs(f) + (x -> y)))
     )
@@ -204,7 +229,7 @@ case class BareACSet(
   /** Strategy: do a traversal of the undirected graph of the category of
     * elements starting at x, and then delete everything that we touch.
     */
-  def remPart[X <: Ob: ValueOf](s: Schema, x: Elt[X]): BareACSet = {
+  def remPart[X <: Ob](s: Schema, x: Elt[X]): BareACSet = {
     val visited = mutable.HashSet[Entity]()
     val next = mutable.Stack[Entity](x)
     while (!next.isEmpty) {
@@ -212,7 +237,7 @@ case class BareACSet(
       if (!(visited contains y)) {
         visited.add(y)
         val yob = y.entityType.asInstanceOf[Ob]
-        for (f <- s.homs) {
+        for (f <- s.homs.values) {
           if (f.codom == yob) {
             for (z <- obs(f.dom)) {
               if (homs(f).get(z) == Some(y)) {
@@ -237,8 +262,8 @@ case class BareACSet(
   /** This is a version of remPart that does not remove parts that are related
     * to x
     */
-  def remPartOnly[X <: Ob: ValueOf](s: Schema, x: Elt[X]): BareACSet = {
-    val xob = valueOf[X]
+  def remPartOnly[X <: Ob](s: Schema, x: Elt[X]): BareACSet = {
+    val xob = x.ty
     this.copy(
       obs = obs + (xob -> (obs(xob) - x)),
       homs =
@@ -248,16 +273,76 @@ case class BareACSet(
   }
 }
 
+case class BareACSetSerialized(
+  nextId: Int,
+  obs: Map[String, Set[Int]],
+  homs: Map[String, Map[Int, Int]],
+  attrs: Map[String, Map[Int, String]]
+)
+
+object BareACSetSerialized {
+  implicit val rw: ReadWriter[BareACSetSerialized] = macroRW
+}
+
+class ATRW(val at: AttrType, val rw: ReadWriter[at.Value])
+
+case class AttrTypeSerializers(serializers: Map[AttrType, Any]) {
+  def +(kv: ATRW) =
+    this.copy(serializers = serializers + (kv.at -> kv.rw))
+
+  def apply(at: AttrType) =
+    serializers(at).asInstanceOf[ReadWriter[at.Value]]
+}
+
+object AttrTypeSerializers {
+  def apply() = new AttrTypeSerializers(Map())
+}
+
 object BareACSet {
 
-  /** This makes a new
+  /** This makes a new empty acset
     */
   def apply(s: Schema) = {
     new BareACSet(
       0,
-      s.obs.map(ob => (ob -> Set[Entity]())).toMap,
-      s.homs.map(f => (f -> Map[Entity, Entity]())).toMap,
-      s.attrs.map(f => (f -> Map[Entity, Any]())).toMap
+      s.obs.values.map(ob => (ob -> Set[Entity]())).toMap,
+      s.homs.values.map(f => (f -> Map[Entity, Entity]())).toMap,
+      s.attrs.values.map(f => (f -> Map[Entity, Any]())).toMap
+    )
+  }
+
+  def serializer(s: Schema, serializers: AttrTypeSerializers): ReadWriter[BareACSet] = {
+    BareACSetSerialized.rw.bimap(
+      acs => BareACSetSerialized(
+        acs.nextId,
+        acs.obs.map({ case (ob, ents) => (ob.toString(), ents.map(_.id)) }),
+        acs.homs.map({ case (hom, vals) => (hom.toString(), vals.map({ case (x, y) => (x.id, y.id) })) }),
+        acs.attrs.map({ case (attr, vals) => (
+                         attr.toString(),
+                         vals.map({ case (x, y) => {
+                                     val rw = serializers(attr.codom)
+                                     (x.id, upickle.default.write(y.asInstanceOf[attr.codom.Value])(rw))
+                                   } })
+                       ) }),
+      ),
+      acs => new BareACSet(
+        acs.nextId,
+        acs.obs.map(
+          { case (name, ents) => {
+             val x = s.obs(name)
+             (x, ents.map(Elt(x, _).asInstanceOf[Entity]).toSet)
+           } }),
+        acs.homs.map(
+          { case (name, vals) => {
+             val f = s.homs(name)
+             (f, vals.map({ case (x,y) => (Elt(f.dom,x).asInstanceOf[Entity], Elt(f.codom,y).asInstanceOf[Entity]) }).toMap)
+           } }),
+        acs.attrs.map(
+          { case (name, vals) => {
+             val f = s.attrs(name)
+             (f, vals.map({ case (x,y) => (Elt(f.dom,x).asInstanceOf[Entity], upickle.default.read(y)(serializers(f.codom)).asInstanceOf[Any]) }).toMap)
+           } }),
+      )
     )
   }
 }
@@ -306,8 +391,8 @@ trait ACSet[A] {
       bare.get(a).parts(schema, ob)
     }
 
-    def addPart[X <: Ob: ValueOf](ob: X): (Elt[X], A) = {
-      bare.modifyF(_.addPart(schema, valueOf[X]))(a)
+    def addPart[X <: Ob](ob: X): (Elt[X], A) = {
+      bare.modifyF(_.addPart(schema, ob))(a)
     }
 
     def subpart[X <: Ob, Y <: Ob](f: Hom[X, Y], x: Elt[X]): Option[Elt[Y]] = {
@@ -318,7 +403,7 @@ trait ACSet[A] {
       bare.get(a).subpart(schema, f, x)
     }
 
-    def incident[X <: Ob: ValueOf, Y <: Ob](
+    def incident[X <: Ob, Y <: Ob](
         f: Hom[X, Y],
         y: Elt[Y]
     ): Set[Elt[X]] = {
@@ -340,9 +425,11 @@ trait ACSet[A] {
       })(a)
     }
 
-    def remPart[X <: Ob: ValueOf](x: Elt[X]): A = {
+    def remPart[X <: Ob](x: Elt[X]): A = {
       bare.modify(_.remPart(schema, x))(a)
     }
+
+  def rw: ReadWriter[A] = BareACSet.serializer(schema, AttrTypeSerializers()).bimap(bare.get(_), bare(_))
 }
 
 /** Finally, we also provide wrappers around the mutating methods on an acset

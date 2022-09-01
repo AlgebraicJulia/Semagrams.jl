@@ -3,22 +3,27 @@ package semagrams.acsets
 import monocle.macros.GenIso
 import cats.data.State
 
-object E extends AbstractOb
+case object E extends Ob
 
-object V extends AbstractOb
+case object V extends Ob
 
-object Src extends Hom[E.type, V.type]
-
-object Tgt extends Hom[E.type, V.type]
-
-/** This is a hack in order to have a "typed object"
-  */
-trait WeightImpl[T] extends Attr[E.type, T] {
-  this: Weight.type =>
+case object Src extends Hom[E.type, V.type] {
+  val dom = E
+  val codom = V
 }
 
-object Weight extends WeightImpl[Nothing] {
-  def apply[T] = this.asInstanceOf[WeightImpl[T]]
+case object Tgt extends Hom[E.type, V.type] {
+  val dom = E
+  val codom = V
+}
+
+case class WeightValue[T]() extends AttrType {
+  type Value = T
+}
+
+case class Weight[T]() extends Attr[E.type, T] {
+  val dom = E
+  val codom = WeightValue[T]()
 }
 
 trait HasGraph[A: ACSet] {
@@ -68,7 +73,7 @@ given weightedGraphACSet[T]: ACSet[WeightedGraph[T]] with
     V,
     Src,
     Tgt,
-    Weight[T]
+    Weight[T](),
   )
 
 object WeightedGraph {
@@ -77,12 +82,13 @@ object WeightedGraph {
 
 given weightedGraphHasGraph[T]: HasGraph[WeightedGraph[T]] = new HasGraph {}
 
-trait LabelImpl[T] extends Attr[V.type, T] {
-  this: Label.type =>
+case class LabelValue[T]() extends AttrType {
+  type Value = T
 }
 
-object Label extends LabelImpl[Nothing] {
-  def apply[T] = this.asInstanceOf[LabelImpl[T]]
+case class Label[T]() extends Attr[V.type, T] {
+  val dom = V
+  val codom = LabelValue[T]()
 }
 
 case class LabeledGraph[T](acset: BareACSet)
@@ -94,7 +100,7 @@ given labeledGraphACSet[T]: ACSet[LabeledGraph[T]] with
     V,
     Src,
     Tgt,
-    Label[T]
+    Label[T](),
   )
 
 object LabeledGraph {
@@ -106,5 +112,5 @@ given labeledGraphHasGraph[T]: HasGraph[LabeledGraph[T]] = new HasGraph {}
 def addLabeledVertex[T](label: T): State[LabeledGraph[T], Elt[V.type]] =
   for {
     v <- addVertex()
-    _ <- setSubpart(Label[T], v, label)
+    _ <- setSubpart(Label[T](), v, label)
   } yield v

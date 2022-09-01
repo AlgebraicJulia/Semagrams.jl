@@ -37,15 +37,15 @@ val addBox: Action[PosGraph, Unit] = for {
 } yield {}
 
 val remBox: Action[PosGraph, Unit] = (for {
-  v <- OptionT(hoveredPart[PosGraph, V.type])
+  v <- OptionT(hoveredPart(V))
   _ <- OptionT.liftF(updateModel[PosGraph](_.remPart(v)))
 } yield {}).value.map(_ => {})
 
 val addEdgeAction: Action[PosGraph, Unit] = (for {
   _ <- OptionT.liftF(mouseDown(MouseButton.LeftButton))
-  s <- OptionT(hoveredPart[PosGraph, V.type])
+  s <- OptionT(hoveredPart(V))
   _ <- OptionT.liftF(mouseDown(MouseButton.LeftButton))
-  t <- OptionT(hoveredPart[PosGraph, V.type])
+  t <- OptionT(hoveredPart(V))
   _ <- OptionT.liftF(updateModelS[PosGraph, Elt[E.type]](addEdge(s, t)))
 } yield {}).value.map(_ => {})
 
@@ -61,12 +61,6 @@ type M[T] = Action[PosGraph, T]
 val L = actionLiftIO[PosGraph]
 val A = implicitly[Monad[[X] =>> Action[LabeledGraph[Complex],X]]]
 
-extension(b: PosGraph)
-  def labeledVertices() = {
-    val vs = b.vertices().toList
-    vs.map(v => (v, b.subpart(Label[Complex], v).get))
-  }
-
 def renderPosGraph(
   $posGraph: Var[PosGraph],
   hover: HoverController,
@@ -78,11 +72,11 @@ def renderPosGraph(
     List(
       SpriteMaker[PosGraph](
         Box(),
-        (s, _) => s.parts(V).toList.map(v => (v, s.subpart(Label[PropMap], v).get)),
+        (s, _) => s.parts(V).toList.map(v => (v, s.subpart(Label[PropMap](), v).get)),
         Stack(
           WithDefaults(PropMap() + (MinimumWidth, 50) + (MinimumHeight, 50) + (Fill, "white") + (Stroke, "black")),
           Hoverable(hover, MainHandle, PropMap() + (Fill, "lightgray")),
-          Draggable.dragPart(drag, $posGraph, Label[PropMap], Center, MainHandle)
+          Draggable.dragPart(drag, $posGraph, Label[PropMap](), Center, MainHandle)
         )
       ),
       SpriteMaker[PosGraph](
