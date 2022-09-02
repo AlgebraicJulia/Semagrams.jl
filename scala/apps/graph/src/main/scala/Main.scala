@@ -12,6 +12,8 @@ import cats.data.OptionT
 import semagrams.sprites._
 import com.raquo.laminar.api.L.{*, given}
 import semagrams.controllers._
+import scala.scalajs.js.annotation.JSExportTopLevel
+import org.scalajs.dom
 
 /**
  * TODO:
@@ -51,11 +53,13 @@ type PosGraph = LabeledGraph[PropMap]
 val addBox: Action[PosGraph, Unit] = for {
   pos <- mousePos
   _ <- updateModelS(addLabeledVertex(PropMap() + (Center, pos) + (Content, "")))
+  _ <- update
 } yield {}
 
 val remBox: Action[PosGraph, Unit] = (for {
   v <- OptionT(hoveredPart(V))
   _ <- OptionT.liftF(updateModel[PosGraph](_.remPart(v)))
+  _ <- OptionT.liftF(update)
 } yield {}).value.map(_ => {})
 
 val addEdgeAction: Action[PosGraph, Unit] = (for {
@@ -64,6 +68,7 @@ val addEdgeAction: Action[PosGraph, Unit] = (for {
   _ <- OptionT.liftF(mouseDown(MouseButton.LeftButton))
   t <- OptionT(hoveredPart(V))
   _ <- OptionT.liftF(updateModelS[PosGraph, Elt[E.type]](addEdge(s, t)))
+  _ <- OptionT.liftF(update)
 } yield {}).value.map(_ => {})
 
 val bindings = KeyBindings(
@@ -123,8 +128,14 @@ def renderPosGraph(
   )
 }
 
+val serializer = labeledGraphACSet[PropMap].rw(
+  AttrTypeSerializers() + ATRW(LabelValue[PropMap](), PropMap.rw)
+)
+
 object Main {
-  def main(args: Array[String]): Unit = {
+
+  @JSExportTopLevel("main")
+  def main(el: dom.Element): Unit = {
     val action: M[Unit] = for {
       $model <- ReaderT.ask.map(_.$model)
       hover <- ReaderT.ask.map(_.hover)
@@ -133,6 +144,6 @@ object Main {
       _ <- bindings.runForever
     } yield ()
 
-    mountWithAction("app-container", LabeledGraph[PropMap](), action)
+    mountWithAction(el, LabeledGraph[PropMap](), serializer, action)
   }
 }

@@ -4,6 +4,8 @@ import com.raquo.laminar.api.L._
 import com.raquo.domtypes.generic.codecs.StringAsIsCodec
 import semagrams.actions.*
 import org.scalajs.dom
+import scala.scalajs.js
+import upickle.default._
 
 def baseSvg = svg.svg(
   svg.width := "600",
@@ -26,22 +28,30 @@ def baseSvg = svg.svg(
 )
 
 def mountWithAction[Model](
-    id: String,
+    parentDiv: dom.Element,
     initModel: Model,
+    serializer: ReadWriter[Model],
     action: Action[Model, Unit]
 ) = {
-  dom.document.addEventListener(
-    "DOMContentLoaded",
-    (_: dom.Event) => {
-      val parentDiv = dom.document.getElementById(id)
-      val appElement = baseSvg
+  val $model = Var(initModel)
+  val appElement = baseSvg
 
-      render(parentDiv, appElement)
-
-      val $model = Var(initModel)
-      val editorState = EditorState($model, appElement)
-
-      runAction(editorState, action)
+  js.Object.defineProperty(
+    parentDiv,
+    "value",
+    new {
+      override val get = () => write($model.now())(serializer)
+      override val set = (newVal) => $model.set(read(newVal.asInstanceOf[String])(serializer))
     }
   )
+
+  val update: () => Unit = () => {
+    parentDiv.dispatchEvent(dom.CustomEvent("input", null))
+  }
+
+  val editorState = EditorState($model, appElement, update)
+
+  render(parentDiv, appElement)
+
+  runAction(editorState, action)
 }

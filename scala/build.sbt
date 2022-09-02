@@ -35,7 +35,7 @@ lazy val core = (project in file("."))
 lazy val graph_app = (project in file("apps/graph"))
   .settings(
     name := "semagrams-graph-app",
-    scalaJSUseMainModuleInitializer := true,
+    // scalaJSUseMainModuleInitializer := true,
     scalaJSLinkerConfig ~= {
       _.withModuleKind(ModuleKind.ESModule)
         .withModuleSplitStyle(

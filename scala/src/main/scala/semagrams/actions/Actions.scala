@@ -15,6 +15,7 @@ import org.scalajs.dom.raw.KeyboardEvent
 import com.raquo.laminar.nodes.ReactiveElement
 import monocle.std.these
 import cats.instances.stream
+import upickle.default._
 
 /** We control the behavior of Semagrams using an asynchronous IO monad from
   * cats-effect.
@@ -43,11 +44,12 @@ case class EditorState[Model](
     hover: HoverController,
     keyboard: KeyboardController,
     $model: Var[Model],
-    elt: SvgElement
+    elt: SvgElement,
+    update: () => Unit
 )
 
 object EditorState {
-  def apply[Model]($model: Var[Model], elt: SvgElement) = {
+  def apply[Model]($model: Var[Model], elt: SvgElement, update: () => Unit) = {
     val mouse = MouseController()
     val drag = DragController(mouse)
     val hover = HoverController()
@@ -60,7 +62,7 @@ object EditorState {
       keyboard
     )
 
-    new EditorState(mouse, drag, hover, keyboard, $model, elt)
+    new EditorState(mouse, drag, hover, keyboard, $model, elt, update)
   }
 }
 
@@ -197,3 +199,11 @@ def hovered[Model]: Action[Model, Option[Entity]] =
 
 def hoveredPart[Model, X <: Ob](x: X): Action[Model, Option[Elt[X]]] =
   hovered.map(_.flatMap(_.asElt(x)))
+
+def update[Model]: Action[Model, Unit] = {
+  val L = actionLiftIO[Model]
+  for {
+    updateFun <- ReaderT.ask.map(_.update)
+    _ <- L.liftIO(IO(updateFun()))
+  } yield ()
+}
