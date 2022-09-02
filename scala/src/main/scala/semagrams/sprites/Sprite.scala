@@ -5,45 +5,6 @@ import com.raquo.laminar.api.L.{*, given}
 import com.raquo.laminar.nodes.ReactiveSvgElement
 import semagrams.util.Complex
 
-abstract class AbstractProperty
-
-abstract class Property[String] extends AbstractProperty
-
-object Fill extends Property[String]
-object Stroke extends Property[String]
-object InnerSep extends Property[Double]
-object MinimumSize extends Property[Double]
-object MinimumWidth extends Property[Double]
-object MinimumHeight extends Property[Double]
-object Content extends Property[String]
-object Center extends Property[Complex]
-object Start extends Property[Complex]
-object End extends Property[Complex]
-
-case class PropMap(map: Map[AbstractProperty, Any]) {
-  def apply[T](p: Property[T]): T = {
-    map(p).asInstanceOf[T]
-  }
-
-  def get[T](p: Property[T]): Option[T] = {
-    map.get(p).map(_.asInstanceOf[T])
-  }
-
-  def +[T](kv: (Property[T], T)): PropMap = {
-    this.copy(map = map + kv)
-  }
-
-  def ++(other: PropMap): PropMap = {
-    this.copy(map = map ++ other.map)
-  }
-}
-
-object PropMap {
-  def apply() = {
-    new PropMap(Map[AbstractProperty, Any]())
-  }
-}
-
 abstract class Handle
 
 object MainHandle extends Handle

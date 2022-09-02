@@ -10,7 +10,7 @@ import monocle._
 import monocle.syntax.all._
 import semagrams._
 import semagrams.acsets.ACSet
-import upickle.default.{ReadWriter, macroRW}
+import upickle.default._
 
 /** The next step is to support serializability for ACSets.
   *
@@ -277,7 +277,7 @@ case class BareACSetSerialized(
   nextId: Int,
   obs: Map[String, Set[Int]],
   homs: Map[String, Map[Int, Int]],
-  attrs: Map[String, Map[Int, String]]
+  attrs: Map[String, Map[Int, ujson.Value]]
 )
 
 object BareACSetSerialized {
@@ -321,7 +321,7 @@ object BareACSet {
                          attr.toString(),
                          vals.map({ case (x, y) => {
                                      val rw = serializers(attr.codom)
-                                     (x.id, upickle.default.write(y.asInstanceOf[attr.codom.Value])(rw))
+                                     (x.id, rw.transform(y.asInstanceOf[attr.codom.Value], ujson.Value))
                                    } })
                        ) }),
       ),
@@ -340,7 +340,7 @@ object BareACSet {
         acs.attrs.map(
           { case (name, vals) => {
              val f = s.attrs(name)
-             (f, vals.map({ case (x,y) => (Elt(f.dom,x).asInstanceOf[Entity], upickle.default.read(y)(serializers(f.codom)).asInstanceOf[Any]) }).toMap)
+             (f, vals.map({ case (x,y) => (Elt(f.dom,x).asInstanceOf[Entity], read(y)(serializers(f.codom)).asInstanceOf[Any]) }).toMap)
            } }),
       )
     )
@@ -429,7 +429,7 @@ trait ACSet[A] {
       bare.modify(_.remPart(schema, x))(a)
     }
 
-  def rw: ReadWriter[A] = BareACSet.serializer(schema, AttrTypeSerializers()).bimap(bare.get(_), bare(_))
+  def rw(serializers: AttrTypeSerializers): ReadWriter[A] = BareACSet.serializer(schema, serializers).bimap(bare.get(_), bare(_))
 }
 
 /** Finally, we also provide wrappers around the mutating methods on an acset

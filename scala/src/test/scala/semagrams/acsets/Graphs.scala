@@ -86,17 +86,20 @@ object ACSetSpec extends TestSuite {
 
     test("serialization") {
       val mkpath = for {
-        x <- addVertex[Graph]()
+        x <- addVertex[WeightedGraph[String]]()
         y <- addVertex()
         z <- addVertex()
         k <- addEdge(x, y)
         l <- addEdge(y, z)
+        _ <- setSubpart(Weight[String](), k, "foo")
+        _ <- setSubpart(Weight[String](), l, "bar")
       } yield (x, y, z, k, l)
 
-      val (g, (x, y, z, k, l)) = mkpath.run(Graph()).value
-      val gnew = read(write(g)(graphACSet.rw))(graphACSet.rw)
+      val (g, (x, y, z, k, l)) = mkpath.run(WeightedGraph[String]()).value
 
-      assert(gnew == g)
+      val rw = weightedGraphACSet[String].rw(AttrTypeSerializers() + ATRW(WeightValue[String](), summon[ReadWriter[String]]))
+
+      assert(read(write(g)(rw))(rw) == g)
     }
   }
 

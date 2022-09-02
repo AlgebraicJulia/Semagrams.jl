@@ -16,10 +16,27 @@ import semagrams.controllers._
 /**
  * TODO:
  * - Clean up use of OptionT[Action[PosGraph,_],A]
- * - Prettier edges
  * - Dialogue for edge creation
  * - Dialogue for content editing
  * - Content centering and box resizing in response to label
+ *
+ * Pluto integration notes.
+ *
+ * The good news is that Pluto handles all the connection stuff. The handoff
+ * point to Pluto happens within javascript, so we don't have to do anything
+ * with websockets in Semagrams.
+ *
+ * The first thing to do is to set up something which gets the absolute rawest
+ * data into Julia. We can process this later.
+ *
+ * Essentially, the way to integrate is to display a script element from Julia
+ * which updates the property "value" on its parent, and then wrap this in a
+ * <bond> element. Then apparently observable/pluto will automatically listen to
+ * changes in the value and propagate them back to Julia.
+ *
+ * I don't think that this supports bidirectional communication, however. Which
+ * means that an interactive process would not be supported in the context of
+ * Pluto.
  *
  * Notes:
  * The simplest and easiest way to convert ACSets to be displayable might be by

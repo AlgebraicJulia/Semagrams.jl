@@ -1,5 +1,7 @@
 package semagrams.util
 
+import upickle.default._
+
 import scala.math.{*}
 
 case class Complex(x: Double, y: Double) {
@@ -31,4 +33,5 @@ implicit def realToComplex(x: Double): Complex = Complex(x, 0)
 
 object Complex {
   val im = Complex(0, 1)
+  implicit val rw: ReadWriter[Complex] = macroRW
 }
