@@ -276,8 +276,8 @@ case class BareACSet(
 case class BareACSetSerialized(
   nextId: Int,
   obs: Map[String, Set[Int]],
-  homs: Map[String, Map[Int, Int]],
-  attrs: Map[String, Map[Int, ujson.Value]]
+  homs: Map[String, List[Tuple2[Int, Int]]],
+  attrs: Map[String, List[Tuple2[Int, ujson.Value]]]
 )
 
 object BareACSetSerialized {
@@ -316,13 +316,14 @@ object BareACSet {
       acs => BareACSetSerialized(
         acs.nextId,
         acs.obs.map({ case (ob, ents) => (ob.toString(), ents.map(_.id)) }),
-        acs.homs.map({ case (hom, vals) => (hom.toString(), vals.map({ case (x, y) => (x.id, y.id) })) }),
+        acs.homs.map({ case (hom, vals) => (hom.toString(), vals.toList.map({ case (x, y) => (x.id, y.id) })) }),
         acs.attrs.map({ case (attr, vals) => (
                          attr.toString(),
-                         vals.map({ case (x, y) => {
-                                     val rw = serializers(attr.codom)
-                                     (x.id, rw.transform(y.asInstanceOf[attr.codom.Value], ujson.Value))
-                                   } })
+                         vals.toList.map(
+                           { case (x, y) => {
+                              val rw = serializers(attr.codom)
+                              (x.id, rw.transform(y.asInstanceOf[attr.codom.Value], ujson.Value))
+                            } })
                        ) }),
       ),
       acs => new BareACSet(
