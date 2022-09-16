@@ -2,22 +2,8 @@
 
 # Semagrams.jl
 
-A graphical editor for graph-like structures.
+A graphical editor for graph-like structures based on [Catlab](https://github.com/AlgebraicJulia/Catlab.jl). NOTE: currently most development happens in the `next` branch, which is a complete reimplementation and is currently pre-alpha (it also relies on changes to Catlab that have not finalized). For more information, see the webpage for the upcoming version: [https://algebraicjulia.github.io/Semagrams.jl/next/](https://algebraicjulia.github.io/Semagrams.jl/next/).
 
 ## Trailer:
 
 https://www.youtube.com/watch?v=b1xiY9sznEo
-
-## Quickstart:
-
-In a Jupyter notebook
-
-``` julia
-> using Semagrams, Semagrams.Examples
-
-> p = Semagram{ReactionNet{Float64, String}}(ReactionNetSema)
-
-# Edit semagram (see docs)
-
-> get_acset(p)
-```
