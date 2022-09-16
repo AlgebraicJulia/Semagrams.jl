@@ -5,13 +5,14 @@ export Semagram
 using HypertextLiteral
 import AbstractPlutoDingetjes
 import JSON3
-using Catlab.CSetDataStructures
-using Catlab.Theories: SchemaDesc
+using Catlab.Schemas
+
+using ..Serialization
 
 struct Semagram
   script_url::String
-  # schema::SchemaDesc
-  # acset_type::Type
+  schema::Schema
+  name::String
 end
 
 function Base.show(io, m::MIME"text/html", s::Semagram)
@@ -27,6 +28,6 @@ end
 
 AbstractPlutoDingetjes.Bonds.initial_value(s::Semagram) = "{}"
 AbstractPlutoDingetjes.Bonds.transform_value(s::Semagram, v::Nothing) = v
-AbstractPlutoDingetjes.Bonds.transform_value(s::Semagram, v) = JSON3.read(v)
+AbstractPlutoDingetjes.Bonds.transform_value(s::Semagram, v) = read_acset(s.name, s.schema, JSON3.read(v))
 
 end
