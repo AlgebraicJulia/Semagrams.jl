@@ -16,6 +16,7 @@ import com.raquo.laminar.nodes.ReactiveElement
 import monocle.std.these
 import cats.instances.stream
 import upickle.default._
+import com.raquo.airstream.core.Transaction
 
 /** We control the behavior of Semagrams using an asynchronous IO monad from
   * cats-effect.
@@ -170,9 +171,15 @@ def updateModelS[Model, A](updater: State[Model, A]): Action[Model, A] = {
   val L = actionLiftIO[Model]
   for {
     $model <- ReaderT.ask.map(_.$model)
-    model <- L.liftIO(IO($model.now()))
-    (newModel, a) = updater.run(model).value
-    _ <- L.liftIO(IO($model.set(newModel)))
+    a <- L.liftIO(
+      IO.async_[A] {
+        cb => { new Transaction(
+                 { _ =>
+                   val model = $model.now()
+                   val (newModel,a) = updater.run(model).value
+                   $model.set(newModel)
+                   cb(Right(a))
+                 })}})
   } yield a
 }
 

@@ -11,28 +11,6 @@ import monocle.syntax.all._
 import semagrams._
 import semagrams.acsets.ACSet
 import upickle.default._
-
-/** The next step is to support serializability for ACSets.
-  *
-  * There has to be some way of serializing and deserializing the keys. To do
-  * this, each key (i.e. Ob, Hom, Attr) should be able to be converted into a
-  * string. Then the schema should provide a map from strings to keys.
-  *
-  * Other thoughts: we need to support "dynamic" keys, i.e. keys that are not
-  * just case objects. So the "ValueOf" constraints need to go away.
-  *
-  * We can do this by having Elt store the key not only in the type but also as
-  * a value. And then we could have something like
-  *
-  * def apply[T: ValueOf](x: Int) = Elt[T](T.valueOf, x)
-  *
-  * for the case that the key is a singleton.
-  *
-  * This will be relevant for "sliced" acsets, where the schema is partially
-  * static (i.e., what we are slicing over is static) and partially dynamic (the
-  * thing that we are slicing is dynamic).
-  */
-
 import scala.collection.mutable
 
 /** We use a somewhat hacky mapping of schemas into scala types in order to
