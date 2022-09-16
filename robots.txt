@@ -1,1 +1,4 @@
-Sitemap: https://github.com/AlgebraicJulia/Semagrams.jl/sitemap.xml
+Sitemap: sitemap.xml
+
+User-agent: *
+Disallow:
