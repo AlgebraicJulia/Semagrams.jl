@@ -65,7 +65,7 @@ pages = [{"l":"index.html#","e":false,"n":"semagrams","t":"semagrams","d":"","k"
 {"l":"semagrams/acsets/BareACSet$.html#","e":false,"n":"BareACSet","t":"BareACSet","d":"semagrams/acsets/BareACSet$","k":"object"},
 {"l":"semagrams/acsets/BareACSet$.html#apply-32f","e":false,"n":"apply","t":"apply(s: Schema): BareACSet","d":"semagrams/acsets/BareACSet$","k":"def"},
 {"l":"semagrams/acsets/BareACSet$.html#serializer-fffff5d7","e":false,"n":"serializer","t":"serializer(s: Schema, serializers: AttrTypeSerializers): ReadWriter[BareACSet]","d":"semagrams/acsets/BareACSet$","k":"def"},
-{"l":"semagrams/acsets/BareACSetSerialized.html#","e":false,"n":"BareACSetSerialized","t":"BareACSetSerialized(nextId: Int, obs: Map[String, Set[Int]], homs: Map[String, Map[Int, Int]], attrs: Map[String, Map[Int, Value]])","d":"semagrams/acsets/BareACSetSerialized","k":"class"},
+{"l":"semagrams/acsets/BareACSetSerialized.html#","e":false,"n":"BareACSetSerialized","t":"BareACSetSerialized(nextId: Int, obs: Map[String, Set[Int]], homs: Map[String, List[(Int, Int)]], attrs: Map[String, List[(Int, Value)]])","d":"semagrams/acsets/BareACSetSerialized","k":"class"},
 {"l":"semagrams/acsets/BareACSetSerialized$.html#","e":false,"n":"BareACSetSerialized","t":"BareACSetSerialized","d":"semagrams/acsets/BareACSetSerialized$","k":"object"},
 {"l":"semagrams/acsets/BareACSetSerialized$.html#rw-0","e":false,"n":"rw","t":"rw: ReadWriter[BareACSetSerialized]","d":"semagrams/acsets/BareACSetSerialized$","k":"val"},
 {"l":"semagrams/acsets/E$.html#","e":false,"n":"E","t":"E extends Ob","d":"semagrams/acsets/E$","k":"object"},
