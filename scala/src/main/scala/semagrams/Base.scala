@@ -41,7 +41,8 @@ def mountWithAction[Model](
     "value",
     new {
       override val get = () => write($model.now())(serializer)
-      override val set = (newVal) => $model.set(read(newVal.asInstanceOf[String])(serializer))
+      override val set =
+        (newVal) => $model.set(read(newVal.asInstanceOf[String])(serializer))
     }
   )
 

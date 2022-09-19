@@ -53,8 +53,8 @@ case class KeyboardController(
 ) extends Modifier[SvgElement] {
   override def apply(el: SvgElement) = {
     el.amend(
-      onKeyDown.filter(ev => !ev.repeat) --> keydowns,
-      onKeyUp --> keyups,
+      onKeyDown.stopPropagation.filter(ev => !ev.repeat) --> keydowns,
+      onKeyUp.stopPropagation --> keyups,
       keydowns --> keyState.updater[KeyboardEvent]((state, evt) =>
         state.keydown(evt)
       ),

@@ -73,7 +73,7 @@ given weightedGraphACSet[T]: ACSet[WeightedGraph[T]] with
     V,
     Src,
     Tgt,
-    Weight[T](),
+    Weight[T]()
   )
 
 object WeightedGraph {
@@ -100,7 +100,7 @@ given labeledGraphACSet[T]: ACSet[LabeledGraph[T]] with
     V,
     Src,
     Tgt,
-    Label[T](),
+    Label[T]()
   )
 
 object LabeledGraph {

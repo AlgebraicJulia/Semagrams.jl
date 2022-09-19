@@ -17,18 +17,10 @@ class SpriteMaps[State](
     $state: Signal[State],
     spriteMakers: List[SpriteMaker[State]]
 ) {
-  private[this] val $renderedSpritesVar
-      : Var[List[Map[Entity, RenderedSprite]]] = Var(
-    spriteMakers.map(_ => Map())
-  )
-
-  val $renderedSprites: Signal[List[Map[Entity, RenderedSprite]]] =
-    $renderedSpritesVar.signal
-
   val $propMaps: Signal[(List[PropMaps], PropMaps)] = $state.map(state => {
     spriteMakers.foldLeft((List[PropMaps](), Map[Entity, PropMap]()))(
       (tup, spriteMaker) => {
-        val propMaps = tup._2
+        val (propMapses, propMaps) = tup
         val newSprites = spriteMaker
           .extractor(state, propMaps)
           .map(
@@ -37,17 +29,17 @@ class SpriteMaps[State](
             }
           )
           .toMap
-        (newSprites :: tup._1, propMaps ++ newSprites)
+        (newSprites :: propMapses, newSprites ++ propMaps)
       }
     )
-  }).map({ case (propMapsList, propMaps) => (propMapsList.reverse, propMaps) })
+  }).map({ case (propMapses, propMaps) => (propMapses.reverse, propMaps) })
 
   def updateSprites(
       renderedSpritesList: List[Map[Entity, RenderedSprite]],
-      propMapsList: List[PropMaps]
+      propMapses: List[PropMaps]
   ): List[Map[Entity, RenderedSprite]] = {
     renderedSpritesList
-      .zip(propMapsList)
+      .zip(propMapses)
       .zip(spriteMakers)
       .map(
         {
@@ -76,11 +68,12 @@ class SpriteMaps[State](
       )
   }
 
+  val $renderedSprites = $propMaps.map(_._1).foldLeft(propMapses =>
+    updateSprites(spriteMakers.map(_ => Map()), propMapses)
+  )(updateSprites)
+
   def attach =
-    List(
-      $propMaps.map(_._1) --> $renderedSpritesVar.updater(updateSprites),
-      children <-- $renderedSprites.map(
-        _.map(_.values.map(_.root).toList).flatten
-      )
+    children <-- $renderedSprites.map(
+      _.map(_.values.map(_.root).toList).flatten
     )
 }

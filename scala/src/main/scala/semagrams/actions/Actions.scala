@@ -44,6 +44,7 @@ case class EditorState[Model](
     drag: DragController,
     hover: HoverController,
     keyboard: KeyboardController,
+    text: TextController,
     $model: Var[Model],
     elt: SvgElement,
     update: () => Unit
@@ -55,15 +56,17 @@ object EditorState {
     val drag = DragController(mouse)
     val hover = HoverController()
     val keyboard = KeyboardController()
+    val text = TextController()
 
     elt.amend(
       mouse,
       drag,
       hover,
-      keyboard
+      keyboard,
+      text
     )
 
-    new EditorState(mouse, drag, hover, keyboard, $model, elt, update)
+    new EditorState(mouse, drag, hover, keyboard, text, $model, elt, update)
   }
 }
 
@@ -171,17 +174,20 @@ def updateModelS[Model, A](updater: State[Model, A]): Action[Model, A] = {
   val L = actionLiftIO[Model]
   for {
     $model <- ReaderT.ask.map(_.$model)
-    a <- L.liftIO(
-      IO.async_[A] {
-        cb => { new Transaction(
-                 { _ =>
-                   val model = $model.now()
-                   val (newModel,a) = updater.run(model).value
-                   $model.set(newModel)
-                   cb(Right(a))
-                 })}})
+    a <- L.liftIO(IO.async_[A] { cb =>
+      {
+        new Transaction({ _ =>
+          val model = $model.now()
+          val (newModel, a) = updater.run(model).value
+          $model.set(newModel)
+          cb(Right(a))
+        })
+      }
+    })
   } yield a
 }
+
+def getModel[Model]: Action[Model, Var[Model]] = ReaderT.ask.map(_.$model)
 
 def addChild[Model](child: SvgElement): Action[Model, Unit] = {
   val L = actionLiftIO[Model]
@@ -212,5 +218,16 @@ def update[Model]: Action[Model, Unit] = {
   for {
     updateFun <- ReaderT.ask.map(_.update)
     _ <- L.liftIO(IO(updateFun()))
+  } yield ()
+}
+
+def editText[Model](
+    listener: Observer[String],
+    init: String
+): Action[Model, Unit] = {
+  val L = actionLiftIO[Model]
+  for {
+    text <- ReaderT.ask.map(_.text)
+    _ <- L.liftIO(IO(text.editText(listener, init)))
   } yield ()
 }

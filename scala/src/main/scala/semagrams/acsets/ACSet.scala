@@ -66,16 +66,15 @@ abstract class AbstractAttr {
 }
 abstract class Attr[Dom <: Ob, Codom] extends AbstractAttr
 
-
 /** A Schema is simply a bunch of object, morphisms, attributes, and attrtypes.
- *
- * The purpose of the attrtypes is to control serialization: when we serialize and
- * deserialize we use a map of attrtypes to serializers/deserializers
+  *
+  * The purpose of the attrtypes is to control serialization: when we serialize
+  * and deserialize we use a map of attrtypes to serializers/deserializers
   */
 case class Schema(
     obs: Map[String, Ob],
     homs: Map[String, AbstractHom],
-    attrs: Map[String, AbstractAttr],
+    attrs: Map[String, AbstractAttr]
 )
 
 object Schema {
@@ -96,7 +95,7 @@ object Schema {
     new Schema(
       obs.map(x => (x.toString, x)).toMap,
       homs.map(x => (x.toString, x)).toMap,
-      attrs.map(x => (x.toString, x)).toMap,
+      attrs.map(x => (x.toString, x)).toMap
     )
   }
 }
@@ -108,6 +107,8 @@ object Schema {
 case class Elt[X <: Ob](ty: X, id: Int) extends Entity {
   def entityType = ty
 }
+
+def eltEnt[X <: Ob](ty: X, id: Int): Entity = Elt[X](ty, id)
 
 /** This is the data of an acset, represented dynamically.
   *
@@ -252,10 +253,10 @@ case class BareACSet(
 }
 
 case class BareACSetSerialized(
-  nextId: Int,
-  obs: Map[String, Set[Int]],
-  homs: Map[String, List[Tuple2[Int, Int]]],
-  attrs: Map[String, List[Tuple2[Int, ujson.Value]]]
+    nextId: Int,
+    obs: Map[String, Set[Int]],
+    homs: Map[String, List[Tuple2[Int, Int]]],
+    attrs: Map[String, List[Tuple2[Int, ujson.Value]]]
 )
 
 object BareACSetSerialized {
@@ -289,39 +290,72 @@ object BareACSet {
     )
   }
 
-  def serializer(s: Schema, serializers: AttrTypeSerializers): ReadWriter[BareACSet] = {
+  def serializer(
+      s: Schema,
+      serializers: AttrTypeSerializers
+  ): ReadWriter[BareACSet] = {
     BareACSetSerialized.rw.bimap(
-      acs => BareACSetSerialized(
-        acs.nextId,
-        acs.obs.map({ case (ob, ents) => (ob.toString(), ents.map(_.id)) }),
-        acs.homs.map({ case (hom, vals) => (hom.toString(), vals.toList.map({ case (x, y) => (x.id, y.id) })) }),
-        acs.attrs.map({ case (attr, vals) => (
-                         attr.toString(),
-                         vals.toList.map(
-                           { case (x, y) => {
-                              val rw = serializers(attr.codom)
-                              (x.id, rw.transform(y.asInstanceOf[attr.codom.Value], ujson.Value))
-                            } })
-                       ) }),
-      ),
-      acs => new BareACSet(
-        acs.nextId,
-        acs.obs.map(
-          { case (name, ents) => {
-             val x = s.obs(name)
-             (x, ents.map(Elt(x, _).asInstanceOf[Entity]).toSet)
-           } }),
-        acs.homs.map(
-          { case (name, vals) => {
-             val f = s.homs(name)
-             (f, vals.map({ case (x,y) => (Elt(f.dom,x).asInstanceOf[Entity], Elt(f.codom,y).asInstanceOf[Entity]) }).toMap)
-           } }),
-        acs.attrs.map(
-          { case (name, vals) => {
-             val f = s.attrs(name)
-             (f, vals.map({ case (x,y) => (Elt(f.dom,x).asInstanceOf[Entity], read(y)(serializers(f.codom)).asInstanceOf[Any]) }).toMap)
-           } }),
-      )
+      acs =>
+        BareACSetSerialized(
+          acs.nextId,
+          acs.obs.map({ case (ob, ents) => (ob.toString(), ents.map(_.id)) }),
+          acs.homs.map({ case (hom, vals) =>
+            (hom.toString(), vals.toList.map({ case (x, y) => (x.id, y.id) }))
+          }),
+          acs.attrs.map({ case (attr, vals) =>
+            (
+              attr.toString(),
+              vals.toList.map({
+                case (x, y) => {
+                  val rw = serializers(attr.codom)
+                  (
+                    x.id,
+                    rw.transform(y.asInstanceOf[attr.codom.Value], ujson.Value)
+                  )
+                }
+              })
+            )
+          })
+        ),
+      acs =>
+        new BareACSet(
+          acs.nextId,
+          acs.obs.map({
+            case (name, ents) => {
+              val x = s.obs(name)
+              (x, ents.map(Elt(x, _).asInstanceOf[Entity]).toSet)
+            }
+          }),
+          acs.homs.map({
+            case (name, vals) => {
+              val f = s.homs(name)
+              (
+                f,
+                vals
+                  .map({ case (x, y) =>
+                    (eltEnt(f.dom, x), eltEnt(f.codom, y))
+                  })
+                  .toMap
+              )
+            }
+          }),
+          acs.attrs.map({
+            case (name, vals) => {
+              val f = s.attrs(name)
+              (
+                f,
+                vals
+                  .map({ case (x, y) =>
+                    (
+                      eltEnt(f.dom, x),
+                      read(y)(serializers(f.codom)).asInstanceOf[Any]
+                    )
+                  })
+                  .toMap
+              )
+            }
+          })
+        )
     )
   }
 }
@@ -408,7 +442,8 @@ trait ACSet[A] {
       bare.modify(_.remPart(schema, x))(a)
     }
 
-  def rw(serializers: AttrTypeSerializers): ReadWriter[A] = BareACSet.serializer(schema, serializers).bimap(bare.get(_), bare(_))
+  def rw(serializers: AttrTypeSerializers): ReadWriter[A] =
+    BareACSet.serializer(schema, serializers).bimap(bare.get(_), bare(_))
 }
 
 /** Finally, we also provide wrappers around the mutating methods on an acset

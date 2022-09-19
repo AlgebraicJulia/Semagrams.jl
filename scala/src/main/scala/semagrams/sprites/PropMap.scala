@@ -19,14 +19,23 @@ case object InnerSep extends Property[Double]
 case object MinimumSize extends Property[Double]
 case object MinimumWidth extends Property[Double]
 case object MinimumHeight extends Property[Double]
+case object FontSize extends Property[Double]
 case object Content extends Property[String]
 case object Center extends Property[Complex]
 case object Start extends Property[Complex]
 case object End extends Property[Complex]
 
 val allProperties: List[AbstractProperty] = List(
-  Fill, Stroke, InnerSep, MinimumSize, MinimumWidth,
-  MinimumHeight, Content, Center, Start, End
+  Fill,
+  Stroke,
+  InnerSep,
+  MinimumSize,
+  MinimumWidth,
+  MinimumHeight,
+  Content,
+  Center,
+  Start,
+  End
 )
 
 val propByName = allProperties.map(p => (p.toString, p)).toMap
@@ -55,17 +64,29 @@ object PropMap {
   }
 
   val rw: ReadWriter[PropMap] = summon[ReadWriter[ujson.Obj]].bimap(
-    props => ujson.Obj.from(
-      props.map.map({ case (prop, v) => (prop.toString, prop.rw.transform(v.asInstanceOf[prop.Value], ujson.Value)) }).toList
-    ),
-    obj => PropMap(
-      obj.value.map(
-        { case (s, v) => {
-             val prop = propByName(s)
-             (prop, read(v)(prop.rw))
-           }
-        }
-      ).toMap
-    )
+    props =>
+      ujson.Obj.from(
+        props.map
+          .map({ case (prop, v) =>
+            (
+              prop.toString,
+              prop.rw.transform(v.asInstanceOf[prop.Value], ujson.Value)
+            )
+          })
+          .toList
+      ),
+    obj =>
+      PropMap(
+        obj.value
+          .map(
+            {
+              case (s, v) => {
+                val prop = propByName(s)
+                (prop, read(v)(prop.rw))
+              }
+            }
+          )
+          .toMap
+      )
   )
 }

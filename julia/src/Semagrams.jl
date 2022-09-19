@@ -2,10 +2,10 @@ module Semagrams
 
 using Reexport
 
-include("PlutoWidget.jl")
 include("Serialization.jl")
+include("PlutoWidget.jl")
 
-@reexport using .PlutoWidget
 @reexport using .Serialization
+@reexport using .PlutoWidget
 
 end

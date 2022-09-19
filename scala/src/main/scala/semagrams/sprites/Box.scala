@@ -6,34 +6,20 @@ import semagrams.util._
 import semagrams._
 import semagrams.util.CustomAttr.CustomSvgAttr
 import semagrams.util.CustomAttr.SvgBinder
+import semagrams.text._
 
 //FIXME: Move these into util
-class XYAttr extends CustomSvgAttr[Complex] {
-  def applyAttrs(binder: SvgBinder[Complex]): Unit = {
-    binder(x, _.x.toString)
-    binder(y, _.y.toString)
-  }
-}
-
-val xy = new XYAttr()
-
-class WHAttr extends CustomSvgAttr[Complex] {
-  def applyAttrs(binder: SvgBinder[Complex]): Unit = {
-    binder(width, _.x.toString)
-    binder(height, _.y.toString)
-  }
-}
-
-val wh = new WHAttr()
 
 extension [A, B](s: L.Signal[Tuple2[A, B]])
   def splitTuple: Tuple2[L.Signal[A], L.Signal[B]] = (s.map(_._1), s.map(_._2))
 
 case class Box() extends Sprite {
   def geom(data: PropMap): (Complex, Complex) = {
+    val textBox = boxSize(data(Content), data(FontSize))
     val center = data(Center)
-    val width = data(MinimumWidth)
-    val height = data(MinimumHeight)
+    val innerSep = data(InnerSep)
+    val width = data(MinimumWidth).max(textBox.x + innerSep)
+    val height = data(MinimumHeight).max(textBox.y + innerSep)
     val dims = Complex(width, height)
     val pos = center - dims / 2
     (pos, dims)
@@ -62,8 +48,15 @@ case class Box() extends Sprite {
     )
     val text = L.svg.text(
       xy <-- updates.map(_(Center)),
-      L.child <-- updates.map(p => L.textToNode(p.get(Content).getOrElse("")))
+      L.svg.tspan(
+        L.child <-- updates.map(p => L.textToNode(p(Content))),
+        textAnchor := "middle",
+        dominantBaseline := "central",
+        style := "user-select: none"
+      ),
+      fontSize <-- updates.map(_(FontSize).toString)
     )
+
     val root = g(
       box,
       text
@@ -74,20 +67,21 @@ case class Box() extends Sprite {
 
   def boundaryPt(ent: Entity, data: PropMap, dir: Complex) = {
     // Normalize to first quadrant
+    val (_, dims) = geom(data)
     val q1dir = Complex(dir.x.abs, dir.y.abs)
     val q1pt = if (q1dir.x == 0) {
-      Complex(0, data(MinimumHeight) / 2)
+      Complex(0, dims.y / 2)
     } else if (q1dir.y == 0) {
-      Complex(data(MinimumWidth) / 2, 0)
-    } else if (q1dir.x > q1dir.y) {
+      Complex(dims.x / 2, 0)
+    } else if (q1dir.x * dims.y > q1dir.y * dims.x) {
       Complex(
-        data(MinimumWidth) / 2,
-        (q1dir.y / q1dir.x) * data(MinimumHeight) / 2
+        dims.x / 2,
+        (q1dir.y * dims.x) / (q1dir.x * 2)
       )
     } else {
       Complex(
-        (q1dir.x / q1dir.y) * data(MinimumWidth) / 2,
-        data(MinimumHeight) / 2
+        (q1dir.x * dims.y) / (q1dir.y * 2),
+        dims.y / 2
       )
     }
     Complex(q1pt.x * dir.x.sign, q1pt.y * dir.y.sign) + data(Center)

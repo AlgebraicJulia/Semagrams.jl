@@ -52,7 +52,7 @@ type PosGraph = LabeledGraph[PropMap]
 
 val addBox: Action[PosGraph, Unit] = for {
   pos <- mousePos
-  _ <- updateModelS(addLabeledVertex(PropMap() + (Center, pos) + (Content, "")))
+  _ <- updateModelS(addLabeledVertex(PropMap() + (Center, pos) + (Content, "squiiid")))
   _ <- update
 } yield {}
 
@@ -61,6 +61,7 @@ val remBox: Action[PosGraph, Unit] = (for {
   _ <- OptionT.liftF(updateModel[PosGraph](_.remPart(v)))
   _ <- OptionT.liftF(update)
 } yield {}).value.map(_ => {})
+
 
 val addEdgeAction: Action[PosGraph, Unit] = (for {
   _ <- OptionT.liftF(mouseDown(MouseButton.LeftButton))
@@ -71,11 +72,29 @@ val addEdgeAction: Action[PosGraph, Unit] = (for {
   _ <- OptionT.liftF(update)
 } yield {}).value.map(_ => {})
 
+val editVertexText: Action[PosGraph, Unit] = (for {
+  v <- OptionT(hoveredPart(V))
+  $model <- OptionT.liftF(getModel[PosGraph])
+  _ <- OptionT.liftF(
+    editText(
+      Observer(s =>
+        $model.update(m =>
+          {
+            val p = m.subpart(Label[PropMap](), v).get
+            m.setSubpart(Label[PropMap](), v, p + (Content, s))
+          }
+        )
+      ),
+      $model.now().subpart(Label[PropMap](), v).get(Content)
+    ))
+} yield {}).value.map(_ => {})
+
 val bindings = KeyBindings(
   Map(
     "a" -> addBox,
     "d" -> remBox,
-    "e" -> addEdgeAction
+    "e" -> addEdgeAction,
+    "t" -> editVertexText
   )
 )
 
@@ -96,7 +115,14 @@ def renderPosGraph(
         Box(),
         (s, _) => s.parts(V).toList.map(v => (v, s.subpart(Label[PropMap](), v).get)),
         Stack(
-          WithDefaults(PropMap() + (MinimumWidth, 50) + (MinimumHeight, 50) + (Fill, "white") + (Stroke, "black")),
+          WithDefaults(PropMap()
+                         + (MinimumWidth, 40)
+                         + (MinimumHeight, 40)
+                         + (Fill, "white")
+                         + (Stroke, "black")
+                         + (InnerSep, 7)
+                         + (FontSize, 16)
+          ),
           Hoverable(hover, MainHandle, PropMap() + (Fill, "lightgray")),
           Draggable.dragPart(drag, $posGraph, Label[PropMap](), Center, MainHandle)
         )
