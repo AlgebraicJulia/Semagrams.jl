@@ -29,7 +29,7 @@ case class HoverController($state: Var[HoverState])
 
   /** This makes a certain SVG record hovering
     */
-  def hoverable[El <: SvgElement](ent: Entity) = List(
+  def hoverable(ent: Entity) = List(
     onMouseEnter --> $state.updater((state, _) => state.hover(ent)),
     onMouseLeave --> $state.updater((state, _) => state.leave(ent))
   )

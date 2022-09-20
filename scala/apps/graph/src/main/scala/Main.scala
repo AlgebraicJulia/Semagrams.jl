@@ -68,8 +68,7 @@ val addEdgeAction: Action[PropGraph, Unit] = for {
   _ <- update
 } yield {}
 
-val editVertexText: Action[PropGraph, Unit] = for {
-  v <- fromMaybe(hoveredPart(V))
+def editVertexText(v: Elt[V.type]): Action[PropGraph, Unit] = for {
   $model <- getModel[PropGraph]
   _ <- editText(
     Observer(s => $model.update(m => { m.setProp(v, Content, s) })),
@@ -77,13 +76,11 @@ val editVertexText: Action[PropGraph, Unit] = for {
   )
 } yield {}
 
-val bindings = KeyBindings(
-  Map(
-    "a" -> addBox,
-    "d" -> remBox,
-    "e" -> addEdgeAction,
-    "t" -> editVertexText
-  )
+val bindings = Bindings(
+  KeyDown("a", addBox),
+  KeyDown("d", remBox),
+  KeyDown("e", addEdgeAction),
+  ClickOn(ClickType.Double, MouseButton.Left, V, editVertexText)
 )
 
 type M[T] = Action[PropGraph, T]
@@ -92,7 +89,8 @@ val L = actionLiftIO[PropGraph]
 def renderPosGraph(
     $posGraph: Var[PropGraph],
     hover: HoverController,
-    drag: DragController
+    drag: DragController,
+    mouse: MouseController
 ) = {
 
   val spriteMaps = SpriteMaps[PropGraph](
@@ -113,24 +111,13 @@ def renderPosGraph(
           ),
           Hoverable(hover, MainHandle, PropMap() + (Fill, "lightgray")),
           Draggable
-            .dragPart(drag, $posGraph, Props(V), Center, MainHandle)
+            .dragPart(drag, $posGraph, Props(V), Center, MainHandle),
+          Clickable(mouse, MainHandle)
         )
       ),
       SpriteMaker[PropGraph](
         Arrow(),
-        (s, propMap) =>
-          s.parts(E)
-            .toList
-            .map(e => {
-              val srcEnt = s.subpart(Src, e).get
-              val tgtEnt = s.subpart(Tgt, e).get
-              val srcCenter = propMap(srcEnt)(Center)
-              val tgtCenter = propMap(tgtEnt)(Center)
-              val dir = tgtCenter - srcCenter
-              val src = Box().boundaryPt(srcEnt, propMap(srcEnt), dir)
-              val tgt = Box().boundaryPt(tgtEnt, propMap(tgtEnt), -dir)
-              (e, PropMap() + (Start, src) + (End, tgt))
-            }),
+        edgeExtractor(Src, Tgt),
         Stack(
           WithDefaults(PropMap() + (Stroke, "black")),
           Shorten(5)
@@ -156,7 +143,8 @@ object Main {
       $model <- ReaderT.ask.map(_.$model)
       hover <- ReaderT.ask.map(_.hover)
       drag <- ReaderT.ask.map(_.drag)
-      _ <- addChild(renderPosGraph($model, hover, drag))
+      mouse <- ReaderT.ask.map(_.mouse)
+      _ <- addChild(renderPosGraph($model, hover, drag, mouse))
       _ <- bindings.runForever
     } yield ()
 

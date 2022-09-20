@@ -5,11 +5,11 @@ import com.raquo.laminar.api.L.{*, given}
 import com.raquo.laminar.nodes.ReactiveSvgElement
 import semagrams.util.Complex
 
-type PropMaps = Map[Entity, PropMap]
+type Sprites = Map[Entity, (Sprite, PropMap)]
 
 case class SpriteMaker[State](
     sprite: Sprite,
-    extractor: (State, PropMaps) => List[(Entity, PropMap)],
+    extractor: (State, Sprites) => List[(Entity, PropMap)],
     middleware: Middleware
 )
 
@@ -17,41 +17,41 @@ class SpriteMaps[State](
     $state: Signal[State],
     spriteMakers: List[SpriteMaker[State]]
 ) {
-  val $propMaps: Signal[(List[PropMaps], PropMaps)] = $state.map(state => {
-    spriteMakers.foldLeft((List[PropMaps](), Map[Entity, PropMap]()))(
+  val $sprites: Signal[(List[Sprites], Sprites)] = $state.map(state => {
+    spriteMakers.foldLeft((List[Sprites](), Map[Entity, (Sprite, PropMap)]()))(
       (tup, spriteMaker) => {
-        val (propMapses, propMaps) = tup
+        val (spriteses, sprites) = tup
         val newSprites = spriteMaker
-          .extractor(state, propMaps)
+          .extractor(state, sprites)
           .map(
             { case (ent, propMap) =>
-              (ent, spriteMaker.middleware.updateProps(ent, propMap))
+              (ent, (spriteMaker.sprite, spriteMaker.middleware.updateProps(ent, propMap)))
             }
           )
           .toMap
-        (newSprites :: propMapses, newSprites ++ propMaps)
+        (newSprites :: spriteses, newSprites ++ sprites)
       }
     )
   }).map({ case (propMapses, propMaps) => (propMapses.reverse, propMaps) })
 
   def updateSprites(
       renderedSpritesList: List[Map[Entity, RenderedSprite]],
-      propMapses: List[PropMaps]
+      spriteses: List[Sprites]
   ): List[Map[Entity, RenderedSprite]] = {
     renderedSpritesList
-      .zip(propMapses)
+      .zip(spriteses)
       .zip(spriteMakers)
       .map(
         {
-          case ((renderedSprites, propMaps), spriteMaker) => {
-            val added = propMaps.keySet -- renderedSprites.keySet
-            val removed = renderedSprites.keySet -- propMaps.keySet
+          case ((renderedSprites, sprites), spriteMaker) => {
+            val added = sprites.keySet -- renderedSprites.keySet
+            val removed = renderedSprites.keySet -- sprites.keySet
             val newRenderedSprites = added
               .map(ent => {
-                val propMap = propMaps(ent)
+                val (_, propMap) = sprites(ent)
                 val propMapStream =
-                  $propMaps.changes.map(_._2.get(ent)).collect { case Some(x) =>
-                    x
+                  $sprites.changes.map(_._2.get(ent)).collect { case Some(x) =>
+                    x._2
                   }
                 val $propMap = propMapStream.toSignal(propMap)
                 val newRS = spriteMaker.sprite.present(
@@ -68,7 +68,7 @@ class SpriteMaps[State](
       )
   }
 
-  val $renderedSprites = $propMaps.map(_._1).foldLeft(propMapses =>
+  val $renderedSprites = $sprites.map(_._1).foldLeft(propMapses =>
     updateSprites(spriteMakers.map(_ => Map()), propMapses)
   )(updateSprites)
 

@@ -19,6 +19,10 @@ ThisBuild / libraryDependencies ++= Seq(
   "com.lihaoyi" %%% "utest" % "0.8.0" % "test",
 )
 
+ThisBuild / scalacOptions ++= Seq(
+  "-Ykind-projector:underscores"
+)
+
 lazy val core = (project in file("."))
   .settings(
     name := "semagrams",

@@ -1,24 +1,24 @@
 package semagrams.actions
 
-import com.raquo.laminar.api.L._
+import cats.ApplicativeError
 import cats.Monad
+import cats.MonadError
 import cats.data._
-import semagrams.controllers._
-import semagrams.acsets._
 import cats.effect._
 import cats.effect.unsafe.IORuntime
-import scala.concurrent.ExecutionContext.Implicits.global
-import com.raquo.laminar.nodes.ReactiveSvgElement
-import semagrams.util._
-import semagrams._
-import org.scalajs.dom.raw.KeyboardEvent
-import com.raquo.laminar.nodes.ReactiveElement
-import monocle.std.these
 import cats.instances.stream
-import upickle.default._
 import com.raquo.airstream.core.Transaction
-import cats.ApplicativeError
-import cats.MonadError
+import com.raquo.laminar.api.L._
+import com.raquo.laminar.nodes.ReactiveElement
+import com.raquo.laminar.nodes.ReactiveSvgElement
+import org.scalajs.dom.raw.KeyboardEvent
+import semagrams._
+import semagrams.acsets._
+import semagrams.controllers._
+import semagrams.util._
+import upickle.default._
+
+import scala.concurrent.ExecutionContext.Implicits.global
 
 /** We control the behavior of Semagrams using an asynchronous IO monad from
   * cats-effect.
@@ -47,6 +47,7 @@ case class EditorState[Model](
     hover: HoverController,
     keyboard: KeyboardController,
     text: TextController,
+    bindables: EventBus[Any],
     $model: Var[Model],
     elt: SvgElement,
     update: () => Unit
@@ -59,22 +60,26 @@ object EditorState {
     val hover = HoverController()
     val keyboard = KeyboardController()
     val text = TextController()
+    val bindables = EventBus[Any]()
 
     elt.amend(
       mouse,
       drag,
       hover,
       keyboard,
-      text
+      text,
+      mouse.mouseEvents --> bindables,
+      keyboard.keydowns --> bindables,
+      keyboard.keyups --> bindables,
     )
 
-    new EditorState(mouse, drag, hover, keyboard, text, $model, elt, update)
+    new EditorState(mouse, drag, hover, keyboard, text, bindables, $model, elt, update)
   }
 }
 
 type Action[Model, A] = ReaderT[IO, EditorState[Model], A]
 
-implicit def actionLiftIO[Model]: LiftIO[[A] =>> Action[Model, A]] =
+implicit def actionLiftIO[Model]: LiftIO[Action[Model, _]] =
   LiftIO.catsKleisliLiftIO
 
 def runAction[Model](
@@ -86,12 +91,20 @@ def runAction[Model](
 
 case object NoneError extends Exception
 
+extension[A] (x: Option[A]) {
+  def unwrap[F[_]](implicit F: MonadError[F, Throwable]): F[A] = {
+    x match {
+      case Some(x) => F.pure(x)
+      case None => F.raiseError(NoneError)
+    }
+  }
+}
+
+def actionMonadError[Model]: MonadError[Action[Model, _], Throwable] =
+  Kleisli.catsDataMonadErrorForKleisli
+
 def fromMaybe[Model, A](a: Action[Model, Option[A]]): Action[Model, A] = {
-  val L = actionLiftIO[Model]
-  a.flatMap(_ match {
-    case Some(a) => L.liftIO(IO.pure(a))
-    case None    => L.liftIO(IO.raiseError(NoneError))
-  })
+  a.flatMap(_.unwrap)
 }
 
 /** This takes in an event stream and a callback, and provides a binder that
@@ -157,24 +170,6 @@ def nextKeydownIn[Model](set: Set[String]): Action[Model, KeyboardEvent] = for {
   evt <- nextEvent(keyboard.keydowns.events.filter(evt => set(evt.key)))
 } yield evt
 
-case class KeyBindings[Model](bindings: Map[String, Action[Model, Unit]]) {
-
-  /** This listens for a keybinding, and then executes the action associated
-    * with that keybinding. Crucially, this only runs *once*. If you want to run
-    * this in a loop, you should provide that loop yourself.
-    */
-  def run: Action[Model, Unit] = {
-    nextKeydownIn(bindings.keySet).flatMap((evt: KeyboardEvent) =>
-      Kleisli(es => bindings(evt.key)(es).handleErrorWith(_ => IO.unit))
-    )
-  }
-
-  def runForever: Action[Model, Unit] = {
-    val T = implicitly[Monad[[X] =>> Action[Model, X]]]
-    T.foreverM(run)
-  }
-}
-
 def updateModel[Model](f: Model => Model): Action[Model, Unit] = {
   val L = actionLiftIO[Model]
   for {
@@ -213,12 +208,12 @@ def addChild[Model](child: SvgElement): Action[Model, Unit] = {
 def mousePos[Model]: Action[Model, Complex] =
   ReaderT.ask.map(_.mouse.$state.now().pos)
 
-def mouseDown[Model](b: MouseButton): Action[Model, Complex] = for {
+def mouseDown[Model](b: MouseButton): Action[Model, Option[Entity]] = for {
   mouse <- ReaderT.ask.map(_.mouse)
-  pos <- nextEvent(mouse.mouseEvents.events.collect({
+  ent <- nextEvent(mouse.mouseEvents.events.collect({
     case MouseEvent.MouseDown(pos, `b`) => pos
   }))
-} yield pos
+} yield ent
 
 def hovered[Model]: Action[Model, Option[Entity]] =
   ReaderT.ask.map(_.hover.$state.now().state)
@@ -227,8 +222,8 @@ def hoveredPart[Model, X <: Ob](x: X): Action[Model, Option[Elt[X]]] =
   hovered.map(_.flatMap(_.asElt(x)))
 
 def getClick[X <: Ob, Model](x: X): Action[Model, Elt[X]] = for {
-  _ <- mouseDown(MouseButton.LeftButton)
-  i <- fromMaybe(hoveredPart(x))
+  ent <- fromMaybe(mouseDown(MouseButton.Left))
+  i <- ent.asElt(x).unwrap(actionMonadError[Model])
 } yield i
 
 def update[Model]: Action[Model, Unit] = {

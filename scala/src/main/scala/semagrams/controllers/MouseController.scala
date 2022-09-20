@@ -1,6 +1,8 @@
 package semagrams.controllers
 
+import semagrams._
 import semagrams.util._
+import semagrams.actions._
 import org.scalajs.dom
 import com.raquo.laminar.api.L._
 import scala.collection.immutable.BitSet
@@ -17,23 +19,24 @@ import org.scalajs.dom.SVGSVGElement
   * JavaScript's
   */
 enum MouseButton:
-  case LeftButton
-  case MiddleButton
-  case RightButton
+  case Left
+  case Middle
+  case Right
 
 object MouseButton {
   def fromJS(idx: Int) = idx match {
-    case 0 => LeftButton
-    case 1 => MiddleButton
-    case 2 => RightButton
+    case 0 => Left
+    case 1 => Middle
+    case 2 => Right
   }
 }
 
 /** We simplify the mouse API to just these events
   */
 enum MouseEvent:
-  case MouseDown(pos: Complex, button: MouseButton)
-  case MouseUp(pos: Complex, button: MouseButton)
+  case MouseDown(ent: Option[Entity], button: MouseButton)
+  case MouseUp(ent: Option[Entity], button: MouseButton)
+  case DoubleClick(ent: Option[Entity], button: MouseButton)
   case MouseLeave(pos: Complex)
   case MouseMove(pos: Complex)
 
@@ -45,12 +48,6 @@ object MouseEvent {
     val svgP = pt.matrixTransform(el.getScreenCTM().inverse())
     Complex(svgP.x, svgP.y)
   }
-
-  def mouseDown(el: dom.SVGSVGElement)(ev: TypedTargetMouseEvent[dom.Element]) =
-    MouseDown(svgCoords(el, ev), MouseButton.fromJS(ev.button))
-
-  def mouseUp(el: dom.SVGSVGElement)(ev: TypedTargetMouseEvent[dom.Element]) =
-    MouseUp(svgCoords(el, ev), MouseButton.fromJS(ev.button))
 
   def mouseLeave(el: dom.SVGSVGElement)(
       ev: TypedTargetMouseEvent[dom.Element]
@@ -74,11 +71,12 @@ case class MouseState(
     import MouseEvent._
     evt match {
       case MouseDown(pos, button) =>
-        this.copy(pos = pos, pressed = pressed + button.ordinal)
+        this.copy(pressed = pressed + button.ordinal)
       case MouseUp(pos, button) =>
-        this.copy(pos = pos, pressed = pressed - button.ordinal)
+        this.copy(pressed = pressed - button.ordinal)
       case MouseLeave(pos) => this.copy(pos = pos)
       case MouseMove(pos)  => this.copy(pos = pos)
+      case _               => this
     }
   }
 }
@@ -98,15 +96,38 @@ case class MouseController(
     import MouseEvent._
     val svgEl = el.ref.asInstanceOf[SVGSVGElement]
     el.amend(
-      onMouseDown.map(MouseEvent.mouseDown(svgEl)) --> mouseEvents,
-      onMouseUp.map(MouseEvent.mouseUp(svgEl)) --> mouseEvents,
       onMouseLeave.map(MouseEvent.mouseLeave(svgEl)) --> mouseEvents,
       onMouseMove.map(MouseEvent.mouseMove(svgEl)) --> mouseEvents,
+      onMouseDown.map(evt =>
+        MouseEvent.MouseDown(None, MouseButton.fromJS(evt.button))
+      ) --> mouseEvents,
+      onMouseUp.map(evt =>
+        MouseEvent.MouseUp(None, MouseButton.fromJS(evt.button))
+      ) --> mouseEvents,
+      onDblClick.map(evt =>
+        MouseEvent.DoubleClick(None, MouseButton.fromJS(evt.button))
+      ) --> mouseEvents,
       mouseEvents --> $state.updater[MouseEvent]((state, evt) =>
         state.processEvent(evt)
       )
     )
   }
+
+  /** This makes a certain SVG element record clicking
+    */
+  def clickable(ent: Entity) = List(
+    onMouseDown.stopPropagation.map(evt =>
+      MouseEvent.MouseDown(Some(ent), MouseButton.fromJS(evt.button))
+    )
+      --> mouseEvents,
+    onMouseUp.stopPropagation.map(evt =>
+      MouseEvent.MouseUp(Some(ent), MouseButton.fromJS(evt.button))
+    )
+      --> mouseEvents,
+    onDblClick.stopPropagation.map(evt =>
+      MouseEvent.DoubleClick(Some(ent), MouseButton.fromJS(evt.button))
+    ) --> mouseEvents
+  )
 }
 
 object MouseController {
