@@ -69,7 +69,9 @@ abstract class Attr[Dom <: Ob, Codom] extends AbstractAttr
 /** A Schema is simply a bunch of object, morphisms, attributes, and attrtypes.
   *
   * The purpose of the attrtypes is to control serialization: when we serialize
-  * and deserialize we use a map of attrtypes to serializers/deserializers
+  * and deserialize we use a map of attrtypes to serializers/deserializers. We
+  * don't have to explicitly pass the attrtypes in because they are inferred as
+  * codomains of the attrs
   */
 case class Schema(
     obs: Map[String, Ob],
@@ -451,8 +453,8 @@ trait ACSet[A] {
   * in an imperative way.
   */
 
-def addPart[A: ACSet, X <: Ob: ValueOf](ob: X): State[A, Elt[X]] =
-  State(_.addPart(valueOf[X]).swap)
+def addPart[A: ACSet, X <: Ob](ob: X): State[A, Elt[X]] =
+  State(_.addPart(ob).swap)
 
 def setSubpart[A: ACSet, X <: Ob, Y <: Ob](
     f: Hom[X, Y],
@@ -468,5 +470,5 @@ def setSubpart[A: ACSet, X <: Ob, T](
 ): State[A, Unit] =
   State.modify(_.setSubpart(f, x, y))
 
-def remPart[A: ACSet, X <: Ob: ValueOf](x: Elt[X]): State[A, Unit] =
+def remPart[A: ACSet, X <: Ob](x: Elt[X]): State[A, Unit] =
   State.modify(_.remPart(x))

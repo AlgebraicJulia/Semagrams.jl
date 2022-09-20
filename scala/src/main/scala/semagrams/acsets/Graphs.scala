@@ -114,3 +114,7 @@ def addLabeledVertex[T](label: T): State[LabeledGraph[T], Elt[V.type]] =
     v <- addVertex()
     _ <- setSubpart(Label[T](), v, label)
   } yield v
+
+type PropGraph = WithProps[Graph]
+
+given propGraphHasGraph: HasGraph[PropGraph] = new HasGraph {}

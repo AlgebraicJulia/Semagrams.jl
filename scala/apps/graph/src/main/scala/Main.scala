@@ -15,79 +15,67 @@ import semagrams.controllers._
 import scala.scalajs.js.annotation.JSExportTopLevel
 import org.scalajs.dom
 
-/**
- * TODO:
- * - Clean up use of OptionT[Action[PosGraph,_],A]
- * - Dialogue for edge creation
- * - Dialogue for content editing
- * - Content centering and box resizing in response to label
- *
- * Pluto integration notes.
- *
- * The good news is that Pluto handles all the connection stuff. The handoff
- * point to Pluto happens within javascript, so we don't have to do anything
- * with websockets in Semagrams.
- *
- * The first thing to do is to set up something which gets the absolute rawest
- * data into Julia. We can process this later.
- *
- * Essentially, the way to integrate is to display a script element from Julia
- * which updates the property "value" on its parent, and then wrap this in a
- * <bond> element. Then apparently observable/pluto will automatically listen to
- * changes in the value and propagate them back to Julia.
- *
- * I don't think that this supports bidirectional communication, however. Which
- * means that an interactive process would not be supported in the context of
- * Pluto.
- *
- * Notes:
- * The simplest and easiest way to convert ACSets to be displayable might be by
- * just adding a PropMap attribute to each part...
- */
+/** TODO:
+  *   - Clean up use of OptionT[Action[PosGraph,_],A]
+  *   - Dialogue for edge creation
+  *   - Dialogue for content editing
+  *   - Content centering and box resizing in response to label
+  *
+  * Pluto integration notes.
+  *
+  * The good news is that Pluto handles all the connection stuff. The handoff
+  * point to Pluto happens within javascript, so we don't have to do anything
+  * with websockets in Semagrams.
+  *
+  * The first thing to do is to set up something which gets the absolute rawest
+  * data into Julia. We can process this later.
+  *
+  * Essentially, the way to integrate is to display a script element from Julia
+  * which updates the property "value" on its parent, and then wrap this in a
+  * <bond> element. Then apparently observable/pluto will automatically listen
+  * to changes in the value and propagate them back to Julia.
+  *
+  * I don't think that this supports bidirectional communication, however. Which
+  * means that an interactive process would not be supported in the context of
+  * Pluto.
+  *
+  * Notes: The simplest and easiest way to convert ACSets to be displayable
+  * might be by just adding a PropMap attribute to each part...
+  */
 
-/**
- * A positioned graph
- */
-type PosGraph = LabeledGraph[PropMap]
+/** A positioned graph
+  */
+type PropGraph = WithProps[Graph]
 
-val addBox: Action[PosGraph, Unit] = for {
+val addBox: Action[PropGraph, Unit] = for {
   pos <- mousePos
-  _ <- updateModelS(addLabeledVertex(PropMap() + (Center, pos) + (Content, "squiiid")))
+  _ <- updateModelS[PropGraph, Elt[V.type]](
+    addPartWP(V, PropMap() + (Center, pos) + (Content, ""))
+  )
   _ <- update
 } yield {}
 
-val remBox: Action[PosGraph, Unit] = (for {
-  v <- OptionT(hoveredPart(V))
-  _ <- OptionT.liftF(updateModel[PosGraph](_.remPart(v)))
-  _ <- OptionT.liftF(update)
-} yield {}).value.map(_ => {})
+val remBox: Action[PropGraph, Unit] = for {
+  v <- fromMaybe(hoveredPart(V))
+  _ <- updateModel[PropGraph](_.remPart(v))
+  _ <- update
+} yield ()
 
+val addEdgeAction: Action[PropGraph, Unit] = for {
+  s <- getClick(V)
+  t <- getClick(V)
+  _ <- updateModelS[PropGraph, Elt[E.type]](addEdge(s, t))
+  _ <- update
+} yield {}
 
-val addEdgeAction: Action[PosGraph, Unit] = (for {
-  _ <- OptionT.liftF(mouseDown(MouseButton.LeftButton))
-  s <- OptionT(hoveredPart(V))
-  _ <- OptionT.liftF(mouseDown(MouseButton.LeftButton))
-  t <- OptionT(hoveredPart(V))
-  _ <- OptionT.liftF(updateModelS[PosGraph, Elt[E.type]](addEdge(s, t)))
-  _ <- OptionT.liftF(update)
-} yield {}).value.map(_ => {})
-
-val editVertexText: Action[PosGraph, Unit] = (for {
-  v <- OptionT(hoveredPart(V))
-  $model <- OptionT.liftF(getModel[PosGraph])
-  _ <- OptionT.liftF(
-    editText(
-      Observer(s =>
-        $model.update(m =>
-          {
-            val p = m.subpart(Label[PropMap](), v).get
-            m.setSubpart(Label[PropMap](), v, p + (Content, s))
-          }
-        )
-      ),
-      $model.now().subpart(Label[PropMap](), v).get(Content)
-    ))
-} yield {}).value.map(_ => {})
+val editVertexText: Action[PropGraph, Unit] = for {
+  v <- fromMaybe(hoveredPart(V))
+  $model <- getModel[PropGraph]
+  _ <- editText(
+    Observer(s => $model.update(m => { m.setProp(v, Content, s) })),
+    $model.now().getProp(v, Content)
+  )
+} yield {}
 
 val bindings = KeyBindings(
   Map(
@@ -98,49 +86,51 @@ val bindings = KeyBindings(
   )
 )
 
-type M[T] = Action[PosGraph, T]
-val L = actionLiftIO[PosGraph]
-val A = implicitly[Monad[[X] =>> Action[LabeledGraph[Complex],X]]]
+type M[T] = Action[PropGraph, T]
+val L = actionLiftIO[PropGraph]
 
 def renderPosGraph(
-  $posGraph: Var[PosGraph],
-  hover: HoverController,
-  drag: DragController
+    $posGraph: Var[PropGraph],
+    hover: HoverController,
+    drag: DragController
 ) = {
 
-  val spriteMaps = SpriteMaps[PosGraph](
+  val spriteMaps = SpriteMaps[PropGraph](
     $posGraph.signal,
     List(
-      SpriteMaker[PosGraph](
+      SpriteMaker[PropGraph](
         Box(),
-        (s, _) => s.parts(V).toList.map(v => (v, s.subpart(Label[PropMap](), v).get)),
+        (s, _) => s.parts(V).toList.map(v => (v, s.subpart(Props(V), v).get)),
         Stack(
-          WithDefaults(PropMap()
-                         + (MinimumWidth, 40)
-                         + (MinimumHeight, 40)
-                         + (Fill, "white")
-                         + (Stroke, "black")
-                         + (InnerSep, 7)
-                         + (FontSize, 16)
+          WithDefaults(
+            PropMap()
+              + (MinimumWidth, 40)
+              + (MinimumHeight, 40)
+              + (Fill, "white")
+              + (Stroke, "black")
+              + (InnerSep, 7)
+              + (FontSize, 16)
           ),
           Hoverable(hover, MainHandle, PropMap() + (Fill, "lightgray")),
-          Draggable.dragPart(drag, $posGraph, Label[PropMap](), Center, MainHandle)
+          Draggable
+            .dragPart(drag, $posGraph, Props(V), Center, MainHandle)
         )
       ),
-      SpriteMaker[PosGraph](
+      SpriteMaker[PropGraph](
         Arrow(),
-        (s, propMap) => s.parts(E).toList.map(
-          e => {
-            val srcEnt = s.subpart(Src, e).get
-            val tgtEnt = s.subpart(Tgt, e).get
-            val srcCenter = propMap(srcEnt)(Center)
-            val tgtCenter = propMap(tgtEnt)(Center)
-            val dir = tgtCenter - srcCenter
-            val src = Box().boundaryPt(srcEnt, propMap(srcEnt), dir)
-            val tgt = Box().boundaryPt(tgtEnt, propMap(tgtEnt), -dir)
-            (e, PropMap() + (Start, src) + (End, tgt))
-          }
-        ),
+        (s, propMap) =>
+          s.parts(E)
+            .toList
+            .map(e => {
+              val srcEnt = s.subpart(Src, e).get
+              val tgtEnt = s.subpart(Tgt, e).get
+              val srcCenter = propMap(srcEnt)(Center)
+              val tgtCenter = propMap(tgtEnt)(Center)
+              val dir = tgtCenter - srcCenter
+              val src = Box().boundaryPt(srcEnt, propMap(srcEnt), dir)
+              val tgt = Box().boundaryPt(tgtEnt, propMap(tgtEnt), -dir)
+              (e, PropMap() + (Start, src) + (End, tgt))
+            }),
         Stack(
           WithDefaults(PropMap() + (Stroke, "black")),
           Shorten(5)
@@ -154,8 +144,8 @@ def renderPosGraph(
   )
 }
 
-val serializer = labeledGraphACSet[PropMap].rw(
-  AttrTypeSerializers() + ATRW(LabelValue[PropMap](), PropMap.rw)
+val serializer = withPropsACSet[Graph].rw(
+  AttrTypeSerializers() + ATRW(PropValue, PropMap.rw)
 )
 
 object Main {
@@ -170,6 +160,6 @@ object Main {
       _ <- bindings.runForever
     } yield ()
 
-    mountWithAction(el, LabeledGraph[PropMap](), serializer, action)
+    mountWithAction(el, WithProps[Graph](), serializer, action)
   }
 }

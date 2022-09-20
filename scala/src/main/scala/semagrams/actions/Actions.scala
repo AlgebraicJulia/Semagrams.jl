@@ -17,6 +17,8 @@ import monocle.std.these
 import cats.instances.stream
 import upickle.default._
 import com.raquo.airstream.core.Transaction
+import cats.ApplicativeError
+import cats.MonadError
 
 /** We control the behavior of Semagrams using an asynchronous IO monad from
   * cats-effect.
@@ -80,6 +82,16 @@ def runAction[Model](
     action: Action[Model, Unit]
 ): Unit = {
   action.run(state).unsafeRunAndForget()(IORuntime.global)
+}
+
+case object NoneError extends Exception
+
+def fromMaybe[Model, A](a: Action[Model, Option[A]]): Action[Model, A] = {
+  val L = actionLiftIO[Model]
+  a.flatMap(_ match {
+    case Some(a) => L.liftIO(IO.pure(a))
+    case None    => L.liftIO(IO.raiseError(NoneError))
+  })
 }
 
 /** This takes in an event stream and a callback, and provides a binder that
@@ -151,10 +163,11 @@ case class KeyBindings[Model](bindings: Map[String, Action[Model, Unit]]) {
     * with that keybinding. Crucially, this only runs *once*. If you want to run
     * this in a loop, you should provide that loop yourself.
     */
-  def run: Action[Model, Unit] =
+  def run: Action[Model, Unit] = {
     nextKeydownIn(bindings.keySet).flatMap((evt: KeyboardEvent) =>
-      bindings(evt.key)
+      Kleisli(es => bindings(evt.key)(es).handleErrorWith(_ => IO.unit))
     )
+  }
 
   def runForever: Action[Model, Unit] = {
     val T = implicitly[Monad[[X] =>> Action[Model, X]]]
@@ -212,6 +225,11 @@ def hovered[Model]: Action[Model, Option[Entity]] =
 
 def hoveredPart[Model, X <: Ob](x: X): Action[Model, Option[Elt[X]]] =
   hovered.map(_.flatMap(_.asElt(x)))
+
+def getClick[X <: Ob, Model](x: X): Action[Model, Elt[X]] = for {
+  _ <- mouseDown(MouseButton.LeftButton)
+  i <- fromMaybe(hoveredPart(x))
+} yield i
 
 def update[Model]: Action[Model, Unit] = {
   val L = actionLiftIO[Model]
