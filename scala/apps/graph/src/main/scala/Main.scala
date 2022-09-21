@@ -46,6 +46,7 @@ import org.scalajs.dom
 /** A positioned graph
   */
 type PropGraph = WithProps[Graph]
+type M[T] = Action[PropGraph, T]
 
 val addBox: Action[PropGraph, Unit] = for {
   pos <- mousePos
@@ -68,6 +69,33 @@ val addEdgeAction: Action[PropGraph, Unit] = for {
   _ <- update
 } yield {}
 
+val dragEdge: Action[PropGraph, Unit] = {
+  val L = actionLiftIO[PropGraph]
+  val getSrc = fromMaybe(
+    Bindings[PropGraph, Elt[V.type]](
+      clickOn(ClickType.Single, MouseButton.Left, V),
+      keyUp("Shift").andThen(Kleisli(_ => IO.raiseError(NoneError)))
+    ).run
+  )
+
+  val getTgt = fromMaybe(
+    Bindings[PropGraph, Elt[V.type]](
+      releaseOn(ClickType.Single, MouseButton.Left, V),
+      keyUp("Shift").andThen(Kleisli(_ => IO.raiseError(NoneError)))
+    ).run
+  )
+
+  for {
+    drag <- Kleisli.ask.map(_.drag)
+    _ <- L.liftIO(IO(drag.disable()))
+    s <- getSrc
+    t <- getTgt
+    _ <- updateModelS[PropGraph, Elt[E.type]](addEdge(s, t))
+    _ <- update
+    _ <- L.liftIO(IO(drag.enable()))
+  } yield {}
+}
+
 def editVertexText(v: Elt[V.type]): Action[PropGraph, Unit] = for {
   $model <- getModel[PropGraph]
   _ <- editText(
@@ -77,13 +105,12 @@ def editVertexText(v: Elt[V.type]): Action[PropGraph, Unit] = for {
 } yield {}
 
 val bindings = Bindings(
-  KeyDown("a", addBox),
-  KeyDown("d", remBox),
-  KeyDown("e", addEdgeAction),
-  ClickOn(ClickType.Double, MouseButton.Left, V, editVertexText)
+  keyDown("a").andThen(addBox),
+  keyDown("d").andThen(remBox),
+  keyDown("Shift").andThen(dragEdge),
+  clickOn(ClickType.Double, MouseButton.Left, V).flatMap(editVertexText)
 )
 
-type M[T] = Action[PropGraph, T]
 val L = actionLiftIO[PropGraph]
 
 def renderPosGraph(

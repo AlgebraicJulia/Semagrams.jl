@@ -27,6 +27,7 @@ import com.raquo.airstream.state.ObservedSignal
 
 case class DragController(
     $state: Var[Option[Observer[Complex]]],
+    $enabled: Var[Boolean],
     mouse: MouseController
 ) extends Modifier[SvgElement] {
 
@@ -56,6 +57,10 @@ case class DragController(
     )
   }
 
+  def enable() = $enabled.set(true)
+
+  def disable() = $enabled.set(false)
+
   /** This is used to make an element draggable.
     */
   def draggable[El <: Element](
@@ -64,10 +69,14 @@ case class DragController(
   ) = CustomModifier[El](el => {
     el.amend(
       onMouseDown.map(ev => {
-        val c = center()
-        val init = mouse.$state.now().pos
-        val offset = c - init
-        Some(updates.contramap[Complex](offset + _))
+        if ($enabled.now()) {
+          val c = center()
+          val init = mouse.$state.now().pos
+          val offset = c - init
+          Some(updates.contramap[Complex](offset + _))
+        } else {
+          None
+        }
       }) --> $state.writer
     )
   })
@@ -81,6 +90,6 @@ case class DragController(
 
 object DragController {
   def apply(mouse: MouseController) = {
-    new DragController(Var(None), mouse)
+    new DragController(Var(None), Var(true), mouse)
   }
 }

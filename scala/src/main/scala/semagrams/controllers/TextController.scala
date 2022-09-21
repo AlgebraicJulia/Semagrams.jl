@@ -29,6 +29,7 @@ object TextController {
               onInput.mapToValue --> listener,
               onKeyDown.stopPropagation.filter(_.key == "Escape").mapTo(())
                 --> escape.writer,
+              onBlur.mapTo(()) --> escape.writer,
               defaultValue := init,
               onMountCallback(el => {
                 val ref = el.thisNode.ref
