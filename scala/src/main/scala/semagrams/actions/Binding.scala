@@ -4,9 +4,10 @@ import cats._
 import cats.data._
 import cats.effect._
 import org.scalajs.dom.raw.KeyboardEvent
+import semagrams._
 import semagrams.acsets._
-import semagrams.controllers.MouseButton
-import semagrams.controllers.MouseEvent
+import semagrams.controllers._
+import semagrams.util._
 
 case class Binding[Model, A](f: PartialFunction[Any, Action[Model, A]]) {
   def flatMap[B](g: A => Action[Model, B]): Binding[Model, B] =
@@ -17,6 +18,9 @@ case class Binding[Model, A](f: PartialFunction[Any, Action[Model, A]]) {
   def mapTo[B](b: B): Binding[Model, B] = Binding(f.andThen(_.map(_ => b)))
 
   def andThen[B](mb: Action[Model, B]) = Binding(f.andThen(_ => mb))
+
+  def fail =
+    Binding[Model, Unit](f.andThen(_ => Kleisli(_ => IO.raiseError(NoneError))))
 }
 
 def keyDown[Model, A](key: String): Binding[Model, Unit] = Binding({
@@ -54,9 +58,22 @@ def releaseOn[Model, X <: Ob](
     button: MouseButton,
     x: X
 ): Binding[Model, Elt[X]] = Binding({
-  case MouseEvent.MouseUp(Some(ent), `button`)
-      if (ent.entityType == x) =>
+  case MouseEvent.MouseUp(Some(ent), `button`) if (ent.entityType == x) =>
     Kleisli.pure(ent.asInstanceOf[Elt[X]])
+})
+
+def mouseMove[Model] = Binding[Model, Complex]({ case MouseEvent.MouseMove(p) =>
+  Kleisli.pure(p)
+})
+
+def mouseUp[Model](button: MouseButton) = Binding[Model, Option[Entity]]({
+  case MouseEvent.MouseUp(e, `button`) =>
+    Kleisli.pure(e)
+})
+
+def mouseLeave[Model] = Binding[Model, Complex]({
+  case MouseEvent.MouseLeave(p) =>
+    Kleisli.pure(p)
 })
 
 class Bindings[Model, A](bindings: Seq[Binding[Model, A]]) {
@@ -65,7 +82,7 @@ class Bindings[Model, A](bindings: Seq[Binding[Model, A]]) {
     * with that keybinding. Crucially, this only runs *once*. If you want to run
     * this in a loop, you should provide that loop yourself.
     */
-  def run: Action[Model, Option[A]] =
+  def runNoCatch: Action[Model, A] =
     for {
       bindables <- ReaderT.ask.map(_.bindables)
       nextAction <- nextEvent(bindables.events.collect(((ev: Any) => {
@@ -73,10 +90,16 @@ class Bindings[Model, A](bindings: Seq[Binding[Model, A]]) {
           ((bnd: Binding[Model, A]) => bnd.f.lift(ev)).unlift
         )
       }).unlift))
-      res <- Kleisli[IO, EditorState[Model], Option[A]](es =>
-        nextAction(es).map(Some.apply).handleError(_ => None)
-      )
+      res <- nextAction
     } yield res
+
+  def run: Action[Model, Option[A]] =
+    Kleisli(es => runNoCatch(es).map(Some(_)).handleError(_ => None))
+
+  def runUntilFail: Action[Model, Unit] = {
+    val T = implicitly[Monad[Action[Model, _]]]
+    Kleisli(es => T.foreverM(runNoCatch)(es).handleError(_ => ()))
+  }
 
   def runForever: Action[Model, Unit] = {
     val T = implicitly[Monad[Action[Model, _]]]

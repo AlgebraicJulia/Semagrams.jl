@@ -62,37 +62,34 @@ val remBox: Action[PropGraph, Unit] = for {
   _ <- update
 } yield ()
 
-val addEdgeAction: Action[PropGraph, Unit] = for {
-  s <- getClick(V)
-  t <- getClick(V)
-  _ <- updateModelS[PropGraph, Elt[E.type]](addEdge(s, t))
-  _ <- update
-} yield {}
-
 val dragEdge: Action[PropGraph, Unit] = {
   val L = actionLiftIO[PropGraph]
-  val getSrc = fromMaybe(
-    Bindings[PropGraph, Elt[V.type]](
-      clickOn(ClickType.Single, MouseButton.Left, V),
-      keyUp("Shift").andThen(Kleisli(_ => IO.raiseError(NoneError)))
-    ).run
-  )
-
-  val getTgt = fromMaybe(
-    Bindings[PropGraph, Elt[V.type]](
-      releaseOn(ClickType.Single, MouseButton.Left, V),
-      keyUp("Shift").andThen(Kleisli(_ => IO.raiseError(NoneError)))
-    ).run
-  )
+  val mainAction: Action[PropGraph, Unit] = for {
+    drag <- Kleisli.ask.map(_.drag)
+    $model <- Kleisli.ask.map(_.$model)
+    s <- fromMaybe(Bindings(clickOn(ClickType.Single, MouseButton.Left, V)).run)
+    p <- mousePos
+    e <- updateModelS[PropGraph, Elt[E.type]](for {
+      e <- addPartWP(E, PropMap())
+      _ <- setSubpart(Src, e, s)
+      _ <- setProp(e, End, p)
+    } yield e)
+    _ <- (for {
+      _ <- drag.drag(Observer(p => $model.update(_.setProp(e, End, p))))
+      t <- fromMaybe(hoveredPart(V))
+      _ <- updateModelS[PropGraph, Unit](setSubpart(Tgt, e, t))
+    } yield ()).onCancelOrError(for {
+      _ <- L.liftIO(IO(drag.$state.set(None)))
+      _ <- updateModelS[PropGraph, Unit](remPart(e))
+    } yield ())
+    _ <- update
+  } yield ()
 
   for {
     drag <- Kleisli.ask.map(_.drag)
-    _ <- L.liftIO(IO(drag.disable()))
-    s <- getSrc
-    t <- getTgt
-    _ <- updateModelS[PropGraph, Elt[E.type]](addEdge(s, t))
-    _ <- update
-    _ <- L.liftIO(IO(drag.enable()))
+    target <- mainAction.forever.start
+    _ <- Bindings(keyUp("Shift")).run
+    _ <- Kleisli(_ => target.cancel)
   } yield {}
 }
 
@@ -104,11 +101,23 @@ def editVertexText(v: Elt[V.type]): Action[PropGraph, Unit] = for {
   )
 } yield {}
 
+def dragVertex(v: Elt[V.type]): Action[PropGraph, Unit] = for {
+  $model <- getModel
+  c <- Kleisli.pure($model.now().getProp(v, Center))
+  init <- mousePos
+  offset <- Kleisli.pure(c - init)
+  drag <- Kleisli.ask.map(_.drag)
+  _ <- drag.dragStart(
+    Observer(p => $model.update(_.setProp(v, Center, p + offset)))
+  )
+} yield ()
+
 val bindings = Bindings(
   keyDown("a").andThen(addBox),
   keyDown("d").andThen(remBox),
   keyDown("Shift").andThen(dragEdge),
-  clickOn(ClickType.Double, MouseButton.Left, V).flatMap(editVertexText)
+  clickOn(ClickType.Double, MouseButton.Left, V).flatMap(editVertexText),
+  clickOn(ClickType.Single, MouseButton.Left, V).flatMap(dragVertex)
 )
 
 val L = actionLiftIO[PropGraph]
@@ -124,7 +133,7 @@ def renderPosGraph(
     $posGraph.signal,
     List(
       SpriteMaker[PropGraph](
-        Box(),
+        Disc(),
         (s, _) => s.parts(V).toList.map(v => (v, s.subpart(Props(V), v).get)),
         Stack(
           WithDefaults(
@@ -137,8 +146,6 @@ def renderPosGraph(
               + (FontSize, 16)
           ),
           Hoverable(hover, MainHandle, PropMap() + (Fill, "lightgray")),
-          Draggable
-            .dragPart(drag, $posGraph, Props(V), Center, MainHandle),
           Clickable(mouse, MainHandle)
         )
       ),

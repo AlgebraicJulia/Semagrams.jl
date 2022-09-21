@@ -70,14 +70,59 @@ object EditorState {
       text,
       mouse.mouseEvents --> bindables,
       keyboard.keydowns --> bindables,
-      keyboard.keyups --> bindables,
+      keyboard.keyups --> bindables
     )
 
-    new EditorState(mouse, drag, hover, keyboard, text, bindables, $model, elt, update)
+    new EditorState(
+      mouse,
+      drag,
+      hover,
+      keyboard,
+      text,
+      bindables,
+      $model,
+      elt,
+      update
+    )
   }
 }
 
 type Action[Model, A] = ReaderT[IO, EditorState[Model], A]
+
+extension [Model, A](action: Action[Model, A]) {
+  def bracket[B](
+      f: A => Action[Model, B]
+  )(g: A => Action[Model, Unit]): Action[Model, B] = {
+    Action(es => action(es).bracket(a => f(a)(es))(a => g(a)(es)))
+  }
+
+  def toOption: Action[Model, Option[A]] = {
+    Action(es => action(es).map(Some(_)).handleError(_ => None))
+  }
+
+  def start: Action[Model, Fiber[IO, Throwable, A]] =
+    Action[Model, Fiber[IO, Throwable, A]](es => action(es).start)
+
+  def forever: Action[Model, Unit] = {
+    val T = implicitly[Monad[Action[Model, _]]]
+    T.foreverM(action)
+  }
+
+  def onCancel(fin: Action[Model, Unit]) =
+    Action[Model, A](es => action(es).onCancel(fin(es)))
+
+  def onCancelOrError(fin: Action[Model, A]) =
+    Action[Model, A](es =>
+      action(es).onCancel(fin(es).map(_ => ())).handleErrorWith(_ => fin(es))
+    )
+}
+
+object Action {
+  def pure[Model, A](a: A) = Kleisli.pure[IO, EditorState[Model], A](a)
+
+  def apply[Model, A](f: EditorState[Model] => IO[A]): Action[Model, A] =
+    Kleisli[IO, EditorState[Model], A](f)
+}
 
 implicit def actionLiftIO[Model]: LiftIO[Action[Model, _]] =
   LiftIO.catsKleisliLiftIO
@@ -91,11 +136,11 @@ def runAction[Model](
 
 case object NoneError extends Exception
 
-extension[A] (x: Option[A]) {
+extension [A](x: Option[A]) {
   def unwrap[F[_]](implicit F: MonadError[F, Throwable]): F[A] = {
     x match {
       case Some(x) => F.pure(x)
-      case None => F.raiseError(NoneError)
+      case None    => F.raiseError(NoneError)
     }
   }
 }

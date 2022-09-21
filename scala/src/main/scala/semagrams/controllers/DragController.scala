@@ -2,6 +2,9 @@ package semagrams.controllers
 
 import semagrams._
 import semagrams.util._
+import semagrams.actions._
+import cats.data._
+import cats.effect._
 
 import com.raquo.laminar.api.L._
 import monocle.std.these
@@ -25,29 +28,44 @@ import com.raquo.airstream.state.ObservedSignal
   * This depends on a MouseController.
   */
 
+object DragController {
+  case class State(
+      observer: Observer[Complex],
+      callback: Unit => Unit
+  )
+
+  def apply(mouse: MouseController) = {
+    new DragController(Var(None), mouse)
+  }
+}
+
 case class DragController(
-    $state: Var[Option[Observer[Complex]]],
-    $enabled: Var[Boolean],
+    $state: Var[Option[DragController.State]],
     mouse: MouseController
 ) extends Modifier[SvgElement] {
+
+  import DragController._
 
   /** This is a helper method that is used to process mouse events.
     */
   def processEvent(
-      state: Option[Observer[Complex]],
+      state: Option[State],
       evt: MouseEvent
-  ): Option[Observer[Complex]] = {
+  ): Option[State] = {
     import MouseEvent._
+
     state.flatMap(h =>
       evt match {
         case MouseMove(pos) => {
-          h.onNext(pos)
+          h.observer.onNext(pos)
           Some(h)
         }
         case MouseUp(_, _) => {
+          h.callback(())
           None
         }
         case MouseLeave(_) => {
+          h.callback(())
           None
         }
         case _ => {
@@ -57,39 +75,19 @@ case class DragController(
     )
   }
 
-  def enable() = $enabled.set(true)
-
-  def disable() = $enabled.set(false)
-
-  /** This is used to make an element draggable.
-    */
-  def draggable[El <: Element](
-      center: () => Complex,
-      updates: Observer[Complex]
-  ) = CustomModifier[El](el => {
-    el.amend(
-      onMouseDown.map(ev => {
-        if ($enabled.now()) {
-          val c = center()
-          val init = mouse.$state.now().pos
-          val offset = c - init
-          Some(updates.contramap[Complex](offset + _))
-        } else {
-          None
-        }
-      }) --> $state.writer
+  def drag[Model](updates: Observer[Complex]): Action[Model, Unit] =
+    Kleisli(_ =>
+      IO.async_(cb => {
+        $state.set(Some(State(updates, _ => cb(Right(())))))
+      })
     )
-  })
+
+  def dragStart[Model](updates: Observer[Complex]): Action[Model, Unit] =
+    Kleisli(_ => IO($state.set(Some(State(updates, _ => ())))))
 
   /** This is used to attach the mouse move event handlers to the top-level SVG.
     */
   override def apply(el: SvgElement) = el.amend(
     mouse.mouseEvents --> $state.updater(processEvent)
   )
-}
-
-object DragController {
-  def apply(mouse: MouseController) = {
-    new DragController(Var(None), Var(true), mouse)
-  }
 }

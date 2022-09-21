@@ -12,6 +12,15 @@ class XYAttr extends CustomSvgAttr[Complex] {
 
 val xy = new XYAttr()
 
+class CXYAttr extends CustomSvgAttr[Complex] {
+  def applyAttrs(binder: SvgBinder[Complex]): Unit = {
+    binder(cx, _.x.toString)
+    binder(cy, _.y.toString)
+  }
+}
+
+val cxy = new CXYAttr()
+
 class WHAttr extends CustomSvgAttr[Complex] {
   def applyAttrs(binder: SvgBinder[Complex]): Unit = {
     binder(width, _.x.toString)

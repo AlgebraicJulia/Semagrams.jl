@@ -27,6 +27,8 @@ case class Complex(x: Double, y: Double) {
   def abssq = x * x + y * y
 
   def abs = sqrt(abssq)
+
+  def normalize = this / this.abs
 }
 
 implicit def realToComplex(x: Double): Complex = Complex(x, 0)
