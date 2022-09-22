@@ -29,3 +29,11 @@ class WHAttr extends CustomSvgAttr[Complex] {
 }
 
 val wh = new WHAttr()
+
+class PointsAttr extends CustomSvgAttr[Seq[Complex]] {
+  def applyAttrs(binder: SvgBinder[Seq[Complex]]): Unit = {
+    binder(points, _.map(z => s"${z.x} ${z.y}").mkString(" "))
+  }
+}
+
+val pointsC = new PointsAttr()

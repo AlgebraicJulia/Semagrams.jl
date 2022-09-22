@@ -56,8 +56,8 @@ val addBox: Action[PropGraph, Unit] = for {
   _ <- update
 } yield {}
 
-val remBox: Action[PropGraph, Unit] = for {
-  v <- fromMaybe(hoveredPart(V))
+val remEntity: Action[PropGraph, Unit] = for {
+  v <- fromMaybe(hovered)
   _ <- updateModel[PropGraph](_.remPart(v))
   _ <- update
 } yield ()
@@ -114,7 +114,7 @@ def dragVertex(v: Elt[V.type]): Action[PropGraph, Unit] = for {
 
 val bindings = Bindings(
   keyDown("a").andThen(addBox),
-  keyDown("d").andThen(remBox),
+  keyDown("d").andThen(remEntity),
   keyDown("Shift").andThen(dragEdge),
   clickOn(ClickType.Double, MouseButton.Left, V).flatMap(editVertexText),
   clickOn(ClickType.Single, MouseButton.Left, V).flatMap(dragVertex)
@@ -154,7 +154,8 @@ def renderPosGraph(
         edgeExtractor(Src, Tgt),
         Stack(
           WithDefaults(PropMap() + (Stroke, "black")),
-          Shorten(5)
+          Shorten(5),
+          Hoverable(hover, MainHandle, PropMap() + (Stroke, "lightgray"))
         )
       )
     )

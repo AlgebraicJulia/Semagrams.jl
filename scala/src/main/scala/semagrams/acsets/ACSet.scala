@@ -444,6 +444,15 @@ trait ACSet[A] {
       bare.modify(_.remPart(schema, x))(a)
     }
 
+    def remPart(x: Entity): A = {
+      for (ob <- schema.obs.values) {
+        if (x.entityType == ob) {
+          return bare.modify(_.remPart(schema, x.asInstanceOf[Elt[ob.type]]))(a)
+        }
+      }
+      return a
+    }
+
   def rw(serializers: AttrTypeSerializers): ReadWriter[A] =
     BareACSet.serializer(schema, serializers).bimap(bare.get(_), bare(_))
 }
