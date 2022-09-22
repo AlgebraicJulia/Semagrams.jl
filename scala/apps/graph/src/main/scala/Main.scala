@@ -48,76 +48,12 @@ import org.scalajs.dom
 type PropGraph = WithProps[Graph]
 type M[T] = Action[PropGraph, T]
 
-val addBox: Action[PropGraph, Unit] = for {
-  pos <- mousePos
-  _ <- updateModelS[PropGraph, Elt[V.type]](
-    addPartWP(V, PropMap() + (Center, pos) + (Content, ""))
-  )
-  _ <- update
-} yield {}
-
-val remEntity: Action[PropGraph, Unit] = for {
-  v <- fromMaybe(hovered)
-  _ <- updateModel[PropGraph](_.remPart(v))
-  _ <- update
-} yield ()
-
-val dragEdge: Action[PropGraph, Unit] = {
-  val L = actionLiftIO[PropGraph]
-  val mainAction: Action[PropGraph, Unit] = for {
-    drag <- Kleisli.ask.map(_.drag)
-    $model <- Kleisli.ask.map(_.$model)
-    s <- fromMaybe(Bindings(clickOn(ClickType.Single, MouseButton.Left, V)).run)
-    p <- mousePos
-    e <- updateModelS[PropGraph, Elt[E.type]](for {
-      e <- addPartWP(E, PropMap())
-      _ <- setSubpart(Src, e, s)
-      _ <- setProp(e, End, p)
-    } yield e)
-    _ <- (for {
-      _ <- drag.drag(Observer(p => $model.update(_.setProp(e, End, p))))
-      t <- fromMaybe(hoveredPart(V))
-      _ <- updateModelS[PropGraph, Unit](setSubpart(Tgt, e, t))
-    } yield ()).onCancelOrError(for {
-      _ <- L.liftIO(IO(drag.$state.set(None)))
-      _ <- updateModelS[PropGraph, Unit](remPart(e))
-    } yield ())
-    _ <- update
-  } yield ()
-
-  for {
-    drag <- Kleisli.ask.map(_.drag)
-    target <- mainAction.forever.start
-    _ <- Bindings(keyUp("Shift")).run
-    _ <- Kleisli(_ => target.cancel)
-  } yield {}
-}
-
-def editVertexText(v: Elt[V.type]): Action[PropGraph, Unit] = for {
-  $model <- getModel[PropGraph]
-  _ <- editText(
-    Observer(s => $model.update(m => { m.setProp(v, Content, s) })),
-    $model.now().getProp(v, Content)
-  )
-} yield {}
-
-def dragVertex(v: Elt[V.type]): Action[PropGraph, Unit] = for {
-  $model <- getModel
-  c <- Kleisli.pure($model.now().getProp(v, Center))
-  init <- mousePos
-  offset <- Kleisli.pure(c - init)
-  drag <- Kleisli.ask.map(_.drag)
-  _ <- drag.dragStart(
-    Observer(p => $model.update(_.setProp(v, Center, p + offset)))
-  )
-} yield ()
-
-val bindings = Bindings(
-  keyDown("a").andThen(addBox),
+val bindings = Bindings[PropGraph, Unit](
+  keyDown("a").andThen(addEntityPos(V)),
   keyDown("d").andThen(remEntity),
-  keyDown("Shift").andThen(dragEdge),
-  clickOn(ClickType.Double, MouseButton.Left, V).flatMap(editVertexText),
-  clickOn(ClickType.Single, MouseButton.Left, V).flatMap(dragVertex)
+  keyDown("Shift").andThen(dragEdge(Src, Tgt)),
+  clickOn(ClickType.Double, MouseButton.Left, V).flatMap(editContent(V)),
+  clickOn(ClickType.Single, MouseButton.Left, V).flatMap(dragEntity(V))
 )
 
 val L = actionLiftIO[PropGraph]

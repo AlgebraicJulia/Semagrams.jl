@@ -36,14 +36,28 @@ lazy val core = (project in file("."))
   )
   .enablePlugins(ScalaJSPlugin)
 
-lazy val graph_app = (project in file("apps/graph"))
+// lazy val graph_app = (project in file("apps/graph"))
+//   .settings(
+//     name := "semagrams-graph-app",
+//     // scalaJSUseMainModuleInitializer := true,
+//     scalaJSLinkerConfig ~= {
+//       _.withModuleKind(ModuleKind.ESModule)
+//         .withModuleSplitStyle(
+//           ModuleSplitStyle.SmallModulesFor(List("semagrams-graph-app"))
+//         )
+//     },
+//   )
+//   .dependsOn(core)
+//   .enablePlugins(ScalaJSPlugin)
+
+lazy val petri_app = (project in file("apps/petri"))
   .settings(
-    name := "semagrams-graph-app",
+    name := "semagrams-petri-app",
     // scalaJSUseMainModuleInitializer := true,
     scalaJSLinkerConfig ~= {
       _.withModuleKind(ModuleKind.ESModule)
         .withModuleSplitStyle(
-          ModuleSplitStyle.SmallModulesFor(List("semagrams-graph-app"))
+          ModuleSplitStyle.SmallModulesFor(List("semagrams-petri-app"))
         )
     },
   )
