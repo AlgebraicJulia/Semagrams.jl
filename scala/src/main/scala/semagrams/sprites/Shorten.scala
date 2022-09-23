@@ -9,6 +9,7 @@ case class Shorten(amount: Double) extends Middleware {
     val e = p(End)
     val diff = s - e
     val dir = diff / diff.abs
-    p + (Start, s - (dir * amount)) + (End, e + (dir * amount))
+    val rot = Complex(0, p(Bend)).exp
+    p + (Start, s - (rot * dir * amount)) + (End, e + (rot.cong * dir * amount))
   }
 }

@@ -24,6 +24,7 @@ case object Content extends Property[String]
 case object Center extends Property[Complex]
 case object Start extends Property[Complex]
 case object End extends Property[Complex]
+case object Bend extends Property[Double]
 
 val allProperties: List[AbstractProperty] = List(
   Fill,

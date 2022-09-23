@@ -25,7 +25,13 @@ class SpriteMaps[State](
           .extractor(state, sprites)
           .map(
             { case (ent, propMap) =>
-              (ent, (spriteMaker.sprite, spriteMaker.middleware.updateProps(ent, propMap)))
+              (
+                ent,
+                (
+                  spriteMaker.sprite,
+                  spriteMaker.middleware.updateProps(ent, propMap)
+                )
+              )
             }
           )
           .toMap

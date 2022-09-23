@@ -96,8 +96,8 @@ object Schema {
     }
     new Schema(
       obs.map(x => (x.toString, x)).toMap,
-      homs.map(x => (x.toString, x)).toMap,
-      attrs.map(x => (x.toString, x)).toMap
+      homs.map(x => (x.toString.toLowerCase(), x)).toMap,
+      attrs.map(x => (x.toString.toLowerCase(), x)).toMap
     )
   }
 }
@@ -155,18 +155,26 @@ case class BareACSet(
     )
   }
 
+  def untypedSubpart(s: Schema, f: AbstractHom, x: Entity): Option[Entity] = {
+    assert(s.homs.values.toList contains f)
+    homs(f).get(x)
+  }
+
   def subpart[X <: Ob, Y <: Ob](
       s: Schema,
       f: Hom[X, Y],
       x: Elt[X]
   ): Option[Elt[Y]] = {
-    assert(s.homs.values.toList contains f)
-    homs(f).asInstanceOf[Map[Elt[X], Elt[Y]]].get(x)
+    untypedSubpart(s, f, x).asInstanceOf[Option[Elt[Y]]]
+  }
+
+  def untypedSubpart(s: Schema, f: AbstractAttr, x: Entity): Option[Any] = {
+    assert(s.attrs.values.toList contains f)
+    attrs(f).get(x)
   }
 
   def subpart[X <: Ob, T](s: Schema, f: Attr[X, T], x: Elt[X]): Option[T] = {
-    assert(s.attrs.values.toList contains f)
-    attrs(f).asInstanceOf[Map[Elt[X], T]].get(x)
+    untypedSubpart(s, f, x).asInstanceOf[Option[T]]
   }
 
   /** We use an implicit in order to pass in the singleton instance of the type
@@ -302,11 +310,14 @@ object BareACSet {
           acs.nextId,
           acs.obs.map({ case (ob, ents) => (ob.toString(), ents.map(_.id)) }),
           acs.homs.map({ case (hom, vals) =>
-            (hom.toString(), vals.toList.map({ case (x, y) => (x.id, y.id) }))
+            (
+              hom.toString().toLowerCase(),
+              vals.toList.map({ case (x, y) => (x.id, y.id) })
+            )
           }),
           acs.attrs.map({ case (attr, vals) =>
             (
-              attr.toString(),
+              attr.toString().toLowerCase(),
               vals.toList.map({
                 case (x, y) => {
                   val rw = serializers(attr.codom)
@@ -319,16 +330,17 @@ object BareACSet {
             )
           })
         ),
-      acs =>
+      serialized => {
+        println(s)
         new BareACSet(
-          acs.nextId,
-          acs.obs.map({
+          serialized.nextId,
+          serialized.obs.map({
             case (name, ents) => {
               val x = s.obs(name)
               (x, ents.map(Elt(x, _).asInstanceOf[Entity]).toSet)
             }
           }),
-          acs.homs.map({
+          serialized.homs.map({
             case (name, vals) => {
               val f = s.homs(name)
               (
@@ -341,7 +353,7 @@ object BareACSet {
               )
             }
           }),
-          acs.attrs.map({
+          serialized.attrs.map({
             case (name, vals) => {
               val f = s.attrs(name)
               (
@@ -358,6 +370,7 @@ object BareACSet {
             }
           })
         )
+      }
     )
   }
 }
@@ -410,12 +423,20 @@ trait ACSet[A] {
       bare.modifyF(_.addPart(schema, ob))(a)
     }
 
+    def untypedSubpart(f: AbstractHom, x: Entity): Option[Entity] = {
+      bare.get(a).untypedSubpart(schema, f, x)
+    }
+
     def subpart[X <: Ob, Y <: Ob](f: Hom[X, Y], x: Elt[X]): Option[Elt[Y]] = {
       bare.get(a).subpart(schema, f, x)
     }
 
     def subpart[X <: Ob, T](f: Attr[X, T], x: Elt[X]): Option[T] = {
       bare.get(a).subpart(schema, f, x)
+    }
+
+    def untypedSubpart(f: AbstractAttr, x: Entity): Option[Any] = {
+      bare.get(a).untypedSubpart(schema, f, x)
     }
 
     def incident[X <: Ob, Y <: Ob](

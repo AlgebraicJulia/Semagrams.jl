@@ -37,3 +37,11 @@ class PointsAttr extends CustomSvgAttr[Seq[Complex]] {
 }
 
 val pointsC = new PointsAttr()
+
+class DAttr extends CustomSvgAttr[Seq[Path.Element]] {
+  def applyAttrs(binder: SvgBinder[Seq[Path.Element]]): Unit = {
+    binder(d, _.toSvg)
+  }
+}
+
+val pathElts = new DAttr()

@@ -6,7 +6,7 @@ import semagrams.controllers._
 
 case class Clickable(
     mouse: MouseController,
-    handle: Handle,
+    handle: Handle
 ) extends Middleware {
   override def modifyRendered(ent: Entity, rs: RenderedSprite) = {
     rs.handles(handle)
