@@ -1,7 +1,7 @@
 name = "Semagrams"
 uuid = "865e872e-9642-47d5-ac6e-eac4567ea794"
 authors = ["Owen Lynch <root@owenlynch.org> and contributors"]
-version = "0.2.0"
+version = "0.3.0"
 
 [deps]
 AbstractPlutoDingetjes = "6e696c72-6542-2067-7265-42206c756150"
