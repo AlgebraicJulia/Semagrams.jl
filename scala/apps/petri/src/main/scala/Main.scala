@@ -180,7 +180,7 @@ def tutorial: Action[PropPetri, Unit] = for {
     "You can do the same thing to edit the rate of the transition; try it out!"
   )
   _ <- showTip(
-    "Finally, you can drag the species and transition around to reposition them.",
+    "You can drag the species and transition around to reposition them.",
     "You can also rename by double-clicking",
     "Try it out, and then hit enter to continue when you're ready."
   )
@@ -193,6 +193,16 @@ def tutorial: Action[PropPetri, Unit] = for {
       clickOn(ClickType.Double, MouseButton.Left, T)
         .flatMap(editStringAttr(T, TName)),
       clickOn(ClickType.Single, MouseButton.Left, T).flatMap(dragEntity(T))
+    ).run.map(_ => ())
+  )
+  _ <- showTip(
+    "Finally, you can delete anything by hovering over it and pressing \"d\"",
+    "Go ahead and destroy all your hard work. (Enter to continue)"
+  )
+  _ <- loopUntilPress(
+    "Enter",
+    Bindings[PropPetri, Unit](
+      keyDown("d").andThen(remEntity),
     ).run.map(_ => ())
   )
   _ <- showTip(
