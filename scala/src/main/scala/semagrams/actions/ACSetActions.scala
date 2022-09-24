@@ -87,6 +87,15 @@ def loopDuringPress[A: ACSet](
   _ <- Kleisli(_ => target.cancel)
 } yield {}
 
+def loopUntilPress[A: ACSet](
+    key: String,
+    action: Action[WithProps[A], Unit]
+): Action[WithProps[A], Unit] = for {
+  target <- action.forever.start
+  _ <- Bindings(keyDown(key)).run
+  _ <- Kleisli(_ => target.cancel)
+} yield {}
+
 def dragEdgeLoop[A: ACSet, X <: Ob, Y <: Ob, Z <: Ob](
     src: Hom[X, Y],
     tgt: Hom[X, Z],
@@ -122,6 +131,18 @@ def editStringAttr[A: ACSet, X <: Ob](
   for {
     $model <- getModel[A]
     _ <- editText(
+      Observer(s => $model.update(m => { m.setSubpart(attr, v, s) })),
+      $model.now().subpart(attr, v).getOrElse("")
+    )
+  } yield {}
+
+def editStringAttrBlocking[A: ACSet, X <: Ob](
+    x: X,
+    attr: Attr[X, String]
+)(v: Elt[X]): Action[A, Unit] =
+  for {
+    $model <- getModel[A]
+    _ <- editTextBlocking(
       Observer(s => $model.update(m => { m.setSubpart(attr, v, s) })),
       $model.now().subpart(attr, v).getOrElse("")
     )

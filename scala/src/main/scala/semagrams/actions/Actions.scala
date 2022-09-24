@@ -17,6 +17,7 @@ import semagrams.acsets._
 import semagrams.controllers._
 import semagrams.util._
 import upickle.default._
+import org.scalajs.dom
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -47,6 +48,7 @@ case class EditorState[Model](
     hover: HoverController,
     keyboard: KeyboardController,
     text: TextController,
+    tip: TipController,
     bindables: EventBus[Any],
     $model: Var[Model],
     elt: SvgElement,
@@ -61,6 +63,7 @@ object EditorState {
     val keyboard = KeyboardController()
     val text = TextController()
     val bindables = EventBus[Any]()
+    val tip = TipController()
 
     elt.amend(
       mouse,
@@ -68,6 +71,7 @@ object EditorState {
       hover,
       keyboard,
       text,
+      tip,
       mouse.mouseEvents --> bindables,
       keyboard.keydowns --> bindables,
       keyboard.keyups --> bindables
@@ -79,6 +83,7 @@ object EditorState {
       hover,
       keyboard,
       text,
+      tip,
       bindables,
       $model,
       elt,
@@ -288,4 +293,38 @@ def editText[Model](
     text <- ReaderT.ask.map(_.text)
     _ <- L.liftIO(IO(text.editText(listener, init)))
   } yield ()
+}
+
+def editTextBlocking[Model](
+    listener: Observer[String],
+    init: String
+): Action[Model, Unit] = {
+  val L = actionLiftIO[Model]
+  for {
+    text <- ReaderT.ask.map(_.text)
+    _ <- L.liftIO(IO.async_(cb => text.editTextBlocking(listener, init, () => cb(Right(())))))
+  } yield ()
+}
+
+def showTip[Model](s: String*): Action[Model, Unit] = {
+  val L = actionLiftIO[Model]
+  for {
+    tip <- ReaderT.ask.map(_.tip)
+    _ <- L.liftIO(IO(tip.show(s*)))
+  } yield ()
+}
+
+def hideTip[Model]: Action[Model, Unit] = {
+  val L = actionLiftIO[Model]
+  for {
+    tip <- ReaderT.ask.map(_.tip)
+    _ <- L.liftIO(IO(tip.hide()))
+  } yield ()
+}
+
+def delay[Model](seconds: Double): Action[Model, Unit] = {
+  val L = actionLiftIO[Model]
+  L.liftIO(
+    IO.async_(cb => dom.window.setTimeout(() => cb(Right(())), seconds * 1000))
+  )
 }

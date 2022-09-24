@@ -50,7 +50,11 @@ using Plots
 begin
 	if ns(petri) > 0
 		u0 = concentrations(petri)
-		p = Vector{Float64}(rates(petri))
+		p = if nt(petri) > 0
+		    rates(petri)
+		else
+			Vector{Float64}()
+		end
 		prob = ODEProblem(vectorfield(petri), u0, (0.0, 5.0), p)
 		sol = solve(prob, Tsit5())
 		plot(sol)
@@ -64,5 +68,5 @@ end
 # ╠═74cef662-a15f-4c17-b652-8fdc88f1db47
 # ╠═1f148be2-ef69-4ae3-a031-d11a6baf85d5
 # ╠═69c15116-f88b-48f9-86e5-0358f1bf266a
-# ╠═acf2bff2-2126-4b17-98ae-7614bdc0e33d
-# ╠═6d398559-c235-44b8-836a-6d22c9c15862
+# ╟─acf2bff2-2126-4b17-98ae-7614bdc0e33d
+# ╟─6d398559-c235-44b8-836a-6d22c9c15862

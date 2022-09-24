@@ -64,7 +64,7 @@ val addSpecies = addEntityPos[LabelledReactionNet, S.type](
       _ <- setSubpart(SName, v, "")
       _ <- setSubpart(Concentration, v, 1.0)
     } yield ()
-).flatMap(editStringAttr(S, SName))
+)
 
 val addTransition = addEntityPos[LabelledReactionNet, T.type](
   T,
@@ -73,14 +73,143 @@ val addTransition = addEntityPos[LabelledReactionNet, T.type](
       _ <- setSubpart(TName, v, "")
       _ <- setSubpart(Rate, v, 1.0)
     } yield ()
-).flatMap(editStringAttr(T, TName))
+)
+
+def dragInputLoop(s: Elt[S.type], t: Elt[T.type]): Action[PropPetri, Unit] =
+  for {
+    _ <- showTip(
+      "Now, hold Shift, and drag on the species to make an arrow; drop the arrow to the transition."
+    )
+    _ <- Bindings(keyDown("Shift")).run
+    _ <- loopDuringPress(
+      "Shift",
+      for {
+        s <- fromMaybe(
+          Bindings(clickOn(ClickType.Single, MouseButton.Left, S)).run
+        )
+        _ <- dragEdge[LabelledReactionNet, I.type, S.type, T.type](IS, IT, s)
+      } yield ()
+    )
+    $model <- getModel
+    _ <-
+      if (
+        $model.now()
+          .incident(IS, s)
+          .intersect($model.now().incident(IT, t))
+          .nonEmpty
+      ) {
+        Action.pure[PropPetri, Unit](())
+      } else {
+        for {
+          _ <- showTip("Whoops, try again! (Enter to continue)")
+          _ <- Bindings(keyDown("Enter")).run
+          _ <- dragInputLoop(s, t)
+        } yield ()
+      }
+  } yield ()
+
+def dragControlLoop[X <: Ob](
+    s: Elt[X],
+    attr: Attr[X, Double],
+    texts: String*
+): Action[PropPetri, Unit] = for {
+  $model <- getModel
+  init <- Action.pure($model.now().subpart(attr, s))
+  _ <- showTip(texts*)
+  _ <- Bindings(keyDown("Control").andThen(modifyRates)).run
+  _ <-
+    if ($model.now().subpart(attr, s) == init) {
+      for {
+        _ <- showTip("Whoops, try again! (Enter to continue)")
+        _ <- Bindings(keyDown("Enter")).run
+        _ <- dragControlLoop(s, attr, texts*)
+      } yield ()
+    } else {
+      Action.pure[PropPetri, Unit](())
+    }
+} yield ()
+
+def tutorial: Action[PropPetri, Unit] = for {
+  _ <- updateModel[PropPetri](_ => WithProps[LabelledReactionNet]())
+  _ <- update
+  _ <- showTip(
+    "Hi, welcome to the Semagrams Petri net tutorial! (Enter to continue)"
+  )
+  _ <- Bindings(keyDown("Enter")).run
+  _ <- showTip(
+    "Let's get started! Put your mouse anywhere in the box and press \"s\" to add a species."
+  )
+  s <- Bindings(keyDown("s").andThen(addSpecies)).run.map(_.get)
+  _ <- showTip(
+    "Great job! Now give a name to it by typing in the box and hitting escape when done."
+  )
+  _ <- editStringAttrBlocking(S, SName)(s)
+  _ <- showTip("You rock! (Enter to continue)")
+  _ <- Bindings(keyDown("Enter")).run
+  _ <- showTip(
+    "You should see down below that the plot has updated. (Enter to continue)"
+  )
+  _ <- Bindings(keyDown("Enter")).run
+  _ <- showTip(
+    "But the plot is just a straight line: let's make it more interesting. (Enter to continue)"
+  )
+  _ <- Bindings(keyDown("Enter")).run
+  _ <- showTip("Move your mouse somewhere else and add a transition with \"t\".")
+  t <- Bindings(keyDown("t").andThen(addTransition)).run.map(_.get)
+  _ <- showTip("Don't forget to give it a name!")
+  _ <- editStringAttrBlocking(T, TName)(t)
+  _ <- showTip("What a pro! (Enter to continue)")
+  _ <- Bindings(keyDown("Enter")).run
+  _ <- dragInputLoop(s, t)
+  _ <- showTip(
+    "You should see a nice exponential decay curve in the graph now. (Enter to continue)"
+  )
+  _ <- Bindings(keyDown("Enter")).run
+  _ <- dragControlLoop(
+    s,
+    Concentration,
+    "Now let's edit the concentration of that species you added.",
+    "To do this, hold control and drag on the species."
+  )
+  _ <- showTip("Fantastic! (Enter to continue)")
+  _ <- Bindings(keyDown("Enter")).run
+  _ <- dragControlLoop(
+    t,
+    Rate,
+    "You can do the same thing to edit the rate of the transition; try it out!"
+  )
+  _ <- showTip(
+    "Finally, you can drag the species and transition around to reposition them.",
+    "You can also rename by double-clicking",
+    "Try it out, and then hit enter to continue when you've finished."
+  )
+  _ <- loopUntilPress(
+    "Enter",
+    Bindings[PropPetri, Unit](
+      clickOn(ClickType.Double, MouseButton.Left, S)
+        .flatMap(editStringAttr(S, SName)),
+      clickOn(ClickType.Single, MouseButton.Left, S).flatMap(dragEntity(S)),
+      clickOn(ClickType.Double, MouseButton.Left, T)
+        .flatMap(editStringAttr(T, TName)),
+      clickOn(ClickType.Single, MouseButton.Left, T).flatMap(dragEntity(T))
+    ).run.map(_ => ())
+  )
+  _ <- showTip(
+    "And that's pretty much it!",
+    "Remember, you can access the tutorial again with \"h\", or a quick reference with \"?\".",
+    "Hit enter to get rid of this, and enable all keybindings."
+  )
+  _ <- Bindings(keyDown("Enter")).run
+  _ <- hideTip
+} yield {}
 
 val bindings = Bindings[PropPetri, Unit](
-  keyDown("s").andThen(addSpecies),
-  keyDown("t").andThen(addTransition),
+  keyDown("s").andThen(addSpecies.flatMap(editStringAttr(S, SName))),
+  keyDown("t").andThen(addTransition.flatMap(editStringAttr(T, TName))),
   keyDown("d").andThen(remEntity),
   keyDown("Shift").andThen(arcLoop),
   keyDown("Control").andThen(modifyRates),
+  keyDown("h").andThen(tutorial),
   clickOn(ClickType.Double, MouseButton.Left, S)
     .flatMap(editStringAttr(S, SName)),
   clickOn(ClickType.Single, MouseButton.Left, S).flatMap(dragEntity(S)),
@@ -116,10 +245,7 @@ def renderPetri(
             .map(v =>
               (
                 v,
-                s.subpart(Props(S), v).get + (Content, s
-                  .subpart(SName, v)
-                  .getOrElse("") + "," + "%.1f"
-                  .format(s.subpart(Concentration, v).get))
+                s.subpart(Props(S), v).get + (Content, s.subpart(SName, v).getOrElse(""))
               )
             ),
         Stack(
@@ -144,9 +270,9 @@ def renderPetri(
             .map(v =>
               (
                 v,
-                s.subpart(Props(T), v).get + (Content, s
-                  .subpart(TName, v)
-                  .getOrElse("") + "," + "%.1f".format(s.subpart(Rate, v).get))
+                s.subpart(Props(T), v).get
+                  + (Content, s .subpart(TName, v).getOrElse(""))
+                  + (Pulse, s.subpart(Rate, v).get)
               )
             ),
         Stack(

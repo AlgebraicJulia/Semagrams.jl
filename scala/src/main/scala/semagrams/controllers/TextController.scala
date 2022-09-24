@@ -6,7 +6,11 @@ import scala.scalajs.js
 
 object TextController {
   enum State:
-    case Editing(listener: Observer[String], init: String)
+    case Editing(
+        listener: Observer[String],
+        init: String,
+        cb: Option[() => Unit]
+    )
     case Closed()
 
   import State._
@@ -18,7 +22,7 @@ object TextController {
       escape: EventBus[Unit]
   ) = {
     state match {
-      case Editing(listener, init) => {
+      case Editing(listener, init, _) => {
         svg.foreignObject(
           xy := pos,
           wh := dims,
@@ -67,7 +71,15 @@ case class TextController(
   import State._
 
   def editText(listener: Observer[String], init: String) = {
-    $state.set(Editing(listener, init))
+    $state.set(Editing(listener, init, None))
+  }
+
+  def editTextBlocking(
+      listener: Observer[String],
+      init: String,
+      cb: () => Unit
+  ) = {
+    $state.set(Editing(listener, init, Some(cb)))
   }
 
   override def apply(element: SvgElement): Unit = {
@@ -82,7 +94,12 @@ case class TextController(
       svg.g(
         child <-- $state.signal.map(makeTextBox(pos, settings.dims, _, escape))
       ),
-      escape.events.mapTo(Closed()) --> $state.writer,
+      escape.events --> $state.updater({ case (oldS, _) =>
+        oldS match {
+          case Editing(_, _, Some(cb)) => { cb(); Closed() }
+          case _                       => Closed()
+        }
+      }),
       escape.events --> Observer(_ =>
         element.ref.asInstanceOf[js.Dynamic].focus()
       )
