@@ -13,15 +13,6 @@ import semagrams.text._
 extension [A, B](s: L.Signal[Tuple2[A, B]])
   def splitTuple: Tuple2[L.Signal[A], L.Signal[B]] = (s.map(_._1), s.map(_._2))
 
-def pulseCSS(rate: Double) = s"""
-  animation-name: pulse;
-  animation-duration: ${1/rate}s;
-  animation-timing-function: ease;
-  animation-direction: alternate;
-  animation-iteration-count: infinite;
-  animation-play-state: running;
-"""
-
 case class Box() extends Sprite {
   def geom(data: PropMap): (Complex, Complex) = {
     val textBox = boxSize(data(Content), data(FontSize))
@@ -54,7 +45,6 @@ case class Box() extends Sprite {
     val box = rect(
       geomUpdater(updates),
       styleUpdater(updates),
-      style <-- updates.map(p => pulseCSS(p.get(Pulse).getOrElse(4.0)))
     )
     val text = L.svg.text(
       xy <-- updates.map(_(Center)),

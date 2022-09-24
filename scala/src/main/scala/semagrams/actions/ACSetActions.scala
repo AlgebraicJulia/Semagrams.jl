@@ -63,17 +63,25 @@ def dragControl[A: ACSet, X <: Ob](attr: Attr[X, Double], increment: Double)(
   for {
     drag <- Kleisli.ask.map(_.drag)
     $model <- Kleisli.ask.map(_.$model)
+    info <- Kleisli.ask.map(_.bottomtip)
     p <- mousePos
     init <- L.liftIO(IO($model.now().subpart(attr, v).get))
+    _ <- L.liftIO(IO(info.show(attr.toString() + ": " + "%.2f".format(init))))
     _ <- drag
       .drag(
-        Observer(q =>
+        Observer(q => {
+          val newval = (init + (p.y - q.y) * increment).max(0)
           $model.update(
-            _.setSubpart(attr, v, (init + (p.y - q.y) * increment).max(0))
+            _.setSubpart(attr, v, newval)
           )
-        )
+          info.show(attr.toString() + ": " + "%.2f".format(newval))
+        })
       )
-      .onCancelOrError(L.liftIO(IO(drag.$state.set(None))))
+      .onCancelOrError(for {
+        _ <- L.liftIO(IO(drag.$state.set(None)))
+        _ <- hideInfo
+      } yield ())
+    _ <- hideInfo
     _ <- update
   } yield ()
 }

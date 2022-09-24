@@ -48,10 +48,13 @@ case class EditorState[Model](
     hover: HoverController,
     keyboard: KeyboardController,
     text: TextController,
-    tip: TipController,
+    toptip: TipController,
+    bottomtip: TipController,
+    popover: PopoverController,
     bindables: EventBus[Any],
     $model: Var[Model],
     elt: SvgElement,
+    playArea: SvgElement,
     update: () => Unit
 )
 
@@ -63,7 +66,10 @@ object EditorState {
     val keyboard = KeyboardController()
     val text = TextController()
     val bindables = EventBus[Any]()
-    val tip = TipController()
+    val toptip = TipController(Complex(15,0))
+    val bottomtip = TipController(Complex(15, 350))
+    val popover = PopoverController(400, 15, 15)
+    val playArea = svg.g()
 
     elt.amend(
       mouse,
@@ -71,7 +77,10 @@ object EditorState {
       hover,
       keyboard,
       text,
-      tip,
+      toptip,
+      bottomtip,
+      playArea,
+      popover,
       mouse.mouseEvents --> bindables,
       keyboard.keydowns --> bindables,
       keyboard.keyups --> bindables
@@ -83,10 +92,13 @@ object EditorState {
       hover,
       keyboard,
       text,
-      tip,
+      toptip,
+      bottomtip,
+      popover,
       bindables,
       $model,
       elt,
+      playArea,
       update
     )
   }
@@ -250,8 +262,8 @@ def getModel[Model]: Action[Model, Var[Model]] = ReaderT.ask.map(_.$model)
 def addChild[Model](child: SvgElement): Action[Model, Unit] = {
   val L = actionLiftIO[Model]
   for {
-    elt <- ReaderT.ask.map(_.elt)
-    _ <- L.liftIO(IO(elt.amend(child)))
+    playArea <- ReaderT.ask.map(_.playArea)
+    _ <- L.liftIO(IO(playArea.amend(child)))
   } yield ()
 }
 
@@ -309,7 +321,7 @@ def editTextBlocking[Model](
 def showTip[Model](s: String*): Action[Model, Unit] = {
   val L = actionLiftIO[Model]
   for {
-    tip <- ReaderT.ask.map(_.tip)
+    tip <- ReaderT.ask.map(_.toptip)
     _ <- L.liftIO(IO(tip.show(s*)))
   } yield ()
 }
@@ -317,7 +329,39 @@ def showTip[Model](s: String*): Action[Model, Unit] = {
 def hideTip[Model]: Action[Model, Unit] = {
   val L = actionLiftIO[Model]
   for {
-    tip <- ReaderT.ask.map(_.tip)
+    tip <- ReaderT.ask.map(_.toptip)
+    _ <- L.liftIO(IO(tip.hide()))
+  } yield ()
+}
+
+def showInfo[Model](s: String*): Action[Model, Unit] = {
+  val L = actionLiftIO[Model]
+  for {
+    tip <- ReaderT.ask.map(_.bottomtip)
+    _ <- L.liftIO(IO(tip.show(s*)))
+  } yield ()
+}
+
+def hideInfo[Model]: Action[Model, Unit] = {
+  val L = actionLiftIO[Model]
+  for {
+    tip <- ReaderT.ask.map(_.bottomtip)
+    _ <- L.liftIO(IO(tip.hide()))
+  } yield ()
+}
+
+def showPopover[Model](s: String*): Action[Model, Unit] = {
+  val L = actionLiftIO[Model]
+  for {
+    tip <- ReaderT.ask.map(_.popover)
+    _ <- L.liftIO(IO(tip.show(s*)))
+  } yield ()
+}
+
+def hidePopover[Model]: Action[Model, Unit] = {
+  val L = actionLiftIO[Model]
+  for {
+    tip <- ReaderT.ask.map(_.popover)
     _ <- L.liftIO(IO(tip.hide()))
   } yield ()
 }

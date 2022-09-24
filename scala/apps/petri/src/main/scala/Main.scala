@@ -17,6 +17,7 @@ import org.scalajs.dom
 import upickle.default._
 
 import Petris._
+import scala.collection.MapView.Keys
 
 type PropPetri = WithProps[LabelledReactionNet]
 type M[T] = Action[PropPetri, T]
@@ -52,7 +53,7 @@ val modifyRates: Action[PropPetri, Unit] =
       )
       _ <- v match {
         case Left(s)  => dragControl[PropPetri, S.type](Concentration, 0.1)(s)
-        case Right(t) => dragControl[PropPetri, T.type](Rate, 0.1)(t)
+        case Right(t) => dragControl[PropPetri, T.type](Rate, 0.01)(t)
       }
     } yield {}
   )
@@ -137,11 +138,11 @@ def tutorial: Action[PropPetri, Unit] = for {
   )
   _ <- Bindings(keyDown("Enter")).run
   _ <- showTip(
-    "Let's get started! Put your mouse anywhere in the box and press \"s\" to add a species."
+    "Let's get started! Put your mouse anywhere in this box and press \"s\" to add a species."
   )
   s <- Bindings(keyDown("s").andThen(addSpecies)).run.map(_.get)
   _ <- showTip(
-    "Great job! Now give a name to it by typing in the box and hitting escape when done."
+    "Great job! Now type a name and hit escape when you're done."
   )
   _ <- editStringAttrBlocking(S, SName)(s)
   _ <- showTip("You rock! (Enter to continue)")
@@ -168,8 +169,8 @@ def tutorial: Action[PropPetri, Unit] = for {
   _ <- dragControlLoop(
     s,
     Concentration,
-    "Now let's edit the concentration of that species you added.",
-    "To do this, hold control and drag on the species."
+    "Now we're going to edit the concentration of that species you added.",
+    "To do this, hold control and drag on the circle."
   )
   _ <- showTip("Fantastic! (Enter to continue)")
   _ <- Bindings(keyDown("Enter")).run
@@ -181,7 +182,7 @@ def tutorial: Action[PropPetri, Unit] = for {
   _ <- showTip(
     "Finally, you can drag the species and transition around to reposition them.",
     "You can also rename by double-clicking",
-    "Try it out, and then hit enter to continue when you've finished."
+    "Try it out, and then hit enter to continue when you're ready."
   )
   _ <- loopUntilPress(
     "Enter",
@@ -196,12 +197,29 @@ def tutorial: Action[PropPetri, Unit] = for {
   )
   _ <- showTip(
     "And that's pretty much it!",
-    "Remember, you can access the tutorial again with \"h\", or a quick reference with \"?\".",
+    "Remember, you can access the tutorial again with \"p\", or a quick reference with \"h\".",
     "Hit enter to get rid of this, and enable all keybindings."
   )
   _ <- Bindings(keyDown("Enter")).run
   _ <- hideTip
 } yield {}
+
+val helpText = """
+Keys:
+s: add species
+t: add transition
+d: delete hovered species/transition/arrow
+h: toggle quick help
+p: tutorial
+
+Click and drag to move around species/transitions
+
+Double-click to modify labels
+
+Shift-click and drag to add arrows
+
+Control-click and drag to modify rates/concentrations
+""".linesIterator.toSeq
 
 val bindings = Bindings[PropPetri, Unit](
   keyDown("s").andThen(addSpecies.flatMap(editStringAttr(S, SName))),
@@ -209,13 +227,23 @@ val bindings = Bindings[PropPetri, Unit](
   keyDown("d").andThen(remEntity),
   keyDown("Shift").andThen(arcLoop),
   keyDown("Control").andThen(modifyRates),
-  keyDown("h").andThen(tutorial),
+  keyDown("h").andThen(showPopoverUntil(helpText, keyDown("h"))),
+  keyDown("p").andThen(tutorial),
   clickOn(ClickType.Double, MouseButton.Left, S)
     .flatMap(editStringAttr(S, SName)),
   clickOn(ClickType.Single, MouseButton.Left, S).flatMap(dragEntity(S)),
   clickOn(ClickType.Double, MouseButton.Left, T)
     .flatMap(editStringAttr(T, TName)),
   clickOn(ClickType.Single, MouseButton.Left, T).flatMap(dragEntity(T))
+)
+
+val initBindings = Bindings[PropPetri, Unit](
+  keyDown("Escape").andThen(
+    for {
+      _ <- hideTip
+      _ <- bindings.runForever
+    } yield ()),
+  keyDown("p").andThen(tutorial).andThen(bindings.runForever)
 )
 
 val L = actionLiftIO[PropPetri]
@@ -324,7 +352,11 @@ object Main {
       drag <- ReaderT.ask.map(_.drag)
       mouse <- ReaderT.ask.map(_.mouse)
       _ <- addChild(renderPetri($model, hover, drag, mouse))
-      _ <- bindings.runForever
+      _ <- showTip(
+        "Click on this box, and hit p to play the tutorial!",
+        "Or if you're already a pro, hit escape to get to the normal editor"
+      )
+      _ <- initBindings.run
     } yield ()
 
     mountWithAction(el, WithProps[LabelledReactionNet](), serializer, action)
