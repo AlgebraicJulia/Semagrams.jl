@@ -14,6 +14,7 @@ ThisBuild / libraryDependencies ++= Seq(
   "org.typelevel" %%% "cats-core" % "2.8.0",
   "org.typelevel" %%% "cats-kernel" % "2.8.0",
   "org.typelevel" %%% "cats-effect" % "3.3.14",
+  "org.typelevel" %%% "cats-mtl" % "1.3.0",
   "dev.optics" %%% "monocle-core" % "3.1.0",
   "dev.optics" %%% "monocle-macro" % "3.1.0",
   "com.lihaoyi" %%% "utest" % "0.8.0" % "test",

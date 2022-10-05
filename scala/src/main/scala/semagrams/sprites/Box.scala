@@ -44,7 +44,7 @@ case class Box() extends Sprite {
   ): RenderedSprite = {
     val box = rect(
       geomUpdater(updates),
-      styleUpdater(updates),
+      styleUpdater(updates)
     )
     val text = L.svg.text(
       xy <-- updates.map(_(Center)),

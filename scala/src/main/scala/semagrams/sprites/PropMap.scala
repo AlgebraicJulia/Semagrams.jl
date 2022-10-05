@@ -27,7 +27,6 @@ case object End extends Property[Complex]
 case object Bend extends Property[Double]
 case object Pulse extends Property[Double]
 
-
 val allProperties: List[AbstractProperty] = List(
   Fill,
   Stroke,

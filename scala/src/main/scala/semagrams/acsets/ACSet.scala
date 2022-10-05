@@ -46,7 +46,10 @@ abstract class AbstractHom {
   val codom: Ob
 }
 
-abstract class Hom[Dom <: Ob, Codom <: Ob] extends AbstractHom {}
+abstract class Hom[Dom <: Ob, Codom <: Ob] extends AbstractHom {
+  override val dom: Dom
+  override val codom: Codom
+}
 
 abstract class AttrType {
   type Value
@@ -64,7 +67,10 @@ abstract class AbstractAttr {
   val dom: Ob
   val codom: AttrType
 }
-abstract class Attr[Dom <: Ob, Codom] extends AbstractAttr
+abstract class Attr[Dom <: Ob, Codom] extends AbstractAttr {
+  override val dom: Dom
+  override val codom: AttrType { type Value = Codom }
+}
 
 /** A Schema is simply a bunch of object, morphisms, attributes, and attrtypes.
   *

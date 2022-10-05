@@ -22,6 +22,8 @@ import scala.collection.MapView.Keys
 type PropPetri = WithProps[LabelledReactionNet]
 type M[T] = Action[PropPetri, T]
 
+val ops = Action.ops[PropPetri]
+
 val arcLoop: Action[PropPetri, Unit] =
   loopDuringPress(
     "Shift",
@@ -99,7 +101,7 @@ def dragInputLoop(s: Elt[S.type], t: Elt[T.type]): Action[PropPetri, Unit] =
           .intersect($model.now().incident(IT, t))
           .nonEmpty
       ) {
-        Action.pure[PropPetri, Unit](())
+        ops.pure(())
       } else {
         for {
           _ <- showTip("Whoops, try again! (Enter to continue)")
@@ -115,7 +117,7 @@ def dragControlLoop[X <: Ob](
     texts: String*
 ): Action[PropPetri, Unit] = for {
   $model <- getModel
-  init <- Action.pure($model.now().subpart(attr, s))
+  init <- ops.pure($model.now().subpart(attr, s))
   _ <- showTip(texts*)
   _ <- Bindings(keyDown("Control").andThen(modifyRates)).run
   _ <-
@@ -126,7 +128,7 @@ def dragControlLoop[X <: Ob](
         _ <- dragControlLoop(s, attr, texts*)
       } yield ()
     } else {
-      Action.pure[PropPetri, Unit](())
+      ops.pure(())
     }
 } yield ()
 
@@ -255,8 +257,6 @@ val initBindings = Bindings[PropPetri, Unit](
     } yield ()),
   keyDown("p").andThen(tutorial).andThen(bindings.runForever)
 )
-
-val L = actionLiftIO[PropPetri]
 
 def arcExtractor(p: PropPetri, sprites: Sprites) = {
   val bends = assignBends(List((I, IS, IT, 1), (O, OS, OT, -1)), p, 0.3)

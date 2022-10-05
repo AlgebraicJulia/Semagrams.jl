@@ -9,6 +9,10 @@ import semagrams.text._
 import semagrams.sprites._
 import cats.data._
 import cats.effect._
+import cats.syntax.all._
+import cats.effect.syntax.all._
+
+import Action.ops
 
 def addEntityPos[A: ACSet, X <: Ob](
     x: X,
@@ -35,13 +39,12 @@ def dragEdge[A: ACSet, X <: Ob, Y <: Ob, Z <: Ob](
     tgt: Hom[X, Z],
     s: Elt[Y]
 )(implicit withPropsACSet: ACSet[WithProps[A]]): Action[WithProps[A], Unit] = {
-  val L = actionLiftIO[WithProps[A]]
   for {
-    drag <- Kleisli.ask.map(_.drag)
-    $model <- Kleisli.ask.map(_.$model)
+    drag <- ops[WithProps[A]].ask.map(_.drag)
+    $model <- ops[WithProps[A]].ask.map(_.$model)
     p <- mousePos
     e <- updateModelS[WithProps[A], Elt[X]](for {
-      e <- addPartWP(src.dom.asInstanceOf[X], PropMap() + (End, p))
+      e <- addPartWP(src.dom, PropMap() + (End, p))
       _ <- setSubpart(src, e, s)
     } yield e)
     _ <- (for {
@@ -49,7 +52,7 @@ def dragEdge[A: ACSet, X <: Ob, Y <: Ob, Z <: Ob](
       t <- fromMaybe(hoveredPart(tgt.codom.asInstanceOf[Z]))
       _ <- updateModelS[WithProps[A], Unit](setSubpart(tgt, e, t))
     } yield ()).onCancelOrError(for {
-      _ <- L.liftIO(IO(drag.$state.set(None)))
+      _ <- ops.delay(drag.$state.set(None))
       _ <- updateModelS[WithProps[A], Unit](remPart(e))
     } yield ())
     _ <- update
@@ -59,16 +62,14 @@ def dragEdge[A: ACSet, X <: Ob, Y <: Ob, Z <: Ob](
 def dragControl[A: ACSet, X <: Ob](attr: Attr[X, Double], increment: Double)(
     v: Elt[X]
 ): Action[A, Unit] = {
-  val L = actionLiftIO[A]
   for {
-    drag <- Kleisli.ask.map(_.drag)
-    $model <- Kleisli.ask.map(_.$model)
-    info <- Kleisli.ask.map(_.bottomtip)
+    drag <- ops[A].ask.map(_.drag)
+    $model <- ops[A].ask.map(_.$model)
+    info <- ops[A].ask.map(_.bottomtip)
     p <- mousePos
-    init <- L.liftIO(IO($model.now().subpart(attr, v).get))
-    _ <- L.liftIO(IO(info.show(attr.toString() + ": " + "%.2f".format(init))))
-    _ <- drag
-      .drag(
+    init <- ops.delay($model.now().subpart(attr, v).get)
+    _ <- ops.delay(info.show(attr.toString() + ": " + "%.2f".format(init)))
+    _ <- drag.drag(
         Observer(q => {
           val newval = (init + (p.y - q.y) * increment).max(0)
           $model.update(
@@ -78,7 +79,7 @@ def dragControl[A: ACSet, X <: Ob](attr: Attr[X, Double], increment: Double)(
         })
       )
       .onCancelOrError(for {
-        _ <- L.liftIO(IO(drag.$state.set(None)))
+        _ <- ops[A].delay(drag.$state.set(None))
         _ <- hideInfo
       } yield ())
     _ <- hideInfo
@@ -90,18 +91,18 @@ def loopDuringPress[A: ACSet](
     key: String,
     action: Action[WithProps[A], Unit]
 ): Action[WithProps[A], Unit] = for {
-  target <- action.forever.start
+  target <- ops[WithProps[A]].foreverM(action).start
   _ <- Bindings(keyUp(key)).run
-  _ <- Kleisli(_ => target.cancel)
+  _ <- target.cancel
 } yield {}
 
 def loopUntilPress[A: ACSet](
     key: String,
     action: Action[WithProps[A], Unit]
 ): Action[WithProps[A], Unit] = for {
-  target <- action.forever.start
+  target <- ops[WithProps[A]].foreverM(action).start
   _ <- Bindings(keyDown(key)).run
-  _ <- Kleisli(_ => target.cancel)
+  _ <- target.cancel
 } yield {}
 
 def dragEdgeLoop[A: ACSet, X <: Ob, Y <: Ob, Z <: Ob](

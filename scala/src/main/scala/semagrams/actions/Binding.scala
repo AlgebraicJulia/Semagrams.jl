@@ -113,7 +113,10 @@ object Bindings {
   )
 }
 
-def showPopoverUntil[Model](lines: Seq[String], binding: Binding[Model, Unit]): Action[Model, Unit] = for {
+def showPopoverUntil[Model](
+    lines: Seq[String],
+    binding: Binding[Model, Unit]
+): Action[Model, Unit] = for {
   _ <- showPopover(lines*)
   _ <- Bindings(binding).run
   _ <- hidePopover

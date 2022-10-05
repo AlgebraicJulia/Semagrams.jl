@@ -33,16 +33,18 @@ case class PopoverController(
           ),
           svg.text(
             xy := pos + Complex(innerSep, innerSep),
-            lines.map(line => if line == "" then " " else line).map(line =>
-              svg.tspan(
-                textToNode(line),
-                svg.dy := "1.2em",
-                svg.x := (pos.x + innerSep).toString,
-                svg.textAnchor := "start",
-                svg.dominantBaseline := "hanging",
-                svg.style := "user-select: none"
+            lines
+              .map(line => if line == "" then " " else line)
+              .map(line =>
+                svg.tspan(
+                  textToNode(line),
+                  svg.dy := "1.2em",
+                  svg.x := (pos.x + innerSep).toString,
+                  svg.textAnchor := "start",
+                  svg.dominantBaseline := "hanging",
+                  svg.style := "user-select: none"
+                )
               )
-            )
           )
         )
       }).getOrElse(svg.g()))

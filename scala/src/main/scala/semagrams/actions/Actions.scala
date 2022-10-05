@@ -5,7 +5,10 @@ import cats.Monad
 import cats.MonadError
 import cats.data._
 import cats.effect._
+import cats.syntax.all._
+import cats.effect.syntax.all._
 import cats.effect.unsafe.IORuntime
+import cats.mtl.Local
 import cats.instances.stream
 import com.raquo.airstream.core.Transaction
 import com.raquo.laminar.api.L._
@@ -66,7 +69,7 @@ object EditorState {
     val keyboard = KeyboardController()
     val text = TextController()
     val bindables = EventBus[Any]()
-    val toptip = TipController(Complex(15,0))
+    val toptip = TipController(Complex(15, 0))
     val bottomtip = TipController(Complex(15, 350))
     val popover = PopoverController(400, 15, 15)
     val playArea = svg.g()
@@ -107,26 +110,9 @@ object EditorState {
 type Action[Model, A] = ReaderT[IO, EditorState[Model], A]
 
 extension [Model, A](action: Action[Model, A]) {
-  def bracket[B](
-      f: A => Action[Model, B]
-  )(g: A => Action[Model, Unit]): Action[Model, B] = {
-    Action(es => action(es).bracket(a => f(a)(es))(a => g(a)(es)))
-  }
-
   def toOption: Action[Model, Option[A]] = {
     Action(es => action(es).map(Some(_)).handleError(_ => None))
   }
-
-  def start: Action[Model, Fiber[IO, Throwable, A]] =
-    Action[Model, Fiber[IO, Throwable, A]](es => action(es).start)
-
-  def forever: Action[Model, Unit] = {
-    val T = implicitly[Monad[Action[Model, _]]]
-    T.foreverM(action)
-  }
-
-  def onCancel(fin: Action[Model, Unit]) =
-    Action[Model, A](es => action(es).onCancel(fin(es)))
 
   def onCancelOrError(fin: Action[Model, A]) =
     Action[Model, A](es =>
@@ -135,14 +121,22 @@ extension [Model, A](action: Action[Model, A]) {
 }
 
 object Action {
-  def pure[Model, A](a: A) = Kleisli.pure[IO, EditorState[Model], A](a)
-
   def apply[Model, A](f: EditorState[Model] => IO[A]): Action[Model, A] =
     Kleisli[IO, EditorState[Model], A](f)
+
+  def ops[Model]: ActionOps[Model] = {
+    new ActionOps[Model]()
+  }
 }
 
-implicit def actionLiftIO[Model]: LiftIO[Action[Model, _]] =
-  LiftIO.catsKleisliLiftIO
+import Action.ops
+
+class ActionOps[Model] {
+  val asyncImpl = Async.asyncForKleisli[IO, EditorState[Model]]
+  export asyncImpl.*
+  val localImpl = Local.baseLocalForKleisli[IO, EditorState[Model]]
+  export localImpl.{ask, local}
+}
 
 def runAction[Model](
     state: EditorState[Model],
@@ -165,9 +159,8 @@ extension [A](x: Option[A]) {
 def actionMonadError[Model]: MonadError[Action[Model, _], Throwable] =
   Kleisli.catsDataMonadErrorForKleisli
 
-def fromMaybe[Model, A](a: Action[Model, Option[A]]): Action[Model, A] = {
+def fromMaybe[Model, A](a: Action[Model, Option[A]]): Action[Model, A] =
   a.flatMap(_.unwrap)
-}
 
 /** This takes in an event stream and a callback, and provides a binder that
   * will bind the next event thrown by the event stream to be passed into the
@@ -212,73 +205,61 @@ def bind[T, El <: ReactiveElement.Base](
   * but crucially it does *not* block the main thread, so other stuff can go on
   * while the "local thread" is waiting for the next event.
   */
-def nextEvent[Model, A](stream: EventStream[A]): Action[Model, A] = {
-  val L = actionLiftIO[Model]
-  for {
-    elt <- ReaderT.ask.map(_.elt)
-    evt <- L.liftIO[A](IO.async_(cb => elt.amend(bind(stream, cb))))
-  } yield evt
-}
+def nextEvent[Model, A](stream: EventStream[A]): Action[Model, A] = for {
+  elt <- ops[Model].ask.map(_.elt)
+  evt <- ops.async_[A](cb => elt.amend(bind(stream, cb)))
+} yield evt
 
 def nextKeydown[Model]: Action[Model, KeyboardEvent] = for {
-  keyboard <- ReaderT.ask.map(_.keyboard)
+  keyboard <- ops[Model].ask.map(_.keyboard)
   evt <- nextEvent(keyboard.keydowns.events)
 } yield evt
 
 def nextKey[Model]: Action[Model, String] = nextKeydown.map(_.key)
 
 def nextKeydownIn[Model](set: Set[String]): Action[Model, KeyboardEvent] = for {
-  keyboard <- ReaderT.ask.map(_.keyboard)
+  keyboard <- ops[Model].ask.map(_.keyboard)
   evt <- nextEvent(keyboard.keydowns.events.filter(evt => set(evt.key)))
 } yield evt
 
-def updateModel[Model](f: Model => Model): Action[Model, Unit] = {
-  val L = actionLiftIO[Model]
-  for {
-    $model <- ReaderT.ask.map(_.$model)
-    _ <- L.liftIO(IO($model.update(f)))
-  } yield {}
-}
+def updateModel[Model](f: Model => Model): Action[Model, Unit] = for {
+  $model <- ops[Model].ask.map(_.$model)
+  _ <- ops.delay($model.update(f))
+} yield {}
 
-def updateModelS[Model, A](updater: State[Model, A]): Action[Model, A] = {
-  val L = actionLiftIO[Model]
-  for {
-    $model <- ReaderT.ask.map(_.$model)
-    a <- L.liftIO(IO.async_[A] { cb =>
-      {
-        new Transaction({ _ =>
-          val model = $model.now()
-          val (newModel, a) = updater.run(model).value
-          $model.set(newModel)
-          cb(Right(a))
-        })
-      }
-    })
-  } yield a
-}
+def updateModelS[Model, A](updater: State[Model, A]): Action[Model, A] = for {
+  $model <- ops[Model].ask.map(_.$model)
+  a <- ops.async_[A] { cb =>
+    {
+      new Transaction({ _ =>
+        val model = $model.now()
+        val (newModel, a) = updater.run(model).value
+        $model.set(newModel)
+        cb(Right(a))
+      })
+    }
+  }
+} yield a
 
 def getModel[Model]: Action[Model, Var[Model]] = ReaderT.ask.map(_.$model)
 
-def addChild[Model](child: SvgElement): Action[Model, Unit] = {
-  val L = actionLiftIO[Model]
-  for {
-    playArea <- ReaderT.ask.map(_.playArea)
-    _ <- L.liftIO(IO(playArea.amend(child)))
-  } yield ()
-}
+def addChild[Model](child: SvgElement): Action[Model, Unit] = for {
+  playArea <- ops[Model].ask.map(_.playArea)
+  _ <- ops.delay(playArea.amend(child))
+} yield ()
 
 def mousePos[Model]: Action[Model, Complex] =
-  ReaderT.ask.map(_.mouse.$state.now().pos)
+  ops.ask.map(_.mouse.$state.now().pos)
 
 def mouseDown[Model](b: MouseButton): Action[Model, Option[Entity]] = for {
-  mouse <- ReaderT.ask.map(_.mouse)
+  mouse <- ops[Model].ask.map(_.mouse)
   ent <- nextEvent(mouse.mouseEvents.events.collect({
     case MouseEvent.MouseDown(pos, `b`) => pos
   }))
 } yield ent
 
 def hovered[Model]: Action[Model, Option[Entity]] =
-  ReaderT.ask.map(_.hover.$state.now().state)
+  ops.ask.map(_.hover.$state.now().state)
 
 def hoveredPart[Model, X <: Ob](x: X): Action[Model, Option[Elt[X]]] =
   hovered.map(_.flatMap(_.asElt(x)))
@@ -288,87 +269,60 @@ def getClick[X <: Ob, Model](x: X): Action[Model, Elt[X]] = for {
   i <- ent.asElt(x).unwrap(actionMonadError[Model])
 } yield i
 
-def update[Model]: Action[Model, Unit] = {
-  val L = actionLiftIO[Model]
-  for {
-    updateFun <- ReaderT.ask.map(_.update)
-    _ <- L.liftIO(IO(updateFun()))
-  } yield ()
-}
+def update[Model]: Action[Model, Unit] = for {
+  updateFun <- ops[Model].ask.map(_.update)
+  _ <- ops.delay(updateFun())
+} yield ()
 
 def editText[Model](
     listener: Observer[String],
     init: String
-): Action[Model, Unit] = {
-  val L = actionLiftIO[Model]
+): Action[Model, Unit] =
   for {
-    text <- ReaderT.ask.map(_.text)
-    _ <- L.liftIO(IO(text.editText(listener, init)))
+    text <- ops[Model].ask.map(_.text)
+    _ <- ops.delay(text.editText(listener, init))
   } yield ()
-}
 
 def editTextBlocking[Model](
     listener: Observer[String],
     init: String
-): Action[Model, Unit] = {
-  val L = actionLiftIO[Model]
+): Action[Model, Unit] =
   for {
-    text <- ReaderT.ask.map(_.text)
-    _ <- L.liftIO(IO.async_(cb => text.editTextBlocking(listener, init, () => cb(Right(())))))
+    text <- ops[Model].ask.map(_.text)
+    _ <- ops.async_(cb =>
+      text.editTextBlocking(listener, init, () => cb(Right(())))
+    )
   } yield ()
-}
 
-def showTip[Model](s: String*): Action[Model, Unit] = {
-  val L = actionLiftIO[Model]
-  for {
-    tip <- ReaderT.ask.map(_.toptip)
-    _ <- L.liftIO(IO(tip.show(s*)))
-  } yield ()
-}
+def showTip[Model](s: String*): Action[Model, Unit] = for {
+  tip <- ops[Model].ask.map(_.toptip)
+  _ <- ops.delay(tip.show(s*))
+} yield ()
 
-def hideTip[Model]: Action[Model, Unit] = {
-  val L = actionLiftIO[Model]
-  for {
-    tip <- ReaderT.ask.map(_.toptip)
-    _ <- L.liftIO(IO(tip.hide()))
-  } yield ()
-}
+def hideTip[Model]: Action[Model, Unit] = for {
+  tip <- ops[Model].ask.map(_.toptip)
+  _ <- ops.delay(tip.hide())
+} yield ()
 
-def showInfo[Model](s: String*): Action[Model, Unit] = {
-  val L = actionLiftIO[Model]
-  for {
-    tip <- ReaderT.ask.map(_.bottomtip)
-    _ <- L.liftIO(IO(tip.show(s*)))
-  } yield ()
-}
+def showInfo[Model](s: String*): Action[Model, Unit] = for {
+  tip <- ops[Model].ask.map(_.bottomtip)
+  _ <- ops.delay(tip.show(s*))
+} yield ()
 
-def hideInfo[Model]: Action[Model, Unit] = {
-  val L = actionLiftIO[Model]
-  for {
-    tip <- ReaderT.ask.map(_.bottomtip)
-    _ <- L.liftIO(IO(tip.hide()))
-  } yield ()
-}
+def hideInfo[Model]: Action[Model, Unit] = for {
+  tip <- ops[Model].ask.map(_.bottomtip)
+  _ <- ops.delay(tip.hide())
+} yield ()
 
-def showPopover[Model](s: String*): Action[Model, Unit] = {
-  val L = actionLiftIO[Model]
-  for {
-    tip <- ReaderT.ask.map(_.popover)
-    _ <- L.liftIO(IO(tip.show(s*)))
-  } yield ()
-}
+def showPopover[Model](s: String*): Action[Model, Unit] = for {
+  tip <- ops[Model].ask.map(_.popover)
+  _ <- ops.delay(tip.show(s*))
+} yield ()
 
-def hidePopover[Model]: Action[Model, Unit] = {
-  val L = actionLiftIO[Model]
-  for {
-    tip <- ReaderT.ask.map(_.popover)
-    _ <- L.liftIO(IO(tip.hide()))
-  } yield ()
-}
+def hidePopover[Model]: Action[Model, Unit] = for {
+  tip <- ops[Model].ask.map(_.popover)
+  _ <- ops.delay(tip.hide())
+} yield ()
 
-def delay[Model](seconds: Double): Action[Model, Unit] = {
-  val L = actionLiftIO[Model]
-  L.liftIO(
-    IO.async_(cb => dom.window.setTimeout(() => cb(Right(())), seconds * 1000))
-  )
-}
+def delay[Model](seconds: Double): Action[Model, Unit] =
+  ops.async_(cb => dom.window.setTimeout(() => cb(Right(())), seconds * 1000))
