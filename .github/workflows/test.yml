@@ -2,10 +2,10 @@ on:
   push:
     branches: next
 
-name: Tests
+name: Build and Test
 
 jobs:
-  build-deploy:
+  test:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
