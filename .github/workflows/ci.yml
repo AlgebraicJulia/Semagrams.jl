@@ -46,7 +46,8 @@ jobs:
       - name: Get shorthash
         id: shorthash
         run: |
-          echo "::set-output name=sh::$(git rev-parse --short $GITHUB_SHA)"
+          hash=$(git rev-parse --short "$GITHUB_SHA")
+          echo "::set-output name=sh::$hash"
 
       - name: Copy files to bucket
         run: |
