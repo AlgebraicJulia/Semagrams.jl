@@ -1,4 +1,4 @@
-pages = [{"l":"index.html#","e":false,"n":"core","t":"core","d":"","k":"static"},
+pages = [{"l":"index.html#","e":false,"n":"semagrams","t":"semagrams","d":"","k":"static"},
 {"l":"semagrams.html#","e":false,"n":"semagrams","t":"semagrams","d":"semagrams","k":"package"},
 {"l":"semagrams.html#baseSvg-0","e":false,"n":"baseSvg","t":"baseSvg: ReactiveSvgElement[SVG]","d":"semagrams","k":"def"},
 {"l":"semagrams.html#mountWithAction-31f","e":false,"n":"mountWithAction","t":"mountWithAction[Model](parentDiv: Element, initModel: Model, serializer: ReadWriter[Model], action: Action[Model, Unit]): Unit","d":"semagrams","k":"def"},
