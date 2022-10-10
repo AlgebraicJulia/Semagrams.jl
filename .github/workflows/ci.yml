@@ -51,7 +51,7 @@ jobs:
 
       - name: Copy files to bucket
         run: |
-          hash=${{ steps.shorthash.output.sh }}
+          hash=${{ steps.shorthash.outputs.sh }}
           mkdir -p build/$hash/petri
           cp scala/out/apps/petri/fullLinkJS.dest/* build/$hash/petri/
           aws s3 sync build/ s3://semagrams-builds
@@ -61,4 +61,4 @@ jobs:
         with:
           body: |
             Find compiled javascript for
-            - [Petri app](https://semagrams-builds.s3.amazonaws.com/${{ steps.shorthash.output.sh }}/petri/main.js)
+            - [Petri app](https://semagrams-builds.s3.amazonaws.com/${{ steps.shorthash.outputs.sh }}/petri/main.js)
