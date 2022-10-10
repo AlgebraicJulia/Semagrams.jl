@@ -15,7 +15,7 @@ def defaultPomSettings(desc: String) = PomSettings(
   )
 )
 
-trait Defaults extends ScalaJSModule {
+trait Defaults extends ScalaJSModule with PublishModule {
   def scalaVersion = "3.1.3"
   def scalaJSVersion = "1.11.0"
 
@@ -40,10 +40,19 @@ trait Defaults extends ScalaJSModule {
   def desc: String
 
   def pomSettings = defaultPomSettings(desc)
+
+  def publishVersion = "0.3.0-SNAPSHOT"
+
+  def sonatypeUri = "https://s01.oss.sonatype.org/service/local"
+
+  def sonatypeSnapshotUri = "https://s01.oss.sonatype.org/content/repositories/snapshots"
 }
 
 object core extends Defaults {
   def desc = "A library for semantic diagrams"
+
+  def artifactName = "semagrams"
+
   object test extends Tests with TestModule.Utest {
     def ivyDeps = Agg(ivy"com.lihaoyi::utest::0.8.0")
   }
@@ -56,6 +65,8 @@ trait SemagramsApp extends Defaults {
 object apps extends Module {
   object petri extends SemagramsApp {
     def desc = "A petri net editor implemented with semagrams"
+
+    def artifactName = "semagrams-petri"
   }
   object graph extends SemagramsApp {
     def desc = "A graph editor implemented with semagrams"
