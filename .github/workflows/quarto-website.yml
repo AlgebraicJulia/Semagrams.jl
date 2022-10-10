@@ -17,7 +17,7 @@ jobs:
         uses: quarto-dev/quarto-actions/setup@v2
 
       - name: Set up Mill
-        uses: jodersky/setup-mill
+        uses: jodersky/setup-mill@master
         with:
           mill-version: '0.10.5'
 
