@@ -2,6 +2,18 @@ import mill._
 import mill.scalalib._
 import mill.scalajslib._
 import mill.scalajslib.api._
+import mill.scalalib.publish._
+
+def defaultPomSettings(desc: String) = PomSettings(
+  description = desc,
+  organization = "org.algebraicjulia",
+  url = "https://github.com/AlgebraicJulia/Semagrams.jl",
+  licenses = Seq(License.MIT),
+  versionControl = VersionControl.github("AlgebraicJulia", "Semagrams.jl"),
+  developers = Seq(
+    Developer("olynch", "Owen Lynch", "https://owenlynch.org")
+  )
+)
 
 trait Defaults extends ScalaJSModule {
   def scalaVersion = "3.2.0"
@@ -24,9 +36,14 @@ trait Defaults extends ScalaJSModule {
     ivy"dev.optics::monocle-core::3.1.0",
     ivy"dev.optics::monocle-macro::3.1.0",
   )
+
+  def desc: String
+
+  def pomSettings = defaultPomSettings(desc)
 }
 
 object core extends Defaults {
+  def desc = "A library for semantic diagrams"
   object test extends Tests with TestModule.Utest {
     def ivyDeps = Agg(ivy"com.lihaoyi::utest::0.8.0")
   }
@@ -37,6 +54,10 @@ trait SemagramsApp extends Defaults {
 }
 
 object apps extends Module {
-  object petri extends SemagramsApp
-  object graph extends SemagramsApp
+  object petri extends SemagramsApp {
+    def desc = "A petri net editor implemented with semagrams"
+  }
+  object graph extends SemagramsApp {
+    def desc = "A graph editor implemented with semagrams"
+  }
 }
