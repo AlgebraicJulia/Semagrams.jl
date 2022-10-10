@@ -11,13 +11,12 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v3
 
-      - name: Set up SBT
-        uses: actions/setup-java@v3
+      - name: Set up Mill
+        uses: jodersky/setup-mill
         with:
-          distribution: 'temurin'
-          java-version: '17'
-          cache: 'sbt'
+          mill-version: '0.10.5'
 
       - run: |
           cd scala
-          sbt test
+          mill core.test
+          mill apps.petri.compile
