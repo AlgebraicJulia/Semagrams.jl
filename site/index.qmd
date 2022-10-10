@@ -4,9 +4,9 @@ title: "Semagrams"
 
 # About
 
-Semagrams is a tool for interacting with **sema**ntic picto**grams**. Semantic pictograms are graphical representations of data that have "teeth"; i.e. where there is a *formal* and *machine-readable* correspondence between the graphical display and the semantic meaning.
+Semagrams is a tool for interacting with **sema**ntic dia**grams**. Semantic diagrams are graphical representations of data that have "teeth"; i.e. where there is a *formal* and *machine-readable* correspondence between the graphical display and the semantic meaning.
 
-The primary component of Semagrams is a Scala.js library that provides components for creating interactive web-based UIs that manipulate semantic pictograms. However, there is also a Julia library that provides a backend that allows Semagrams to interact with Catlab, so that Semagrams can be an interface for scientific computing.
+The primary component of Semagrams is a Scala.js library that provides components for creating interactive web-based UIs that manipulate semantic diagrams. However, there is also a Julia library that provides a backend that allows Semagrams to interact with Catlab, so that Semagrams can be an interface for scientific computing.
 
 # Core Concepts
 
