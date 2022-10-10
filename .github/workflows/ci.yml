@@ -1,6 +1,6 @@
 on:
   push:
-    branches: next
+    branches: main
 
 name: Build and Test
 
