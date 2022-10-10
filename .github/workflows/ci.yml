@@ -43,9 +43,21 @@ jobs:
           cd scala
           mill apps.petri.fullLinkJS
 
+      - name: Get shorthash
+        id: shorthash
+        run: |
+          echo "::set-output name=sh::$(git rev-parse --short $GITHUB_SHA)"
+
       - name: Copy files to bucket
         run: |
-          git_hash=$(git rev-parse --short "$GITHUB_SHA")
-          mkdir -p build/$git_hash/petri
-          cp scala/out/apps/petri/fullLinkJS.dest/* build/$git_hash/petri/
+          hash=${{ steps.shorthash.output.sh }}
+          mkdir -p build/$hash/petri
+          cp scala/out/apps/petri/fullLinkJS.dest/* build/$hash/petri/
           aws s3 sync build/ s3://semagrams-builds
+
+      - name: Create link to files in commit
+        uses: peter-evans/commit-comment@v2
+        with:
+          body: |
+            Find compiled javascript for
+            - [Petri app](https://semagrams-builds.s3.amazonaws.com/${{ steps.shorthash.output.sh }}/petri/main.js)
