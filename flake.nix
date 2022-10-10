@@ -17,6 +17,7 @@
             openjdk
             metals
             bloop
+            mill
           ];
           shellHook = "export PATH=$PWD/node_modules/.bin:$PATH";
         };
