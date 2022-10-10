@@ -1,6 +1,8 @@
 on:
   push:
-    branches: next
+    branches:
+      - next
+      - main
 
 name: Render and Publish
 
@@ -14,13 +16,11 @@ jobs:
       - name: Set up Quarto
         uses: quarto-dev/quarto-actions/setup@v2
 
-      - name: Set up SBT
-        uses: actions/setup-java@v3
+      - name: Set up Mill
+        uses: jodersky/setup-mill
         with:
-          distribution: 'temurin'
-          java-version: '17'
-          cache: 'sbt'
-      
+          mill-version: '0.10.5'
+
       - name: Publish to GitHub Pages (and render)
         uses: quarto-dev/quarto-actions/render@v2
         with:
@@ -28,16 +28,15 @@ jobs:
 
       - run: |
           cd scala
-          sbt doc
+          mill core.docJar
 
       - run: |
-          mkdir -p next/next
-          mv site/_site/* next/next/
-          mv scala/target/scala-3.1.3/api next/next/scaladoc
+          mkdir -p dest
+          mv site/_site/* dest
+          mv scala/out/core/docJar.dest/javadoc dest/scaladoc
 
       - name: GitHub Pages action
         uses: peaceiris/actions-gh-pages@v3.7.3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          keep_files: true
-          publish_dir: next
+          publish_dir: dest

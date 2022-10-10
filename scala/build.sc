@@ -16,7 +16,7 @@ def defaultPomSettings(desc: String) = PomSettings(
 )
 
 trait Defaults extends ScalaJSModule {
-  def scalaVersion = "3.2.0"
+  def scalaVersion = "3.1.3"
   def scalaJSVersion = "1.11.0"
 
   def scalacOptions = Seq("-Ykind-projector:underscores")
