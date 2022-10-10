@@ -23,3 +23,5 @@
 /.direnv/
 /.bsp/
 /scala/node_modules/
+/scala/dist/
+/scala/out/
