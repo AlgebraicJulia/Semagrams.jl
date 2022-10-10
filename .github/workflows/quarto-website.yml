@@ -1,0 +1,42 @@
+on:
+  push:
+    branches:
+      - next
+      - main
+
+name: Render and Publish
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Set up Quarto
+        uses: quarto-dev/quarto-actions/setup@v2
+
+      - name: Set up Mill
+        uses: jodersky/setup-mill@master
+        with:
+          mill-version: '0.10.5'
+
+      - name: Publish to GitHub Pages (and render)
+        uses: quarto-dev/quarto-actions/render@v2
+        with:
+          path: site
+
+      - run: |
+          cd scala
+          mill core.docJar
+
+      - run: |
+          mkdir -p dest
+          mv site/_site/* dest
+          mv scala/out/core/docJar.dest/javadoc dest/scaladoc
+
+      - name: GitHub Pages action
+        uses: peaceiris/actions-gh-pages@v3.7.3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: dest

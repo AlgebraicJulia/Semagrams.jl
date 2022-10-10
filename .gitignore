@@ -15,3 +15,13 @@
 /next/semagrams/.scalafmt.conf
 /next/.direnv/
 /next/.envrc
+
+/.quarto/
+/target/
+/site/_site/
+/project/
+/.direnv/
+/.bsp/
+/scala/node_modules/
+/scala/dist/
+/scala/out/

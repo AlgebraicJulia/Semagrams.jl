@@ -1,0 +1,67 @@
+---
+title: "Semagrams"
+---
+
+# About
+
+Semagrams is a tool for interacting with **sema**ntic picto**grams**. Semantic pictograms are graphical representations of data that have "teeth"; i.e. where there is a *formal* and *machine-readable* correspondence between the graphical display and the semantic meaning.
+
+The primary component of Semagrams is a Scala.js library that provides components for creating interactive web-based UIs that manipulate semantic pictograms. However, there is also a Julia library that provides a backend that allows Semagrams to interact with Catlab, so that Semagrams can be an interface for scientific computing.
+
+# Core Concepts
+
+## Entities
+
+The core idea behind Semagrams is that most diagrams used in mathematics and science can be seen as describing relationships between logical **entities**.
+
+For instance, a **graph** has two types of entities: vertices and edges. An edge has two relationships with vertices: it has a source vertex and a target vertex.
+
+Entities can also have **attributes**, such as labels or numerical data.
+
+## Sprites
+
+In order to display collections of entities and relations on the screen, we assign each type of entity to a graphical representation, which we call a **sprite**. Then the relationships between the entities *constrain* how their corresponding sprites are displayed on the screen.
+
+For instance, we might assign a circular sprite to each vertex in a graph, and a line to each edge. Then there are constraints that say that one end of the line must be connected to the sprite corresponding to the source of the edge, and the other end must be connected to the sprite corresponding to the target.
+
+Finally, attributes of an entity translate into graphical properties of the sprites. For instance, a numerical attribute could be translated into the color of the sprite, or a textual attribute into a label for the sprite.
+
+Note that the mapping from logical descriptions of entities and relations to graphical representations is many-to-one; there are many valid ways to lay out a picture. In Semagrams, we will use both manual layout (dragging the sprites to the desired positions) and automatic layout (running an algorithm to determine some sort of "optimal" layout).
+
+In Semagrams Legacy, there were hardcoded and special-cased in certain types of entities and certain corresponding sprite types, for boxes, ports, and wires; one of the innovations of new Semagrams is to treat entities and sprites fully generically.
+
+## Actions
+
+Another innovation of new Semagrams is a rich language for describing **actions**. An action is a description of an interaction with Semagrams, which can include
+
+- Keypresses
+- Mouse movement
+- Selection of entities
+- Communication with external APIs (such as Julia)
+- Adding/deleting entities
+- Changing entity relations
+
+This action language uses monads in Scala in order to describe complex interactions with ease. For instance, the interaction of creating an edges might be coded as
+
+```scala
+for {
+  _ <- displayPrompt("Click on the source")
+  s <- selectEntity[V]
+  _ <- displayPrompt("Click on the target")
+  t <- selectEntity[V]
+  e <- makeEdge(s,t)
+  _ <- displayPromptTimed("Edge created!", 1)
+} yield e
+```
+
+Crucially, the action language allows *asynchronous* interaction to be represented without explicit callbacks or state machines. What `selectEntity[V]` actually does here is register a callback for the next time that the user clicks on an entity of type `V`, and when that callback is called, it continues with the rest of the interaction.
+
+Writing this sort of thing out explicitly would be a huge pain; monads allow us to pretend like these asynchronous calls are in fact synchronous, and the code is simply waiting until the user clicks.
+
+Essentially, actions form a DSL for scripting Semagrams; this DSL is what will make Semagrams very flexible and capable of rapidly being adapted to different use scenarios.
+
+# History
+
+I (Owen Lynch) have been playing around with antecedents for Semagrams for years; it has long been my ambition to create something like this. The first "ancestor" of Semagrams was [IGE](https://github.com/olynch/ige), the Interactive Graph Editor, which was written in Haskell.
+
+The more direct ancestor of Semagrams is Semagrams Legacy (which used to just be called Semagrams), which used TypeScript instead of Scala.js, and was more limited in scope then the current Semagrams. The new Semagrams shares almost no code with Semagrams Legacy, but is similar in spirit. Semagrams Legacy should be considered as a useful demo of the ideas of Semagrams, but as the code for Semagrams Legacy was written in a rather slapdash manner, in a language (typescript) which has less-than-ideal facilities for high-level architecture design compared to Scala, a new approach was needed in order for Semagrams to grow to its full potential.
