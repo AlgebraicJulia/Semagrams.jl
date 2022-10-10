@@ -1,162 +1,351 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <!-- META -->
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <meta name="author" content="Owen Lynch">
-  <title>Semagrams.jl</title>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
-  <link rel="icon" type="image/png"  href="/Semagrams.jl/assets/favicon.ico">
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.1.251">
 
-  <!-- CSS -->
-  
-  
-  <link rel="stylesheet" href="/Semagrams.jl/css/bootstrap.min.css">
-  <style>.bg-primary {
-  background-color: #3f6388 !important;
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Semagrams</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1.6em;
+  vertical-align: middle;
 }
-
-a {
-  color: #2669DD;
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
 }
-
-a:hover {
-  color: teal;
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
 }
-
-.section-bg-color {
-  background-color: #f6f8fa;
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
-
-footer a {
-  color: cornflowerblue;
-}
-
-
-header {
-  margin-top: 55px !important;
-}
-
-
-
-.jumbotron {
-  background-image: url("assets/diagonal-lines.svg");
-  background-repeat: repeat;
-}
-
-
-/* CODE ADJUSTMENTS */
-
-pre code.hljs {
-  border-radius: 10px;
-}
-
-pre code.hljs.plaintext {
-  margin-left: 15px;
-}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { color: #008000; } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { color: #008000; font-weight: bold; } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
 </style>
-  <link rel="stylesheet" href="/Semagrams.jl/css/custom.css">
 
-  <script async defer src="https://buttons.github.io/buttons.js"></script>
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="styles.css">
 </head>
-<body id="page-top">
-  <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top" id="mainNav">
-  <div class="container">
-    <span class="navbar-brand">
-      
-        <img src="assets/logo.svg" class="img-fluid" style="height:         50px;
-padding-right:  10px;
-" alt="Logo"/>
-      
-      <a href="#page-top">Semagrams.jl</a>
-      
-      ｜ <a href="https://algebraicjulia.github.io/Semagrams.jl/dev" target="_blank">Docs</a>
-      
-    </span>
-    <input type="checkbox" id="navbar-toggler-cbox" class="d-none" />
-    <label for="navbar-toggler-cbox" class="navbar-toggler" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
-      <span class="navbar-toggler-icon"></span>
-    </label>
-    <div class="collapse navbar-collapse" id="navbarResponsive">
-      <ul class="navbar-nav ml-auto">
-        
-        <li class="nav-item">
-          <a class="nav-link" href="#trailer">Trailer</a>
-        </li>
-        
-        <li class="nav-item">
-          <a class="nav-link" href="#demo">Demo</a>
-        </li>
-        
-      </ul>
-    </div>
-  </div>
-</nav>
 
-  <header class="text-white text-center">
-  
-    <div class="jumbotron jumbotron-fluid container-fluid bg-primary">
-  
-    <h1>Semagrams.jl</h1>
-    <div class="lead">Graphically manipulate a large class of data structures.
+<body class="nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand navbar-dark ">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">Semagrams</span>
+    </a>
+  </div>
+          <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link active" href="./index.html" aria-current="page">Home</a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./roadmap.html">Roadmap</a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./scaladoc/">Scaladoc</a>
+  </li>  
+</ul>
+            <div id="quarto-search" class="" title="Search"></div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#about" id="toc-about" class="nav-link active" data-scroll-target="#about">About</a></li>
+  <li><a href="#core-concepts" id="toc-core-concepts" class="nav-link" data-scroll-target="#core-concepts">Core Concepts</a>
+  <ul class="collapse">
+  <li><a href="#entities" id="toc-entities" class="nav-link" data-scroll-target="#entities">Entities</a></li>
+  <li><a href="#sprites" id="toc-sprites" class="nav-link" data-scroll-target="#sprites">Sprites</a></li>
+  <li><a href="#actions" id="toc-actions" class="nav-link" data-scroll-target="#actions">Actions</a></li>
+  </ul></li>
+  <li><a href="#history" id="toc-history" class="nav-link" data-scroll-target="#history">History</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Semagrams</h1>
 </div>
+
+
+
+<div class="quarto-title-meta">
+
     
-      <a class="github-button" href="https://github.com/AlgebraicJulia/Semagrams.jl" data-size="large" aria-label="View Semagrams.jl on GitHub">View on GitHub</a>
-    
-    
-      <a class="github-button" href="https://github.com/AlgebraicJulia/Semagrams.jl" data-icon="octicon-star" data-size="large" data-show-count="true" aria-label="Star Semagrams.jl on GitHub">Star</a>
     
   </div>
+  
+
 </header>
 
-  <!-- Content appended here -->
-<div class="franklin-content"><section id="trailer" class="scrollspy">
-  <div class="container">
-    <div class="row">
-      <div class="col-lg-10 mx-auto">
-        <h2>Trailer</h2></p>
-
-<div class="embed-responsive embed-responsive-16by9">
-    <iframe width="560" height="315" src="https://www.youtube.com/embed/b1xiY9sznEo" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-</div>
-
-<p>      </div>
-    </div>
-  </div>
+<section id="about" class="level1">
+<h1>About</h1>
+<p>Semagrams is a tool for interacting with <strong>sema</strong>ntic picto<strong>grams</strong>. Semantic pictograms are graphical representations of data that have “teeth”; i.e.&nbsp;where there is a <em>formal</em> and <em>machine-readable</em> correspondence between the graphical display and the semantic meaning.</p>
+<p>The primary component of Semagrams is a Scala.js library that provides components for creating interactive web-based UIs that manipulate semantic pictograms. However, there is also a Julia library that provides a backend that allows Semagrams to interact with Catlab, so that Semagrams can be an interface for scientific computing.</p>
 </section>
-<section id="demo" class="scrollspy section-bg-color">
-  <div class="container">
-    <div class="row">
-      <div class="col-lg-10 mx-auto">
-        <h2>Demo</h2></p>
-<p>Press &quot;?&quot; for a short list of commands. This is a heavily restricted form of Semagrams; unlike the full version it is not connected to a running Julia repl, so you can&#39;t save diagrams or change the schema; it is stuck to the schema for directed port graphs. If you are intrigued by this demo, however, I encourage you to try out the real thing&#33;</p>
-
-<div id="semagrams-demo"></div>
-<script src="assets/demo.bundle.js">
-</script>
-
-<p>      </div>
-    </div>
-  </div>
+<section id="core-concepts" class="level1">
+<h1>Core Concepts</h1>
+<section id="entities" class="level2">
+<h2 class="anchored" data-anchor-id="entities">Entities</h2>
+<p>The core idea behind Semagrams is that most diagrams used in mathematics and science can be seen as describing relationships between logical <strong>entities</strong>.</p>
+<p>For instance, a <strong>graph</strong> has two types of entities: vertices and edges. An edge has two relationships with vertices: it has a source vertex and a target vertex.</p>
+<p>Entities can also have <strong>attributes</strong>, such as labels or numerical data.</p>
 </section>
-<footer class="py-5 bg-dark">
-  <div class="container">
-    <p class="m-0 text-center text-white">&copy; Owen Lynch. Website powered by <a href="https://github.com/tlienart/Franklin.jl">Franklin.jl</a>, <a href="https://github.com/tlienart/PkgPage.jl">PkgPage.jl</a> and the <a href="https://julialang.org">Julia</a> programming language.</p>
-  </div>
-</footer>
-</div><!-- CONTENT ENDS HERE -->
-  
-  
-  <script src="/Semagrams.jl/libs/simple-scrollspy.min.js"></script>
-  <script>
-  window.onload = function () {
-    scrollSpy('#navbarResponsive', {
-      sectionClass: '.scrollspy',
-      menuActiveTarget: '.nav-link',
-      offset: 100
-    })
+<section id="sprites" class="level2">
+<h2 class="anchored" data-anchor-id="sprites">Sprites</h2>
+<p>In order to display collections of entities and relations on the screen, we assign each type of entity to a graphical representation, which we call a <strong>sprite</strong>. Then the relationships between the entities <em>constrain</em> how their corresponding sprites are displayed on the screen.</p>
+<p>For instance, we might assign a circular sprite to each vertex in a graph, and a line to each edge. Then there are constraints that say that one end of the line must be connected to the sprite corresponding to the source of the edge, and the other end must be connected to the sprite corresponding to the target.</p>
+<p>Finally, attributes of an entity translate into graphical properties of the sprites. For instance, a numerical attribute could be translated into the color of the sprite, or a textual attribute into a label for the sprite.</p>
+<p>Note that the mapping from logical descriptions of entities and relations to graphical representations is many-to-one; there are many valid ways to lay out a picture. In Semagrams, we will use both manual layout (dragging the sprites to the desired positions) and automatic layout (running an algorithm to determine some sort of “optimal” layout).</p>
+<p>In Semagrams Legacy, there were hardcoded and special-cased in certain types of entities and certain corresponding sprite types, for boxes, ports, and wires; one of the innovations of new Semagrams is to treat entities and sprites fully generically.</p>
+</section>
+<section id="actions" class="level2">
+<h2 class="anchored" data-anchor-id="actions">Actions</h2>
+<p>Another innovation of new Semagrams is a rich language for describing <strong>actions</strong>. An action is a description of an interaction with Semagrams, which can include</p>
+<ul>
+<li>Keypresses</li>
+<li>Mouse movement</li>
+<li>Selection of entities</li>
+<li>Communication with external APIs (such as Julia)</li>
+<li>Adding/deleting entities</li>
+<li>Changing entity relations</li>
+</ul>
+<p>This action language uses monads in Scala in order to describe complex interactions with ease. For instance, the interaction of creating an edges might be coded as</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode scala code-with-copy"><code class="sourceCode scala"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> <span class="op">{</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  _ <span class="op">&lt;-</span> <span class="fu">displayPrompt</span><span class="op">(</span><span class="st">"Click on the source"</span><span class="op">)</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  s <span class="op">&lt;-</span> selectEntity<span class="op">[</span>V<span class="op">]</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  _ <span class="op">&lt;-</span> <span class="fu">displayPrompt</span><span class="op">(</span><span class="st">"Click on the target"</span><span class="op">)</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  t <span class="op">&lt;-</span> selectEntity<span class="op">[</span>V<span class="op">]</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  e <span class="op">&lt;-</span> <span class="fu">makeEdge</span><span class="op">(</span>s<span class="op">,</span>t<span class="op">)</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  _ <span class="op">&lt;-</span> <span class="fu">displayPromptTimed</span><span class="op">(</span><span class="st">"Edge created!"</span><span class="op">,</span> <span class="dv">1</span><span class="op">)</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span> <span class="cf">yield</span> e</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Crucially, the action language allows <em>asynchronous</em> interaction to be represented without explicit callbacks or state machines. What <code>selectEntity[V]</code> actually does here is register a callback for the next time that the user clicks on an entity of type <code>V</code>, and when that callback is called, it continues with the rest of the interaction.</p>
+<p>Writing this sort of thing out explicitly would be a huge pain; monads allow us to pretend like these asynchronous calls are in fact synchronous, and the code is simply waiting until the user clicks.</p>
+<p>Essentially, actions form a DSL for scripting Semagrams; this DSL is what will make Semagrams very flexible and capable of rapidly being adapted to different use scenarios.</p>
+</section>
+</section>
+<section id="history" class="level1">
+<h1>History</h1>
+<p>I (Owen Lynch) have been playing around with antecedents for Semagrams for years; it has long been my ambition to create something like this. The first “ancestor” of Semagrams was <a href="https://github.com/olynch/ige">IGE</a>, the Interactive Graph Editor, which was written in Haskell.</p>
+<p>The more direct ancestor of Semagrams is Semagrams Legacy (which used to just be called Semagrams), which used TypeScript instead of Scala.js, and was more limited in scope then the current Semagrams. The new Semagrams shares almost no code with Semagrams Legacy, but is similar in spirit. Semagrams Legacy should be considered as a useful demo of the ideas of Semagrams, but as the code for Semagrams Legacy was written in a rather slapdash manner, in a language (typescript) which has less-than-ideal facilities for high-level architecture design compared to Scala, a new approach was needed in order for Semagrams to grow to its full potential.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
   }
-  </script>
-  </body>
-</html>
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    setTimeout(function() {
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const cites = ref.parentNode.getAttribute('data-cites').split(' ');
+    tippyHover(ref, function() {
+      var popup = window.document.createElement('div');
+      cites.forEach(function(cite) {
+        var citeDiv = window.document.createElement('div');
+        citeDiv.classList.add('hanging-indent');
+        citeDiv.classList.add('csl-entry');
+        var biblioDiv = window.document.getElementById('ref-' + cite);
+        if (biblioDiv) {
+          citeDiv.innerHTML = biblioDiv.innerHTML;
+        }
+        popup.appendChild(citeDiv);
+      });
+      return popup.innerHTML;
+    });
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>
