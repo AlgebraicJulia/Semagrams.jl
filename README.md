@@ -2,7 +2,9 @@
 
 # Semagrams.jl
 
-A graphical editor for graph-like structures based on [Catlab](https://github.com/AlgebraicJulia/Catlab.jl). NOTE: currently most development happens in the `next` branch, which is a complete reimplementation and is currently pre-alpha (it also relies on changes to Catlab that have not finalized). For more information, see the webpage for the upcoming version: [https://algebraicjulia.github.io/Semagrams.jl/next/](https://algebraicjulia.github.io/Semagrams.jl/next/).
+A graphical editor for graph-like structures based on [Catlab](https://github.com/AlgebraicJulia/Catlab.jl).
+
+Legacy version built with typescript is in the `legacy` branch, and will not receive updates; new version with scala is now in the `main` branch.
 
 ## Trailer:
 
