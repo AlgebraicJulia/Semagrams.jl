@@ -49,38 +49,38 @@ def addEdge[A: HasGraph: ACSet](
 
 case class Graph(acset: BareACSet)
 
-given graphACSet: ACSet[Graph] with
-  val bare = GenIso[Graph, BareACSet]
-  val schema = Schema(
-    E,
-    V,
-    Src,
-    Tgt
-  )
-
 object Graph {
+  given graphACSet: ACSet[Graph] with
+    val bare = GenIso[Graph, BareACSet]
+    val schema = Schema(
+      E,
+      V,
+      Src,
+      Tgt
+    )
+
+  given graphHasGraph: HasGraph[Graph] = new HasGraph {}
+
   def apply() = graphACSet.empty
 }
 
-given graphHasGraph: HasGraph[Graph] = new HasGraph {}
-
 case class WeightedGraph[T](acset: BareACSet)
 
-given weightedGraphACSet[T]: ACSet[WeightedGraph[T]] with
-  val bare = GenIso[WeightedGraph[T], BareACSet]
-  val schema = Schema(
-    E,
-    V,
-    Src,
-    Tgt,
-    Weight[T]()
-  )
-
 object WeightedGraph {
+  given weightedGraphACSet[T]: ACSet[WeightedGraph[T]] with
+    val bare = GenIso[WeightedGraph[T], BareACSet]
+    val schema = Schema(
+      E,
+      V,
+      Src,
+      Tgt,
+      Weight[T]()
+    )
+
+  given weightedGraphHasGraph[T]: HasGraph[WeightedGraph[T]] = new HasGraph {}
+
   def apply[T]() = weightedGraphACSet[T].empty
 }
-
-given weightedGraphHasGraph[T]: HasGraph[WeightedGraph[T]] = new HasGraph {}
 
 case class LabelValue[T]() extends AttrType {
   type Value = T
@@ -93,21 +93,21 @@ case class Label[T]() extends Attr[V.type, T] {
 
 case class LabeledGraph[T](acset: BareACSet)
 
-given labeledGraphACSet[T]: ACSet[LabeledGraph[T]] with
-  val bare = GenIso[LabeledGraph[T], BareACSet]
-  val schema = Schema(
-    E,
-    V,
-    Src,
-    Tgt,
-    Label[T]()
-  )
-
 object LabeledGraph {
+  given labeledGraphACSet[T]: ACSet[LabeledGraph[T]] with
+    val bare = GenIso[LabeledGraph[T], BareACSet]
+    val schema = Schema(
+      E,
+      V,
+      Src,
+      Tgt,
+      Label[T]()
+    )
+
+  given labeledGraphHasGraph[T]: HasGraph[LabeledGraph[T]] = new HasGraph {}
+
   def apply[T]() = labeledGraphACSet[T].empty
 }
-
-given labeledGraphHasGraph[T]: HasGraph[LabeledGraph[T]] = new HasGraph {}
 
 def addLabeledVertex[T](label: T): State[LabeledGraph[T], Elt[V.type]] =
   for {
@@ -117,4 +117,6 @@ def addLabeledVertex[T](label: T): State[LabeledGraph[T], Elt[V.type]] =
 
 type PropGraph = WithProps[Graph]
 
-given propGraphHasGraph: HasGraph[PropGraph] = new HasGraph {}
+object PropGraph {
+  given propGraphHasGraph: HasGraph[PropGraph] = new HasGraph {}
+}

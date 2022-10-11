@@ -27,20 +27,20 @@ object Petris {
 
   case class Petri(acset: BareACSet)
 
-  given petriACSet: ACSet[Petri] with
-    val bare = GenIso[Petri, BareACSet]
-    val schema = Schema(
-      S,
-      T,
-      I,
-      O,
-      IT,
-      IS,
-      OT,
-      OS
-    )
-
   object Petri {
+    given petriACSet: ACSet[Petri] with
+      val bare = GenIso[Petri, BareACSet]
+      val schema = Schema(
+        S,
+        T,
+        I,
+        O,
+        IT,
+        IS,
+        OT,
+        OS
+      )
+
     def apply() = petriACSet.empty
   }
 
@@ -60,22 +60,22 @@ object Petris {
 
   case class LabelledPetri(acset: BareACSet)
 
-  given labelledPetriACSet: ACSet[LabelledPetri] with
-    val bare = GenIso[LabelledPetri, BareACSet]
-    val schema = Schema(
-      S,
-      T,
-      I,
-      O,
-      IT,
-      IS,
-      OT,
-      OS,
-      SName,
-      TName
-    )
-
   object LabelledPetri {
+    given labelledPetriACSet: ACSet[LabelledPetri] with
+      val bare = GenIso[LabelledPetri, BareACSet]
+      val schema = Schema(
+        S,
+        T,
+        I,
+        O,
+        IT,
+        IS,
+        OT,
+        OS,
+        SName,
+        TName
+      )
+
     def apply() = labelledPetriACSet.empty
   }
 
@@ -99,24 +99,24 @@ object Petris {
 
   case class LabelledReactionNet(acset: BareACSet)
 
-  given labelledReactionNetACSet: ACSet[LabelledReactionNet] with
-    val bare = GenIso[LabelledReactionNet, BareACSet]
-    val schema = Schema(
-      S,
-      T,
-      I,
-      O,
-      IT,
-      IS,
-      OT,
-      OS,
-      SName,
-      TName,
-      Rate,
-      Concentration
-    )
-
   object LabelledReactionNet {
+    given labelledReactionNetACSet: ACSet[LabelledReactionNet] with
+      val bare = GenIso[LabelledReactionNet, BareACSet]
+      val schema = Schema(
+        S,
+        T,
+        I,
+        O,
+        IT,
+        IS,
+        OT,
+        OS,
+        SName,
+        TName,
+        Rate,
+        Concentration
+      )
+
     def apply() = labelledReactionNetACSet.empty
   }
 }
