@@ -326,3 +326,9 @@ def hidePopover[Model]: Action[Model, Unit] = for {
 
 def delay[Model](seconds: Double): Action[Model, Unit] =
   ops.async_(cb => dom.window.setTimeout(() => cb(Right(())), seconds * 1000))
+
+def runUntil[Model](action: Action[Model, Unit], condition: Action[Model, Unit]): Action[Model, Unit] = for {
+  target <- action.start
+  _ <- condition
+  _ <- target.cancel
+} yield {}

@@ -111,8 +111,8 @@ object LabeledGraph {
 
 def addLabeledVertex[T](label: T): State[LabeledGraph[T], Elt[V.type]] =
   for {
-    v <- addVertex()
-    _ <- setSubpart(Label[T](), v, label)
+    v <- addVertex[LabeledGraph[T]]()
+    _ <- setSubpart[LabeledGraph[T], V.type, T](Label[T](), v, label)
   } yield v
 
 type PropGraph = WithProps[Graph]

@@ -87,41 +87,6 @@ def dragControl[A: ACSet, X <: Ob](attr: Attr[X, Double], increment: Double)(
   } yield ()
 }
 
-def loopDuringPress[A: ACSet](
-    key: String,
-    action: Action[WithProps[A], Unit]
-): Action[WithProps[A], Unit] = for {
-  target <- ops[WithProps[A]].foreverM(action).start
-  _ <- Bindings(keyUp(key)).run
-  _ <- target.cancel
-} yield {}
-
-def loopUntilPress[A: ACSet](
-    key: String,
-    action: Action[WithProps[A], Unit]
-): Action[WithProps[A], Unit] = for {
-  target <- ops[WithProps[A]].foreverM(action).start
-  _ <- Bindings(keyDown(key)).run
-  _ <- target.cancel
-} yield {}
-
-def dragEdgeLoop[A: ACSet, X <: Ob, Y <: Ob, Z <: Ob](
-    src: Hom[X, Y],
-    tgt: Hom[X, Z],
-    key: String
-)(implicit withPropsACSet: ACSet[WithProps[A]]): Action[WithProps[A], Unit] = {
-  val mainAction: Action[WithProps[A], Unit] = for {
-    s <- fromMaybe(
-      Bindings(
-        clickOn(ClickType.Single, MouseButton.Left, src.codom.asInstanceOf[Y])
-      ).run
-    )
-    _ <- dragEdge(src, tgt, s)
-  } yield ()
-
-  loopDuringPress(key, mainAction)
-}
-
 def editContent[A: ACSet, X <: Ob](
     x: X
 )(v: Elt[X]): Action[WithProps[A], Unit] =
