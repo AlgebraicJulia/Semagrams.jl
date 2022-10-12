@@ -183,7 +183,7 @@ object Main {
       drag <- ReaderT.ask.map(_.drag)
       mouse <- ReaderT.ask.map(_.mouse)
       _ <- addChild(renderPetri($model, hover, drag, mouse))
-      _ <- bindings.run
+      _ <- bindings.runForever
     } yield ()
 
     mountWithAction(el, WithProps[LabelledReactionNet](), serializer, action)
