@@ -15,8 +15,9 @@ object ACSetSpec extends TestSuite {
     }
 
     test("path graph") {
+      import Graph.ops._
       val mkpath = for {
-        x <- addVertex[Graph]()
+        x <- addVertex()
         y <- addVertex()
         z <- addVertex()
         k <- addEdge(x, y)
@@ -33,8 +34,10 @@ object ACSetSpec extends TestSuite {
     }
 
     test("weighted graph") {
+      val ops = WeightedGraph.ops[String]
+      import ops._
       val mkpath = for {
-        x <- addVertex[WeightedGraph[String]]()
+        x <- addVertex()
         y <- addVertex()
         z <- addVertex()
         k <- addEdge(x, y)
@@ -50,8 +53,9 @@ object ACSetSpec extends TestSuite {
     }
 
     test("incident") {
+      import Graph.ops._
       val mkpath = for {
-        x <- addVertex[Graph]()
+        x <- addVertex()
         y <- addVertex()
         z <- addVertex()
         k <- addEdge(x, y)
@@ -67,8 +71,9 @@ object ACSetSpec extends TestSuite {
     }
 
     test("removing parts") {
+      import Graph.ops._
       val makeAndRemove = for {
-        x <- addVertex[Graph]()
+        x <- addVertex()
         y <- addVertex()
         z <- addVertex()
         k <- addEdge(x, y)
@@ -85,8 +90,10 @@ object ACSetSpec extends TestSuite {
     }
 
     test("serialization") {
+      val ops = WeightedGraph.ops[String]
+      import ops._
       val mkpath = for {
-        x <- addVertex[WeightedGraph[String]]()
+        x <- addVertex()
         y <- addVertex()
         z <- addVertex()
         k <- addEdge(x, y)
@@ -97,7 +104,7 @@ object ACSetSpec extends TestSuite {
 
       val (g, (x, y, z, k, l)) = mkpath.run(WeightedGraph[String]()).value
 
-      val rw = weightedGraphACSet[String].rw(AttrTypeSerializers() + ATRW(WeightValue[String](), summon[ReadWriter[String]]))
+      val rw = ops.acsetInstance.rw(AttrTypeSerializers() + ATRW(WeightValue[String](), summon[ReadWriter[String]]))
 
       assert(read(write(g)(rw))(rw) == g)
     }

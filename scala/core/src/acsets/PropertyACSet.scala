@@ -31,35 +31,39 @@ case class WithProps[A: ACSet](acset: BareACSet) {
       .asInstanceOf[PropMap](p)
 }
 
-given withPropsACSet[A: ACSet]: ACSet[WithProps[A]] with
-  val bare = Iso[WithProps[A], BareACSet](_.acset)(WithProps(_))
-  val aAcset = summon[ACSet[A]]
-  val schema = aAcset.schema.copy(
-    attrs = aAcset.schema.attrs ++
-      aAcset.schema.obs.values
-        .map(ob => {
-          val p = Props(ob)
-          (p.toString.toLowerCase(), p)
-        })
-        .toMap
-  )
+trait PropOps[A] extends ACSetOps[WithProps[A]] {
+  def addPartWP[X <: Ob](x: X, pm: PropMap): State[WithProps[A], Elt[X]] =
+    for {
+      v <- addPart(x)
+      _ <- setSubpart(Props(x), v, pm)
+    } yield v
 
-object WithProps {
-  def apply[A: ACSet]() = withPropsACSet[A].empty
-}
-
-def addPartWP[A: ACSet, X <: Ob](
-    x: X,
-    pm: PropMap
-): State[WithProps[A], Elt[X]] =
-  for {
-    v <- addPart[WithProps[A], X](x)
-    _ <- setSubpart[WithProps[A], X, PropMap](Props(x), v, pm)
-  } yield v
-
-def setProp[A: ACSet, X <: Ob, T](
+  def setProp[X <: Ob, T](
     v: Elt[X],
     p: Property[T],
     t: T
-): State[WithProps[A], Unit] =
-  State.modify(_.setProp(v, p, t))
+  ): State[WithProps[A], Unit] =
+    State.modify(_.setProp(v, p, t))
+}
+
+object WithProps {
+  def ops[A: ACSet] = new PropOps[A] {
+    given acsetInstance: ACSet[WithProps[A]] with
+      val bare = Iso[WithProps[A], BareACSet](_.acset)(new WithProps[A](_))
+      val aAcset = summon[ACSet[A]]
+      val schema = aAcset.schema.copy(
+        attrs = aAcset.schema.attrs ++
+          aAcset.schema.obs.values
+            .map(ob => {
+              val p = Props(ob)
+              (p.toString.toLowerCase(), p)
+            })
+            .toMap
+      )
+
+  }
+
+  def apply[A: ACSet]() = ops[A].acsetInstance.empty
+}
+
+given [A: ACSet]: ACSet[WithProps[A]] = WithProps.ops[A].acsetInstance

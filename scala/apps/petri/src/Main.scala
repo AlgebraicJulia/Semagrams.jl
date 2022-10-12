@@ -20,6 +20,13 @@ import Petris._
 import scala.collection.MapView.Keys
 
 type PropPetri = WithProps[LabelledReactionNet]
+
+object PropPetriOps extends PropOps[LabelledReactionNet] {
+  val acsetInstance = WithProps.ops[LabelledReactionNet].acsetInstance
+}
+
+import PropPetriOps._
+
 type M[T] = Action[PropPetri, T]
 
 val ops = Action.ops[PropPetri]
@@ -28,8 +35,8 @@ val addSpecies = addEntityPos[LabelledReactionNet, S.type](
   S,
   v =>
     for {
-      _ <- setSubpart[PropPetri, S.type, String](SName, v, "")
-      _ <- setSubpart[PropPetri, S.type, Double](Concentration, v, 1.0)
+      _ <- setSubpart(SName, v, "")
+      _ <- setSubpart(Concentration, v, 1.0)
     } yield ()
 )
 
@@ -37,8 +44,8 @@ val addTransition = addEntityPos[LabelledReactionNet, T.type](
   T,
   v =>
     for {
-      _ <- setSubpart[PropPetri, T.type, String](TName, v, "")
-      _ <- setSubpart[PropPetri, T.type, Double](Rate, v, 1.0)
+      _ <- setSubpart(TName, v, "")
+      _ <- setSubpart(Rate, v, 1.0)
     } yield ()
 )
 
@@ -165,7 +172,7 @@ def renderPetri(
   )
 }
 
-val serializer = withPropsACSet[LabelledReactionNet].rw(
+val serializer = PropPetriOps.acsetInstance.rw(
   AttrTypeSerializers()
     + ATRW(PropValue, PropMap.rw)
     + ATRW(NameValue, summon[ReadWriter[String]])

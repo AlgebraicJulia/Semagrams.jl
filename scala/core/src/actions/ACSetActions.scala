@@ -21,7 +21,7 @@ def addEntityPos[A: ACSet, X <: Ob](
   pos <- mousePos
   v <- updateModelS[WithProps[A], Elt[X]](
     for {
-      v <- addPartWP(x, PropMap() + (Center, pos))
+      v <- WithProps.ops.addPartWP(x, PropMap() + (Center, pos))
       _ <- init(v)
     } yield v
   )
@@ -44,16 +44,16 @@ def dragEdge[A: ACSet, X <: Ob, Y <: Ob, Z <: Ob](
     $model <- ops[WithProps[A]].ask.map(_.$model)
     p <- mousePos
     e <- updateModelS[WithProps[A], Elt[X]](for {
-      e <- addPartWP(src.dom, PropMap() + (End, p))
-      _ <- setSubpart(src, e, s)
+      e <- WithProps.ops.addPartWP(src.dom, PropMap() + (End, p))
+      _ <- WithProps.ops.setSubpart(src, e, s)
     } yield e)
     _ <- (for {
       _ <- drag.drag(Observer(p => $model.update(_.setProp(e, End, p))))
       t <- fromMaybe(hoveredPart(tgt.codom.asInstanceOf[Z]))
-      _ <- updateModelS[WithProps[A], Unit](setSubpart(tgt, e, t))
+      _ <- updateModelS(WithProps.ops[A].setSubpart(tgt, e, t))
     } yield ()).onCancelOrError(for {
       _ <- ops.delay(drag.$state.set(None))
-      _ <- updateModelS[WithProps[A], Unit](remPart(e))
+      _ <- updateModelS(WithProps.ops[A].remPart(e))
     } yield ())
     _ <- update
   } yield ()

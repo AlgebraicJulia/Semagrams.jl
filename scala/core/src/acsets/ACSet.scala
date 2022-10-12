@@ -487,24 +487,27 @@ trait ACSet[A] {
 /** Finally, we also provide wrappers around the mutating methods on an acset
   * that do the mutation in the state monad, so that we can write acset mutation
   * in an imperative way.
-  */
+ */
+trait ACSetOps[A] {
+  given acsetInstance: ACSet[A]
 
-def addPart[A: ACSet, X <: Ob](ob: X): State[A, Elt[X]] =
-  State(_.addPart(ob).swap)
+  def addPart[X <: Ob](ob: X): State[A, Elt[X]] =
+    State(_.addPart(ob).swap)
 
-def setSubpart[A: ACSet, X <: Ob, Y <: Ob](
-    f: Hom[X, Y],
-    x: Elt[X],
-    y: Elt[Y]
-): State[A, Unit] =
-  State.modify(_.setSubpart(f, x, y))
+  def setSubpart[X <: Ob, Y <: Ob](
+      f: Hom[X, Y],
+      x: Elt[X],
+      y: Elt[Y]
+  ): State[A, Unit] =
+    State.modify(_.setSubpart(f, x, y))
 
-def setSubpart[A: ACSet, X <: Ob, T](
-    f: Attr[X, T],
-    x: Elt[X],
-    y: T
-): State[A, Unit] =
-  State.modify(_.setSubpart(f, x, y))
+  def setSubpart[X <: Ob, T](
+      f: Attr[X, T],
+      x: Elt[X],
+      y: T
+  ): State[A, Unit] =
+    State.modify(_.setSubpart(f, x, y))
 
-def remPart[A: ACSet, X <: Ob](x: Elt[X]): State[A, Unit] =
-  State.modify(_.remPart(x))
+  def remPart[X <: Ob](x: Elt[X]): State[A, Unit] =
+    State.modify(_.remPart(x))
+}
