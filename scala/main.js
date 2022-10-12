@@ -1,1 +1,3 @@
-import './out/apps/petri/fullLinkJS.dest/main.js'
+import { main } from './out/apps/petri/fastLinkJS.dest/main.js'
+
+main(document.getElementById("app-container"))
