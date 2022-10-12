@@ -59,34 +59,6 @@ def dragEdge[A: ACSet, X <: Ob, Y <: Ob, Z <: Ob](
   } yield ()
 }
 
-def dragControl[A: ACSet, X <: Ob](attr: Attr[X, Double], increment: Double)(
-    v: Elt[X]
-): Action[A, Unit] = {
-  for {
-    drag <- ops[A].ask.map(_.drag)
-    $model <- ops[A].ask.map(_.$model)
-    info <- ops[A].ask.map(_.bottomtip)
-    p <- mousePos
-    init <- ops.delay($model.now().subpart(attr, v).get)
-    _ <- ops.delay(info.show(attr.toString() + ": " + "%.2f".format(init)))
-    _ <- drag.drag(
-        Observer(q => {
-          val newval = (init + (p.y - q.y) * increment).max(0)
-          $model.update(
-            _.setSubpart(attr, v, newval)
-          )
-          info.show(attr.toString() + ": " + "%.2f".format(newval))
-        })
-      )
-      .onCancelOrError(for {
-        _ <- ops[A].delay(drag.$state.set(None))
-        _ <- hideInfo
-      } yield ())
-    _ <- hideInfo
-    _ <- update
-  } yield ()
-}
-
 def editContent[A: ACSet, X <: Ob](
     x: X
 )(v: Elt[X]): Action[WithProps[A], Unit] =
@@ -105,18 +77,6 @@ def editStringAttr[A: ACSet, X <: Ob](
   for {
     $model <- getModel[A]
     _ <- editText(
-      Observer(s => $model.update(m => { m.setSubpart(attr, v, s) })),
-      $model.now().subpart(attr, v).getOrElse("")
-    )
-  } yield {}
-
-def editStringAttrBlocking[A: ACSet, X <: Ob](
-    x: X,
-    attr: Attr[X, String]
-)(v: Elt[X]): Action[A, Unit] =
-  for {
-    $model <- getModel[A]
-    _ <- editTextBlocking(
       Observer(s => $model.update(m => { m.setSubpart(attr, v, s) })),
       $model.now().subpart(attr, v).getOrElse("")
     )

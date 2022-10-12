@@ -4,10 +4,12 @@ import cats._
 import cats.data._
 import cats.effect._
 import org.scalajs.dom.raw.KeyboardEvent
+import com.raquo.laminar.api.L._
 import semagrams._
 import semagrams.acsets._
 import semagrams.controllers._
 import semagrams.util._
+import semagrams.widgets._
 
 import Action.ops
 
@@ -141,8 +143,11 @@ object Bindings {
 def showPopoverUntil[Model](
     lines: Seq[String],
     binding: Binding[Model, Unit]
-): Action[Model, Unit] = for {
-  _ <- showPopover(lines*)
-  _ <- Bindings(binding).run
-  _ <- hidePopover
-} yield ()
+): Action[Model, Unit] = {
+  for {
+    popover <- ops.delay(Popover(Val(lines), 400, 15, 15))
+    _ <- addChild(popover)
+    _ <- Bindings(binding).run
+    _ <- removeChild(popover)
+  } yield ()
+}

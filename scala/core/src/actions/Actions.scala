@@ -21,8 +21,10 @@ import semagrams.controllers._
 import semagrams.util._
 import upickle.default._
 import org.scalajs.dom
+import scala.scalajs.js
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import com.raquo.laminar.CollectionCommand
 
 /** We control the behavior of Semagrams using an asynchronous IO monad from
   * cats-effect.
@@ -50,14 +52,11 @@ case class EditorState[Model](
     drag: DragController,
     hover: HoverController,
     keyboard: KeyboardController,
-    text: TextController,
-    toptip: TipController,
-    bottomtip: TipController,
-    popover: PopoverController,
     bindables: EventBus[Any],
     $model: Var[Model],
     elt: SvgElement,
     playArea: SvgElement,
+    childCommands: Observer[ChildrenCommand],
     update: () => Unit
 )
 
@@ -67,23 +66,18 @@ object EditorState {
     val drag = DragController(mouse)
     val hover = HoverController()
     val keyboard = KeyboardController()
-    val text = TextController()
     val bindables = EventBus[Any]()
-    val toptip = TipController(Complex(15, 0))
-    val bottomtip = TipController(Complex(15, 350))
-    val popover = PopoverController(400, 15, 15)
-    val playArea = svg.g()
+    val commandBus = EventBus[ChildrenCommand]()
+    val playArea = svg.g(
+      children.command <-- commandBus.events
+    )
 
     elt.amend(
       mouse,
       drag,
       hover,
       keyboard,
-      text,
-      toptip,
-      bottomtip,
       playArea,
-      popover,
       mouse.mouseEvents --> bindables,
       keyboard.keydowns --> bindables,
       keyboard.keyups --> bindables
@@ -94,14 +88,11 @@ object EditorState {
       drag,
       hover,
       keyboard,
-      text,
-      toptip,
-      bottomtip,
-      popover,
       bindables,
       $model,
       elt,
       playArea,
+      commandBus.writer,
       update
     )
   }
@@ -243,11 +234,6 @@ def updateModelS[Model, A](updater: State[Model, A]): Action[Model, A] = for {
 
 def getModel[Model]: Action[Model, Var[Model]] = ReaderT.ask.map(_.$model)
 
-def addChild[Model](child: SvgElement): Action[Model, Unit] = for {
-  playArea <- ops[Model].ask.map(_.playArea)
-  _ <- ops.delay(playArea.amend(child))
-} yield ()
-
 def mousePos[Model]: Action[Model, Complex] =
   ops.ask.map(_.mouse.$state.now().pos)
 
@@ -279,50 +265,14 @@ def editText[Model](
     init: String
 ): Action[Model, Unit] =
   for {
-    text <- ops[Model].ask.map(_.text)
-    _ <- ops.delay(text.editText(listener, init))
+    bus <- ops[Model].delay(EventBus[Unit]())
+    input <- ops.delay(TextInput(listener, init, bus.writer, Complex(200, 40)))
+    _ <- addChild(input)
+    _ <- nextEvent(bus.events)
+    _ <- removeChild(input)
+    elt <- ops[Model].ask.map(_.elt)
+    _ <- ops.delay(elt.ref.asInstanceOf[js.Dynamic].focus())
   } yield ()
-
-def editTextBlocking[Model](
-    listener: Observer[String],
-    init: String
-): Action[Model, Unit] =
-  for {
-    text <- ops[Model].ask.map(_.text)
-    _ <- ops.async_(cb =>
-      text.editTextBlocking(listener, init, () => cb(Right(())))
-    )
-  } yield ()
-
-def showTip[Model](s: String*): Action[Model, Unit] = for {
-  tip <- ops[Model].ask.map(_.toptip)
-  _ <- ops.delay(tip.show(s*))
-} yield ()
-
-def hideTip[Model]: Action[Model, Unit] = for {
-  tip <- ops[Model].ask.map(_.toptip)
-  _ <- ops.delay(tip.hide())
-} yield ()
-
-def showInfo[Model](s: String*): Action[Model, Unit] = for {
-  tip <- ops[Model].ask.map(_.bottomtip)
-  _ <- ops.delay(tip.show(s*))
-} yield ()
-
-def hideInfo[Model]: Action[Model, Unit] = for {
-  tip <- ops[Model].ask.map(_.bottomtip)
-  _ <- ops.delay(tip.hide())
-} yield ()
-
-def showPopover[Model](s: String*): Action[Model, Unit] = for {
-  tip <- ops[Model].ask.map(_.popover)
-  _ <- ops.delay(tip.show(s*))
-} yield ()
-
-def hidePopover[Model]: Action[Model, Unit] = for {
-  tip <- ops[Model].ask.map(_.popover)
-  _ <- ops.delay(tip.hide())
-} yield ()
 
 def delay[Model](seconds: Double): Action[Model, Unit] =
   ops.async_(cb => dom.window.setTimeout(() => cb(Right(())), seconds * 1000))
@@ -332,3 +282,13 @@ def runUntil[Model](action: Action[Model, Unit], condition: Action[Model, Unit])
   _ <- condition
   _ <- target.cancel
 } yield {}
+
+def addChild[Model](child: SvgElement): Action[Model, Unit] = for {
+  childCommands <- ops[Model].ask.map(_.childCommands)
+  _ <- ops.delay(childCommands.onNext(CollectionCommand.Append(child)))
+} yield ()
+
+def removeChild[Model](child: SvgElement): Action[Model, Unit] = for {
+  childCommands <- ops[Model].ask.map(_.childCommands)
+  _ <- ops.delay(childCommands.onNext(CollectionCommand.Remove(child)))
+} yield ()
