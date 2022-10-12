@@ -1,4 +1,4 @@
-package semagrams.controllers
+package semagrams.widgets
 
 import com.raquo.laminar.api.L._
 import semagrams.util._

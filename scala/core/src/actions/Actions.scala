@@ -5,26 +5,27 @@ import cats.Monad
 import cats.MonadError
 import cats.data._
 import cats.effect._
-import cats.syntax.all._
 import cats.effect.syntax.all._
 import cats.effect.unsafe.IORuntime
-import cats.mtl.Local
 import cats.instances.stream
+import cats.mtl.Local
+import cats.syntax.all._
 import com.raquo.airstream.core.Transaction
+import com.raquo.laminar.CollectionCommand
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveElement
 import com.raquo.laminar.nodes.ReactiveSvgElement
+import org.scalajs.dom
 import org.scalajs.dom.raw.KeyboardEvent
 import semagrams._
 import semagrams.acsets._
 import semagrams.controllers._
 import semagrams.util._
+import semagrams.widgets._
 import upickle.default._
-import org.scalajs.dom
-import scala.scalajs.js
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import com.raquo.laminar.CollectionCommand
+import scala.scalajs.js
 
 /** We control the behavior of Semagrams using an asynchronous IO monad from
   * cats-effect.

@@ -15,7 +15,7 @@ import Action.ops
 
 case class Binding[Model, A](
     f: PartialFunction[Any, Action[Model, A]],
-    modifiers: Set[KeyModifier]
+    modifiers: Option[Set[KeyModifier]]
 ) {
   def flatMap[B](g: A => Action[Model, B]): Binding[Model, B] =
     Binding(f.andThen(_.flatMap(g)), modifiers)
@@ -34,16 +34,17 @@ case class Binding[Model, A](
       modifiers
     )
 
-  def withMods(newModifiers: KeyModifier*) = Binding(f, newModifiers.toSet)
+  def withMods(newModifiers: KeyModifier*) =
+    Binding(f, Some(newModifiers.toSet))
 }
 
 object Binding {
   def apply[Model, A](f: PartialFunction[Any, Action[Model, A]]) =
-    new Binding[Model, A](f, Set[KeyModifier]())
+    new Binding[Model, A](f, None)
 
   def apply[Model, A](
       f: PartialFunction[Any, Action[Model, A]],
-      modifiers: Set[KeyModifier]
+      modifiers: Option[Set[KeyModifier]]
   ) = new Binding[Model, A](f, modifiers)
 }
 
@@ -75,7 +76,7 @@ def clickOn[Model, X <: Ob](
   case MouseEvent.DoubleClick(Some(ent), `button`)
       if (clickType == Double && ent.entityType == x) =>
     ops.pure(ent.asInstanceOf[Elt[X]])
-})
+}, Some(Set()))
 
 def releaseOn[Model, X <: Ob](
     clickType: ClickType,
@@ -84,7 +85,7 @@ def releaseOn[Model, X <: Ob](
 ): Binding[Model, Elt[X]] = Binding({
   case MouseEvent.MouseUp(Some(ent), `button`) if (ent.entityType == x) =>
     ops.pure(ent.asInstanceOf[Elt[X]])
-})
+}, Some(Set()))
 
 def mouseMove[Model] = Binding[Model, Complex]({ case MouseEvent.MouseMove(p) =>
   ops.pure(p)
@@ -114,10 +115,14 @@ class Bindings[Model, A](bindings: Seq[Binding[Model, A]]) {
         bindings.collectFirst(
           (
               (bnd: Binding[Model, A]) =>
-                if (keyState.now().modifiers == bnd.modifiers) {
-                  bnd.f.lift(ev)
-                } else {
-                  None
+                bnd.modifiers match {
+                  case Some(mods) =>
+                    if (keyState.now().modifiers == mods) {
+                      bnd.f.lift(ev)
+                    } else {
+                      None
+                    }
+                  case None => bnd.f.lift(ev)
                 }
           ).unlift
         )

@@ -27,8 +27,6 @@ object PropPetriOps extends PropOps[LabelledReactionNet] {
 
 import PropPetriOps._
 
-type M[T] = Action[PropPetri, T]
-
 val ops = Action.ops[PropPetri]
 
 val addSpecies = addEntityPos[LabelledReactionNet, S.type](
@@ -55,16 +53,14 @@ Keys:
 s: add species
 t: add transition
 d: delete hovered species/transition/arrow
-h: toggle quick help
+h/?: toggle quick help
 p: tutorial
 
 Click and drag to move around species/transitions
 
-Double-click to modify labels
+Double-click to modify species/transitions
 
 Shift-click and drag to add arrows
-
-Control-click and drag to modify rates/concentrations
 """.linesIterator.toSeq
 
 val bindings = Bindings[PropPetri, Unit](
@@ -72,6 +68,7 @@ val bindings = Bindings[PropPetri, Unit](
   keyDown("t").andThen(addTransition.flatMap(editStringAttr(T, TName))),
   keyDown("d").andThen(remEntity),
   keyDown("h").andThen(showPopoverUntil(helpText, keyDown("h"))),
+  keyDown("?").andThen(showPopoverUntil(helpText, keyDown("?"))),
   clickOn(ClickType.Single, MouseButton.Left, S)
     .withMods(KeyModifier.Shift)
     .flatMap(s => dragEdge[LabelledReactionNet, I.type, S.type, T.type](IS, IT, s)),
@@ -184,11 +181,11 @@ object Main {
 
   @JSExportTopLevel("main")
   def main(el: dom.Element): Unit = {
-    val action: M[Unit] = for {
-      $model <- ReaderT.ask.map(_.$model)
-      hover <- ReaderT.ask.map(_.hover)
-      drag <- ReaderT.ask.map(_.drag)
-      mouse <- ReaderT.ask.map(_.mouse)
+    val action = for {
+      $model <- ops.ask.map(_.$model)
+      hover <- ops.ask.map(_.hover)
+      drag <- ops.ask.map(_.drag)
+      mouse <- ops.ask.map(_.mouse)
       _ <- addChild(renderPetri($model, hover, drag, mouse))
       _ <- bindings.runForever
     } yield ()
