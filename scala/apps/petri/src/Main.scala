@@ -117,12 +117,13 @@ def makeInput[S, A](
 ) = input(
   typ := oftype,
   value := prism.reverseGet(lens.get($state.now())),
-  onInput.mapToValue --> $state.updater((s, str: String) =>
+  onInput.stopPropagation.mapToValue --> $state.updater((s, str: String) =>
     prism.getOption(str) match {
       case Some(a) => lens.replace(a)(s)
       case None    => s
     }
-  )
+  ),
+  onKeyDown.filter(_.key != "Escape").stopPropagation --> Observer((_) => ())
 )
 
 def setChecked[S]($state: Var[S], lens: Lens[S, Boolean]) = Seq(
