@@ -189,7 +189,7 @@ def speciesEditor($p: Var[PropPetri], s: Elt[S.type]) = {
         padding := "4px",
         "Do stratification with:",
         flexrow(
-          Seq("strata", "disease", "infect").map(tt =>
+          Seq("infect", "disease", "strata").map(tt =>
             flexrow(
               alignItems := "center",
               input(
@@ -251,7 +251,7 @@ def transitionEditor($p: Var[PropPetri], t: Elt[T.type]) = {
           fieldSet(
             borderStyle := "none",
             flexrow(
-              Seq("strata", "disease", "type").map(tt =>
+              Seq("infect", "disease", "strata").map(tt =>
                 flexrow(
                   input(
                     typ := "radio",
@@ -342,9 +342,9 @@ def arcExtractor(p: PropPetri, sprites: Sprites) = {
 }
 
 val colors = Map(
-  Some("type") -> "#a08fae",
-  Some("strata") -> "#a8dcd9",
+  Some("infect") ->  "#a08fae",
   Some("disease") -> "#ffeec6",
+  Some("strata") ->  "#a8dcd9",
   None -> "#E28F41"
 )
 
