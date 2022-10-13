@@ -33,6 +33,7 @@ trait Defaults extends ScalaJSModule with PublishModule {
     ivy"org.typelevel::cats-kernel::2.8.0",
     ivy"org.typelevel::cats-effect::3.3.14",
     ivy"org.typelevel::cats-mtl::1.3.0",
+    ivy"com.github.japgolly.scalacss::core::1.0.0",
     ivy"dev.optics::monocle-core::3.1.0",
     ivy"dev.optics::monocle-macro::3.1.0",
   )

@@ -28,6 +28,12 @@ import Petris._
 import org.scalajs.dom.KeyboardEvent
 import com.raquo.laminar.nodes.ReactiveHtmlElement
 
+import scalacss.DevDefaults.StyleA
+import scalacss.internal.mutable.GlobalRegistry
+
+implicit def applyStyle(styleA: StyleA): Mod[HtmlElement] =
+  cls := styleA.className.value
+
 case class StratPetri(acset: BareACSet)
 
 case object Stratification extends AttrType {
@@ -91,23 +97,6 @@ val addTransition = addEntityPos[StratPetri, T.type](
     } yield ()
 )
 
-def flexcol(mods: Modifier[ReactiveHtmlElement.Base]*) = {
-  div(
-    display := "flex",
-    flex := "1",
-    flexDirection := "column",
-    mods
-  )
-}
-
-def flexrow(mods: Modifier[ReactiveHtmlElement.Base]*) = {
-  div(
-    display := "flex",
-    flex := "1",
-    flexDirection := "row",
-    mods
-  )
-}
 
 def makeInput[S, A](
     oftype: String,
@@ -160,16 +149,17 @@ object EditorParams {
 
   def toplevelStyle = Seq(
     borderStyle := "solid",
-    height := s"${dims.y - borderV*2}px",
-    width := s"${dims.x - borderV*2}px",
+    height := s"${dims.y - borderV * 2}px",
+    width := s"${dims.x - borderV * 2}px",
     borderWidth := s"${borderV}px",
-    backgroundColor := "white",
+    backgroundColor := "white"
   )
 }
 
 def inputCell(labelV: String, el: Element) =
   import EditorParams._
-  flexcol(
+  div(
+    PS.col,
     padding := s"${paddingV}px",
     label(labelV),
     el
@@ -182,9 +172,11 @@ def speciesEditor($p: Var[PropPetri], s: Elt[S.type], eltDims: Complex) = {
     - Complex(dims.x / 2, dims.y)
 
   wrappedHtml(
-    flexcol(
+    div(
+      PS.col,
       toplevelStyle,
-      flexrow(
+      div(
+        PS.row,
         inputCell(
           "Label:",
           makeInput("text", $p, PropPetriOps.subpartLens(SName, s), Prism.id)
@@ -199,12 +191,15 @@ def speciesEditor($p: Var[PropPetri], s: Elt[S.type], eltDims: Complex) = {
           )
         )
       ),
-      flexcol(
+      div(
+        PS.col,
         padding := s"${paddingV}px",
         "Do stratification with:",
-        flexrow(
+        div(
+          PS.row,
           Seq("infect", "disease", "strata").map(tt =>
-            flexrow(
+            div(
+              PS.row,
               alignItems := "center",
               input(
                 typ := "checkbox",
@@ -233,8 +228,10 @@ def transitionEditor($p: Var[PropPetri], t: Elt[T.type], eltDims: Complex) = {
     - Complex(dims.x / 2, dims.y)
 
   wrappedHtml(
-    flexcol(
-      flexrow(
+    div(
+      PS.col,
+      div(
+        PS.row,
         inputCell(
           "Label:",
           makeInput("text", $p, PropPetriOps.subpartLens(TName, t), Prism.id)
@@ -249,15 +246,18 @@ def transitionEditor($p: Var[PropPetri], t: Elt[T.type], eltDims: Complex) = {
           )
         )
       ),
-      flexcol(
+      div(
+        PS.col,
         padding := s"${padding}px",
         "Transition Type:",
         form(
           fieldSet(
             borderStyle := "none",
-            flexrow(
+            div(
+              PS.row,
               Seq("infect", "disease", "strata").map(tt =>
-                flexrow(
+                div(
+                  PS.row,
                   input(
                     typ := "radio",
                     value := tt,
@@ -349,9 +349,9 @@ def arcExtractor(p: PropPetri, sprites: Sprites) = {
 }
 
 val colors = Map(
-  Some("infect") ->  "#a08fae",
+  Some("infect") -> "#a08fae",
   Some("disease") -> "#ffeec6",
-  Some("strata") ->  "#a8dcd9",
+  Some("strata") -> "#a8dcd9",
   None -> "#E28F41"
 )
 
@@ -387,7 +387,11 @@ def renderPetri(
               + (InnerSep, 7)
               + (FontSize, 16)
           ),
-          Hoverable(hover, MainHandle, PropMap() + (Style, "filter: opacity(0.7)")),
+          Hoverable(
+            hover,
+            MainHandle,
+            PropMap() + (Style, "filter: opacity(0.7)")
+          ),
           Clickable(mouse, MainHandle)
         )
       ),
@@ -414,7 +418,11 @@ def renderPetri(
               + (InnerSep, 7)
               + (FontSize, 16)
           ),
-          Hoverable(hover, MainHandle, PropMap() + (Style, "filter: opacity(0.7)")),
+          Hoverable(
+            hover,
+            MainHandle,
+            PropMap() + (Style, "filter: opacity(0.7)")
+          ),
           Clickable(mouse, MainHandle)
         )
       ),
@@ -457,6 +465,8 @@ object Main {
       _ <- addChild(renderPetri($model, hover, drag, mouse))
       _ <- bindings.runForever
     } yield ()
+
+    dom.document.querySelector("head").appendChild(styleTag(PSrendered).ref)
 
     mountWithAction(el, WithProps[StratPetri](), serializer, action)
   }
