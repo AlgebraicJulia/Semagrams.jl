@@ -7,9 +7,9 @@ def Popover(
     $lines: Signal[Seq[String]],
     width: Double,
     ypadding: Double,
-    innerSep: Double
+    innerSep: Double,
+    eltDims: Complex,
 ) = {
-  val eltDims = Complex(600, 400)
   val pos = Complex((eltDims.x - width) / 2, ypadding)
   svg.g(
     svg.rect(

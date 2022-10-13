@@ -153,30 +153,44 @@ def ifInLens[A](a: A) = Lens[Set[A], Boolean](_ contains a)(b =>
   setA => if b then setA + a else setA - a
 )
 
-def speciesEditor($p: Var[PropPetri], s: Elt[S.type]) = {
-  val eltDims = Complex(600, 400)
-
+object EditorParams {
   val dims = Complex(400, 120)
+  val paddingV = 4.0
+  val borderV = 2.5
+
+  def toplevelStyle = Seq(
+    borderStyle := "solid",
+    height := s"${dims.y - borderV*2}px",
+    width := s"${dims.x - borderV*2}px",
+    borderWidth := s"${borderV}px",
+    backgroundColor := "white",
+  )
+}
+
+def inputCell(labelV: String, el: Element) =
+  import EditorParams._
+  flexcol(
+    padding := s"${paddingV}px",
+    label(labelV),
+    el
+  )
+
+def speciesEditor($p: Var[PropPetri], s: Elt[S.type], eltDims: Complex) = {
+  import EditorParams._
 
   val pos = Complex(eltDims.x / 2, eltDims.y)
     - Complex(dims.x / 2, dims.y)
 
   wrappedHtml(
     flexcol(
-      borderStyle := "solid",
-      height := "115px",
-      width := "395px",
-      borderWidth := "2.5px",
-      backgroundColor := "white",
+      toplevelStyle,
       flexrow(
-        flexcol(
-          padding := "4px",
-          label("Label:"),
+        inputCell(
+          "Label:",
           makeInput("text", $p, PropPetriOps.subpartLens(SName, s), Prism.id)
         ),
-        flexcol(
-          padding := "4px",
-          label("Concentration:"),
+        inputCell(
+          "Concentration:",
           makeInput(
             "text",
             $p,
@@ -186,7 +200,7 @@ def speciesEditor($p: Var[PropPetri], s: Elt[S.type]) = {
         )
       ),
       flexcol(
-        padding := "4px",
+        padding := s"${paddingV}px",
         "Do stratification with:",
         flexrow(
           Seq("infect", "disease", "strata").map(tt =>
@@ -212,30 +226,21 @@ def speciesEditor($p: Var[PropPetri], s: Elt[S.type]) = {
   )
 }
 
-def transitionEditor($p: Var[PropPetri], t: Elt[T.type]) = {
-  val eltDims = Complex(600, 400)
-
-  val dims = Complex(400, 120)
+def transitionEditor($p: Var[PropPetri], t: Elt[T.type], eltDims: Complex) = {
+  import EditorParams._
 
   val pos = Complex(eltDims.x / 2, eltDims.y)
     - Complex(dims.x / 2, dims.y)
 
   wrappedHtml(
     flexcol(
-      borderStyle := "solid",
-      height := "115px",
-      width := "395px",
-      borderWidth := "2.5px",
-      backgroundColor := "white",
       flexrow(
-        flexcol(
-          padding := "4px",
-          label("Label:"),
+        inputCell(
+          "Label:",
           makeInput("text", $p, PropPetriOps.subpartLens(TName, t), Prism.id)
         ),
-        flexcol(
-          padding := "4px",
-          label("Rate:"),
+        inputCell(
+          "Rate:",
           makeInput(
             "text",
             $p,
@@ -245,7 +250,7 @@ def transitionEditor($p: Var[PropPetri], t: Elt[T.type]) = {
         )
       ),
       flexcol(
-        padding := "4px",
+        padding := s"${padding}px",
         "Transition Type:",
         form(
           fieldSet(
@@ -279,7 +284,8 @@ def transitionEditor($p: Var[PropPetri], t: Elt[T.type]) = {
 
 def openSpeciesEditor(s: Elt[S.type]): Action[PropPetri, Unit] = for {
   $p <- ops.ask.map(_.$model)
-  ed <- ops.delay(speciesEditor($p, s))
+  eltDims <- ops.ask.map(_.dims())
+  ed <- ops.delay(speciesEditor($p, s, eltDims))
   _ <- addChild(ed)
   bindables <- ops.ask.map(_.bindables)
   _ <- (for {
@@ -290,7 +296,8 @@ def openSpeciesEditor(s: Elt[S.type]): Action[PropPetri, Unit] = for {
 
 def openTransitionEditor(t: Elt[T.type]): Action[PropPetri, Unit] = for {
   $p <- ops.ask.map(_.$model)
-  ed <- ops.delay(transitionEditor($p, t))
+  eltDims <- ops.ask.map(_.dims())
+  ed <- ops.delay(transitionEditor($p, t, eltDims))
   _ <- addChild(ed)
   bindables <- ops.ask.map(_.bindables)
   _ <- (for {

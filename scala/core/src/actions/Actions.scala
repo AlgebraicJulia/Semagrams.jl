@@ -48,56 +48,6 @@ import scala.scalajs.js
   */
 package object actions {}
 
-case class EditorState[Model](
-    mouse: MouseController,
-    drag: DragController,
-    hover: HoverController,
-    keyboard: KeyboardController,
-    bindables: EventBus[Any],
-    $model: Var[Model],
-    elt: SvgElement,
-    playArea: SvgElement,
-    childCommands: Observer[ChildrenCommand],
-    update: () => Unit
-)
-
-object EditorState {
-  def apply[Model]($model: Var[Model], elt: SvgElement, update: () => Unit) = {
-    val mouse = MouseController()
-    val drag = DragController(mouse)
-    val hover = HoverController()
-    val keyboard = KeyboardController()
-    val bindables = EventBus[Any]()
-    val commandBus = EventBus[ChildrenCommand]()
-    val playArea = svg.g(
-      children.command <-- commandBus.events
-    )
-
-    elt.amend(
-      mouse,
-      drag,
-      hover,
-      keyboard,
-      playArea,
-      mouse.mouseEvents --> bindables,
-      keyboard.keydowns --> bindables,
-      keyboard.keyups --> bindables
-    )
-
-    new EditorState(
-      mouse,
-      drag,
-      hover,
-      keyboard,
-      bindables,
-      $model,
-      elt,
-      playArea,
-      commandBus.writer,
-      update
-    )
-  }
-}
 
 type Action[Model, A] = ReaderT[IO, EditorState[Model], A]
 
@@ -267,7 +217,8 @@ def editText[Model](
 ): Action[Model, Unit] =
   for {
     bus <- ops[Model].delay(EventBus[Unit]())
-    input <- ops.delay(TextInput(listener, init, bus.writer, Complex(200, 40)))
+    eltDims <- ops[Model].ask.map(_.dims())
+    input <- ops.delay(TextInput(listener, init, bus.writer, Complex(200, 40), eltDims))
     _ <- addChild(input)
     _ <- nextEvent(bus.events)
     _ <- removeChild(input)

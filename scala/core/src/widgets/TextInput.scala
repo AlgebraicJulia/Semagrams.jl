@@ -7,12 +7,10 @@ def TextInput(
     listener: Observer[String],
     init: String,
     finished: Observer[Unit],
-    dims: Complex
+    dims: Complex,
+    center: Complex
 ) = {
-  val eltDims = Complex(600, 400)
-
-  val pos = Complex(eltDims.x / 2, eltDims.y)
-    - Complex(dims.x / 2, dims.y)
+  val pos = center - (dims / 2)
 
   wrappedHtml(
     input(

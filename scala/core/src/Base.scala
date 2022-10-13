@@ -27,18 +27,6 @@ def baseSvg = svg.svg(
   )
 )
 
-val pulseKeyframes = """
-@keyframes pulse {
-  0% {
-    filter: brightness(120%)
-  }
-
-  100% {
-    filter: brightness(80%)
-  }
-}
-"""
-
 def mountWithAction[Model](
     parentDiv: dom.Element,
     initModel: Model,
@@ -65,7 +53,6 @@ def mountWithAction[Model](
   val editorState = EditorState($model, appElement, update)
 
   render(parentDiv, appElement)
-  render(parentDiv, styleTag(pulseKeyframes))
 
   runAction(editorState, action)
 }
