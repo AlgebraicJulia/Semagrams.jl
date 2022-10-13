@@ -190,6 +190,7 @@ def speciesEditor($p: Var[PropPetri], s: Elt[S.type]) = {
         flexrow(
           Seq("strata", "disease", "infect").map(tt =>
             flexrow(
+              alignItems := "center",
               input(
                 typ := "checkbox",
                 setChecked(
