@@ -27,7 +27,8 @@ case class Disc() extends Sprite {
   def styleUpdater(data: L.Signal[PropMap]) = {
     List(
       fill <-- data.map(_(Fill)),
-      stroke <-- data.map(_(Stroke))
+      stroke <-- data.map(_(Stroke)),
+      style <-- data.map(_.get(Style).getOrElse(""))
     )
   }
 

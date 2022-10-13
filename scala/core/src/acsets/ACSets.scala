@@ -83,7 +83,24 @@ case class Schema(
     obs: Map[String, Ob],
     homs: Map[String, AbstractHom],
     attrs: Map[String, AbstractAttr]
-)
+) {
+  def extend(args: (Ob | AbstractHom | AbstractAttr)*) = {
+    val newObs = args.collect { case (x: Ob) =>
+      x
+    }
+    val newHoms = args.collect { case (f: AbstractHom) =>
+      f
+    }
+    val newAttrs = args.collect { case (f: AbstractAttr) =>
+      f
+    }
+    this.copy(
+      obs = obs ++ newObs.map(x => (x.toString, x)).toMap,
+      homs = homs ++ newHoms.map(x => (x.toString.toLowerCase(), x)).toMap,
+      attrs = attrs ++ newAttrs.map(x => (x.toString.toLowerCase(), x)).toMap
+    )
+  }
+}
 
 object Schema {
 
@@ -91,20 +108,7 @@ object Schema {
     * splits them out for the user.
     */
   def apply(args: (Ob | AbstractHom | AbstractAttr)*) = {
-    val obs = args.collect { case (x: Ob) =>
-      x
-    }
-    val homs = args.collect { case (f: AbstractHom) =>
-      f
-    }
-    val attrs = args.collect { case (f: AbstractAttr) =>
-      f
-    }
-    new Schema(
-      obs.map(x => (x.toString, x)).toMap,
-      homs.map(x => (x.toString.toLowerCase(), x)).toMap,
-      attrs.map(x => (x.toString.toLowerCase(), x)).toMap
-    )
+    new Schema(Map(), Map(), Map()).extend(args*)
   }
 }
 
@@ -489,7 +493,9 @@ trait ACSet[A] {
   * in an imperative way.
  */
 trait ACSetOps[A] {
-  given acsetInstance: ACSet[A]
+  val acsetInstance: ACSet[A]
+
+  export acsetInstance._
 
   def addPart[X <: Ob](ob: X): State[A, Elt[X]] =
     State(_.addPart(ob).swap)
@@ -510,4 +516,7 @@ trait ACSetOps[A] {
 
   def remPart[X <: Ob](x: Elt[X]): State[A, Unit] =
     State.modify(_.remPart(x))
+
+  def subpartLens[X <: Ob, T](f: Attr[X,T], x: Elt[X]) =
+    Lens[A, T](_.subpart(f, x).get)(y => s => s.setSubpart(f, x, y))
 }

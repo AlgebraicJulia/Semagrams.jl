@@ -11,7 +11,7 @@ def baseSvg = svg.svg(
   svg.width := "600",
   svg.height := "400",
   svg.customSvgAttr("tabindex", StringAsIsCodec) := "0",
-  svg.style := "border:black;border-style:solid",
+  svg.style := "border:black;border-style:solid;background-color:white",
   svg.defs(
     svg.marker(
       svg.idAttr := "arrowhead",

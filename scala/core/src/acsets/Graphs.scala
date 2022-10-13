@@ -47,7 +47,7 @@ trait HasGraph[A] extends ACSetOps[A] {
     } yield e
 }
 
-given[A: HasGraph]: ACSet[A] = {
+given [A: HasGraph]: ACSet[A] = {
   val hasGraph = summon[HasGraph[A]]
   hasGraph.acsetInstance
 }
@@ -77,19 +77,13 @@ object WeightedGraph {
   def ops[T] = new HasGraph[WeightedGraph[T]] {
     given acsetInstance: ACSet[WeightedGraph[T]] with
       val bare = GenIso[WeightedGraph[T], BareACSet]
-      val schema = Schema(
-        E,
-        V,
-        Src,
-        Tgt,
-        Weight[T]()
-      )
+      val schema = Graph.ops.schema.extend(Weight[T]())
   }
 
-  def apply[T]() = ops[T].acsetInstance.empty
+  def apply[T]() = ops[T].empty
 }
 
-given[T]: HasGraph[WeightedGraph[T]] = WeightedGraph.ops[T]
+given [T]: HasGraph[WeightedGraph[T]] = WeightedGraph.ops[T]
 
 case class LabelValue[T]() extends AttrType {
   type Value = T
@@ -106,19 +100,13 @@ object LabeledGraph {
   def ops[T] = new HasGraph[LabeledGraph[T]] {
     given acsetInstance: ACSet[LabeledGraph[T]] with
       val bare = GenIso[LabeledGraph[T], BareACSet]
-      val schema = Schema(
-        E,
-        V,
-        Src,
-        Tgt,
-        Label[T]()
-      )
+      val schema = Graph.ops.schema.extend(Label[T]())
   }
 
   def apply[T]() = ops[T].acsetInstance.empty
 }
 
-given[T]: HasGraph[LabeledGraph[T]] = LabeledGraph.ops[T]
+given [T]: HasGraph[LabeledGraph[T]] = LabeledGraph.ops[T]
 
 def addLabeledVertex[T](label: T): State[LabeledGraph[T], Elt[V.type]] = {
   val ops = LabeledGraph.ops[T]

@@ -28,20 +28,22 @@ object Petris {
   case class Petri(acset: BareACSet)
 
   object Petri {
-    given petriACSet: ACSet[Petri] with
-      val bare = GenIso[Petri, BareACSet]
-      val schema = Schema(
-        S,
-        T,
-        I,
-        O,
-        IT,
-        IS,
-        OT,
-        OS
-      )
+    val ops = new ACSetOps[Petri] {
+      given acsetInstance: ACSet[Petri] with
+        val bare = GenIso[Petri, BareACSet]
+        val schema = Schema(
+          S,
+          T,
+          I,
+          O,
+          IT,
+          IS,
+          OT,
+          OS
+        )
+    }
 
-    def apply() = petriACSet.empty
+    def apply() = ops.empty
   }
 
   case object NameValue extends AttrType {
@@ -61,22 +63,13 @@ object Petris {
   case class LabelledPetri(acset: BareACSet)
 
   object LabelledPetri {
-    given labelledPetriACSet: ACSet[LabelledPetri] with
-      val bare = GenIso[LabelledPetri, BareACSet]
-      val schema = Schema(
-        S,
-        T,
-        I,
-        O,
-        IT,
-        IS,
-        OT,
-        OS,
-        SName,
-        TName
-      )
+    val ops = new ACSetOps[LabelledPetri] {
+      given acsetInstance: ACSet[LabelledPetri] with
+        val bare = GenIso[LabelledPetri, BareACSet]
+        val schema = Petri.ops.schema.extend(SName, TName)
+    }
 
-    def apply() = labelledPetriACSet.empty
+    def apply() = ops.empty
   }
 
   case object RateValue extends AttrType {
@@ -100,23 +93,14 @@ object Petris {
   case class LabelledReactionNet(acset: BareACSet)
 
   object LabelledReactionNet {
-    given labelledReactionNetACSet: ACSet[LabelledReactionNet] with
-      val bare = GenIso[LabelledReactionNet, BareACSet]
-      val schema = Schema(
-        S,
-        T,
-        I,
-        O,
-        IT,
-        IS,
-        OT,
-        OS,
-        SName,
-        TName,
-        Rate,
-        Concentration
-      )
+    val ops = new ACSetOps[LabelledReactionNet] {
+      given acsetInstance: ACSet[LabelledReactionNet] with
+        val bare = GenIso[LabelledReactionNet, BareACSet]
+        val schema = LabelledPetri.ops.schema.extend(Rate, Concentration)
+    }
 
-    def apply() = labelledReactionNetACSet.empty
+    def apply() = ops.empty
   }
+
+  given ACSet[LabelledReactionNet] = LabelledReactionNet.ops.acsetInstance
 }
