@@ -155,7 +155,7 @@ def ifInLens[A](a: A) = Lens[Set[A], Boolean](_ contains a)(b =>
 def speciesEditor($p: Var[PropPetri], s: Elt[S.type]) = {
   val eltDims = Complex(600, 400)
 
-  val dims = Complex(400, 100)
+  val dims = Complex(400, 120)
 
   val pos = Complex(eltDims.x / 2, eltDims.y)
     - Complex(dims.x / 2, dims.y)
@@ -163,7 +163,7 @@ def speciesEditor($p: Var[PropPetri], s: Elt[S.type]) = {
   wrappedHtml(
     flexcol(
       borderStyle := "solid",
-      height := "95px",
+      height := "115px",
       width := "395px",
       borderWidth := "2.5px",
       backgroundColor := "white",
@@ -213,7 +213,7 @@ def speciesEditor($p: Var[PropPetri], s: Elt[S.type]) = {
 def transitionEditor($p: Var[PropPetri], t: Elt[T.type]) = {
   val eltDims = Complex(600, 400)
 
-  val dims = Complex(400, 100)
+  val dims = Complex(400, 120)
 
   val pos = Complex(eltDims.x / 2, eltDims.y)
     - Complex(dims.x / 2, dims.y)
@@ -221,7 +221,7 @@ def transitionEditor($p: Var[PropPetri], t: Elt[T.type]) = {
   wrappedHtml(
     flexcol(
       borderStyle := "solid",
-      height := "95px",
+      height := "115px",
       width := "395px",
       borderWidth := "2.5px",
       backgroundColor := "white",
