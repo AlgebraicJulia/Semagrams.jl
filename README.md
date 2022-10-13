@@ -14,6 +14,8 @@ In order to run the Petri net editor standalone, install [Mill](https://github.c
 
 You can look at `scala/build.sc` to figure out how to add another app, though you will have to change `scala/main.js` to point to the compiled js of the new file.
 
+Although Semagrams is a library, it is not a particularly stable library. Thus, in the beginning phases, we are working on similar development principles as the linux kernel; nothing that is not in this repository will be supported. If you would like to work on an app using Semagrams and would like it to not go out of date, you will have to add it to this repository so that it can be refactored when Semagrams is refactored.
+
 ## Trailer:
 
 https://www.youtube.com/watch?v=b1xiY9sznEo
