@@ -68,13 +68,13 @@ def assignBends[A: ACSet](
 extension [A](xs: List[A]) {
   def assignBends[B](f: A => B, increment: Double) = xs
     .groupBy(f)
-    .mapValues(l => {
+    .values
+    .map(l => {
       val n: Double = l.length
       l.zipWithIndex.map({ case (a, k) =>
         (a, ((-n + 1) / 2.0 + k) * increment)
       })
     })
-    .values
     .toList
     .flatten
 }

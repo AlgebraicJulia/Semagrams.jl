@@ -248,13 +248,13 @@ case class BareACSet(
       }
     }
     this.copy(
-      obs = obs.mapValues(_.filter(y => !(visited contains y))).toMap,
-      homs = homs
+      obs = obs.view.mapValues(_.filter(y => !(visited contains y))).toMap,
+      homs = homs.view
         .mapValues(
           _.filter((k, v) => !(visited contains k) && !(visited contains v))
         )
         .toMap,
-      attrs = attrs.mapValues(_.filter((k, v) => !(visited contains k))).toMap
+      attrs = attrs.view.mapValues(_.filter((k, v) => !(visited contains k))).toMap
     )
   }
 

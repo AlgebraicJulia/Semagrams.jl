@@ -179,7 +179,7 @@ def speciesEditor($p: Var[PropPetri], s: Elt[S.type], eltDims: Complex) = {
         PS.row,
         inputCell(
           "Label:",
-          makeInput("text", $p, PropPetriOps.subpartLens(SName, s), Prism.id)
+          makeInput("text", $p, PropPetriOps.subpartLens(SName, s), Iso.id)
         ),
         inputCell(
           "Concentration:",
@@ -234,7 +234,7 @@ def transitionEditor($p: Var[PropPetri], t: Elt[T.type], eltDims: Complex) = {
         PS.row,
         inputCell(
           "Label:",
-          makeInput("text", $p, PropPetriOps.subpartLens(TName, t), Prism.id)
+          makeInput("text", $p, PropPetriOps.subpartLens(TName, t), Iso.id)
         ),
         inputCell(
           "Rate:",
