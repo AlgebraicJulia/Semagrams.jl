@@ -19,7 +19,7 @@ trait Defaults extends ScalaJSModule with PublishModule {
   def scalaVersion = "3.1.3"
   def scalaJSVersion = "1.11.0"
 
-  def scalacOptions = Seq("-Ykind-projector:underscores")
+  def scalacOptions = Seq("-Ykind-projector:underscores", "-deprecation", "-feature")
 
   def moduleKind = T { ModuleKind.ESModule }
 

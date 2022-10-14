@@ -28,8 +28,8 @@ object Petris {
   case class Petri(acset: BareACSet)
 
   object Petri {
-    val ops = new ACSetOps[Petri] {
-      given acsetInstance: ACSet[Petri] with
+    val ops = new StaticACSetOps[Petri] {
+      given acsetInstance: StaticACSet[Petri] with
         val bare = GenIso[Petri, BareACSet]
         val schema = Schema(
           S,
@@ -63,8 +63,8 @@ object Petris {
   case class LabelledPetri(acset: BareACSet)
 
   object LabelledPetri {
-    val ops = new ACSetOps[LabelledPetri] {
-      given acsetInstance: ACSet[LabelledPetri] with
+    val ops = new StaticACSetOps[LabelledPetri] {
+      given acsetInstance: StaticACSet[LabelledPetri] with
         val bare = GenIso[LabelledPetri, BareACSet]
         val schema = Petri.ops.schema.extend(SName, TName)
     }
@@ -93,8 +93,8 @@ object Petris {
   case class LabelledReactionNet(acset: BareACSet)
 
   object LabelledReactionNet {
-    val ops = new ACSetOps[LabelledReactionNet] {
-      given acsetInstance: ACSet[LabelledReactionNet] with
+    val ops = new StaticACSetOps[LabelledReactionNet] {
+      given acsetInstance: StaticACSet[LabelledReactionNet] with
         val bare = GenIso[LabelledReactionNet, BareACSet]
         val schema = LabelledPetri.ops.schema.extend(Rate, Concentration)
     }

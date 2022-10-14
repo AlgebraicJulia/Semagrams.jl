@@ -16,7 +16,7 @@ import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveElement
 import com.raquo.laminar.nodes.ReactiveSvgElement
 import org.scalajs.dom
-import org.scalajs.dom.raw.KeyboardEvent
+import org.scalajs.dom.KeyboardEvent
 import semagrams._
 import semagrams.acsets._
 import semagrams.controllers._

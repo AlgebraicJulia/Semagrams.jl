@@ -248,13 +248,14 @@ case class BareACSet(
       }
     }
     this.copy(
-      obs = obs.mapValues(_.filter(y => !(visited contains y))).toMap,
-      homs = homs
+      obs = obs.view.mapValues(_.filter(y => !(visited contains y))).toMap,
+      homs = homs.view
         .mapValues(
           _.filter((k, v) => !(visited contains k) && !(visited contains v))
         )
         .toMap,
-      attrs = attrs.mapValues(_.filter((k, v) => !(visited contains k))).toMap
+      attrs =
+        attrs.view.mapValues(_.filter((k, v) => !(visited contains k))).toMap
     )
   }
 
@@ -416,73 +417,86 @@ object BareACSet {
   * This trait then provides extension methods for the newtype wrapper that pass
   * in the schema to the functions on the BareACSet.
   */
-trait ACSet[A] {
-  val bare: Iso[A, BareACSet]
-  val schema: Schema
 
-  def empty: A = {
-    bare.reverseGet(BareACSet(schema))
-  }
+trait ACSet[A] {
+  val bare: Lens[A, BareACSet]
+  def getschema(a: A): Schema
+
+  // def empty: A = {
+  //   bare.reverseGet(BareACSet(schema))
+  // }
 
   extension (a: A)
+    def schemaInst = getschema(a)
+
     def parts[X <: Ob](ob: X): Set[Elt[X]] = {
-      bare.get(a).parts(schema, ob)
+      bare.get(a).parts(schemaInst, ob)
     }
 
     def addPart[X <: Ob](ob: X): (Elt[X], A) = {
-      bare.modifyF(_.addPart(schema, ob))(a)
+      bare.modifyF(_.addPart(schemaInst, ob))(a)
     }
 
     def untypedSubpart(f: AbstractHom, x: Entity): Option[Entity] = {
-      bare.get(a).untypedSubpart(schema, f, x)
+      bare.get(a).untypedSubpart(schemaInst, f, x)
     }
 
     def subpart[X <: Ob, Y <: Ob](f: Hom[X, Y], x: Elt[X]): Option[Elt[Y]] = {
-      bare.get(a).subpart(schema, f, x)
+      bare.get(a).subpart(schemaInst, f, x)
     }
 
     def subpart[X <: Ob, T](f: Attr[X, T], x: Elt[X]): Option[T] = {
-      bare.get(a).subpart(schema, f, x)
+      bare.get(a).subpart(schemaInst, f, x)
     }
 
     def untypedSubpart(f: AbstractAttr, x: Entity): Option[Any] = {
-      bare.get(a).untypedSubpart(schema, f, x)
+      bare.get(a).untypedSubpart(schemaInst, f, x)
     }
 
     def incident[X <: Ob, Y <: Ob](
         f: Hom[X, Y],
         y: Elt[Y]
     ): Set[Elt[X]] = {
-      bare.get(a).incident(schema, f, y)
+      bare.get(a).incident(schemaInst, f, y)
     }
 
     def setSubpart[X <: Ob, Y <: Ob](f: Hom[X, Y], x: Elt[X], y: Elt[Y]): A = {
-      bare.modify(_.setSubpart(schema, f, x, y))(a)
+      bare.modify(_.setSubpart(schemaInst, f, x, y))(a)
     }
 
     def setSubpart[X <: Ob, T](f: Attr[X, T], x: Elt[X], y: T): A = {
-      bare.modify(_.setSubpart(schema, f, x, y))(a)
+      bare.modify(_.setSubpart(schemaInst, f, x, y))(a)
     }
 
     def updateSubpart[X <: Ob, T](f: Attr[X, T], x: Elt[X], fun: T => T): A = {
       bare.modify(s => {
-        val prev = s.subpart(schema, f, x)
-        prev.map(v => s.setSubpart(schema, f, x, fun(v))).getOrElse(s)
+        val prev = s.subpart(schemaInst, f, x)
+        prev.map(v => s.setSubpart(schemaInst, f, x, fun(v))).getOrElse(s)
       })(a)
     }
 
     def remPart[X <: Ob](x: Elt[X]): A = {
-      bare.modify(_.remPart(schema, x))(a)
+      bare.modify(_.remPart(schemaInst, x))(a)
     }
 
     def remPart(x: Entity): A = {
-      for (ob <- schema.obs.values) {
+      for (ob <- schemaInst.obs.values) {
         if (x.entityType == ob) {
-          return bare.modify(_.remPart(schema, x.asInstanceOf[Elt[ob.type]]))(a)
+          return bare.modify(_.remPart(schemaInst, x.asInstanceOf[Elt[ob.type]]))(a)
         }
       }
       return a
     }
+
+}
+
+trait StaticACSet[A] extends ACSet[A] {
+  val bare: Iso[A, BareACSet]
+
+  val schema: Schema
+  def getschema(a: A) = schema
+
+  def empty: A = bare.reverseGet(BareACSet(schema))
 
   def rw(serializers: AttrTypeSerializers): ReadWriter[A] =
     BareACSet.serializer(schema, serializers).bimap(bare.get(_), bare(_))
@@ -491,7 +505,7 @@ trait ACSet[A] {
 /** Finally, we also provide wrappers around the mutating methods on an acset
   * that do the mutation in the state monad, so that we can write acset mutation
   * in an imperative way.
- */
+  */
 trait ACSetOps[A] {
   val acsetInstance: ACSet[A]
 
@@ -517,6 +531,12 @@ trait ACSetOps[A] {
   def remPart[X <: Ob](x: Elt[X]): State[A, Unit] =
     State.modify(_.remPart(x))
 
-  def subpartLens[X <: Ob, T](f: Attr[X,T], x: Elt[X]) =
+  def subpartLens[X <: Ob, T](f: Attr[X, T], x: Elt[X]) =
     Lens[A, T](_.subpart(f, x).get)(y => s => s.setSubpart(f, x, y))
+}
+
+trait StaticACSetOps[A] extends ACSetOps[A] {
+  val acsetInstance: StaticACSet[A]
+
+  export acsetInstance.{schema, empty, rw}
 }

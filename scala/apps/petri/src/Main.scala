@@ -55,8 +55,8 @@ case object TransitionType extends Attr[T.type, Option[String]] {
 }
 
 object StratPetri {
-  def ops = new ACSetOps[StratPetri] {
-    given acsetInstance: ACSet[StratPetri] with
+  def ops = new StaticACSetOps[StratPetri] {
+    given acsetInstance: StaticACSet[StratPetri] with
       val bare = GenIso[StratPetri, BareACSet]
       val schema = LabelledReactionNet.ops.schema.extend(
         StratificationWith,
@@ -65,19 +65,19 @@ object StratPetri {
   }
 }
 
-given ACSet[StratPetri] = StratPetri.ops.acsetInstance
+given StaticACSet[StratPetri] = StratPetri.ops.acsetInstance
 
-type PropPetri = WithProps[StratPetri]
+type PropPetri = StaticWithProps[StratPetri]
 
-object PropPetriOps extends PropOps[StratPetri] {
-  val acsetInstance = WithProps.ops[StratPetri].acsetInstance
+object PropPetriOps extends StaticPropOps[PropPetri] {
+  val acsetInstance = StaticWithProps.ops[StratPetri].acsetInstance
 }
 
 import PropPetriOps._
 
 val ops = Action.ops[PropPetri]
 
-val addSpecies = addEntityPos[StratPetri, S.type](
+val addSpecies = addEntityPos[PropPetri, S.type](
   S,
   v =>
     for {
@@ -87,7 +87,7 @@ val addSpecies = addEntityPos[StratPetri, S.type](
     } yield ()
 )
 
-val addTransition = addEntityPos[StratPetri, T.type](
+val addTransition = addEntityPos[PropPetri, T.type](
   T,
   v =>
     for {
@@ -468,6 +468,6 @@ object Main {
 
     dom.document.querySelector("head").appendChild(styleTag(PSrendered).ref)
 
-    mountWithAction(el, WithProps[StratPetri](), serializer, action)
+    mountWithAction(el, StaticWithProps[StratPetri](), serializer, action)
   }
 }

@@ -14,19 +14,20 @@ import cats.effect.syntax.all._
 
 import Action.ops
 
-def addEntityPos[A: ACSet, X <: Ob](
+def addEntityPos[A: HasProps, X <: Ob](
     x: X,
-    init: Elt[X] => State[WithProps[A], Unit]
-): Action[WithProps[A], Elt[X]] = for {
-  pos <- mousePos
-  v <- updateModelS[WithProps[A], Elt[X]](
-    for {
-      v <- WithProps.ops.addPartWP(x, PropMap() + (Center, pos))
-      _ <- init(v)
-    } yield v
-  )
-  _ <- update
-} yield v
+    init: Elt[X] => State[A, Unit]
+): Action[A, Elt[X]] =
+  for {
+    pos <- mousePos
+    v <- updateModelS[A, Elt[X]](
+      for {
+        v <- HasProps.ops.addPartWP(x, PropMap() + (Center, pos))
+        _ <- init(v)
+      } yield v
+    )
+    _ <- update
+  } yield v
 
 def remEntity[A: ACSet]: Action[A, Unit] = for {
   v <- fromMaybe(hovered)
@@ -34,26 +35,26 @@ def remEntity[A: ACSet]: Action[A, Unit] = for {
   _ <- update
 } yield ()
 
-def dragEdge[A: ACSet, X <: Ob, Y <: Ob, Z <: Ob](
+def dragEdge[A: HasProps, X <: Ob, Y <: Ob, Z <: Ob](
     src: Hom[X, Y],
     tgt: Hom[X, Z],
     s: Elt[Y]
-)(implicit withPropsACSet: ACSet[WithProps[A]]): Action[WithProps[A], Unit] = {
+)(implicit withPropsACSet: ACSet[A]): Action[A, Unit] = {
   for {
-    drag <- ops[WithProps[A]].ask.map(_.drag)
-    $model <- ops[WithProps[A]].ask.map(_.$model)
+    drag <- ops[A].ask.map(_.drag)
+    $model <- ops[A].ask.map(_.$model)
     p <- mousePos
-    e <- updateModelS[WithProps[A], Elt[X]](for {
-      e <- WithProps.ops.addPartWP(src.dom, PropMap() + (End, p))
-      _ <- WithProps.ops.setSubpart(src, e, s)
+    e <- updateModelS[A, Elt[X]](for {
+      e <- HasProps.ops.addPartWP(src.dom, PropMap() + (End, p))
+      _ <- HasProps.ops.setSubpart(src, e, s)
     } yield e)
     _ <- (for {
       _ <- drag.drag(Observer(p => $model.update(_.setProp(e, End, p))))
       t <- fromMaybe(hoveredPart(tgt.codom.asInstanceOf[Z]))
-      _ <- updateModelS(WithProps.ops[A].setSubpart(tgt, e, t))
+      _ <- updateModelS(HasProps.ops.setSubpart(tgt, e, t))
     } yield ()).onCancelOrError(for {
       _ <- ops.delay(drag.$state.set(None))
-      _ <- updateModelS(WithProps.ops[A].remPart(e))
+      _ <- updateModelS(HasProps.ops.remPart(e))
     } yield ())
     _ <- update
   } yield ()

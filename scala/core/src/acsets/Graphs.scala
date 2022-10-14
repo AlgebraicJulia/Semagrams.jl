@@ -47,16 +47,23 @@ trait HasGraph[A] extends ACSetOps[A] {
     } yield e
 }
 
+trait StaticHasGraph[A] extends StaticACSetOps[A] with HasGraph[A]
+
 given [A: HasGraph]: ACSet[A] = {
   val hasGraph = summon[HasGraph[A]]
+  hasGraph.acsetInstance
+}
+
+given [A: StaticHasGraph]: StaticACSet[A] = {
+  val hasGraph = summon[StaticHasGraph[A]]
   hasGraph.acsetInstance
 }
 
 case class Graph(acset: BareACSet)
 
 object Graph {
-  val ops = new HasGraph[Graph] {
-    given acsetInstance: ACSet[Graph] with
+  val ops = new StaticHasGraph[Graph] {
+    given acsetInstance: StaticACSet[Graph] with
       val bare = GenIso[Graph, BareACSet]
       val schema = Schema(
         E,
@@ -69,13 +76,13 @@ object Graph {
   def apply() = ops.acsetInstance.empty
 }
 
-given HasGraph[Graph] = Graph.ops
+given StaticHasGraph[Graph] = Graph.ops
 
 case class WeightedGraph[T](acset: BareACSet)
 
 object WeightedGraph {
-  def ops[T] = new HasGraph[WeightedGraph[T]] {
-    given acsetInstance: ACSet[WeightedGraph[T]] with
+  def ops[T] = new StaticHasGraph[WeightedGraph[T]] {
+    given acsetInstance: StaticACSet[WeightedGraph[T]] with
       val bare = GenIso[WeightedGraph[T], BareACSet]
       val schema = Graph.ops.schema.extend(Weight[T]())
   }
@@ -83,7 +90,7 @@ object WeightedGraph {
   def apply[T]() = ops[T].empty
 }
 
-given [T]: HasGraph[WeightedGraph[T]] = WeightedGraph.ops[T]
+given [T]: StaticHasGraph[WeightedGraph[T]] = WeightedGraph.ops[T]
 
 case class LabelValue[T]() extends AttrType {
   type Value = T
@@ -97,8 +104,8 @@ case class Label[T]() extends Attr[V.type, T] {
 case class LabeledGraph[T](acset: BareACSet)
 
 object LabeledGraph {
-  def ops[T] = new HasGraph[LabeledGraph[T]] {
-    given acsetInstance: ACSet[LabeledGraph[T]] with
+  def ops[T] = new StaticHasGraph[LabeledGraph[T]] {
+    given acsetInstance: StaticACSet[LabeledGraph[T]] with
       val bare = GenIso[LabeledGraph[T], BareACSet]
       val schema = Graph.ops.schema.extend(Label[T]())
   }
@@ -106,7 +113,7 @@ object LabeledGraph {
   def apply[T]() = ops[T].acsetInstance.empty
 }
 
-given [T]: HasGraph[LabeledGraph[T]] = LabeledGraph.ops[T]
+given [T]: StaticHasGraph[LabeledGraph[T]] = LabeledGraph.ops[T]
 
 def addLabeledVertex[T](label: T): State[LabeledGraph[T], Elt[V.type]] = {
   val ops = LabeledGraph.ops[T]
@@ -116,11 +123,13 @@ def addLabeledVertex[T](label: T): State[LabeledGraph[T], Elt[V.type]] = {
   } yield v
 }
 
-type PropGraph = WithProps[Graph]
+type PropGraph = StaticWithProps[Graph]
 
-object PropGraphOps extends HasGraph[PropGraph] with PropOps[Graph] {
-  val acsetInstance = WithProps.ops[Graph].acsetInstance
+object PropGraphOps extends StaticHasGraph[PropGraph] with StaticPropOps[PropGraph] {
+  val acsetInstance = StaticWithProps.ops[Graph].acsetInstance
 }
+
+given [T]: StaticHasGraph[PropGraph] = PropGraph.ops
 
 object PropGraph {
   def ops = PropGraphOps

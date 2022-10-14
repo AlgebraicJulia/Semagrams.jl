@@ -3,7 +3,7 @@ package semagrams.actions
 import cats._
 import cats.data._
 import cats.effect._
-import org.scalajs.dom.raw.KeyboardEvent
+import org.scalajs.dom.KeyboardEvent
 import com.raquo.laminar.api.L._
 import semagrams._
 import semagrams.acsets._
