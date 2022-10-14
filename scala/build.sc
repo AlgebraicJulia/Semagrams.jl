@@ -3,6 +3,7 @@ import mill.scalalib._
 import mill.scalajslib._
 import mill.scalajslib.api._
 import mill.scalalib.publish._
+import scalafmt._
 
 def defaultPomSettings(desc: String) = PomSettings(
   description = desc,
@@ -15,7 +16,7 @@ def defaultPomSettings(desc: String) = PomSettings(
   )
 )
 
-trait Defaults extends ScalaJSModule with PublishModule {
+trait Defaults extends ScalaJSModule with PublishModule with ScalafmtModule {
   def scalaVersion = "3.1.3"
   def scalaJSVersion = "1.11.0"
 
@@ -63,13 +64,13 @@ trait SemagramsApp extends Defaults {
   def moduleDeps = Seq(core)
 }
 
-object apps extends Module {
-  object petri extends SemagramsApp {
-    def desc = "A petri net editor implemented with semagrams"
+// object apps extends Module {
+//   object petri extends SemagramsApp {
+//     def desc = "A petri net editor implemented with semagrams"
 
-    def artifactName = "semagrams-petri"
-  }
-  object graph extends SemagramsApp {
-    def desc = "A graph editor implemented with semagrams"
-  }
-}
+//     def artifactName = "semagrams-petri"
+//   }
+//   object graph extends SemagramsApp {
+//     def desc = "A graph editor implemented with semagrams"
+//   }
+// }
