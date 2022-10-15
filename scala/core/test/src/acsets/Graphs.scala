@@ -1,12 +1,11 @@
 package semagrams.acsets
 
 import utest._
-import semagrams.acsets._
-import semagrams.acsets.{given}
 import upickle.default._
-import scala.collection.immutable.HashMap
+import semagrams.acsets._
 
 object ACSetSpec extends TestSuite {
+
   def tests = Tests {
     test("empty graph") {
       val g = Graph()
@@ -15,7 +14,7 @@ object ACSetSpec extends TestSuite {
     }
 
     test("path graph") {
-      import Graph.ops._
+      import Graph._
       val mkpath = for {
         x <- addVertex()
         y <- addVertex()
@@ -29,12 +28,12 @@ object ACSetSpec extends TestSuite {
       assert(g.vertices() contains x)
       assert(g.vertices() contains y)
       assert(g.vertices() contains z)
-      assert(g.src(k) == Some(x))
-      assert(g.tgt(l) == Some(z))
+      assert(g.src(k) == x)
+      assert(g.tgt(l) == z)
     }
 
     test("weighted graph") {
-      val ops = WeightedGraph.ops[String]
+      val ops = WeightedGraph[String]
       import ops._
       val mkpath = for {
         x <- addVertex()
@@ -48,12 +47,12 @@ object ACSetSpec extends TestSuite {
 
       val (g, (x, y, z, k, l)) = mkpath.run(WeightedGraph[String]()).value
 
-      assert(g.subpart(Weight[String](), k) == Some("foo"))
-      assert(g.subpart(Weight[String](), l) == Some("bar"))
+      assert(g.subpart(Weight[String](), k) == "foo")
+      assert(g.subpart(Weight[String](), l) == "bar")
     }
 
     test("incident") {
-      import Graph.ops._
+      import Graph._
       val mkpath = for {
         x <- addVertex()
         y <- addVertex()
@@ -71,7 +70,7 @@ object ACSetSpec extends TestSuite {
     }
 
     test("removing parts") {
-      import Graph.ops._
+      import Graph._
       val makeAndRemove = for {
         x <- addVertex()
         y <- addVertex()
@@ -90,7 +89,7 @@ object ACSetSpec extends TestSuite {
     }
 
     test("serialization") {
-      val ops = WeightedGraph.ops[String]
+      val ops = WeightedGraph[String]
       import ops._
       val mkpath = for {
         x <- addVertex()
@@ -104,10 +103,9 @@ object ACSetSpec extends TestSuite {
 
       val (g, (x, y, z, k, l)) = mkpath.run(WeightedGraph[String]()).value
 
-      val rw = ops.acsetInstance.rw(AttrTypeSerializers() + ATRW(WeightValue[String](), summon[ReadWriter[String]]))
+      val rw = ACSet.rw[SchWeightedGraph[String]]
 
       assert(read(write(g)(rw))(rw) == g)
     }
   }
-
 }

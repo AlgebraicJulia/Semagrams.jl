@@ -1,7 +1,9 @@
 package semagrams.acsets
 
 import upickle.default._
+import cats.data.State
 import scala.collection.mutable
+import monocle.Lens
 
 case class Entity(id: Int, ob: Ob)
 
@@ -33,7 +35,7 @@ case class Table(
         .toMap
     )
 
-  def toSerializable[S](implicit s: Schema[S]): SerializableTable = {
+  def toSerializable[S](implicit s: IsSchema[S]): SerializableTable = {
     SerializableTable(
       parts.map(_.id),
       subparts.map((f, m) =>
@@ -51,19 +53,19 @@ case class SerializableTable(
 implicit val serializableTableRW: ReadWriter[SerializableTable] = macroRW
 
 object Table {
-  def apply[S: Schema](s: S, ob: Ob) = new Table(
+  def apply[S: IsSchema](s: S, ob: Ob) = new Table(
     Set[Entity](),
-    s.homs(ob).map(_ -> Map[Entity, Entity]()).toMap
+    s.homs(ob).map(f => (f, Map[Entity, Entity]())).toMap
   )
 
   def fromSerializable[S](ob: Ob, t: SerializableTable)(implicit
-      s: Schema[S]
+      s: IsSchema[S]
   ): Table = {
     new Table(
       t.parts.map(Entity(_, ob)),
       t.subparts.map((sf, m) => {
         val f = read[Hom](sf)(s.homRW)
-        (f, m.map((k, v) => Entity(k, ob) -> Entity(k, f.codom)))
+        (f, m.map((k, v) => Entity(k, ob) -> Entity(v, f.codom)))
       })
     )
   }
@@ -82,6 +84,9 @@ case class AttrMap(map: Map[Attr, Any]) {
     this.copy(map = map + (k -> v.asInstanceOf[Any]))
   }
 
+  def +[T](kv: (GenericAttr[T], T)) =
+    this.copy(map = map + (kv._1 -> kv._2.asInstanceOf[Any]))
+
   def ++(other: AttrMap): AttrMap = {
     this.copy(map = map ++ other.map)
   }
@@ -93,7 +98,7 @@ object AttrMap {
   }
 }
 
-case class ACSet[S: Schema](
+case class ACSet[S: IsSchema](
     schema: S,
     counter: Int,
     tables: Map[Ob, Table],
@@ -114,11 +119,15 @@ case class ACSet[S: Schema](
     )
   }
 
-  def setSubpart(f: Attr, x: Entity, y: f.Value): ACSet[S] = {
+  def setSubpart(f: Hom, x: Entity, y: Entity): ACSet[S] =
+    this.copy(
+      tables = tables + (x.ob -> tables(x.ob).setSubpart(f, x, y))
+    )
+
+  def setSubpart(f: Attr, x: Entity, y: f.Value): ACSet[S] =
     this.copy(
       attrs = attrs + (x -> (attrs(x).set(f, y)))
     )
-  }
 
   def subpart(f: Hom, x: Entity): f.Value = tables(x.ob).subpart(f, x)
 
@@ -129,23 +138,25 @@ case class ACSet[S: Schema](
 
   def trySubpart(f: Attr, x: Entity): Option[f.Value] = attrs(x).get(f)
 
-  def incident(f: Hom, ob: Ob, y: Entity): Set[Entity] =
-    tables(ob).parts.filter(trySubpart(f, _) == Some(y))
+  def incident(f: Hom, dom: Ob, y: Entity): Set[Entity] =
+    tables(dom).parts.filter(trySubpart(f, _) == Some(y))
 
-  def incident(f: Attr, ob: Ob, y: f.Value): Set[Entity] =
-    tables(ob).parts.filter(trySubpart(f, _) == Some(y))
+  def incident(f: Attr, dom: Ob, y: f.Value): Set[Entity] =
+    tables(dom).parts.filter(trySubpart(f, _) == Some(y))
+
+  def incident(f: HomWithDom, y: Entity): Set[Entity] = incident(f, f.dom, y)
+
+  def incident(f: AttrWithDom, y: f.Value): Set[Entity] = incident(f, f.dom, y)
 
   def remPart(x: Entity): ACSet[S] = {
     val visited = mutable.HashSet[Entity]()
     val next = mutable.Stack[Entity](x)
     while (!next.isEmpty) {
       val y = next.pop()
-      for (ob <- schema.obs) {
-        for (f <- schema.homs(ob).filter(_.codom == y.ob)) {
-          for (z <- parts(ob)) {
-            if (subpart(f, z) == Some(y))
-              next.push(z)
-          }
+      visited.add(y)
+      for (dom <- schema.obs) {
+        for (f <- schema.homs(dom).filter(_.codom == y.ob)) {
+          next.pushAll(incident(f, dom, y) -- visited)
         }
       }
     }
@@ -157,7 +168,7 @@ case class ACSet[S: Schema](
   }
 
   def toSerializable = {
-    val sInstance = summon[Schema[S]]
+    val sInstance = summon[IsSchema[S]]
     SerializableACSet(
       sInstance.rw.transform(schema, ujson.Value),
       counter,
@@ -186,16 +197,18 @@ case class SerializableACSet(
 implicit val serializableACSetRW: ReadWriter[SerializableACSet] = macroRW
 
 object ACSet {
-  def apply[S: Schema](s: S): ACSet[S] = new ACSet[S](
+  def apply[S: IsSchema](s: S): ACSet[S] = new ACSet[S](
     s,
     0,
     s.obs.map(ob => (ob -> Table(s, ob))).toMap,
     Map[Entity, AttrMap]()
   )
 
+  def apply[S]()(implicit iss: IsStaticSchema[S]): ACSet[S] = apply[S](iss.theS)
+
   def fromSerializable[S](
       sacs: SerializableACSet
-  )(implicit s: Schema[S]): ACSet[S] = {
+  )(implicit s: IsSchema[S]): ACSet[S] = {
     val obsById = mutable.HashMap[Int, Ob]()
     for ((sob, t) <- sacs.tables) {
       val ob = read[Ob](sob)(s.obRW)
@@ -216,15 +229,33 @@ object ACSet {
           Entity(x, obsById(x)),
           new AttrMap(m.map((sf, sv) => {
             val f = read[Attr](sf)(s.attrRW)
-            (f, f.readValue(sf))
+            (f, f.readValue(sv))
           }))
         )
       )
     )
   }
 
-  def rw[S: Schema]: ReadWriter[ACSet[S]] = serializableACSetRW.bimap[ACSet[S]](
-    _.toSerializable,
-    fromSerializable[S]
-  )
+  def rw[S: IsSchema]: ReadWriter[ACSet[S]] =
+    serializableACSetRW.bimap[ACSet[S]](
+      _.toSerializable,
+      fromSerializable[S]
+    )
+}
+
+trait ACSetOps[S: IsSchema] {
+  def addPart(ob: Ob): State[ACSet[S], Entity] =
+    State(_.addPart(ob))
+
+  def setSubpart(f: Hom, x: Entity, y: Entity): State[ACSet[S], Unit] =
+    State.modify(_.setSubpart(f, x, y))
+
+  def setSubpart(f: Attr, x: Entity, y: f.Value): State[ACSet[S], Unit] =
+    State.modify(_.setSubpart(f, x, y))
+
+  def remPart(x: Entity): State[ACSet[S], Unit] =
+    State.modify(_.remPart(x))
+
+  def subpartLens(f: Attr, x: Entity) =
+    Lens[ACSet[S], f.Value](_.subpart(f, x))(y => s => s.setSubpart(f, x, y))
 }
