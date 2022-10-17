@@ -5,7 +5,7 @@ import org.scalajs.dom.KeyboardEvent
 
 /** Like the MouseController, this both provides a subscription to keyboard
   * events and also keeps track of the current state of the keyboard itself.
- */
+  */
 
 enum KeyModifier:
   case Ctrl
@@ -14,16 +14,15 @@ enum KeyModifier:
   case Alt
 
   def isSet(evt: KeyboardEvent) = this match {
-    case Ctrl => evt.ctrlKey
+    case Ctrl  => evt.ctrlKey
     case Shift => evt.shiftKey
-    case Meta => evt.metaKey
-    case Alt => evt.altKey
+    case Meta  => evt.metaKey
+    case Alt   => evt.altKey
   }
 
 object KeyModifier {
   val all = Set[KeyModifier](Ctrl, Shift, Meta, Alt)
 }
-
 
 /** This is a data structure representing the current state of the keyboard.
   */

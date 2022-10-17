@@ -69,23 +69,29 @@ def clickOn[Model](
     clickType: ClickType,
     button: MouseButton,
     x: Ob
-): Binding[Model, Entity] = Binding({
-  case MouseEvent.MouseDown(Some(ent), `button`)
-      if (clickType == Single && ent.ob == x) =>
-    ops.pure(ent)
-  case MouseEvent.DoubleClick(Some(ent), `button`)
-      if (clickType == Double && ent.ob == x) =>
-    ops.pure(ent)
-}, Some(Set()))
+): Binding[Model, Entity] = Binding(
+  {
+    case MouseEvent.MouseDown(Some(ent), `button`)
+        if (clickType == Single && ent.ob == x) =>
+      ops.pure(ent)
+    case MouseEvent.DoubleClick(Some(ent), `button`)
+        if (clickType == Double && ent.ob == x) =>
+      ops.pure(ent)
+  },
+  Some(Set())
+)
 
 def releaseOn[Model](
     clickType: ClickType,
     button: MouseButton,
     x: Ob
-): Binding[Model, Entity] = Binding({
-  case MouseEvent.MouseUp(Some(ent), `button`) if (ent.ob == x) =>
-    ops.pure(ent)
-}, Some(Set()))
+): Binding[Model, Entity] = Binding(
+  {
+    case MouseEvent.MouseUp(Some(ent), `button`) if (ent.ob == x) =>
+      ops.pure(ent)
+  },
+  Some(Set())
+)
 
 def mouseMove[Model] = Binding[Model, Complex]({ case MouseEvent.MouseMove(p) =>
   ops.pure(p)

@@ -50,7 +50,7 @@ case class PropMap(map: Map[Property, Any]) {
   }
 
   def toJson(): Map[String, ujson.Value] =
-    map.map((k,v) => (k.toString, k.writeValue(v)))
+    map.map((k, v) => (k.toString, k.writeValue(v)))
 
   def --(ps: IterableOnce[Property]) = PropMap(map -- ps)
 

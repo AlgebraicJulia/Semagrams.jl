@@ -211,7 +211,9 @@ def editText[Model](
   for {
     bus <- ops[Model].delay(EventBus[Unit]())
     eltDims <- ops[Model].ask.map(_.dims())
-    input <- ops.delay(TextInput(listener, init, bus.writer, Complex(200, 40), eltDims))
+    input <- ops.delay(
+      TextInput(listener, init, bus.writer, Complex(200, 40), eltDims)
+    )
     _ <- addChild(input)
     _ <- nextEvent(bus.events)
     _ <- removeChild(input)
@@ -222,7 +224,10 @@ def editText[Model](
 def delay[Model](seconds: Double): Action[Model, Unit] =
   ops.async_(cb => dom.window.setTimeout(() => cb(Right(())), seconds * 1000))
 
-def runUntil[Model](action: Action[Model, Unit], condition: Action[Model, Unit]): Action[Model, Unit] = for {
+def runUntil[Model](
+    action: Action[Model, Unit],
+    condition: Action[Model, Unit]
+): Action[Model, Unit] = for {
   target <- action.start
   _ <- condition
   _ <- target.cancel

@@ -21,6 +21,25 @@ jobs:
           cd scala
           mill core.test
 
+  checkFormat:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Set up Mill
+        uses: jodersky/setup-mill@master
+        with:
+          mill-version: '0.10.5'
+
+      - run: |
+          cd scala
+          mill core.checkFormat
+          for app in $(mill resolve apps._)
+          do
+            mill "$app.checkFormat"
+          done
+
   upload:
     runs-on: ubuntu-latest
     steps:
@@ -42,7 +61,10 @@ jobs:
       - name: Build compiled javascript
         run: |
           cd scala
-          mill apps.petri.fullLinkJS
+          for app in $(mill resolve apps._)
+          do
+            mill $app.fullLinkJS
+          done
 
       - name: Get shorthash
         id: shorthash
@@ -53,8 +75,14 @@ jobs:
       - name: Copy files to bucket
         run: |
           hash=${{ steps.shorthash.outputs.sh }}
-          mkdir -p build/$hash/petri
-          cp scala/out/apps/petri/fullLinkJS.dest/* build/$hash/petri/
+          cd scala
+          mkdir build
+          for app in $(mill resolve apps._)
+          do
+            appname=$(echo $app | sed 's/.*\.//')
+            mkdir -p build/$hash/$appname
+            cp out/apps/$appname/fullLinkJS.dest/* build/$hash/$appname/
+          done
           aws s3 sync build/ s3://semagrams-builds
 
       - name: Create link to files in commit

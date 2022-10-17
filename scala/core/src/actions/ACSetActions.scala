@@ -15,8 +15,13 @@ import cats.effect.syntax.all._
 
 import Action.ops
 
-def addEntityPos[S: IsSchema](ob: Ob, props: PropMap): Action[ACSet[S], Entity] =
-  mousePos.flatMap(p => updateModelS(ACSetOps[S].addPart(ob, props + (Center, p))))
+def addEntityPos[S: IsSchema](
+    ob: Ob,
+    props: PropMap
+): Action[ACSet[S], Entity] =
+  mousePos.flatMap(p =>
+    updateModelS(ACSetOps[S].addPart(ob, props + (Center, p)))
+  )
 
 def remEntity[S: IsSchema]: Action[ACSet[S], Unit] = for {
   v <- fromMaybe(hovered)
