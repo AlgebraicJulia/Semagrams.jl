@@ -290,8 +290,8 @@ Shift-click and drag to add arrows
 """.linesIterator.toSeq
 
 val bindings = Bindings[StratPetri, Unit](
-  keyDown("s").andThen(addSpecies.flatMap(openSpeciesEditor)),
-  keyDown("t").andThen(addTransition.flatMap(openTransitionEditor)),
+  keyDown("s").andThen(addSpecies.flatMap(openSpeciesEditor).flatMap(_ => update)),
+  keyDown("t").andThen(addTransition.flatMap(openTransitionEditor).flatMap(_ => update)),
   keyDown("d").andThen(remEntity),
   keyDown("h").andThen(showPopoverUntil(helpText, keyDown("h"))),
   keyDown("?").andThen(showPopoverUntil(helpText, keyDown("?"))),
@@ -300,7 +300,7 @@ val bindings = Bindings[StratPetri, Unit](
     .flatMap(s => dragEdge(I, IS, IT, s)),
   clickOn(ClickType.Single, MouseButton.Left, T)
     .withMods(KeyModifier.Shift)
-    .flatMap(t => dragEdge(I, OT, OS, t)),
+    .flatMap(t => dragEdge(O, OT, OS, t)),
   clickOn(ClickType.Double, MouseButton.Left, S)
     .flatMap(openSpeciesEditor),
   clickOn(ClickType.Single, MouseButton.Left, S).flatMap(dragEntity),

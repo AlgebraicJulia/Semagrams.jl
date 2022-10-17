@@ -41,6 +41,11 @@ case class ACSet[S: IsSchema](
       props = props + (x -> (props(x) ++ pm))
     )
 
+  def remSubpart(f: Property, x: Entity): ACSet[S] =
+    this.copy(
+      props = props + (x -> (props(x) - f))
+    )
+
   def subpart(f: Property, x: Entity): f.Value = props(x)(f)
 
   def trySubpart(f: Property, x: Entity): Option[f.Value] = props(x).get(f)
@@ -77,11 +82,11 @@ case class ACSet[S: IsSchema](
       sInstance.rw.transform(schema, ujson.Value),
       counter,
       parts.map((ob, t) =>
-        (ob.toString(), t.map(_.id))
+        (ob.toString(), t.map((e: Entity) => BareEntity(e.id)))
       ),
       props.map((x, m) =>
         (
-          x.id,
+          BareEntity(x.id),
           m.toJson()
         )
       )
@@ -89,11 +94,16 @@ case class ACSet[S: IsSchema](
   }
 }
 
+/** This is to make upickle use a array of arrays instead of a dict for Map[BareEntity, X] */
+case class BareEntity(id: Int)
+
+implicit val beRW: ReadWriter[BareEntity] = readwriter[Int].bimap[BareEntity](_.id, BareEntity(_))
+
 case class SerializableACSet(
     schema: ujson.Value,
     counter: Int,
-    parts: Map[String, Set[Int]],
-    props: Map[Int, Map[String, ujson.Value]]
+    parts: Map[String, Set[BareEntity]],
+    props: Map[BareEntity, Map[String, ujson.Value]]
 )
 
 implicit val serializableACSetRW: ReadWriter[SerializableACSet] = macroRW
@@ -116,7 +126,7 @@ object ACSet {
     for ((sob, sparts) <- sacs.parts) {
       val ob = s.obsByString(sob)
       for (x <- sparts) {
-        obsById.put(x, ob)
+        obsById.put(x.id, ob)
       }
     }
     new ACSet[S](
@@ -124,12 +134,12 @@ object ACSet {
       sacs.counter,
       sacs.parts.map((sob, sparts) => {
         val ob = s.obsByString(sob)
-        val parts = sparts.map(Entity(_, ob))
+        val parts = sparts.map((e: BareEntity) => Entity(e.id, ob))
         (ob, parts)
       }),
       sacs.props.map((x, m) =>
         (
-          Entity(x, obsById(x)),
+          Entity(x.id, obsById(x.id)),
           PropMap.fromJson(genProps ++ s.homsByString ++ s.attrsByString, m)
         )
       )
