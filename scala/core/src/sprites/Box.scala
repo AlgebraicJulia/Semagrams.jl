@@ -4,8 +4,6 @@ import com.raquo.laminar.api.L.svg._
 import com.raquo.laminar.api._
 import semagrams.util._
 import semagrams._
-import semagrams.util.CustomAttr.CustomSvgAttr
-import semagrams.util.CustomAttr.SvgBinder
 import semagrams.text._
 
 //FIXME: Move these into util

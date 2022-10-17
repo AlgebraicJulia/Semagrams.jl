@@ -1,0 +1,75 @@
+package semagrams
+
+import semagrams.util._
+
+import upickle.default._
+
+enum GenericProperty[T: ReadWriter] extends Property:
+  case Fill extends GenericProperty[String]
+  case Stroke extends GenericProperty[String]
+  case InnerSep extends GenericProperty[Double]
+  case MinimumSize extends GenericProperty[Double]
+  case MinimumWidth extends GenericProperty[Double]
+  case MinimumHeight extends GenericProperty[Double]
+  case FontSize extends GenericProperty[Double]
+  case Content extends GenericProperty[String]
+  case Center extends GenericProperty[Complex]
+  case Start extends GenericProperty[Complex]
+  case End extends GenericProperty[Complex]
+  case Bend extends GenericProperty[Double]
+  case Style extends GenericProperty[String]
+
+  type Value = T
+
+  val rw = summon[ReadWriter[T]]
+end GenericProperty
+
+export GenericProperty._
+
+val genProps: Map[String, Property] =
+  GenericProperty.values.map(p => (p.toString, p)).toMap
+
+case class PropMap(map: Map[Property, Any]) {
+  def apply(p: Property): p.Value = {
+    map(p).asInstanceOf[p.Value]
+  }
+
+  def get(p: Property): Option[p.Value] = {
+    map.get(p).map(_.asInstanceOf[p.Value])
+  }
+
+  def set(k: Property, v: k.Value): PropMap = {
+    this.copy(map = map + (k -> v.asInstanceOf[Any]))
+  }
+
+  def +[T](kv: (GenericProperty[T], T)) =
+    this.copy(map = map + (kv._1 -> kv._2.asInstanceOf[Any]))
+
+  def ++(other: PropMap): PropMap = {
+    this.copy(map = map ++ other.map)
+  }
+
+  def toJson(): Map[String, ujson.Value] =
+    map.map((k,v) => (k.toString, k.writeValue(v)))
+
+  def --(ps: IterableOnce[Property]) = PropMap(map -- ps)
+
+  def -(p: Property): PropMap = this -- Seq(p)
+}
+
+object PropMap {
+  def apply() = {
+    new PropMap(Map[Property, Any]())
+  }
+
+  def fromJson(
+      usingProps: Map[String, Property],
+      serialized: Map[String, ujson.Value]
+  ) =
+    new PropMap(
+      serialized.map((sk, sv) => {
+        val k = usingProps(sk)
+        (k, k.readValue(sv))
+      })
+    )
+}

@@ -1,6 +1,6 @@
 package semagrams.sprites
 
-import semagrams.Entity
+import semagrams._
 import com.raquo.laminar.api.L.{*, given}
 import com.raquo.laminar.nodes.ReactiveSvgElement
 import semagrams.util.Complex

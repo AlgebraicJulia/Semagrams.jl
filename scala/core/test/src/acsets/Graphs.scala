@@ -1,12 +1,13 @@
 package semagrams.acsets
 
 import utest._
-import semagrams.acsets._
-import semagrams.acsets.{given}
 import upickle.default._
-import scala.collection.immutable.HashMap
+import semagrams.acsets._
+import semagrams._
+import semagrams.util._
 
 object ACSetSpec extends TestSuite {
+
   def tests = Tests {
     test("empty graph") {
       val g = Graph()
@@ -15,7 +16,7 @@ object ACSetSpec extends TestSuite {
     }
 
     test("path graph") {
-      import Graph.ops._
+      import Graph._
       val mkpath = for {
         x <- addVertex()
         y <- addVertex()
@@ -29,31 +30,50 @@ object ACSetSpec extends TestSuite {
       assert(g.vertices() contains x)
       assert(g.vertices() contains y)
       assert(g.vertices() contains z)
-      assert(g.src(k) == Some(x))
-      assert(g.tgt(l) == Some(z))
+      assert(g.src(k) == x)
+      assert(g.tgt(l) == z)
     }
 
-    test("weighted graph") {
-      val ops = WeightedGraph.ops[String]
-      import ops._
+    test("generic properties") {
+      import Graph._
       val mkpath = for {
         x <- addVertex()
         y <- addVertex()
         z <- addVertex()
         k <- addEdge(x, y)
         l <- addEdge(y, z)
-        _ <- setSubpart(Weight[String](), k, "foo")
-        _ <- setSubpart(Weight[String](), l, "bar")
+        _ <- setSubpart(Center, x, Complex(4, 5))
+        _ <- setSubpart(Fill, y, "green")
       } yield (x, y, z, k, l)
 
-      val (g, (x, y, z, k, l)) = mkpath.run(WeightedGraph[String]()).value
+      val (g, (x, y, z, k, l)) = mkpath.run(Graph()).value
 
-      assert(g.subpart(Weight[String](), k) == Some("foo"))
-      assert(g.subpart(Weight[String](), l) == Some("bar"))
+      assert(g.subpart(Center, x) == Complex(4,5))
+      assert(g.subpart(Fill, y) == "green")
     }
 
+    // test("weighted graph") {
+    //   val ops = WeightedGraph[String]
+    //   import ops._
+    //   val w = Weight[String]()
+    //   val mkpath = for {
+    //     x <- addVertex()
+    //     y <- addVertex()
+    //     z <- addVertex()
+    //     k <- addEdge(x, y)
+    //     l <- addEdge(y, z)
+    //     _ <- setSubpart(w, k, "foo")
+    //     _ <- setSubpart(w, l, "bar")
+    //   } yield (x, y, z, k, l)
+
+    //   val (g, (x, y, z, k, l)) = mkpath.run(WeightedGraph[String]()).value
+
+    //   assert(g.subpart(Weight[String](), k) == "foo")
+    //   assert(g.subpart(Weight[String](), l) == "bar")
+    // }
+
     test("incident") {
-      import Graph.ops._
+      import Graph._
       val mkpath = for {
         x <- addVertex()
         y <- addVertex()
@@ -71,7 +91,7 @@ object ACSetSpec extends TestSuite {
     }
 
     test("removing parts") {
-      import Graph.ops._
+      import Graph._
       val makeAndRemove = for {
         x <- addVertex()
         y <- addVertex()
@@ -90,24 +110,21 @@ object ACSetSpec extends TestSuite {
     }
 
     test("serialization") {
-      val ops = WeightedGraph.ops[String]
-      import ops._
+      import Graph._
       val mkpath = for {
         x <- addVertex()
         y <- addVertex()
         z <- addVertex()
         k <- addEdge(x, y)
         l <- addEdge(y, z)
-        _ <- setSubpart(Weight[String](), k, "foo")
-        _ <- setSubpart(Weight[String](), l, "bar")
+        _ <- setSubpart(Center, x, Complex(4,5))
       } yield (x, y, z, k, l)
 
-      val (g, (x, y, z, k, l)) = mkpath.run(WeightedGraph[String]()).value
+      val (g, (x, y, z, k, l)) = mkpath.run(Graph()).value
 
-      val rw = ops.acsetInstance.rw(AttrTypeSerializers() + ATRW(WeightValue[String](), summon[ReadWriter[String]]))
+      val rw = ACSet.rw[SchGraph.type]
 
       assert(read(write(g)(rw))(rw) == g)
     }
   }
-
 }

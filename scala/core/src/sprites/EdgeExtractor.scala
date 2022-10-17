@@ -4,20 +4,18 @@ import semagrams._
 import semagrams.util._
 import semagrams.acsets._
 
-def edgeExtractor[X <: Ob, Y <: Ob, Z <: Ob, A: ACSet](
-    src: Hom[X, Y],
-    tgt: Hom[X, Z]
-)(acs: WithProps[A], sprites: Sprites, bends: Map[Entity, Double])(implicit
-    withPropsACSet: ACSet[WithProps[A]]
-) = {
-  def getProps(e: Elt[X], bend: Double): PropMap = {
-    val srcEnt = acs.subpart(src, e)
-    val tgtEnt = acs.subpart(tgt, e)
-    val p = acs.subpart(Props(src.dom.asInstanceOf[X]), e).get
+def edgeExtractor[S: IsSchema](
+    ob: Ob,
+    src: Hom,
+    tgt: Hom
+)(acs: ACSet[S], sprites: Sprites, bends: Map[Entity, Double]) = {
+  def getProps(e: Entity, bend: Double): PropMap = {
+    val srcEnt = acs.trySubpart(src, e)
+    val tgtEnt = acs.trySubpart(tgt, e)
     val srcCenter =
-      srcEnt.map(sprites(_)._2(Center)).getOrElse(p(Start))
+      srcEnt.map(sprites(_)._2(Center)).getOrElse(acs.subpart(Start, e))
     val tgtCenter =
-      tgtEnt.map(sprites(_)._2(Center)).getOrElse(p(End))
+      tgtEnt.map(sprites(_)._2(Center)).getOrElse(acs.subpart(End, e))
     val dir = srcCenter - tgtCenter
     val rot = Complex(0, bend).exp
     val start = srcEnt
@@ -32,30 +30,26 @@ def edgeExtractor[X <: Ob, Y <: Ob, Z <: Ob, A: ACSet](
         s.boundaryPt(ent, p, dir * rot.cong)
       })
       .getOrElse(tgtCenter)
-    acs
-      .subpart(Props(src.dom.asInstanceOf[X]), e)
-      .get + (Start, start) + (End, nd) + (Bend, bend)
+    acs.props(e) + (Start, start) + (End, nd) + (Bend, bend)
   }
 
   acs
-    .parts(src.dom.asInstanceOf[X])
+    .parts(ob)
     .map(e => (e, getProps(e, bends(e))))
     .toList
 }
 
-def assignBends[A: ACSet](
-    edges: List[(Ob, AbstractHom, AbstractHom, Int)],
-    acs: WithProps[A],
+def assignBends[S: IsSchema](
+    edges: List[(Ob, Hom, Hom, Int)],
+    acs: ACSet[S],
     increment: Double
-)(implicit
-    withPropsACSet: ACSet[WithProps[A]]
 ): Map[Entity, Double] = {
   edges
     .map({ case (ob, src, tgt, mul) =>
       acs
         .parts(ob)
-        .map(v =>
-          (v, acs.untypedSubpart(src, v), acs.untypedSubpart(tgt, v), mul)
+        .map(e =>
+          (e, acs.trySubpart(src, e), acs.trySubpart(tgt, e), mul)
         )
         .toList
     })

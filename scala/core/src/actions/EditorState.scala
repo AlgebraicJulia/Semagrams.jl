@@ -1,9 +1,8 @@
 package semagrams.actions
 
 import semagrams._
-import semagrams.acsets._
-import semagrams.controllers._
 import semagrams.util._
+import semagrams.controllers._
 import semagrams.widgets._
 
 import com.raquo.laminar.api.L._

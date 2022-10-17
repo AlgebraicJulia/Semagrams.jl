@@ -18,7 +18,8 @@ import monocle.macros.GenIso
 import semagrams.sprites._
 import semagrams.text._
 import semagrams.util._
-import semagrams.widgets._
+import semagrams.widgets.
+_
 import upickle.default._
 
 import scala.collection.MapView.Keys
@@ -34,69 +35,35 @@ import scalacss.internal.mutable.GlobalRegistry
 implicit def applyStyle(styleA: StyleA): Mod[HtmlElement] =
   cls := styleA.className.value
 
-case class StratPetri(acset: BareACSet)
-
-case object Stratification extends AttrType {
-  type Value = Set[String]
-}
-
-case object StratificationWith extends Attr[S.type, Set[String]] {
+case object StratificationWith extends AttrWithDom with PValue[Set[String]] {
   val dom = S
-  val codom = Stratification
 }
 
-case object TransitionTypeValue extends AttrType {
-  type Value = Option[String]
-}
-
-case object TransitionType extends Attr[T.type, Option[String]] {
+case object TransitionType extends AttrWithDom with PValue[Option[String]] {
   val dom = T
-  val codom = TransitionTypeValue
 }
 
+case object SchStratPetri extends StaticSchema {
+  val schema = SchLabelledReactionNet.extend(StratificationWith, TransitionType)
+}
+
+type StratPetri = ACSet[SchStratPetri.type]
 object StratPetri {
-  def ops = new ACSetOps[StratPetri] {
-    given acsetInstance: ACSet[StratPetri] with
-      val bare = GenIso[StratPetri, BareACSet]
-      val schema = LabelledReactionNet.ops.schema.extend(
-        StratificationWith,
-        TransitionType
-      )
-  }
+  def apply() = ACSet[SchStratPetri.type]()
 }
 
-given ACSet[StratPetri] = StratPetri.ops.acsetInstance
+val ops = Action.ops[StratPetri]
+val aops = summon[ACSetOps[SchStratPetri.type]]
 
-type PropPetri = WithProps[StratPetri]
-
-object PropPetriOps extends PropOps[StratPetri] {
-  val acsetInstance = WithProps.ops[StratPetri].acsetInstance
-}
-
-import PropPetriOps._
-
-val ops = Action.ops[PropPetri]
-
-val addSpecies = addEntityPos[StratPetri, S.type](
+val addSpecies = addEntityPos[SchStratPetri.type](
   S,
-  v =>
-    for {
-      _ <- setSubpart(SName, v, "")
-      _ <- setSubpart(Concentration, v, 1.0)
-      _ <- setSubpart(StratificationWith, v, Set())
-    } yield ()
+  PropMap().set(SName, "").set(Concentration, 1.0).set(StratificationWith, Set())
 )
 
-val addTransition = addEntityPos[StratPetri, T.type](
+val addTransition = addEntityPos[SchStratPetri.type](
   T,
-  v =>
-    for {
-      _ <- setSubpart(TName, v, "")
-      _ <- setSubpart(Rate, v, 1.0)
-      _ <- setSubpart(TransitionType, v, None)
-    } yield ()
+  PropMap().set(TName, "").set(Rate, 1.0).set(TransitionType, None)
 )
-
 
 def makeInput[S, A](
     oftype: String,
@@ -165,7 +132,7 @@ def inputCell(labelV: String, el: Element) =
     el
   )
 
-def speciesEditor($p: Var[PropPetri], s: Elt[S.type], eltDims: Complex) = {
+def speciesEditor($p: Var[StratPetri], s: Entity, eltDims: Complex) = {
   import EditorParams._
 
   val pos = Complex(eltDims.x / 2, eltDims.y)
@@ -179,14 +146,14 @@ def speciesEditor($p: Var[PropPetri], s: Elt[S.type], eltDims: Complex) = {
         PS.row,
         inputCell(
           "Label:",
-          makeInput("text", $p, PropPetriOps.subpartLens(SName, s), Iso.id)
+          makeInput("text", $p, aops.subpartLens(SName, s), Iso.id)
         ),
         inputCell(
           "Concentration:",
           makeInput(
             "text",
             $p,
-            PropPetriOps.subpartLens(Concentration, s),
+            aops.subpartLens(Concentration, s),
             Prism(parseDouble)(_.toString)
           )
         )
@@ -205,7 +172,7 @@ def speciesEditor($p: Var[PropPetri], s: Elt[S.type], eltDims: Complex) = {
                 typ := "checkbox",
                 setChecked(
                   $p,
-                  PropPetriOps
+                  aops
                     .subpartLens(StratificationWith, s)
                     .andThen(ifInLens(tt))
                 )
@@ -221,7 +188,7 @@ def speciesEditor($p: Var[PropPetri], s: Elt[S.type], eltDims: Complex) = {
   )
 }
 
-def transitionEditor($p: Var[PropPetri], t: Elt[T.type], eltDims: Complex) = {
+def transitionEditor($p: Var[StratPetri], t: Entity, eltDims: Complex) = {
   import EditorParams._
 
   val pos = Complex(eltDims.x / 2, eltDims.y)
@@ -230,18 +197,19 @@ def transitionEditor($p: Var[PropPetri], t: Elt[T.type], eltDims: Complex) = {
   wrappedHtml(
     div(
       PS.col,
+      toplevelStyle,
       div(
         PS.row,
         inputCell(
           "Label:",
-          makeInput("text", $p, PropPetriOps.subpartLens(TName, t), Iso.id)
+          makeInput("text", $p, aops.subpartLens(TName, t), Iso.id)
         ),
         inputCell(
           "Rate:",
           makeInput(
             "text",
             $p,
-            PropPetriOps.subpartLens(Rate, t),
+            aops.subpartLens(Rate, t),
             Prism(parseDouble)(_.toString)
           )
         )
@@ -264,7 +232,7 @@ def transitionEditor($p: Var[PropPetri], t: Elt[T.type], eltDims: Complex) = {
                     name := "type",
                     setChecked(
                       $p,
-                      PropPetriOps
+                      aops
                         .subpartLens(TransitionType, t)
                         .andThen(setIfLens(Some(tt)))
                     )
@@ -282,26 +250,26 @@ def transitionEditor($p: Var[PropPetri], t: Elt[T.type], eltDims: Complex) = {
   )
 }
 
-def openSpeciesEditor(s: Elt[S.type]): Action[PropPetri, Unit] = for {
+def openSpeciesEditor(s: Entity): Action[StratPetri, Unit] = for {
   $p <- ops.ask.map(_.$model)
   eltDims <- ops.ask.map(_.dims())
   ed <- ops.delay(speciesEditor($p, s, eltDims))
   _ <- addChild(ed)
   bindables <- ops.ask.map(_.bindables)
   _ <- (for {
-    _ <- Bindings[PropPetri, Unit](keyDown("Escape")).run
+    _ <- Bindings[StratPetri, Unit](keyDown("Escape")).run
     _ <- removeChild(ed)
   } yield ()).start
 } yield ()
 
-def openTransitionEditor(t: Elt[T.type]): Action[PropPetri, Unit] = for {
+def openTransitionEditor(t: Entity): Action[StratPetri, Unit] = for {
   $p <- ops.ask.map(_.$model)
   eltDims <- ops.ask.map(_.dims())
   ed <- ops.delay(transitionEditor($p, t, eltDims))
   _ <- addChild(ed)
   bindables <- ops.ask.map(_.bindables)
   _ <- (for {
-    _ <- Bindings[PropPetri, Unit](keyDown("Escape")).run
+    _ <- Bindings[StratPetri, Unit](keyDown("Escape")).run
     _ <- removeChild(ed)
   } yield ()).start
 } yield ()
@@ -321,30 +289,30 @@ Double-click to modify species/transitions
 Shift-click and drag to add arrows
 """.linesIterator.toSeq
 
-val bindings = Bindings[PropPetri, Unit](
-  keyDown("s").andThen(addSpecies.flatMap(openSpeciesEditor)),
-  keyDown("t").andThen(addTransition.flatMap(openTransitionEditor)),
+val bindings = Bindings[StratPetri, Unit](
+  keyDown("s").andThen(addSpecies.flatMap(openSpeciesEditor).flatMap(_ => update)),
+  keyDown("t").andThen(addTransition.flatMap(openTransitionEditor).flatMap(_ => update)),
   keyDown("d").andThen(remEntity),
   keyDown("h").andThen(showPopoverUntil(helpText, keyDown("h"))),
   keyDown("?").andThen(showPopoverUntil(helpText, keyDown("?"))),
   clickOn(ClickType.Single, MouseButton.Left, S)
     .withMods(KeyModifier.Shift)
-    .flatMap(s => dragEdge[StratPetri, I.type, S.type, T.type](IS, IT, s)),
+    .flatMap(s => dragEdge(I, IS, IT, s)),
   clickOn(ClickType.Single, MouseButton.Left, T)
     .withMods(KeyModifier.Shift)
-    .flatMap(t => dragEdge[StratPetri, O.type, T.type, S.type](OT, OS, t)),
+    .flatMap(t => dragEdge(O, OT, OS, t)),
   clickOn(ClickType.Double, MouseButton.Left, S)
     .flatMap(openSpeciesEditor),
-  clickOn(ClickType.Single, MouseButton.Left, S).flatMap(dragEntity(S)),
+  clickOn(ClickType.Single, MouseButton.Left, S).flatMap(dragEntity),
   clickOn(ClickType.Double, MouseButton.Left, T)
     .flatMap(openTransitionEditor),
-  clickOn(ClickType.Single, MouseButton.Left, T).flatMap(dragEntity(T))
+  clickOn(ClickType.Single, MouseButton.Left, T).flatMap(dragEntity)
 )
 
-def arcExtractor(p: PropPetri, sprites: Sprites) = {
+def arcExtractor(p: StratPetri, sprites: Sprites) = {
   val bends = assignBends(List((I, IS, IT, 1), (O, OS, OT, -1)), p, 0.3)
-  val inputs = edgeExtractor(IS, IT)(p, sprites, bends)
-  val outputs = edgeExtractor(OT, OS)(p, sprites, bends)
+  val inputs = edgeExtractor(I, IS, IT)(p, sprites, bends)
+  val outputs = edgeExtractor(O, OT, OS)(p, sprites, bends)
   inputs ++ outputs
 }
 
@@ -356,16 +324,16 @@ val colors = Map(
 )
 
 def renderPetri(
-    $petri: Var[PropPetri],
+    $petri: Var[StratPetri],
     hover: HoverController,
     drag: DragController,
     mouse: MouseController
 ) = {
 
-  val spriteMaps = SpriteMaps[PropPetri](
+  val spriteMaps = SpriteMaps[StratPetri](
     $petri.signal,
     List(
-      SpriteMaker[PropPetri](
+      SpriteMaker[StratPetri](
         Disc(),
         (s, _) =>
           s.parts(S)
@@ -373,8 +341,8 @@ def renderPetri(
             .map(v =>
               (
                 v,
-                s.subpart(Props(S), v).get
-                  + (Content, s.subpart(SName, v).getOrElse(""))
+                s.props(v)
+                  + (Content, s.trySubpart(SName, v).getOrElse(""))
               )
             ),
         Stack(
@@ -395,7 +363,7 @@ def renderPetri(
           Clickable(mouse, MainHandle)
         )
       ),
-      SpriteMaker[PropPetri](
+      SpriteMaker[StratPetri](
         Box(),
         (s, _) =>
           s.parts(T)
@@ -403,9 +371,9 @@ def renderPetri(
             .map(v =>
               (
                 v,
-                s.subpart(Props(T), v).get
-                  + (Content, s.subpart(TName, v).getOrElse(""))
-                  + (Fill, colors(s.subpart(TransitionType, v).get))
+                s.props(v)
+                  + (Content, s.trySubpart(TName, v).getOrElse(""))
+                  + (Fill, colors(s.subpart(TransitionType, v)))
               )
             ),
         Stack(
@@ -426,7 +394,7 @@ def renderPetri(
           Clickable(mouse, MainHandle)
         )
       ),
-      SpriteMaker[PropPetri](
+      SpriteMaker[StratPetri](
         Arrow(),
         arcExtractor,
         Stack(
@@ -443,15 +411,7 @@ def renderPetri(
   )
 }
 
-val serializer = PropPetriOps.acsetInstance.rw(
-  AttrTypeSerializers()
-    + ATRW(PropValue, PropMap.rw)
-    + ATRW(NameValue, summon[ReadWriter[String]])
-    + ATRW(RateValue, summon[ReadWriter[Double]])
-    + ATRW(ConcentrationValue, summon[ReadWriter[Double]])
-    + ATRW(Stratification, summon[ReadWriter[Set[String]]])
-    + ATRW(TransitionTypeValue, summon[ReadWriter[Option[String]]])
-)
+val serializer = ACSet.rw[SchStratPetri.type]
 
 object Main {
 
@@ -468,6 +428,6 @@ object Main {
 
     dom.document.querySelector("head").appendChild(styleTag(PSrendered).ref)
 
-    mountWithAction(el, WithProps[StratPetri](), serializer, action)
+    mountWithAction(el, StratPetri(), serializer, action)
   }
 }

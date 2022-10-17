@@ -1,6 +1,6 @@
 package semagrams.sprites
 
-import semagrams.Entity
+import semagrams._
 import semagrams.util._
 
 case class Shorten(amount: Double) extends Middleware {

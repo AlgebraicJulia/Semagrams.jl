@@ -1,31 +1,25 @@
 package semagrams.actions
 
-import cats.ApplicativeError
-import cats.Monad
-import cats.MonadError
+import cats._
 import cats.data._
 import cats.effect._
 import cats.effect.syntax.all._
 import cats.effect.unsafe.IORuntime
-import cats.instances.stream
 import cats.mtl.Local
 import cats.syntax.all._
-import com.raquo.airstream.core.Transaction
-import com.raquo.laminar.CollectionCommand
 import com.raquo.laminar.api.L._
-import com.raquo.laminar.nodes.ReactiveElement
-import com.raquo.laminar.nodes.ReactiveSvgElement
 import org.scalajs.dom
 import org.scalajs.dom.KeyboardEvent
+import com.raquo.laminar.nodes.ReactiveElement
+import com.raquo.laminar.nodes.ReactiveSvgElement
+import com.raquo.airstream.core.Transaction
+import com.raquo.laminar.CollectionCommand
+import scala.scalajs.js
+
 import semagrams._
-import semagrams.acsets._
 import semagrams.controllers._
 import semagrams.util._
 import semagrams.widgets._
-import upickle.default._
-
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.scalajs.js
 
 /** We control the behavior of Semagrams using an asynchronous IO monad from
   * cats-effect.
@@ -47,7 +41,6 @@ import scala.scalajs.js
   * the user with Semagrams.
   */
 package object actions {}
-
 
 type Action[Model, A] = ReaderT[IO, EditorState[Model], A]
 
@@ -198,10 +191,10 @@ def mouseDown[Model](b: MouseButton): Action[Model, Option[Entity]] = for {
 def hovered[Model]: Action[Model, Option[Entity]] =
   ops.ask.map(_.hover.$state.now().state)
 
-def hoveredPart[Model, X <: Ob](x: X): Action[Model, Option[Elt[X]]] =
+def hoveredPart[Model](x: Ob): Action[Model, Option[Entity]] =
   hovered.map(_.flatMap(_.asElt(x)))
 
-def getClick[X <: Ob, Model](x: X): Action[Model, Elt[X]] = for {
+def getClick[Model](x: Ob): Action[Model, Entity] = for {
   ent <- fromMaybe(mouseDown(MouseButton.Left))
   i <- ent.asElt(x).unwrap(actionMonadError[Model])
 } yield i
