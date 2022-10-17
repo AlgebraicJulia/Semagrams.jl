@@ -38,7 +38,7 @@ jobs:
           for $app in $(mill resolve apps._)
           do
             mill $app.checkFormat
-          end
+          done
 
   upload:
     runs-on: ubuntu-latest
@@ -64,7 +64,7 @@ jobs:
           for $app in $(mill resolve apps._)
           do
             mill $app.fullLinkJS
-          end
+          done
 
       - name: Get shorthash
         id: shorthash
@@ -80,7 +80,7 @@ jobs:
             $appname = $(echo $app | sed 's/.*\.//')
             mkdir -p build/$hash/$appname
             cp scala/out/apps/$appname/fullLinkJS.dest/* build/$hash/$appname/
-          end
+          done
           aws s3 sync build/ s3://semagrams-builds
 
       - name: Create link to files in commit
