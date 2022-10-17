@@ -1,35 +1,22 @@
 package semagrams.acsets
 
+import semagrams._
 import upickle.default._
 
-abstract class Subpart {
-  type Value
-}
+export semagrams.{Ob, Entity, Property}
 
-abstract class Ob
-
-abstract class Hom extends Subpart {
+abstract class Hom extends Property {
   type Value = Entity
   val codom: Ob
+
+  val rw = summon[ReadWriter[Int]].bimap(_.id, Entity(_, codom))
 }
 
 abstract class HomWithDom extends Hom {
   val dom: Ob
 }
 
-abstract class Attr extends Subpart {
-  type Value
-
-  val rw: ReadWriter[Value]
-
-  def writeValue(v: Any) = {
-    rw.transform(v.asInstanceOf[Value], ujson.Value)
-  }
-
-  def readValue(sv: ujson.Value) = {
-    read[Value](sv)(rw)
-  }
-}
+abstract class Attr extends Property
 
 abstract class AttrWithDom extends Attr {
   val dom: Ob
@@ -38,20 +25,18 @@ abstract class AttrWithDom extends Attr {
 trait IsSchema[S] {
   extension (s: S)
     def obs: Seq[Ob]
-
     def homs(x: Ob): Seq[Hom]
-
     def attrs(x: Ob): Seq[Attr]
+
+    def obsByString: Map[String, Ob]
+    def homsByString: Map[String, Hom]
+    def attrsByString: Map[String, Attr]
 
     def contains(x: Ob): Boolean = obs contains x
     def contains(x: Ob, f: Hom): Boolean = homs(x) contains f
     def contains(x: Ob, f: Attr): Boolean = attrs(x) contains f
 
   val rw: ReadWriter[S]
-
-  val obRW: ReadWriter[Ob]
-  val homRW: ReadWriter[Hom]
-  val attrRW: ReadWriter[Attr]
 }
 
 case class BasicSchema(
@@ -125,18 +110,13 @@ trait IsStaticSchema[S : Pointed] extends IsSchema[S] {
     def homs(x: Ob) = schema.homs(x)
     def attrs(x: Ob) = schema.attrs(x)
 
-    override def contains(x: Ob, f: Attr) = f match {
-      case (_ : AbstractGenericAttr) => true
-      case _ => attrs(x) contains f
-    }
+    def obsByString = schema.obs
+    def homsByString = schema.homsByString
+    def attrsByString = schema.attrsByString
 
   val theS = summon[Pointed[S]].value
 
   val rw = summon[ReadWriter[Unit]].bimap[S](_ => (), _ => theS)
-
-  val obRW = summon[ReadWriter[String]].bimap[Ob](_.toString, schema.obs(_))
-  val homRW = summon[ReadWriter[String]].bimap[Hom](_.toString, schema.homsByString(_))
-  val attrRW = summon[ReadWriter[String]].bimap[Attr](_.toString, schema.attrsByString(_))
 }
 
 trait StaticSchema {

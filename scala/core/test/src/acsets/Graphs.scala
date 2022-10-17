@@ -3,6 +3,8 @@ package semagrams.acsets
 import utest._
 import upickle.default._
 import semagrams.acsets._
+import semagrams._
+import semagrams.util._
 
 object ACSetSpec extends TestSuite {
 
@@ -32,17 +34,36 @@ object ACSetSpec extends TestSuite {
       assert(g.tgt(l) == z)
     }
 
-    test("weighted graph") {
-      val ops = WeightedGraph[String]
-      import ops._
+    test("generic properties") {
+      import Graph._
       val mkpath = for {
         x <- addVertex()
         y <- addVertex()
         z <- addVertex()
         k <- addEdge(x, y)
         l <- addEdge(y, z)
-        _ <- setSubpart(Weight[String](), k, "foo")
-        _ <- setSubpart(Weight[String](), l, "bar")
+        _ <- setSubpart(Center, x, Complex(4, 5))
+        _ <- setSubpart(Fill, y, "green")
+      } yield (x, y, z, k, l)
+
+      val (g, (x, y, z, k, l)) = mkpath.run(Graph()).value
+
+      assert(g.subpart(Center, x) == Complex(4,5))
+      assert(g.subpart(Fill, y) == "green")
+    }
+
+    test("weighted graph") {
+      val ops = WeightedGraph[String]
+      import ops._
+      val w = Weight[String]()
+      val mkpath = for {
+        x <- addVertex()
+        y <- addVertex()
+        z <- addVertex()
+        k <- addEdge(x, y)
+        l <- addEdge(y, z)
+        _ <- setSubpart(w, k, "foo")
+        _ <- setSubpart(w, l, "bar")
       } yield (x, y, z, k, l)
 
       val (g, (x, y, z, k, l)) = mkpath.run(WeightedGraph[String]()).value
@@ -91,14 +112,16 @@ object ACSetSpec extends TestSuite {
     test("serialization") {
       val ops = WeightedGraph[String]
       import ops._
+      val w = Weight[String]()
       val mkpath = for {
         x <- addVertex()
         y <- addVertex()
         z <- addVertex()
         k <- addEdge(x, y)
         l <- addEdge(y, z)
-        _ <- setSubpart(Weight[String](), k, "foo")
-        _ <- setSubpart(Weight[String](), l, "bar")
+        _ <- setSubpart(w, k, "foo")
+        _ <- setSubpart(w, l, "bar")
+        _ <- setSubpart(Center, x, Complex(4,5))
       } yield (x, y, z, k, l)
 
       val (g, (x, y, z, k, l)) = mkpath.run(WeightedGraph[String]()).value
