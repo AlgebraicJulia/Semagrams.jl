@@ -18,8 +18,7 @@ import monocle.macros.GenIso
 import semagrams.sprites._
 import semagrams.text._
 import semagrams.util._
-import semagrams.widgets.
-_
+import semagrams.widgets._
 import upickle.default._
 
 import scala.collection.MapView.Keys
@@ -57,7 +56,10 @@ val aops = summon[ACSetOps[SchStratPetri.type]]
 
 val addSpecies = addEntityPos[SchStratPetri.type](
   S,
-  PropMap().set(SName, "").set(Concentration, 1.0).set(StratificationWith, Set())
+  PropMap()
+    .set(SName, "")
+    .set(Concentration, 1.0)
+    .set(StratificationWith, Set())
 )
 
 val addTransition = addEntityPos[SchStratPetri.type](
@@ -290,8 +292,12 @@ Shift-click and drag to add arrows
 """.linesIterator.toSeq
 
 val bindings = Bindings[StratPetri, Unit](
-  keyDown("s").andThen(addSpecies.flatMap(openSpeciesEditor).flatMap(_ => update)),
-  keyDown("t").andThen(addTransition.flatMap(openTransitionEditor).flatMap(_ => update)),
+  keyDown("s").andThen(
+    addSpecies.flatMap(openSpeciesEditor).flatMap(_ => update)
+  ),
+  keyDown("t").andThen(
+    addTransition.flatMap(openTransitionEditor).flatMap(_ => update)
+  ),
   keyDown("d").andThen(remEntity),
   keyDown("h").andThen(showPopoverUntil(helpText, keyDown("h"))),
   keyDown("?").andThen(showPopoverUntil(helpText, keyDown("?"))),

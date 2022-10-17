@@ -35,9 +35,9 @@ jobs:
       - run: |
           cd scala
           mill core.checkFormat
-          for $app in $(mill resolve apps._)
+          for app in $(mill resolve apps._)
           do
-            mill $app.checkFormat
+            mill "$app.checkFormat"
           done
 
   upload:
@@ -61,7 +61,7 @@ jobs:
       - name: Build compiled javascript
         run: |
           cd scala
-          for $app in $(mill resolve apps._)
+          for app in $(mill resolve apps._)
           do
             mill $app.fullLinkJS
           done
@@ -75,7 +75,7 @@ jobs:
       - name: Copy files to bucket
         run: |
           hash=${{ steps.shorthash.outputs.sh }}
-          for $app in $(mill resolve apps._)
+          for app in $(mill resolve apps._)
           do
             $appname = $(echo $app | sed 's/.*\.//')
             mkdir -p build/$hash/$appname

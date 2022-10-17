@@ -15,7 +15,7 @@ object PS extends StyleSheet.Inline {
 
   val row = style(
     flex1,
-    flexDirection.row,
+    flexDirection.row
   )
 
   val col = style(
