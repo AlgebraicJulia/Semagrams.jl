@@ -52,25 +52,25 @@ object ACSetSpec extends TestSuite {
       assert(g.subpart(Fill, y) == "green")
     }
 
-    test("weighted graph") {
-      val ops = WeightedGraph[String]
-      import ops._
-      val w = Weight[String]()
-      val mkpath = for {
-        x <- addVertex()
-        y <- addVertex()
-        z <- addVertex()
-        k <- addEdge(x, y)
-        l <- addEdge(y, z)
-        _ <- setSubpart(w, k, "foo")
-        _ <- setSubpart(w, l, "bar")
-      } yield (x, y, z, k, l)
+    // test("weighted graph") {
+    //   val ops = WeightedGraph[String]
+    //   import ops._
+    //   val w = Weight[String]()
+    //   val mkpath = for {
+    //     x <- addVertex()
+    //     y <- addVertex()
+    //     z <- addVertex()
+    //     k <- addEdge(x, y)
+    //     l <- addEdge(y, z)
+    //     _ <- setSubpart(w, k, "foo")
+    //     _ <- setSubpart(w, l, "bar")
+    //   } yield (x, y, z, k, l)
 
-      val (g, (x, y, z, k, l)) = mkpath.run(WeightedGraph[String]()).value
+    //   val (g, (x, y, z, k, l)) = mkpath.run(WeightedGraph[String]()).value
 
-      assert(g.subpart(Weight[String](), k) == "foo")
-      assert(g.subpart(Weight[String](), l) == "bar")
-    }
+    //   assert(g.subpart(Weight[String](), k) == "foo")
+    //   assert(g.subpart(Weight[String](), l) == "bar")
+    // }
 
     test("incident") {
       import Graph._
@@ -110,23 +110,19 @@ object ACSetSpec extends TestSuite {
     }
 
     test("serialization") {
-      val ops = WeightedGraph[String]
-      import ops._
-      val w = Weight[String]()
+      import Graph._
       val mkpath = for {
         x <- addVertex()
         y <- addVertex()
         z <- addVertex()
         k <- addEdge(x, y)
         l <- addEdge(y, z)
-        _ <- setSubpart(w, k, "foo")
-        _ <- setSubpart(w, l, "bar")
         _ <- setSubpart(Center, x, Complex(4,5))
       } yield (x, y, z, k, l)
 
-      val (g, (x, y, z, k, l)) = mkpath.run(WeightedGraph[String]()).value
+      val (g, (x, y, z, k, l)) = mkpath.run(Graph()).value
 
-      val rw = ACSet.rw[SchWeightedGraph[String]]
+      val rw = ACSet.rw[SchGraph.type]
 
       assert(read(write(g)(rw))(rw) == g)
     }

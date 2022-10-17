@@ -161,3 +161,7 @@ trait ACSetOps[S: IsSchema] {
 }
 
 given [S: IsSchema]: ACSetOps[S] = new ACSetOps[S] {}
+
+object ACSetOps {
+  def apply[S: IsSchema] = summon[ACSetOps[S]]
+}

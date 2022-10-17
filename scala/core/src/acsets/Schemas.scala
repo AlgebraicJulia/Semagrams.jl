@@ -5,20 +5,20 @@ import upickle.default._
 
 export semagrams.{Ob, Entity, Property}
 
-abstract class Hom extends Property {
+trait Hom extends Property {
   type Value = Entity
   val codom: Ob
 
   val rw = summon[ReadWriter[Int]].bimap(_.id, Entity(_, codom))
 }
 
-abstract class HomWithDom extends Hom {
+trait HomWithDom extends Hom {
   val dom: Ob
 }
 
-abstract class Attr extends Property
+trait Attr extends Property
 
-abstract class AttrWithDom extends Attr {
+trait AttrWithDom extends Attr {
   val dom: Ob
 }
 
@@ -48,7 +48,7 @@ case class BasicSchema(
 ) {
   def extend(
       gens: (Ob | (Ob, Hom) | (Ob, Attr) | HomWithDom | AttrWithDom)*
-  ) = {
+  ): BasicSchema = {
     val newObs = gens.collect({ case (ob: Ob) => ob })
     val newHoms = gens
       .collect(
@@ -74,35 +74,33 @@ case class BasicSchema(
       obs ++ newObs.map(ob => (ob.toString(), ob)).toMap,
       homsByString ++ newHoms.map((_, f) => (f.toString, f)).toMap,
       attrsByString ++ newAttrs.map((_, f) => (f.toString, f)).toMap,
-      homMaps.map((ob, fs) =>
-        (ob, fs ++ newHomsByOb.getOrElse(ob, Seq()))
-      ),
-      attrMaps.map((ob, fs) =>
-        (ob, fs ++ newAttrsByOb.getOrElse(ob, Seq()))
-      )
+      homMaps.map((ob, fs) => (ob, fs ++ newHomsByOb.getOrElse(ob, Seq()))),
+      attrMaps.map((ob, fs) => (ob, fs ++ newAttrsByOb.getOrElse(ob, Seq())))
     )
   }
 }
 
 object BasicSchema {
-  def apply(gens: (Ob | (Ob, Hom) | (Ob, Attr) | HomWithDom | AttrWithDom)*) = new BasicSchema(
-    Map[String, Ob](),
-    Map[String, Hom](),
-    Map[String, Attr](),
-    Map[Ob, Seq[Hom]](),
-    Map[Ob, Seq[Attr]]()
-  ).extend(gens*)
+  def apply(gens: (Ob | (Ob, Hom) | (Ob, Attr) | HomWithDom | AttrWithDom)*) =
+    new BasicSchema(
+      Map[String, Ob](),
+      Map[String, Hom](),
+      Map[String, Attr](),
+      Map[Ob, Seq[Hom]](),
+      Map[Ob, Seq[Attr]]()
+    ).extend(gens*)
 }
 
 trait Pointed[S] {
   def value: S
 }
 
-implicit def pointedForValueOf[T](implicit vo: ValueOf[T]) : Pointed[T] = new Pointed[T] {
-  def value = vo.value
-}
+implicit def pointedForValueOf[T](implicit vo: ValueOf[T]): Pointed[T] =
+  new Pointed[T] {
+    def value = vo.value
+  }
 
-trait IsStaticSchema[S : Pointed] extends IsSchema[S] {
+trait IsStaticSchema[S: ValueOf] extends IsSchema[S] {
   val schema: BasicSchema
 
   extension (s: S)
@@ -114,15 +112,20 @@ trait IsStaticSchema[S : Pointed] extends IsSchema[S] {
     def homsByString = schema.homsByString
     def attrsByString = schema.attrsByString
 
-  val theS = summon[Pointed[S]].value
+  val theS = summon[ValueOf[S]].value
 
   val rw = summon[ReadWriter[Unit]].bimap[S](_ => (), _ => theS)
 }
 
 trait StaticSchema {
   val schema: BasicSchema
+
+  export schema.extend
 }
 
-implicit def ssiss[S <: StaticSchema](implicit p: Pointed[S]): IsStaticSchema[S] = new IsStaticSchema {
+/** Static Schema Is Static Schema */
+implicit def ssiss[S <: StaticSchema](implicit
+    p: ValueOf[S]
+): IsStaticSchema[S] = new IsStaticSchema {
   val schema = p.value.schema
 }

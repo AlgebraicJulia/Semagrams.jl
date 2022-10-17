@@ -54,18 +54,18 @@ case class Weight[T: ReadWriter]() extends AttrWithDom {
   val rw = summon[ReadWriter[T]]
 }
 
-case class SchWeightedGraph[T: ReadWriter]() extends StaticSchema {
-  val schema = SchGraph.schema.extend(Weight[T]())
-}
+// case class SchWeightedGraph[T: ReadWriter]() extends StaticSchema {
+//   val schema = SchGraph.extend(Weight[T]())
+// }
 
-given[T: ReadWriter]: Pointed[SchWeightedGraph[T]] = new Pointed[SchWeightedGraph[T]] {
-  def value = SchWeightedGraph[T]()
-}
+// given[T: ReadWriter]: Pointed[SchWeightedGraph[T]] = new Pointed[SchWeightedGraph[T]] {
+//   def value: SchWeightedGraph[T] = SchWeightedGraph[T]()
+// }
 
-type WeightedGraph[T] = ACSet[SchWeightedGraph[T]]
+// type WeightedGraph[T] = ACSet[SchWeightedGraph[T]]
 
-object WeightedGraph {
-  def apply[T: ReadWriter]() = ACSet[SchWeightedGraph[T]]()
+// object WeightedGraph {
+//   def apply[T: ReadWriter]() = ACSet[SchWeightedGraph[T]]()
 
-  def apply[T: ReadWriter] = new GraphOps[SchWeightedGraph[T]] {}
-}
+//   def apply[T: ReadWriter] = new GraphOps[SchWeightedGraph[T]] {}
+// }

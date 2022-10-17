@@ -2,7 +2,7 @@ package semagrams
 
 import upickle.default._
 
-abstract class Property {
+trait Property {
   type Value
 
   val rw: ReadWriter[Value]
@@ -16,7 +16,13 @@ abstract class Property {
   }
 }
 
-abstract class Ob
+trait PValue[T: ReadWriter] extends Property {
+  type Value = T
+
+  val rw = summon[ReadWriter[T]]
+}
+
+trait Ob
 
 case class Entity(id: Int, ob: Ob) {
   def asElt(x: Ob) = if (x == ob) Some(this) else None
