@@ -9,12 +9,6 @@
 /deps/bundles/
 /page/node_modules
 **/.bloop
-/next/semagrams/.vscode/
-/next/semagrams/.bsp/
-/next/semagrams/.metals/
-/next/semagrams/.scalafmt.conf
-/next/.direnv/
-/next/.envrc
 
 /.quarto/
 /target/
