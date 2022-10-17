@@ -75,6 +75,8 @@ jobs:
       - name: Copy files to bucket
         run: |
           hash=${{ steps.shorthash.outputs.sh }}
+          cd scala
+          mkdir build
           for app in $(mill resolve apps._)
           do
             $appname = $(echo $app | sed 's/.*\.//')
