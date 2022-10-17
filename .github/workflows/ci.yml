@@ -79,7 +79,7 @@ jobs:
           mkdir build
           for app in $(mill resolve apps._)
           do
-            $appname=$(echo $app | sed 's/.*\.//')
+            appname=$(echo $app | sed 's/.*\.//')
             mkdir -p build/$hash/$appname
             cp scala/out/apps/$appname/fullLinkJS.dest/* build/$hash/$appname/
           done
