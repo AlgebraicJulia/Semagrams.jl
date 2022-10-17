@@ -94,10 +94,13 @@ case class ACSet[S: IsSchema](
   }
 }
 
-/** This is to make upickle use a array of arrays instead of a dict for Map[BareEntity, X] */
+/** This is to make upickle use a array of arrays instead of a dict for
+  * Map[BareEntity, X]
+  */
 case class BareEntity(id: Int)
 
-implicit val beRW: ReadWriter[BareEntity] = readwriter[Int].bimap[BareEntity](_.id, BareEntity(_))
+implicit val beRW: ReadWriter[BareEntity] =
+  readwriter[Int].bimap[BareEntity](_.id, BareEntity(_))
 
 case class SerializableACSet(
     schema: ujson.Value,

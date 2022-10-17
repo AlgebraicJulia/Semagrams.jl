@@ -8,7 +8,7 @@ def Popover(
     width: Double,
     ypadding: Double,
     innerSep: Double,
-    eltDims: Complex,
+    eltDims: Complex
 ) = {
   val pos = Complex((eltDims.x - width) / 2, ypadding)
   svg.g(

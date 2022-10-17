@@ -48,9 +48,7 @@ def assignBends[S: IsSchema](
     .map({ case (ob, src, tgt, mul) =>
       acs
         .parts(ob)
-        .map(e =>
-          (e, acs.trySubpart(src, e), acs.trySubpart(tgt, e), mul)
-        )
+        .map(e => (e, acs.trySubpart(src, e), acs.trySubpart(tgt, e), mul))
         .toList
     })
     .flatten
