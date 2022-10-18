@@ -68,14 +68,14 @@ import ClickType._
 def clickOn[Model](
     clickType: ClickType,
     button: MouseButton,
-    x: Ob
+    x: EntityType
 ): Binding[Model, Entity] = Binding(
   {
     case MouseEvent.MouseDown(Some(ent), `button`)
-        if (clickType == Single && ent.ob == x) =>
+        if (clickType == Single && ent.entityType == x) =>
       ops.pure(ent)
     case MouseEvent.DoubleClick(Some(ent), `button`)
-        if (clickType == Double && ent.ob == x) =>
+        if (clickType == Double && ent.entityType == x) =>
       ops.pure(ent)
   },
   Some(Set())
@@ -87,7 +87,7 @@ def releaseOn[Model](
     x: Ob
 ): Binding[Model, Entity] = Binding(
   {
-    case MouseEvent.MouseUp(Some(ent), `button`) if (ent.ob == x) =>
+    case MouseEvent.MouseUp(Some(ent), `button`) if (ent.entityType == x) =>
       ops.pure(ent)
   },
   Some(Set())

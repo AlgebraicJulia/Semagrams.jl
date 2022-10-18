@@ -191,12 +191,12 @@ def mouseDown[Model](b: MouseButton): Action[Model, Option[Entity]] = for {
 def hovered[Model]: Action[Model, Option[Entity]] =
   ops.ask.map(_.hover.$state.now().state)
 
-def hoveredPart[Model](x: Ob): Action[Model, Option[Entity]] =
-  hovered.map(_.flatMap(_.asElt(x)))
+def hoveredEntity[Model](x: EntityType): Action[Model, Option[Entity]] =
+  hovered.map(_.flatMap(_.withType(x)))
 
-def getClick[Model](x: Ob): Action[Model, Entity] = for {
+def getClick[Model](x: EntityType): Action[Model, Entity] = for {
   ent <- fromMaybe(mouseDown(MouseButton.Left))
-  i <- ent.asElt(x).unwrap(actionMonadError[Model])
+  i <- ent.withType(x).unwrap(actionMonadError[Model])
 } yield i
 
 def update[Model]: Action[Model, Unit] = for {

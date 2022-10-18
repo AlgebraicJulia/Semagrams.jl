@@ -22,8 +22,13 @@ trait PValue[T: ReadWriter] extends Property {
   val rw = summon[ReadWriter[T]]
 }
 
-trait Ob
+trait EntityType
 
-case class Entity(id: Int, ob: Ob) {
-  def asElt(x: Ob) = if (x == ob) Some(this) else None
+trait Entity {
+  val entityType: EntityType
+  val hash: Int
+
+  def withType(ty: EntityType) =
+    if entityType == ty then Some(this) else None
 }
+

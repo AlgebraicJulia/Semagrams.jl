@@ -20,7 +20,7 @@ trait Defaults extends ScalaJSModule with PublishModule with ScalafmtModule {
   def scalaVersion = "3.2.0"
   def scalaJSVersion = "1.11.0"
 
-  def scalacOptions = Seq("-Ykind-projector:underscores", "-deprecation", "-explain")
+  def scalacOptions = Seq("-Ykind-projector:underscores", "-deprecation", "-feature")
 
   def moduleKind = T { ModuleKind.ESModule }
 
@@ -70,7 +70,10 @@ object apps extends Module {
 
     def artifactName = "semagrams-petri"
   }
-  // object graph extends SemagramsApp {
-  //   def desc = "A graph editor implemented with semagrams"
-  // }
+
+  object elements extends SemagramsApp {
+    def desc = "A viewer for the category of elements of an acset"
+
+    def artifactName = "semagrams-elements"
+  }
 }

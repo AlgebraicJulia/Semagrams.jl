@@ -4,33 +4,38 @@ import semagrams._
 import semagrams.util._
 import semagrams.acsets._
 
+def edgeProps(
+    sprites: Sprites,
+    srcEnt: Option[Entity],
+    srcCenter: Complex,
+    tgtEnt: Option[Entity],
+    tgtCenter: Complex,
+    bend: Double,
+): PropMap = {
+  val dir = srcCenter - tgtCenter
+  val rot = Complex(0, bend).exp
+  val start = srcEnt
+    .flatMap(sprites.boundaryPt(_, -dir * rot))
+    .getOrElse(srcCenter)
+  val nd = tgtEnt
+    .flatMap(sprites.boundaryPt(_, dir * rot.cong))
+    .getOrElse(tgtCenter)
+  PropMap() + (Start, start) + (End, nd) + (Bend, bend)
+}
+
 def edgeExtractor[S: IsSchema](
     ob: Ob,
     src: Hom,
     tgt: Hom
 )(acs: ACSet[S], sprites: Sprites, bends: Map[Entity, Double]) = {
-  def getProps(e: Entity, bend: Double): PropMap = {
+  def getProps(e: Part, bend: Double): PropMap = {
     val srcEnt = acs.trySubpart(src, e)
     val tgtEnt = acs.trySubpart(tgt, e)
     val srcCenter =
       srcEnt.map(sprites(_)._2(Center)).getOrElse(acs.subpart(Start, e))
     val tgtCenter =
       tgtEnt.map(sprites(_)._2(Center)).getOrElse(acs.subpart(End, e))
-    val dir = srcCenter - tgtCenter
-    val rot = Complex(0, bend).exp
-    val start = srcEnt
-      .map(ent => {
-        val (s, p) = sprites(ent)
-        s.boundaryPt(ent, p, -dir * rot)
-      })
-      .getOrElse(srcCenter)
-    val nd = tgtEnt
-      .map(ent => {
-        val (s, p) = sprites(ent)
-        s.boundaryPt(ent, p, dir * rot.cong)
-      })
-      .getOrElse(tgtCenter)
-    acs.props(e) + (Start, start) + (End, nd) + (Bend, bend)
+    acs.props(e) ++ edgeProps(sprites, srcEnt, srcCenter, tgtEnt, tgtCenter, bend)
   }
 
   acs

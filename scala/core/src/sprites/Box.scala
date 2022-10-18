@@ -64,7 +64,7 @@ case class Box() extends Sprite {
     RenderedSprite(root, Map(MainHandle -> root))
   }
 
-  def boundaryPt(ent: Entity, data: PropMap, dir: Complex) = {
+  def boundaryPt(data: PropMap, dir: Complex) = {
     // Normalize to first quadrant
     val (_, dims) = geom(data)
     val q1dir = Complex(dir.x.abs, dir.y.abs)

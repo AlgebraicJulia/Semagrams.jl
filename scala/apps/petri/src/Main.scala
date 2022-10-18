@@ -332,7 +332,6 @@ val colors = Map(
 def renderPetri(
     $petri: Var[StratPetri],
     hover: HoverController,
-    drag: DragController,
     mouse: MouseController
 ) = {
 
@@ -426,14 +425,13 @@ object Main {
     val action = for {
       $model <- ops.ask.map(_.$model)
       hover <- ops.ask.map(_.hover)
-      drag <- ops.ask.map(_.drag)
       mouse <- ops.ask.map(_.mouse)
-      _ <- addChild(renderPetri($model, hover, drag, mouse))
+      _ <- addChild(renderPetri($model, hover, mouse))
       _ <- bindings.runForever
     } yield ()
 
     dom.document.querySelector("head").appendChild(styleTag(PSrendered).ref)
 
-    mountWithAction(el, StratPetri(), serializer, action)
+    plutoMain(el, StratPetri(), serializer, action)
   }
 }

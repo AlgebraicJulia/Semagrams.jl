@@ -10,56 +10,57 @@ import semagrams._
 case class ACSet[S: IsSchema](
     schema: S,
     counter: Int,
-    parts: Map[Ob, Set[Entity]],
-    props: Map[Entity, PropMap]
+    parts: Map[Ob, Set[Part]],
+    props: Map[Part, PropMap]
 ) {
-
-  def addPart(ob: Ob): (ACSet[S], Entity) = {
-    val x = Entity(counter, ob)
+  def addPart(ob: Ob, pm: PropMap): (ACSet[S], Part) = {
+    val x = Part(counter, ob)
     (
       this.copy(
         parts = parts + (ob -> (parts(ob) + x)),
         counter = counter + 1,
-        props = props + (x -> PropMap())
+        props = props + (x -> pm)
       ),
       x
     )
   }
 
-  def addPart(ob: Ob, props: PropMap): (ACSet[S], Entity) = {
-    val (that, x) = addPart(ob)
-    (that.setSubparts(props, x), x)
+  def addPart(ob: Ob): (ACSet[S], Part) = {
+    addPart(ob, PropMap())
   }
 
-  def setSubpart(f: Property, x: Entity, y: f.Value): ACSet[S] =
+  def setSubpart(f: Property, x: Part, y: f.Value): ACSet[S] =
     this.copy(
       props = props + (x -> (props(x).set(f, y)))
     )
 
-  def setSubparts(pm: PropMap, x: Entity): ACSet[S] =
+  def setSubparts(x: Part, pm: PropMap): ACSet[S] =
     this.copy(
       props = props + (x -> (props(x) ++ pm))
     )
 
-  def remSubpart(f: Property, x: Entity): ACSet[S] =
+  def setSubparts(pms: Iterable[(Part, PropMap)]): ACSet[S] =
+    pms.foldLeft(this)({ case (acs, (x, pm)) => acs.setSubparts(x, pm) })
+
+  def remSubpart(f: Property, x: Part): ACSet[S] =
     this.copy(
       props = props + (x -> (props(x) - f))
     )
 
-  def subpart(f: Property, x: Entity): f.Value = props(x)(f)
+  def subpart(f: Property, x: Part): f.Value = props(x)(f)
 
-  def trySubpart(f: Property, x: Entity): Option[f.Value] = props(x).get(f)
+  def trySubpart(f: Property, x: Part): Option[f.Value] = props(x).get(f)
 
-  def incident(f: Property, dom: Ob, y: f.Value): Set[Entity] =
+  def incident(f: Property, dom: Ob, y: f.Value): Set[Part] =
     parts(dom).filter(trySubpart(f, _) == Some(y))
 
-  def incident(f: HomWithDom, y: Entity): Set[Entity] = incident(f, f.dom, y)
+  def incident(f: HomWithDom, y: Part): Set[Part] = incident(f, f.dom, y)
 
-  def incident(f: AttrWithDom, y: f.Value): Set[Entity] = incident(f, f.dom, y)
+  def incident(f: AttrWithDom, y: f.Value): Set[Part] = incident(f, f.dom, y)
 
-  def remPart(x: Entity): ACSet[S] = {
-    val visited = mutable.HashSet[Entity]()
-    val next = mutable.Stack[Entity](x)
+  def remPart(x: Part): ACSet[S] = {
+    val visited = mutable.HashSet[Part]()
+    val next = mutable.Stack[Part](x)
     while (!next.isEmpty) {
       val y = next.pop()
       visited.add(y)
@@ -82,11 +83,11 @@ case class ACSet[S: IsSchema](
       sInstance.rw.transform(schema, ujson.Value),
       counter,
       parts.map((ob, t) =>
-        (ob.toString(), t.map((e: Entity) => BareEntity(e.id)))
+        (ob.toString(), t.map((e: Part) => BarePart(e.id)))
       ),
       props.map((x, m) =>
         (
-          BareEntity(x.id),
+          BarePart(x.id),
           m.toJson()
         )
       )
@@ -95,18 +96,18 @@ case class ACSet[S: IsSchema](
 }
 
 /** This is to make upickle use a array of arrays instead of a dict for
-  * Map[BareEntity, X]
+  * Map[BarePart, X]
   */
-case class BareEntity(id: Int)
+case class BarePart(id: Int)
 
-implicit val beRW: ReadWriter[BareEntity] =
-  readwriter[Int].bimap[BareEntity](_.id, BareEntity(_))
+implicit val beRW: ReadWriter[BarePart] =
+  readwriter[Int].bimap[BarePart](_.id, BarePart(_))
 
 case class SerializableACSet(
     schema: ujson.Value,
     counter: Int,
-    parts: Map[String, Set[BareEntity]],
-    props: Map[BareEntity, Map[String, ujson.Value]]
+    parts: Map[String, Set[BarePart]],
+    props: Map[BarePart, Map[String, ujson.Value]]
 )
 
 implicit val serializableACSetRW: ReadWriter[SerializableACSet] = macroRW
@@ -115,8 +116,8 @@ object ACSet {
   def apply[S: IsSchema](s: S): ACSet[S] = new ACSet[S](
     s,
     0,
-    s.obs.map(_ -> Set[Entity]()).toMap,
-    Map[Entity, PropMap]()
+    s.obs.map(_ -> Set[Part]()).toMap,
+    Map[Part, PropMap]()
   )
 
   def apply[S]()(implicit iss: IsStaticSchema[S]): ACSet[S] = apply[S](iss.theS)
@@ -137,12 +138,12 @@ object ACSet {
       sacs.counter,
       sacs.parts.map((sob, sparts) => {
         val ob = s.obsByString(sob)
-        val parts = sparts.map((e: BareEntity) => Entity(e.id, ob))
+        val parts = sparts.map((e: BarePart) => Part(e.id, ob))
         (ob, parts)
       }),
       sacs.props.map((x, m) =>
         (
-          Entity(x.id, obsById(x.id)),
+          Part(x.id, obsById(x.id)),
           PropMap.fromJson(genProps ++ s.homsByString ++ s.attrsByString, m)
         )
       )
@@ -157,19 +158,19 @@ object ACSet {
 }
 
 trait ACSetOps[S: IsSchema] {
-  def addPart(ob: Ob): State[ACSet[S], Entity] =
+  def addPart(ob: Ob): State[ACSet[S], Part] =
     State(_.addPart(ob))
 
-  def addPart(ob: Ob, props: PropMap): State[ACSet[S], Entity] =
+  def addPart(ob: Ob, props: PropMap): State[ACSet[S], Part] =
     State(_.addPart(ob, props))
 
-  def setSubpart(f: Property, x: Entity, y: f.Value): State[ACSet[S], Unit] =
+  def setSubpart(f: Property, x: Part, y: f.Value): State[ACSet[S], Unit] =
     State.modify(_.setSubpart(f, x, y))
 
-  def remPart(x: Entity): State[ACSet[S], Unit] =
+  def remPart(x: Part): State[ACSet[S], Unit] =
     State.modify(_.remPart(x))
 
-  def subpartLens(f: Attr, x: Entity) =
+  def subpartLens(f: Attr, x: Part) =
     Lens[ACSet[S], f.Value](_.subpart(f, x))(y => s => s.setSubpart(f, x, y))
 }
 

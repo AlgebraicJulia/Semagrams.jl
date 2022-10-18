@@ -27,7 +27,7 @@ def baseSvg = svg.svg(
   )
 )
 
-def mountWithAction[Model](
+def plutoMain[Model](
     parentDiv: dom.Element,
     initModel: Model,
     serializer: ReadWriter[Model],

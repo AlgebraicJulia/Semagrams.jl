@@ -1,6 +1,7 @@
 package semagrams.util
 
 import upickle.default._
+import scala.language.implicitConversions
 
 import scala.math.{*}
 
