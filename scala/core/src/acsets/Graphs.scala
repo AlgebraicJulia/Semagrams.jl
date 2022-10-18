@@ -29,11 +29,11 @@ trait GraphOps[S: IsSchema] extends ACSetOps[S] {
     def vertices() = a.parts(V)
     def edges() = a.parts(E)
 
-    def src(e: Entity) = a.subpart(Src, e)
-    def tgt(e: Entity) = a.subpart(Tgt, e)
+    def src(e: Part) = a.subpart(Src, e)
+    def tgt(e: Part) = a.subpart(Tgt, e)
 
-  def addVertex(): State[ACSet[S], Entity] = addPart(V)
-  def addEdge(s: Entity, t: Entity): State[ACSet[S], Entity] = for {
+  def addVertex(): State[ACSet[S], Part] = addPart(V)
+  def addEdge(s: Part, t: Part): State[ACSet[S], Part] = for {
     e <- addPart(E)
     _ <- setSubpart(Src, e, s)
     _ <- setSubpart(Tgt, e, t)

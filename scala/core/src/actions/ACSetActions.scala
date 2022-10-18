@@ -15,25 +15,31 @@ import cats.effect.syntax.all._
 
 import Action.ops
 
-def addEntityPos[S: IsSchema](
+def addPartPos[S: IsSchema](
     ob: Ob,
     props: PropMap
-): Action[ACSet[S], Entity] =
+): Action[ACSet[S], Part] =
   mousePos.flatMap(p =>
     updateModelS(ACSetOps[S].addPart(ob, props + (Center, p)))
   )
 
-def remEntity[S: IsSchema]: Action[ACSet[S], Unit] = for {
+def remPart[S: IsSchema]: Action[ACSet[S], Unit] = for {
   v <- fromMaybe(hovered)
-  _ <- updateModel[ACSet[S]](_.remPart(v))
+  _ <- v match {
+    case (p: Part) => updateModel[ACSet[S]](_.remPart(p))
+    case _         => ops.pure(())
+  }
   _ <- update
 } yield ()
+
+def hoveredPart[M](ob: Ob) =
+  hoveredEntity[M](ob).map(_.map(_.asInstanceOf[Part]))
 
 def dragEdge[S: IsSchema](
     ob: Ob,
     src: Hom,
     tgt: Hom,
-    s: Entity
+    s: Part
 ): Action[ACSet[S], Unit] = {
   val aops = summon[ACSetOps[S]]
   for {
@@ -43,7 +49,7 @@ def dragEdge[S: IsSchema](
     e <- updateModelS(aops.addPart(ob, PropMap().set(src, s).set(End, p)))
     _ <- (for {
       _ <- drag.drag(Observer(p => $model.update(_.setSubpart(End, e, p))))
-      t <- fromMaybe(hoveredPart(tgt.codom))
+      t <- fromMaybe(hoveredPart[ACSet[S]](tgt.codom))
       _ <- updateModelS(aops.setSubpart(tgt, e, t))
     } yield ()).onCancelOrError(for {
       _ <- ops.delay(drag.$state.set(None))
@@ -55,7 +61,7 @@ def dragEdge[S: IsSchema](
 
 def editStringProp[S: IsSchema](
     attr: Property { type Value = String }
-)(v: Entity): Action[ACSet[S], Unit] =
+)(v: Part): Action[ACSet[S], Unit] =
   for {
     $model <- getModel[ACSet[S]]
     _ <- editText(
@@ -64,7 +70,7 @@ def editStringProp[S: IsSchema](
     )
   } yield {}
 
-def dragEntity[S: IsSchema](v: Entity): Action[ACSet[S], Unit] =
+def dragPart[S: IsSchema](v: Part): Action[ACSet[S], Unit] =
   for {
     $model <- getModel
     c <- Kleisli.pure($model.now().subpart(Center, v))

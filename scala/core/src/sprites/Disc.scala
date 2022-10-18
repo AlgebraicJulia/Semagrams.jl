@@ -60,7 +60,7 @@ case class Disc() extends Sprite {
     RenderedSprite(root, Map(MainHandle -> root))
   }
 
-  def boundaryPt(ent: Entity, data: PropMap, dir: Complex) = {
+  def boundaryPt(data: PropMap, dir: Complex) = {
     val rad = radius(data)
     dir.normalize * rad + data(Center)
   }

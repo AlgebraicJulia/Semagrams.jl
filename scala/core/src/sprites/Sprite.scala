@@ -34,7 +34,6 @@ trait Sprite {
   ): RenderedSprite
 
   def boundaryPt(
-      ent: Entity,
       data: PropMap,
       dir: Complex
   ): Complex

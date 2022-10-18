@@ -7,6 +7,11 @@ import semagrams.util.Complex
 
 type Sprites = Map[Entity, (Sprite, PropMap)]
 
+extension (sprites: Sprites)
+  def boundaryPt(e: Entity, dir: Complex) = {
+    sprites.get(e).map((s, p) => s.boundaryPt(p, dir))
+  }
+
 case class SpriteMaker[State](
     sprite: Sprite,
     extractor: (State, Sprites) => List[(Entity, PropMap)],

@@ -48,6 +48,6 @@ case class Arrow() extends Sprite {
     RenderedSprite(root, Map(MainHandle -> handle))
   }
 
-  def boundaryPt(ent: Entity, data: PropMap, dir: Complex): Complex =
+  def boundaryPt(data: PropMap, dir: Complex): Complex =
     Complex(0, 0)
 }

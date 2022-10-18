@@ -1,5 +1,8 @@
 {
-  inputs = { utils.url = "github:numtide/flake-utils"; };
+  inputs = {
+    utils.url = "github:numtide/flake-utils";
+    nixpkgs.url = "github:NixOS/nixpkgs";
+  };
 
   outputs = { self, nixpkgs, utils }:
     utils.lib.eachDefaultSystem (system:
@@ -13,7 +16,6 @@
         devShell = pkgs.mkShell {
           nativeBuildInputs = with pkgs; [
             nodejs
-            sbt
             openjdk
             metals
             bloop

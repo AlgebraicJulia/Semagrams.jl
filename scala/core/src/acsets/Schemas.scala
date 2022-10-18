@@ -3,13 +3,22 @@ package semagrams.acsets
 import semagrams._
 import upickle.default._
 
-export semagrams.{Ob, Entity, Property}
+export semagrams.{Entity, Property}
+
+trait Ob extends EntityType
+
+case class Part(id: Int, ob: Ob) extends Entity {
+  def asElt(x: Ob) = if (x == ob) Some(this) else None
+
+  val hash = id
+  val entityType = ob
+}
 
 trait Hom extends Property {
-  type Value = Entity
+  type Value = Part
   val codom: Ob
 
-  val rw = summon[ReadWriter[Int]].bimap(_.id, Entity(_, codom))
+  val rw = summon[ReadWriter[Int]].bimap(_.id, Part(_, codom))
 }
 
 trait HomWithDom extends Hom {
