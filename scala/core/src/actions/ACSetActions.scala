@@ -27,12 +27,13 @@ def remPart[S: IsSchema]: Action[ACSet[S], Unit] = for {
   v <- fromMaybe(hovered)
   _ <- v match {
     case (p: Part) => updateModel[ACSet[S]](_.remPart(p))
-    case _ => ops.pure(())
+    case _         => ops.pure(())
   }
   _ <- update
 } yield ()
 
-def hoveredPart[M](ob: Ob) = hoveredEntity[M](ob).map(_.map(_.asInstanceOf[Part]))
+def hoveredPart[M](ob: Ob) =
+  hoveredEntity[M](ob).map(_.map(_.asInstanceOf[Part]))
 
 def dragEdge[S: IsSchema](
     ob: Ob,

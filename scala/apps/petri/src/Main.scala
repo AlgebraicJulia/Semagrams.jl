@@ -54,7 +54,7 @@ object StratPetri {
 val ops = Action.ops[StratPetri]
 val aops = summon[ACSetOps[SchStratPetri.type]]
 
-val addSpecies = addEntityPos[SchStratPetri.type](
+val addSpecies = addPartPos[SchStratPetri.type](
   S,
   PropMap()
     .set(SName, "")
@@ -62,7 +62,7 @@ val addSpecies = addEntityPos[SchStratPetri.type](
     .set(StratificationWith, Set())
 )
 
-val addTransition = addEntityPos[SchStratPetri.type](
+val addTransition = addPartPos[SchStratPetri.type](
   T,
   PropMap().set(TName, "").set(Rate, 1.0).set(TransitionType, None)
 )
@@ -134,7 +134,7 @@ def inputCell(labelV: String, el: Element) =
     el
   )
 
-def speciesEditor($p: Var[StratPetri], s: Entity, eltDims: Complex) = {
+def speciesEditor($p: Var[StratPetri], s: Part, eltDims: Complex) = {
   import EditorParams._
 
   val pos = Complex(eltDims.x / 2, eltDims.y)
@@ -190,7 +190,7 @@ def speciesEditor($p: Var[StratPetri], s: Entity, eltDims: Complex) = {
   )
 }
 
-def transitionEditor($p: Var[StratPetri], t: Entity, eltDims: Complex) = {
+def transitionEditor($p: Var[StratPetri], t: Part, eltDims: Complex) = {
   import EditorParams._
 
   val pos = Complex(eltDims.x / 2, eltDims.y)
@@ -252,7 +252,7 @@ def transitionEditor($p: Var[StratPetri], t: Entity, eltDims: Complex) = {
   )
 }
 
-def openSpeciesEditor(s: Entity): Action[StratPetri, Unit] = for {
+def openSpeciesEditor(s: Part): Action[StratPetri, Unit] = for {
   $p <- ops.ask.map(_.$model)
   eltDims <- ops.ask.map(_.dims())
   ed <- ops.delay(speciesEditor($p, s, eltDims))
@@ -264,7 +264,7 @@ def openSpeciesEditor(s: Entity): Action[StratPetri, Unit] = for {
   } yield ()).start
 } yield ()
 
-def openTransitionEditor(t: Entity): Action[StratPetri, Unit] = for {
+def openTransitionEditor(t: Part): Action[StratPetri, Unit] = for {
   $p <- ops.ask.map(_.$model)
   eltDims <- ops.ask.map(_.dims())
   ed <- ops.delay(transitionEditor($p, t, eltDims))
@@ -298,21 +298,25 @@ val bindings = Bindings[StratPetri, Unit](
   keyDown("t").andThen(
     addTransition.flatMap(openTransitionEditor).flatMap(_ => update)
   ),
-  keyDown("d").andThen(remEntity),
+  keyDown("d").andThen(remPart),
   keyDown("h").andThen(showPopoverUntil(helpText, keyDown("h"))),
   keyDown("?").andThen(showPopoverUntil(helpText, keyDown("?"))),
   clickOn(ClickType.Single, MouseButton.Left, S)
     .withMods(KeyModifier.Shift)
-    .flatMap(s => dragEdge(I, IS, IT, s)),
+    .flatMap(s => dragEdge(I, IS, IT, s.asInstanceOf[Part])),
   clickOn(ClickType.Single, MouseButton.Left, T)
     .withMods(KeyModifier.Shift)
-    .flatMap(t => dragEdge(O, OT, OS, t)),
+    .flatMap(t => dragEdge(O, OT, OS, t.asInstanceOf[Part])),
   clickOn(ClickType.Double, MouseButton.Left, S)
-    .flatMap(openSpeciesEditor),
-  clickOn(ClickType.Single, MouseButton.Left, S).flatMap(dragEntity),
+    .flatMap(e => openSpeciesEditor(e.asInstanceOf[Part])),
+  clickOn(ClickType.Single, MouseButton.Left, S).flatMap(e =>
+    dragPart(e.asInstanceOf[Part])
+  ),
   clickOn(ClickType.Double, MouseButton.Left, T)
-    .flatMap(openTransitionEditor),
-  clickOn(ClickType.Single, MouseButton.Left, T).flatMap(dragEntity)
+    .flatMap(e => openTransitionEditor(e.asInstanceOf[Part])),
+  clickOn(ClickType.Single, MouseButton.Left, T).flatMap(e =>
+    dragPart(e.asInstanceOf[Part])
+  )
 )
 
 def arcExtractor(p: StratPetri, sprites: Sprites) = {

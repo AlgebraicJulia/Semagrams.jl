@@ -10,7 +10,7 @@ def edgeProps(
     srcCenter: Complex,
     tgtEnt: Option[Entity],
     tgtCenter: Complex,
-    bend: Double,
+    bend: Double
 ): PropMap = {
   val dir = srcCenter - tgtCenter
   val rot = Complex(0, bend).exp
@@ -35,7 +35,14 @@ def edgeExtractor[S: IsSchema](
       srcEnt.map(sprites(_)._2(Center)).getOrElse(acs.subpart(Start, e))
     val tgtCenter =
       tgtEnt.map(sprites(_)._2(Center)).getOrElse(acs.subpart(End, e))
-    acs.props(e) ++ edgeProps(sprites, srcEnt, srcCenter, tgtEnt, tgtCenter, bend)
+    acs.props(e) ++ edgeProps(
+      sprites,
+      srcEnt,
+      srcCenter,
+      tgtEnt,
+      tgtCenter,
+      bend
+    )
   }
 
   acs

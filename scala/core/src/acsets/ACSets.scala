@@ -82,9 +82,7 @@ case class ACSet[S: IsSchema](
     SerializableACSet(
       sInstance.rw.transform(schema, ujson.Value),
       counter,
-      parts.map((ob, t) =>
-        (ob.toString(), t.map((e: Part) => BarePart(e.id)))
-      ),
+      parts.map((ob, t) => (ob.toString(), t.map((e: Part) => BarePart(e.id)))),
       props.map((x, m) =>
         (
           BarePart(x.id),

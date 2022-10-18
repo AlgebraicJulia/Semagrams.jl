@@ -4,10 +4,10 @@ import semagrams._
 import scala.collection.mutable
 
 class MutableACSet[S: IsSchema](
-  val schema: S,
-  var counter: Int,
-  val parts: Map[Ob, mutable.Set[Part]],
-  val props: mutable.Map[Part, PropMap]
+    val schema: S,
+    var counter: Int,
+    val parts: Map[Ob, mutable.Set[Part]],
+    val props: mutable.Map[Part, PropMap]
 ) {
   def addPart(ob: Ob, pm: PropMap): Part = {
     val x = Part(counter, ob)

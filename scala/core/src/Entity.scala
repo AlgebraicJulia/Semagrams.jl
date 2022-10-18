@@ -31,4 +31,3 @@ trait Entity {
   def withType(ty: EntityType) =
     if entityType == ty then Some(this) else None
 }
-

@@ -66,5 +66,7 @@ object TestData {
     (1, Complex(50, 150)),
     (2, Complex(150, 50)),
     (3, Complex(150, 150))
-  ).map((i, p) => (Part(i, SymOb("X")), PropMap() + (Center, p) + (Content, i.toString())))
+  ).map((i, p) =>
+    (Part(i, SymOb("X")), PropMap() + (Center, p) + (Content, i.toString()))
+  )
 }
