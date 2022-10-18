@@ -83,7 +83,7 @@ def clickOn[Model](
 
 def clickOnPart[Model](
     clickType: ClickType,
-    button: MouseButton,
+    button: MouseButton
 ): Binding[Model, Part] = Binding(
   {
     case MouseEvent.MouseDown(Some(ent: Part), `button`)

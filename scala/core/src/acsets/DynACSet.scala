@@ -93,9 +93,10 @@ case class DynSchema(
     (buf.freeze, partMaps.toMap)
   }
 
-  def readACSet(s: String): (ACSet[DynSchema], Map[(Ob, Int), Part]) = readACSet(
-    read[Map[String, Seq[Map[String, ujson.Value]]]](s)
-  )
+  def readACSet(s: String): (ACSet[DynSchema], Map[(Ob, Int), Part]) =
+    readACSet(
+      read[Map[String, Seq[Map[String, ujson.Value]]]](s)
+    )
 }
 
 object DynSchema {

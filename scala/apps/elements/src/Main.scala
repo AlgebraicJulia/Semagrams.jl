@@ -97,8 +97,7 @@ def renderElements(
 }
 
 val bindings: Bindings[DynACSet, Unit] = Bindings(
-  clickOnPart(ClickType.Single, MouseButton.Left).flatMap(dragPart),
-
+  clickOnPart(ClickType.Single, MouseButton.Left).flatMap(dragPart)
 )
 
 val serializer = ACSet.rw[DynSchema]
@@ -133,7 +132,10 @@ def handleCommand(state: DynACSet, c: Command) = {
     case Command.ACSet(data, positions) => {
       val (acs, partMap) = state.schema.readACSet(data)
       val posProps = positions.map({ case ((s, i), p) =>
-        (partMap((DynOb(s), i)), PropMap() + (Center, p * scale + offset) + (Content, s"$s: $i"))
+        (
+          partMap((DynOb(s), i)),
+          PropMap() + (Center, p * scale + offset) + (Content, s"$s: $i")
+        )
       })
       acs.setSubparts(posProps)
     }
