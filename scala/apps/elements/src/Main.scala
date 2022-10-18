@@ -161,8 +161,6 @@ object Main {
       _ <- bindings.runForever
     } yield ()
 
-    val sch = read[DynSchema](TestData.schLabeledDDS)
-
     plutoMain(el, DynACSet(DynSchema()), serializer, action)
   }
 }
