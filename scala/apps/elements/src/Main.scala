@@ -11,6 +11,7 @@ import upickle.default._
 import com.raquo.laminar.api.L._
 
 import org.scalajs.dom
+import scala.scalajs.js
 
 import scala.scalajs.js.annotation.JSExportTopLevel
 
@@ -95,25 +96,73 @@ def renderElements(
   )
 }
 
-val bindings: Bindings[DynACSet, Unit] = Bindings()
+val bindings: Bindings[DynACSet, Unit] = Bindings(
+  clickOnPart(ClickType.Single, MouseButton.Left).flatMap(dragPart),
 
-val serializer = ACSet.rw[DynamicSchema]
+)
+
+val serializer = ACSet.rw[DynSchema]
+
+sealed trait Command
+
+object Command {
+  case class Schema(data: ujson.Value) extends Command
+  object Schema {
+    implicit val rw: ReadWriter[Schema] = macroRW
+  }
+  case class ACSet(
+      data: Map[String, Seq[Map[String, ujson.Value]]],
+      positions: Seq[((String, Int), Complex)]
+  ) extends Command
+  object ACSet {
+    implicit val rw: ReadWriter[ACSet] = macroRW
+  }
+}
+
+given ReadWriter[Command] = macroRW
+
+val scale = 1.5
+val offset = Complex(20, 40)
+
+def handleCommand(state: DynACSet, c: Command) = {
+  c match {
+    case Command.Schema(data) => {
+      val schema = read[DynSchema](data)
+      DynACSet(schema)
+    }
+    case Command.ACSet(data, positions) => {
+      val (acs, partMap) = state.schema.readACSet(data)
+      val posProps = positions.map({ case ((s, i), p) =>
+        (partMap((DynOb(s), i)), PropMap() + (Center, p * scale + offset) + (Content, s"$s: $i"))
+      })
+      acs.setSubparts(posProps)
+    }
+  }
+}
 
 object Main {
 
   @JSExportTopLevel("main")
   def main(el: dom.Element): Unit = {
+    val commandBus = EventBus[Command]()
+
+    val callback: js.Function1[String, Unit] = (x: String) => {
+      commandBus.emit(read(x))
+    }
+
+    js.Dynamic.global.window.parse_payload = callback
+
     val action = for {
       $model <- ops.ask.map(_.$model)
       hover <- ops.ask.map(_.hover)
       mouse <- ops.ask.map(_.mouse)
       _ <- addChild(renderElements($model, hover, mouse))
+      _ <- amendElt(commandBus.events --> $model.updater(handleCommand))
       _ <- bindings.runForever
     } yield ()
 
-    val sch = read[DynamicSchema](TestData.schLabeledDDS)
-    val dds = sch.readACSet(TestData.exLabeledDDS).setSubparts(TestData.props)
+    val sch = read[DynSchema](TestData.schLabeledDDS)
 
-    plutoMain(el, dds, serializer, action)
+    plutoMain(el, DynACSet(DynSchema()), serializer, action)
   }
 }

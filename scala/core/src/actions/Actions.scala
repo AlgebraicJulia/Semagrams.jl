@@ -131,6 +131,11 @@ def bind[T, El <: ReactiveElement.Base](
     }
 }
 
+def amendElt[Model](m: Modifier[SvgElement]): Action[Model, Unit] = for {
+  elt <- ops[Model].ask.map(_.elt)
+  _ <- ops.delay(elt.amend(m))
+} yield ()
+
 /** This is the workhorse connecting Laminar and cats-effect. Given an event
   * stream this function uses asynchronous IO to return the next event in the
   * stream

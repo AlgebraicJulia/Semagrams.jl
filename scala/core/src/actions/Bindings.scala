@@ -81,6 +81,20 @@ def clickOn[Model](
   Some(Set())
 )
 
+def clickOnPart[Model](
+    clickType: ClickType,
+    button: MouseButton,
+): Binding[Model, Part] = Binding(
+  {
+    case MouseEvent.MouseDown(Some(ent: Part), `button`)
+        if (clickType == Single) =>
+      ops.pure(ent)
+    case MouseEvent.DoubleClick(Some(ent: Part), `button`)
+        if (clickType == Double) =>
+      ops.pure(ent)
+  },
+  Some(Set())
+)
 def releaseOn[Model](
     clickType: ClickType,
     button: MouseButton,

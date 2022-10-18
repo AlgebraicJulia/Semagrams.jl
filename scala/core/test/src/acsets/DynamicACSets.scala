@@ -90,15 +90,15 @@ object DynamicACSetSpec extends TestSuite {
 
   def tests = Tests {
     test("read dynamic schemas") {
-      val schLabeledDDS = read[DynamicSchema](Data.schLabeledDDS)
+      val schLabeledDDS = read[DynSchema](Data.schLabeledDDS)
 
-      assert(schLabeledDDS.obs contains SymOb("X"))
-      assert(schLabeledDDS.homs(SymOb("X")) contains SymHom("next", SymOb("X"), SymOb("X")))
-      assert(schLabeledDDS.attrs(SymOb("X")) contains SymAttr("label", SymOb("X"), SymAttrType("Label")))
+      assert(schLabeledDDS.obs contains DynOb("X"))
+      assert(schLabeledDDS.homs(DynOb("X")) contains DynHom("next", DynOb("X"), DynOb("X")))
+      assert(schLabeledDDS.attrs(DynOb("X")) contains DynAttr("label", DynOb("X"), DynAttrType("Label")))
     }
 
     test("read acset") {
-      val schLabeledDDS = read[DynamicSchema](Data.schLabeledDDS)
+      val schLabeledDDS = read[DynSchema](Data.schLabeledDDS)
 
       val dds = schLabeledDDS.readACSet(Data.exLabeledDDS)
     }
