@@ -1,3 +1,4 @@
+import $file.scalablytyped
 import mill._
 import mill.scalalib._
 import mill.scalajslib._
@@ -16,13 +17,15 @@ def defaultPomSettings(desc: String) = PomSettings(
   )
 )
 
-trait Defaults extends ScalaJSModule with PublishModule with ScalafmtModule {
+trait Defaults extends ScalaJSModule with ScalafmtModule {
   def scalaVersion = "3.2.0"
   def scalaJSVersion = "1.11.0"
 
   def scalacOptions = Seq("-Ykind-projector:underscores", "-deprecation", "-feature")
 
   def moduleKind = T { ModuleKind.ESModule }
+  
+  def moduleDeps = Seq(scalablytyped.`scalablytyped-module`)
 
   def ivyDeps = Agg(
     ivy"org.scala-js::scalajs-dom::2.2.0",
@@ -50,6 +53,16 @@ trait Defaults extends ScalaJSModule with PublishModule with ScalafmtModule {
   def sonatypeSnapshotUri = "https://s01.oss.sonatype.org/content/repositories/snapshots"
 }
 
+object repl extends ScalaModule {
+  def scalaVersion = "3.2.0"
+  
+  def ammoniteVersion = "2.5.5"
+  
+  def ivyDeps = Agg(
+    ivy"com.lihaoyi::upickle::2.0.0",
+  )
+}
+
 object core extends Defaults {
   def desc = "A library for semantic diagrams"
 
@@ -60,20 +73,20 @@ object core extends Defaults {
   }
 }
 
-trait SemagramsApp extends Defaults {
-  def moduleDeps = Seq(core)
-}
+// trait SemagramsApp extends Defaults {
+//   def moduleDeps = Seq(core)
+// }
 
-object apps extends Module {
-  object petri extends SemagramsApp {
-    def desc = "A petri net editor implemented with semagrams"
+// object apps extends Module {
+//   object petri extends SemagramsApp {
+//     def desc = "A petri net editor implemented with semagrams"
 
-    def artifactName = "semagrams-petri"
-  }
+//     def artifactName = "semagrams-petri"
+//   }
 
-  object elements extends SemagramsApp {
-    def desc = "A viewer for the category of elements of an acset"
+//   object elements extends SemagramsApp {
+//     def desc = "A viewer for the category of elements of an acset"
 
-    def artifactName = "semagrams-elements"
-  }
-}
+//     def artifactName = "semagrams-elements"
+//   }
+// }
