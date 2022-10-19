@@ -256,11 +256,11 @@ def openSpeciesEditor(s: Part): Action[StratPetri, Unit] = for {
   $p <- ops.ask.map(_.$model)
   eltDims <- ops.ask.map(_.dims())
   ed <- ops.delay(speciesEditor($p, s, eltDims))
-  _ <- addChild(ed)
+  _ <- addControl(ed)
   bindables <- ops.ask.map(_.bindables)
   _ <- (for {
     _ <- Bindings[StratPetri, Unit](keyDown("Escape")).run
-    _ <- removeChild(ed)
+    _ <- removeControl(ed)
   } yield ()).start
 } yield ()
 
@@ -268,11 +268,11 @@ def openTransitionEditor(t: Part): Action[StratPetri, Unit] = for {
   $p <- ops.ask.map(_.$model)
   eltDims <- ops.ask.map(_.dims())
   ed <- ops.delay(transitionEditor($p, t, eltDims))
-  _ <- addChild(ed)
+  _ <- addControl(ed)
   bindables <- ops.ask.map(_.bindables)
   _ <- (for {
     _ <- Bindings[StratPetri, Unit](keyDown("Escape")).run
-    _ <- removeChild(ed)
+    _ <- removeControl(ed)
   } yield ()).start
 } yield ()
 
@@ -291,7 +291,12 @@ Double-click to modify species/transitions
 Shift-click and drag to add arrows
 """.linesIterator.toSeq
 
+val zoomFactor = 1.1
+
 val bindings = Bindings[StratPetri, Unit](
+  keyDown("+").andThen(zoomAtMouse(zoomFactor)),
+  keyDown("-").andThen(zoomAtMouse(1 / zoomFactor)),
+  clickOn(ClickType.Single, MouseButton.Left, BackgroundType).andThen(dragPan),
   keyDown("s").andThen(
     addSpecies.flatMap(openSpeciesEditor).flatMap(_ => update)
   ),
@@ -430,7 +435,7 @@ object Main {
       $model <- ops.ask.map(_.$model)
       hover <- ops.ask.map(_.hover)
       mouse <- ops.ask.map(_.mouse)
-      _ <- addChild(renderPetri($model, hover, mouse))
+      _ <- addRelative(renderPetri($model, hover, mouse))
       _ <- bindings.runForever
     } yield ()
 
