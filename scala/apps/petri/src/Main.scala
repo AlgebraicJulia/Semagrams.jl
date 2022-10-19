@@ -441,6 +441,6 @@ object Main {
 
     dom.document.querySelector("head").appendChild(styleTag(PSrendered).ref)
 
-    plutoMain(el, StratPetri(), serializer, action)
+    plutoMain(el, StratPetri(), serializer, action, Complex(600, 400))
   }
 }

@@ -2,14 +2,14 @@ package semagrams
 
 import com.raquo.laminar.api.L._
 import com.raquo.domtypes.generic.codecs.StringAsIsCodec
-import semagrams.actions.*
 import org.scalajs.dom
 import scala.scalajs.js
+import semagrams.actions._
 import upickle.default._
+import semagrams.util._
 
-def baseSvg = svg.svg(
-  svg.width := "600",
-  svg.height := "400",
+def baseSvg(dims: Complex) = svg.svg(
+  wh := dims,
   svg.customSvgAttr("tabindex", StringAsIsCodec) := "0",
   svg.style := "border:black;border-style:solid;background-color:white",
   svg.defs(
@@ -31,10 +31,11 @@ def plutoMain[Model](
     parentDiv: dom.Element,
     initModel: Model,
     serializer: ReadWriter[Model],
-    action: Action[Model, Unit]
+    action: Action[Model, Unit],
+    dims: Complex
 ) = {
   val $model = Var(initModel)
-  val appElement = baseSvg
+  val appElement = baseSvg(dims)
 
   js.Object.defineProperty(
     parentDiv,

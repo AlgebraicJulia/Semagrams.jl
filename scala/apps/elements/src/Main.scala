@@ -59,7 +59,7 @@ def renderElements(
     $d.signal,
     List(
       SpriteMaker[DynACSet](
-        Disc(),
+        Box(),
         (d, _) => d.props.toList,
         Stack(
           WithDefaults(
@@ -168,6 +168,6 @@ object Main {
       _ <- bindings.runForever
     } yield ()
 
-    plutoMain(el, DynACSet(DynSchema()), serializer, action)
+    plutoMain(el, DynACSet(DynSchema()), serializer, action, Complex(1000, 800))
   }
 }
