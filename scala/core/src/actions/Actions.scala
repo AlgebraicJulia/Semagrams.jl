@@ -219,9 +219,9 @@ def editText[Model](
     input <- ops.delay(
       TextInput(listener, init, bus.writer, Complex(200, 40), eltDims)
     )
-    _ <- addChild(input)
+    _ <- addControl(input)
     _ <- nextEvent(bus.events)
-    _ <- removeChild(input)
+    _ <- removeControl(input)
     elt <- ops[Model].ask.map(_.elt)
     _ <- ops.delay(elt.ref.asInstanceOf[js.Dynamic].focus())
   } yield ()
@@ -238,12 +238,38 @@ def runUntil[Model](
   _ <- target.cancel
 } yield {}
 
-def addChild[Model](child: SvgElement): Action[Model, Unit] = for {
-  childCommands <- ops[Model].ask.map(_.childCommands)
+def addRelative[Model](child: SvgElement): Action[Model, Unit] = for {
+  childCommands <- ops[Model].ask.map(_.relativeChildCommands)
   _ <- ops.delay(childCommands.onNext(CollectionCommand.Append(child)))
 } yield ()
 
-def removeChild[Model](child: SvgElement): Action[Model, Unit] = for {
-  childCommands <- ops[Model].ask.map(_.childCommands)
+def addControl[Model](child: SvgElement): Action[Model, Unit] = for {
+  childCommands <- ops[Model].ask.map(_.controlChildCommands)
+  _ <- ops.delay(childCommands.onNext(CollectionCommand.Append(child)))
+} yield ()
+
+def removeControl[Model](child: SvgElement): Action[Model, Unit] = for {
+  childCommands <- ops[Model].ask.map(_.controlChildCommands)
   _ <- ops.delay(childCommands.onNext(CollectionCommand.Remove(child)))
+} yield ()
+
+def zoomBy[Model](factor: Double): Action[Model, Unit] = for {
+  transform <- ops[Model].ask.map(_.transform)
+  _ <- ops.delay(transform.$state.update(_.zoomBy(factor)))
+} yield ()
+
+def zoomAtMouse[Model](factor: Double): Action[Model, Unit] = for {
+  transform <- ops[Model].ask.map(_.transform)
+  pos <- mousePos
+  _ <- ops.delay(transform.$state.update(_.zoomAtPos(factor, pos)))
+} yield ()
+
+def dragPan[Model]: Action[Model, Unit] = for {
+  drag <- ops[Model].ask.map(_.drag)
+  transform <- ops[Model].ask.map(_.transform)
+  pos <- mousePos.map(transform.logicalToScreen)
+  t <- ops.delay(transform.$state.now())
+  _ <- drag.dragStart(Observer(p => {
+    transform.$state.set(t.shift(transform.logicalToScreen(p) - pos))
+  }))
 } yield ()

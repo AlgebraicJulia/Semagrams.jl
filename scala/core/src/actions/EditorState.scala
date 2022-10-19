@@ -12,11 +12,13 @@ case class EditorState[Model](
     drag: DragController,
     hover: HoverController,
     keyboard: KeyboardController,
+    transform: TransformController,
     bindables: EventBus[Any],
     $model: Var[Model],
     elt: SvgElement,
     playArea: SvgElement,
-    childCommands: Observer[ChildrenCommand],
+    controlChildCommands: Observer[ChildrenCommand],
+    relativeChildCommands: Observer[ChildrenCommand],
     update: () => Unit
 ) {
 
@@ -25,14 +27,21 @@ case class EditorState[Model](
 
 object EditorState {
   def apply[Model]($model: Var[Model], elt: SvgElement, update: () => Unit) = {
-    val mouse = MouseController()
+    val transform = TransformController()
+    val mouse = MouseController(transform)
     val drag = DragController(mouse)
     val hover = HoverController()
     val keyboard = KeyboardController()
     val bindables = EventBus[Any]()
-    val commandBus = EventBus[ChildrenCommand]()
+    val controlCommandBus = EventBus[ChildrenCommand]()
+    val relativeCommandBus = EventBus[ChildrenCommand]()
     val playArea = svg.g(
-      children.command <-- commandBus.events
+      transform,
+      children.command <-- relativeCommandBus.events
+    )
+
+    val controlArea = svg.g(
+      children.command <-- controlCommandBus.events
     )
 
     elt.amend(
@@ -41,6 +50,7 @@ object EditorState {
       hover,
       keyboard,
       playArea,
+      controlArea,
       mouse.mouseEvents --> bindables,
       keyboard.keydowns --> bindables,
       keyboard.keyups --> bindables
@@ -51,11 +61,13 @@ object EditorState {
       drag,
       hover,
       keyboard,
+      transform,
       bindables,
       $model,
       elt,
       playArea,
-      commandBus.writer,
+      controlCommandBus.writer,
+      relativeCommandBus.writer,
       update
     )
   }

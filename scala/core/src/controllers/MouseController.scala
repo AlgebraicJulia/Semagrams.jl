@@ -41,21 +41,27 @@ enum MouseEvent:
   case MouseMove(pos: Complex)
 
 object MouseEvent {
-  def svgCoords(el: dom.SVGSVGElement, ev: dom.MouseEvent): Complex = {
+  def svgCoords(
+      el: dom.SVGSVGElement,
+      ev: dom.MouseEvent,
+      transform: TransformController
+  ): Complex = {
     val pt = el.createSVGPoint()
     pt.x = ev.clientX
     pt.y = ev.clientY
     val svgP = pt.matrixTransform(el.getScreenCTM().inverse())
-    Complex(svgP.x, svgP.y)
+    transform.screenToLogical(Complex(svgP.x, svgP.y))
   }
 
-  def mouseLeave(el: dom.SVGSVGElement)(
+  def mouseLeave(el: dom.SVGSVGElement, transform: TransformController)(
       ev: TypedTargetMouseEvent[dom.Element]
   ) =
-    MouseLeave(svgCoords(el, ev))
+    MouseLeave(svgCoords(el, ev, transform))
 
-  def mouseMove(el: dom.SVGSVGElement)(ev: TypedTargetMouseEvent[dom.Element]) =
-    MouseMove(svgCoords(el, ev))
+  def mouseMove(el: dom.SVGSVGElement, transform: TransformController)(
+      ev: TypedTargetMouseEvent[dom.Element]
+  ) =
+    MouseMove(svgCoords(el, ev, transform))
 }
 
 /** The state of the mouse is simply its positions and what buttons are
@@ -87,7 +93,8 @@ object MouseState {
 
 case class MouseController(
     $state: Var[MouseState],
-    mouseEvents: EventBus[MouseEvent]
+    mouseEvents: EventBus[MouseEvent],
+    transform: TransformController
 ) extends Modifier[SvgElement] {
 
   /** This attaches the necessary event listeners to the main window
@@ -96,20 +103,12 @@ case class MouseController(
     import MouseEvent._
     val svgEl = el.ref.asInstanceOf[SVGSVGElement]
     el.amend(
-      onMouseLeave.map(MouseEvent.mouseLeave(svgEl)) --> mouseEvents,
-      onMouseMove.map(MouseEvent.mouseMove(svgEl)) --> mouseEvents,
-      onMouseDown.map(evt =>
-        MouseEvent.MouseDown(None, MouseButton.fromJS(evt.button))
-      ) --> mouseEvents,
-      onMouseUp.map(evt =>
-        MouseEvent.MouseUp(None, MouseButton.fromJS(evt.button))
-      ) --> mouseEvents,
-      onDblClick.map(evt =>
-        MouseEvent.DoubleClick(None, MouseButton.fromJS(evt.button))
-      ) --> mouseEvents,
+      onMouseLeave.map(MouseEvent.mouseLeave(svgEl, transform)) --> mouseEvents,
+      onMouseMove.map(MouseEvent.mouseMove(svgEl, transform)) --> mouseEvents,
       mouseEvents --> $state.updater[MouseEvent]((state, evt) =>
         state.processEvent(evt)
-      )
+      ),
+      clickable(Background)
     )
   }
 
@@ -131,7 +130,7 @@ case class MouseController(
 }
 
 object MouseController {
-  def apply() = {
-    new MouseController(Var(MouseState()), EventBus[MouseEvent]())
+  def apply(transform: TransformController) = {
+    new MouseController(Var(MouseState()), EventBus[MouseEvent](), transform)
   }
 }

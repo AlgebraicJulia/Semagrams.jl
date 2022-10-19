@@ -31,3 +31,10 @@ trait Entity {
   def withType(ty: EntityType) =
     if entityType == ty then Some(this) else None
 }
+
+object BackgroundType extends EntityType
+
+object Background extends Entity {
+  val entityType = BackgroundType
+  val hash = 0
+}

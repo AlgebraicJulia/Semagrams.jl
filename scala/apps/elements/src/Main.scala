@@ -96,7 +96,12 @@ def renderElements(
   )
 }
 
-val bindings: Bindings[DynACSet, Unit] = Bindings(
+val zoomFactor = 1.1
+
+val bindings = Bindings[DynACSet, Unit](
+  keyDown("+").andThen(zoomAtMouse(zoomFactor)),
+  keyDown("-").andThen(zoomAtMouse(1 / zoomFactor)),
+  clickOn(ClickType.Single, MouseButton.Left, BackgroundType).andThen(dragPan),
   clickOnPart(ClickType.Single, MouseButton.Left).flatMap(dragPart)
 )
 
@@ -158,7 +163,7 @@ object Main {
       $model <- ops.ask.map(_.$model)
       hover <- ops.ask.map(_.hover)
       mouse <- ops.ask.map(_.mouse)
-      _ <- addChild(renderElements($model, hover, mouse))
+      _ <- addRelative(renderElements($model, hover, mouse))
       _ <- amendElt(commandBus.events --> $model.updater(handleCommand))
       _ <- bindings.runForever
     } yield ()

@@ -172,8 +172,8 @@ def showPopoverUntil[Model](
   for {
     eltDims <- ops[Model].ask.map(_.dims())
     popover <- ops.delay(Popover(Val(lines), 400, 15, 15, eltDims))
-    _ <- addChild(popover)
+    _ <- addControl(popover)
     _ <- Bindings(binding).run
-    _ <- removeChild(popover)
+    _ <- removeControl(popover)
   } yield ()
 }
