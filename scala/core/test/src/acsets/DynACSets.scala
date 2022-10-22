@@ -73,7 +73,7 @@ object DynamicACSetSpec extends TestSuite {
             },
             {
             "next": 3,
-            "label": "b"
+            "label": true
             },
             {
             "next": 4,

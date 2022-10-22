@@ -84,7 +84,7 @@ case class DynSchema(
         }
         for (f <- allattrs.filter(_.dom == ob)) {
           if (subparts contains f.name) {
-            buf.setSubpart(f, x, read[String](subparts(f.name)))
+            buf.setSubpart(f, x, read[f.Value](subparts(f.name)))
           }
         }
       }
