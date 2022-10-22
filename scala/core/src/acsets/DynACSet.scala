@@ -27,8 +27,8 @@ given ReadWriter[DynAttrType] = macroRW
 case class DynAttr(name: String, dom: DynOb, codom: DynAttrType)
     extends AttrWithDom {
   override def toString() = name
-  type Value = String
-  val rw = summon[ReadWriter[String]]
+  type Value = ujson.Value
+  val rw = summon[ReadWriter[ujson.Value]]
 }
 
 given ReadWriter[DynAttr] = readwriter[Map[String, String]].bimap[DynAttr](
