@@ -51,7 +51,6 @@ def arrowExtractor(d: DynACSet, sprites: Sprites): List[(Entity, PropMap)] = {
                 (if (f.name.contains("_is_")) then
                    PropMap() + (StrokeDasharray, "3 3")
                  else PropMap())
-
             )
         })
     })
@@ -79,9 +78,13 @@ def attributeTable(p: Part, acs: DynACSet, eltDims: Complex): SvgElement = {
       bottom := "5",
       cellS,
       tr(th(cellS, "Attribute"), th(cellS, "Value")),
-      s.attrs(p.ob).map(a =>
-        tr(td(cellS, a.asInstanceOf[DynAttr].name), td(cellS, acs.subpart(a, p).toString()))
-      )
+      s.attrs(p.ob)
+        .map(a =>
+          tr(
+            td(cellS, a.asInstanceOf[DynAttr].name),
+            td(cellS, acs.subpart(a, p).toString())
+          )
+        )
     ),
     pos,
     eltDims
@@ -91,10 +94,10 @@ def attributeTable(p: Part, acs: DynACSet, eltDims: Complex): SvgElement = {
 case object AttributeTable extends ElementHandle
 
 def showAttributes(p: Part): Action[DynACSet, Unit] = for {
- $m <- ops.ask.map(_.$model)
- m <- ops.delay($m.now())
- tab <- ops.delay(attributeTable(p, m, Complex(200, 150)))
- _ <- addControlElt(AttributeTable, tab)
+  $m <- ops.ask.map(_.$model)
+  m <- ops.delay($m.now())
+  tab <- ops.delay(attributeTable(p, m, Complex(200, 150)))
+  _ <- addControlElt(AttributeTable, tab)
   _ <- (for {
     _ <- Bindings[DynACSet, Unit](keyDown("Escape")).run
     _ <- removeControlElt(AttributeTable)
@@ -138,7 +141,12 @@ def renderElements(
           WithDefaults(PropMap() + (Stroke, "black")),
           Shorten(5),
           Hoverable(hover, MainHandle, PropMap() + (Stroke, "lightgray")),
-          Tooltip(MainHandle, ent => ent.asInstanceOf[HomArrow].hom.asInstanceOf[DynHom].name, mouse, sceneElements)
+          Tooltip(
+            MainHandle,
+            ent => ent.asInstanceOf[HomArrow].hom.asInstanceOf[DynHom].name,
+            mouse,
+            sceneElements
+          )
         )
       )
     )

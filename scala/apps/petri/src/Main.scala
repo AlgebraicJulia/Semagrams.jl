@@ -256,10 +256,10 @@ def openSpeciesEditor(s: Part): Action[StratPetri, Unit] = for {
   $p <- ops.ask.map(_.$model)
   eltDims <- ops.ask.map(_.dims())
   ed <- ops.delay(speciesEditor($p, s, eltDims))
-  _ <- addControl(ed)
+  h <- addControlElt(ed)
   _ <- (for {
     _ <- Bindings[StratPetri, Unit](keyDown("Escape")).run
-    _ <- removeControl(ed)
+    _ <- removeControlElt(h)
   } yield ()).start
 } yield ()
 
@@ -267,11 +267,11 @@ def openTransitionEditor(t: Part): Action[StratPetri, Unit] = for {
   $p <- ops.ask.map(_.$model)
   eltDims <- ops.ask.map(_.dims())
   ed <- ops.delay(transitionEditor($p, t, eltDims))
-  _ <- addControl(ed)
+  h <- addControlElt(ed)
   bindables <- ops.ask.map(_.bindables)
   _ <- (for {
     _ <- Bindings[StratPetri, Unit](keyDown("Escape")).run
-    _ <- removeControl(ed)
+    _ <- removeControlElt(h)
   } yield ()).start
 } yield ()
 
@@ -434,7 +434,7 @@ object Main {
       $model <- ops.ask.map(_.$model)
       hover <- ops.ask.map(_.hover)
       mouse <- ops.ask.map(_.mouse)
-      _ <- addRelative(renderPetri($model, hover, mouse))
+      _ <- addSceneElt(renderPetri($model, hover, mouse))
       _ <- bindings.runForever
     } yield ()
 

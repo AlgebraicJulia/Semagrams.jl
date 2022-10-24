@@ -238,7 +238,10 @@ def runUntil[Model](
   _ <- target.cancel
 } yield {}
 
-def addSceneElt[Model](handle: ElementHandle, child: SvgElement): Action[Model, ElementHandle] = for {
+def addSceneElt[Model](
+    handle: ElementHandle,
+    child: SvgElement
+): Action[Model, ElementHandle] = for {
   sceneElements <- ops[Model].ask.map(_.sceneElements)
   _ <- ops.delay(sceneElements.update(_ + (handle -> child)))
 } yield handle
@@ -248,15 +251,19 @@ def addSceneElt[Model](child: SvgElement): Action[Model, ElementHandle] = for {
   h <- addSceneElt(AnonHandle(t), child)
 } yield h
 
-def addControlElt[Model](handle: ElementHandle, child: SvgElement): Action[Model, ElementHandle] = for {
+def addControlElt[Model](
+    handle: ElementHandle,
+    child: SvgElement
+): Action[Model, ElementHandle] = for {
   controlElements <- ops[Model].ask.map(_.controlElements)
   _ <- ops.delay(controlElements.update(_ + (handle -> child)))
 } yield handle
 
-def addControlElt[Model](child: SvgElement): Action[Model, ElementHandle] = for {
-  t <- ops.unique
-  h <- addControlElt(AnonHandle(t), child)
-} yield h
+def addControlElt[Model](child: SvgElement): Action[Model, ElementHandle] =
+  for {
+    t <- ops.unique
+    h <- addControlElt(AnonHandle(t), child)
+  } yield h
 
 def removeControlElt[Model](handle: ElementHandle): Action[Model, Unit] = for {
   controlElements <- ops[Model].ask.map(_.controlElements)

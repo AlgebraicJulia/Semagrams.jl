@@ -34,15 +34,15 @@ case class Tooltip(
     text: Entity => String,
     mouse: MouseController,
     // TODO: This should be a viewport controller
-    sceneElements: Var[Map[ElementHandle, Element]],
+    sceneElements: Var[Map[ElementHandle, Element]]
 ) extends Middleware {
   override def modifyRendered(ent: Entity, rs: RenderedSprite) = {
     rs.handles(handle)
       .amend(
-        onMouseOver --> sceneElements.updater(
-          (m,_) => m + (TooltipHandle -> makeTooltip(text(ent), mouse))),
-        onMouseOut --> sceneElements.updater(
-          (m,_) => m - TooltipHandle)
+        onMouseOver --> sceneElements.updater((m, _) =>
+          m + (TooltipHandle -> makeTooltip(text(ent), mouse))
+        ),
+        onMouseOut --> sceneElements.updater((m, _) => m - TooltipHandle)
       )
     rs
   }
