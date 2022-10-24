@@ -257,7 +257,6 @@ def openSpeciesEditor(s: Part): Action[StratPetri, Unit] = for {
   eltDims <- ops.ask.map(_.dims())
   ed <- ops.delay(speciesEditor($p, s, eltDims))
   _ <- addControl(ed)
-  bindables <- ops.ask.map(_.bindables)
   _ <- (for {
     _ <- Bindings[StratPetri, Unit](keyDown("Escape")).run
     _ <- removeControl(ed)

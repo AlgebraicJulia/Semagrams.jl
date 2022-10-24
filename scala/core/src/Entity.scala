@@ -26,7 +26,6 @@ trait EntityType
 
 trait Entity {
   val entityType: EntityType
-  val hash: Int
 
   def withType(ty: EntityType) =
     if entityType == ty then Some(this) else None
@@ -36,5 +35,4 @@ object BackgroundType extends EntityType
 
 object Background extends Entity {
   val entityType = BackgroundType
-  val hash = 0
 }

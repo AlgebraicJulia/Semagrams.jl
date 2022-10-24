@@ -219,9 +219,9 @@ def editText[Model](
     input <- ops.delay(
       TextInput(listener, init, bus.writer, Complex(200, 40), eltDims)
     )
-    _ <- addControl(input)
+    h <- addControlElt(input)
     _ <- nextEvent(bus.events)
-    _ <- removeControl(input)
+    _ <- removeControlElt(h)
     elt <- ops[Model].ask.map(_.elt)
     _ <- ops.delay(elt.ref.asInstanceOf[js.Dynamic].focus())
   } yield ()
@@ -238,19 +238,29 @@ def runUntil[Model](
   _ <- target.cancel
 } yield {}
 
-def addRelative[Model](child: SvgElement): Action[Model, Unit] = for {
-  childCommands <- ops[Model].ask.map(_.relativeChildCommands)
-  _ <- ops.delay(childCommands.onNext(CollectionCommand.Append(child)))
-} yield ()
+def addSceneElt[Model](handle: ElementHandle, child: SvgElement): Action[Model, ElementHandle] = for {
+  sceneElements <- ops[Model].ask.map(_.sceneElements)
+  _ <- ops.delay(sceneElements.update(_ + (handle -> child)))
+} yield handle
 
-def addControl[Model](child: SvgElement): Action[Model, Unit] = for {
-  childCommands <- ops[Model].ask.map(_.controlChildCommands)
-  _ <- ops.delay(childCommands.onNext(CollectionCommand.Append(child)))
-} yield ()
+def addSceneElt[Model](child: SvgElement): Action[Model, ElementHandle] = for {
+  t <- ops.unique
+  h <- addSceneElt(AnonHandle(t), child)
+} yield h
 
-def removeControl[Model](child: SvgElement): Action[Model, Unit] = for {
-  childCommands <- ops[Model].ask.map(_.controlChildCommands)
-  _ <- ops.delay(childCommands.onNext(CollectionCommand.Remove(child)))
+def addControlElt[Model](handle: ElementHandle, child: SvgElement): Action[Model, ElementHandle] = for {
+  controlElements <- ops[Model].ask.map(_.controlElements)
+  _ <- ops.delay(controlElements.update(_ + (handle -> child)))
+} yield handle
+
+def addControlElt[Model](child: SvgElement): Action[Model, ElementHandle] = for {
+  t <- ops.unique
+  h <- addControlElt(AnonHandle(t), child)
+} yield h
+
+def removeControlElt[Model](handle: ElementHandle): Action[Model, Unit] = for {
+  controlElements <- ops[Model].ask.map(_.controlElements)
+  _ <- ops.delay(controlElements.update(_ - handle))
 } yield ()
 
 def zoomBy[Model](factor: Double): Action[Model, Unit] = for {
