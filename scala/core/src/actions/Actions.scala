@@ -186,23 +186,11 @@ def getModel[Model]: Action[Model, Var[Model]] = ReaderT.ask.map(_.$model)
 def mousePos[Model]: Action[Model, Complex] =
   ops.ask.map(_.mouse.$state.now().pos)
 
-def mouseDown[Model](b: MouseButton): Action[Model, Option[Entity]] = for {
-  mouse <- ops[Model].ask.map(_.mouse)
-  ent <- nextEvent(mouse.mouseEvents.events.collect({
-    case MouseEvent.MouseDown(pos, `b`) => pos
-  }))
-} yield ent
-
 def hovered[Model]: Action[Model, Option[Entity]] =
   ops.ask.map(_.hover.$state.now().state)
 
 def hoveredEntity[Model](x: EntityType): Action[Model, Option[Entity]] =
   hovered.map(_.flatMap(_.withType(x)))
-
-def getClick[Model](x: EntityType): Action[Model, Entity] = for {
-  ent <- fromMaybe(mouseDown(MouseButton.Left))
-  i <- ent.withType(x).unwrap(actionMonadError[Model])
-} yield i
 
 def update[Model]: Action[Model, Unit] = for {
   updateFun <- ops[Model].ask.map(_.update)

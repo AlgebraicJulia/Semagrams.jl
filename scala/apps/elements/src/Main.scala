@@ -100,7 +100,10 @@ def showAttributes(p: Part): Action[DynACSet, Unit] = for {
   tab <- ops.delay(attributeTable(p, m, Complex(400, 300)))
   _ <- addControlElt(AttributeTable, tab)
   _ <- (for {
-    _ <- Bindings[DynACSet, Unit](keyDown("Escape")).run
+    _ <- Bindings[DynACSet, Unit](
+      keyDown("Escape"),
+      mouseDown(MouseButton.Left).mapTo(()),
+    ).run
     _ <- removeControlElt(AttributeTable)
   } yield ()).start
 } yield ()

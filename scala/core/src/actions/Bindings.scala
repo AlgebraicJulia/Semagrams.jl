@@ -95,6 +95,13 @@ def clickOnPart[Model](
   },
   Some(Set())
 )
+
+def mouseDown[Model](b: MouseButton): Binding[Model, Option[Entity]] = Binding(
+  {
+    case MouseEvent.MouseDown(ent, `b`)  => ops.pure(ent)
+  }
+)
+
 def releaseOn[Model](
     clickType: ClickType,
     button: MouseButton,
