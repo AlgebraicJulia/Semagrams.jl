@@ -75,6 +75,7 @@ def attributeTable(p: Part, acs: DynACSet, eltDims: Complex): SvgElement = {
     table(
       backgroundColor := "white",
       position := "absolute",
+      textAlign := "center",
       bottom := "5",
       cellS,
       tr(th(cellS, "Attribute"), th(cellS, "Value")),
@@ -96,7 +97,7 @@ case object AttributeTable extends ElementHandle
 def showAttributes(p: Part): Action[DynACSet, Unit] = for {
   $m <- ops.ask.map(_.$model)
   m <- ops.delay($m.now())
-  tab <- ops.delay(attributeTable(p, m, Complex(200, 150)))
+  tab <- ops.delay(attributeTable(p, m, Complex(400, 300)))
   _ <- addControlElt(AttributeTable, tab)
   _ <- (for {
     _ <- Bindings[DynACSet, Unit](keyDown("Escape")).run
