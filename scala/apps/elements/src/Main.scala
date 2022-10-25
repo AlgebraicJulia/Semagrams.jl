@@ -20,7 +20,7 @@ import scala.scalajs.js.annotation.JSExportTopLevel
 
 val ops = Action.ops[DynACSet]
 
-val dims = Complex(800, 600)
+val dims = Complex(1550, 800)
 
 object HomArrowType extends EntityType
 
