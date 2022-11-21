@@ -102,7 +102,7 @@ def showAttributes(p: Part): Action[DynACSet, Unit] = for {
   _ <- (for {
     _ <- Bindings[DynACSet, Unit](
       keyDown("Escape"),
-      mouseDown(MouseButton.Left).mapTo(()),
+      mouseDown(MouseButton.Left).mapTo(())
     ).run
     _ <- removeControlElt(AttributeTable)
   } yield ()).start
