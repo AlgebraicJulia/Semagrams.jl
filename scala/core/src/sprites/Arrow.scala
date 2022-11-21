@@ -36,6 +36,7 @@ case class Arrow() extends Sprite {
     val arrow = path(
       pathElts <-- $p.map(p => curvedPath(p(Start), p(End), p(Bend))),
       stroke <-- $p.map(_(Stroke)),
+      strokeDashArray <-- $p.map(_.get(StrokeDasharray).getOrElse("none")),
       fill := "none",
       markerEnd := "url(#arrowhead)"
     )

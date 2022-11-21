@@ -27,8 +27,8 @@ given ReadWriter[DynAttrType] = macroRW
 case class DynAttr(name: String, dom: DynOb, codom: DynAttrType)
     extends AttrWithDom {
   override def toString() = name
-  type Value = String
-  val rw = summon[ReadWriter[String]]
+  type Value = ujson.Value
+  val rw = summon[ReadWriter[ujson.Value]]
 }
 
 given ReadWriter[DynAttr] = readwriter[Map[String, String]].bimap[DynAttr](
@@ -84,7 +84,7 @@ case class DynSchema(
         }
         for (f <- allattrs.filter(_.dom == ob)) {
           if (subparts contains f.name) {
-            buf.setSubpart(f, x, read[String](subparts(f.name)))
+            buf.setSubpart(f, x, read[f.Value](subparts(f.name)))
           }
         }
       }

@@ -6,6 +6,9 @@ import semagrams.actions._
 import semagrams.controllers._
 import semagrams.sprites._
 import semagrams.util._
+import semagrams.widgets._
+
+import cats.effect.syntax.all._
 
 import upickle.default._
 import com.raquo.laminar.api.L._
@@ -16,6 +19,8 @@ import scala.scalajs.js
 import scala.scalajs.js.annotation.JSExportTopLevel
 
 val ops = Action.ops[DynACSet]
+
+val dims = Complex(1550, 800)
 
 object HomArrowType extends EntityType
 
@@ -42,7 +47,10 @@ def arrowExtractor(d: DynACSet, sprites: Sprites): List[(Entity, PropMap)] = {
                 Some(pm(f)),
                 sprites(pm(f))._2(Center),
                 0
-              )
+              ) ++
+                (if (f.name.contains("_is_")) then
+                   PropMap() + (StrokeDasharray, "3 3")
+                 else PropMap())
             )
         })
     })
@@ -50,16 +58,67 @@ def arrowExtractor(d: DynACSet, sprites: Sprites): List[(Entity, PropMap)] = {
     .toList
 }
 
+val cellS = Seq(
+  border := "1px solid black",
+  borderCollapse := "collapse",
+  padding := "10px"
+)
+
+def attributeTable(p: Part, acs: DynACSet, eltDims: Complex): SvgElement = {
+  val pos = Complex(dims.x / 2, dims.y)
+    - Complex(eltDims.x / 2, eltDims.y)
+
+  val borderV = 1
+
+  val s = acs.schema
+  wrappedHtml(
+    table(
+      backgroundColor := "white",
+      position := "absolute",
+      textAlign := "center",
+      bottom := "5",
+      cellS,
+      tr(th(cellS, "Attribute"), th(cellS, "Value")),
+      s.attrs(p.ob)
+        .map(a =>
+          tr(
+            td(cellS, a.asInstanceOf[DynAttr].name),
+            td(cellS, acs.subpart(a, p).toString())
+          )
+        )
+    ),
+    pos,
+    eltDims
+  )
+}
+
+case object AttributeTable extends ElementHandle
+
+def showAttributes(p: Part): Action[DynACSet, Unit] = for {
+  $m <- ops.ask.map(_.$model)
+  m <- ops.delay($m.now())
+  tab <- ops.delay(attributeTable(p, m, Complex(400, 300)))
+  _ <- addControlElt(AttributeTable, tab)
+  _ <- (for {
+    _ <- Bindings[DynACSet, Unit](
+      keyDown("Escape"),
+      mouseDown(MouseButton.Left).mapTo(())
+    ).run
+    _ <- removeControlElt(AttributeTable)
+  } yield ()).start
+} yield ()
+
 def renderElements(
     $d: Var[DynACSet],
     hover: HoverController,
-    mouse: MouseController
+    mouse: MouseController,
+    sceneElements: Var[Map[ElementHandle, Element]]
 ) = {
   val spriteMaps = SpriteMaps(
     $d.signal,
     List(
       SpriteMaker[DynACSet](
-        Disc(),
+        Box(),
         (d, _) => d.props.toList,
         Stack(
           WithDefaults(
@@ -85,7 +144,13 @@ def renderElements(
         Stack(
           WithDefaults(PropMap() + (Stroke, "black")),
           Shorten(5),
-          Hoverable(hover, MainHandle, PropMap() + (Stroke, "lightgray"))
+          Hoverable(hover, MainHandle, PropMap() + (Stroke, "lightgray")),
+          Tooltip(
+            MainHandle,
+            ent => ent.asInstanceOf[HomArrow].hom.asInstanceOf[DynHom].name,
+            mouse,
+            sceneElements
+          )
         )
       )
     )
@@ -102,7 +167,8 @@ val bindings = Bindings[DynACSet, Unit](
   keyDown("+").andThen(zoomAtMouse(zoomFactor)),
   keyDown("-").andThen(zoomAtMouse(1 / zoomFactor)),
   clickOn(ClickType.Single, MouseButton.Left, BackgroundType).andThen(dragPan),
-  clickOnPart(ClickType.Single, MouseButton.Left).flatMap(dragPart)
+  clickOnPart(ClickType.Single, MouseButton.Left).flatMap(dragPart),
+  clickOnPart(ClickType.Double, MouseButton.Left).flatMap(showAttributes)
 )
 
 val serializer = ACSet.rw[DynSchema]
@@ -163,11 +229,15 @@ object Main {
       $model <- ops.ask.map(_.$model)
       hover <- ops.ask.map(_.hover)
       mouse <- ops.ask.map(_.mouse)
-      _ <- addRelative(renderElements($model, hover, mouse))
+      sceneElements <- ops.ask.map(_.sceneElements)
+      _ <- addSceneElt(renderElements($model, hover, mouse, sceneElements))
       _ <- amendElt(commandBus.events --> $model.updater(handleCommand))
       _ <- bindings.runForever
     } yield ()
 
-    plutoMain(el, DynACSet(DynSchema()), serializer, action)
+    // val schLabeledDDS = read[DynSchema](Data.schLabeledDDS)
+    // val (dds, _) = schLabeledDDS.readACSet(Data.exLabeledDDS)
+
+    plutoMain(el, DynACSet(DynSchema()), serializer, action, dims)
   }
 }

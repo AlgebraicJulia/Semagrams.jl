@@ -95,6 +95,13 @@ def clickOnPart[Model](
   },
   Some(Set())
 )
+
+def mouseDown[Model](b: MouseButton): Binding[Model, Option[Entity]] = Binding(
+  { case MouseEvent.MouseDown(ent, `b`) =>
+    ops.pure(ent)
+  }
+)
+
 def releaseOn[Model](
     clickType: ClickType,
     button: MouseButton,
@@ -172,8 +179,8 @@ def showPopoverUntil[Model](
   for {
     eltDims <- ops[Model].ask.map(_.dims())
     popover <- ops.delay(Popover(Val(lines), 400, 15, 15, eltDims))
-    _ <- addControl(popover)
+    h <- addControlElt(popover)
     _ <- Bindings(binding).run
-    _ <- removeControl(popover)
+    _ <- removeControlElt(h)
   } yield ()
 }
