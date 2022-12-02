@@ -20,16 +20,16 @@ function read_acset(name::String, ::Type{T}, json::JSON3.Object, deserializers::
   props = Dict{Int, Dict{Symbol, Any}}(
     x => Dict(lowercase(f) => v for (f,v) in d) for (x,d) in json.props)
 
-  for f in hom(s)
-    for i in json.parts[dom(s,f)]
-      acs[ob_maps[dom(s,f)][i],f] = ob_maps[codom(s,f)][props[i][f]]
+  for (f,d,c) in homs(s)
+    for i in json.parts[d]
+      acs[ob_maps[d][i],f] = ob_maps[c][props[i][f]]
     end
   end
 
-  for f in attr(s)
-    for i in json.parts[dom(s,f)]
+  for (f,d,c) in attrs(s)
+    for i in json.parts[d]
       if f ∈ keys(props[i])
-        acs[ob_maps[dom(s,f)][i],f] = deserializers[codom(s,f)](props[i][f])
+        acs[ob_maps[d][i],f] = deserializers[c](props[i][f])
       end
     end
   end
