@@ -2,13 +2,11 @@ package semagrams.controllers
 
 import semagrams._
 import semagrams.util._
-import semagrams.actions._
 import org.scalajs.dom
 import com.raquo.laminar.api.L._
 import scala.collection.immutable.BitSet
 import com.raquo.domtypes.jsdom.defs.events.TypedTargetMouseEvent
-import org.scalajs.dom.SVGElement
-import org.scalajs.dom.SVGSVGElement
+import org.scalajs.dom
 
 /** The MouseController provides two functionalities. One is to keep track of
   * the current position of the mouse, and the buttons pressed. The other is to
@@ -33,35 +31,35 @@ object MouseButton {
 
 /** We simplify the mouse API to just these events
   */
-enum MouseEvent:
+enum MouseEvent {
   case MouseDown(ent: Option[Entity], button: MouseButton)
   case MouseUp(ent: Option[Entity], button: MouseButton)
   case DoubleClick(ent: Option[Entity], button: MouseButton)
   case MouseLeave(pos: Complex)
   case MouseMove(pos: Complex)
+}
 
 object MouseEvent {
   def svgCoords(
       el: dom.SVGSVGElement,
       ev: dom.MouseEvent,
-      transform: TransformController
   ): Complex = {
     val pt = el.createSVGPoint()
     pt.x = ev.clientX
     pt.y = ev.clientY
     val svgP = pt.matrixTransform(el.getScreenCTM().inverse())
-    transform.screenToLogical(Complex(svgP.x, svgP.y))
+    Complex(svgP.x, svgP.y)
   }
 
-  def mouseLeave(el: dom.SVGSVGElement, transform: TransformController)(
+  def mouseLeave(el: dom.SVGSVGElement)(
       ev: TypedTargetMouseEvent[dom.Element]
   ) =
-    MouseLeave(svgCoords(el, ev, transform))
+    MouseLeave(svgCoords(el, ev))
 
-  def mouseMove(el: dom.SVGSVGElement, transform: TransformController)(
+  def mouseMove(el: dom.SVGSVGElement)(
       ev: TypedTargetMouseEvent[dom.Element]
   ) =
-    MouseMove(svgCoords(el, ev, transform))
+    MouseMove(svgCoords(el, ev))
 }
 
 /** The state of the mouse is simply its positions and what buttons are
@@ -94,17 +92,17 @@ object MouseState {
 case class MouseController(
     $state: Var[MouseState],
     mouseEvents: EventBus[MouseEvent],
-    transform: TransformController
-) extends Modifier[SvgElement] {
+) extends Controller {
+  val handle = MouseController
 
   /** This attaches the necessary event listeners to the main window
     */
   override def apply(el: SvgElement) = {
     import MouseEvent._
-    val svgEl = el.ref.asInstanceOf[SVGSVGElement]
+    val svgEl = el.ref.asInstanceOf[dom.SVGSVGElement]
     el.amend(
-      onMouseLeave.map(MouseEvent.mouseLeave(svgEl, transform)) --> mouseEvents,
-      onMouseMove.map(MouseEvent.mouseMove(svgEl, transform)) --> mouseEvents,
+      onMouseLeave.map(MouseEvent.mouseLeave(svgEl)) --> mouseEvents,
+      onMouseMove.map(MouseEvent.mouseMove(svgEl)) --> mouseEvents,
       mouseEvents --> $state.updater[MouseEvent]((state, evt) =>
         state.processEvent(evt)
       ),
@@ -129,8 +127,10 @@ case class MouseController(
   )
 }
 
-object MouseController {
-  def apply(transform: TransformController) = {
-    new MouseController(Var(MouseState()), EventBus[MouseEvent](), transform)
+object MouseController extends ControllerHandle {
+  type Controller = MouseController
+
+  def apply() = {
+    new MouseController(Var(MouseState()), EventBus[MouseEvent]())
   }
 }

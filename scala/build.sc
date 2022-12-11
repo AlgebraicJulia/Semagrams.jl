@@ -17,7 +17,7 @@ def defaultPomSettings(desc: String) = PomSettings(
 )
 
 trait Defaults extends ScalaJSModule with PublishModule with ScalafmtModule {
-  def scalaVersion = "3.2.0"
+  def scalaVersion = "3.2.1"
   def scalaJSVersion = "1.11.0"
 
   def scalacOptions = Seq("-Ykind-projector:underscores", "-deprecation", "-feature")
@@ -56,6 +56,8 @@ object core extends Defaults {
   def artifactName = "semagrams"
 
   object test extends Tests with TestModule.Utest {
+    def jsEnvConfig = T(JsEnvConfig.JsDom())
+
     def ivyDeps = Agg(ivy"com.lihaoyi::utest::0.8.0")
   }
 }

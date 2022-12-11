@@ -5,13 +5,10 @@ import upickle.default._
 
 export semagrams.{Entity, Property}
 
-trait Ob extends EntityType
+trait Ob
 
 case class Part(id: Int, ob: Ob) extends Entity {
   def asElt(x: Ob) = if (x == ob) Some(this) else None
-
-  val hash = id
-  val entityType = ob
 }
 
 trait Hom extends Property {

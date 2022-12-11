@@ -1,9 +1,7 @@
-package semagrams.sprites
+package semagrams
 
-import semagrams._
-import com.raquo.laminar.api.L.{*, given}
-import com.raquo.laminar.nodes.ReactiveSvgElement
-import semagrams.util.Complex
+import semagrams.util._
+import com.raquo.laminar.api.L._
 
 abstract class Handle
 
@@ -24,14 +22,17 @@ case class RenderedSprite(
   * TODO: Sprites should also turn a PropMap into TikZ code.
   */
 trait Sprite {
-
-  /** This returns a ScreenSprite because
-    */
-  def present(
+  def render(
       ent: Entity,
       init: PropMap,
       updates: Signal[PropMap]
   ): RenderedSprite
+
+  def present(
+      ent: Entity,
+      init: PropMap,
+      updates: Signal[PropMap]
+  ): SvgElement = render(ent, init, updates).root
 
   def boundaryPt(
       data: PropMap,

@@ -1,6 +1,7 @@
 package semagrams
 
 import upickle.default._
+import com.raquo.laminar.api.L._
 
 trait Property {
   type Value
@@ -22,17 +23,18 @@ trait PValue[T: ReadWriter] extends Property {
   val rw = summon[ReadWriter[T]]
 }
 
-trait EntityType
+trait Entity
 
-trait Entity {
-  val entityType: EntityType
+type EntityMap = Map[Entity, (Sprite, PropMap)]
 
-  def withType(ty: EntityType) =
-    if entityType == ty then Some(this) else None
+object EntityMap {
+  def apply(): EntityMap = Map[Entity, (Sprite, PropMap)]()
 }
 
-object BackgroundType extends EntityType
+trait EntitySource {
+  def entities(m: Signal[EntityMap]): Signal[EntityMap]
 
-object Background extends Entity {
-  val entityType = BackgroundType
+  def addEntities(m: Signal[EntityMap]): Signal[EntityMap] = {
+    m.combineWith(entities(m)).map({ case (m,n) => m ++ n })
+  }
 }

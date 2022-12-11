@@ -22,14 +22,11 @@ val ops = Action.ops[DynACSet]
 
 val dims = Complex(1550, 800)
 
-object HomArrowType extends EntityType
-
-case class HomArrow(src: Part, tgt: Either[Complex, Part], hom: Hom)
-    extends Entity {
-  val entityType = HomArrowType
-
-  val hash = (src.hash, tgt.hashCode(), hom.toString()).hashCode()
-}
+case class HomArrow(
+  src: Part,
+  tgt: Either[Complex, Part],
+  hom: Hom
+) extends Entity
 
 def arrowExtractor(d: DynACSet, sprites: Sprites): List[(Entity, PropMap)] = {
   d.props

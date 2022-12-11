@@ -1,10 +1,9 @@
 package semagrams
 
 import semagrams.util._
-
 import upickle.default._
 
-enum GenericProperty[T: ReadWriter] extends Property:
+enum GenericProperty[T: ReadWriter] extends Property {
   case Fill extends GenericProperty[String]
   case Stroke extends GenericProperty[String]
   case StrokeDasharray extends GenericProperty[String]
@@ -23,7 +22,7 @@ enum GenericProperty[T: ReadWriter] extends Property:
   type Value = T
 
   val rw = summon[ReadWriter[T]]
-end GenericProperty
+}
 
 export GenericProperty._
 
