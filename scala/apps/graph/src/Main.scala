@@ -2,7 +2,6 @@ package semagrams.graph
 
 import semagrams._
 import semagrams.acsets._
-import semagrams.sprites._
 
 import com.raquo.laminar.api.L._
 import cats.effect._
