@@ -17,7 +17,7 @@ def defaultPomSettings(desc: String) = PomSettings(
 )
 
 trait Defaults extends ScalaJSModule with PublishModule with ScalafmtModule {
-  def scalaVersion = "3.2.1"
+  def scalaVersion = "3.2.0"
   def scalaJSVersion = "1.11.0"
 
   def scalacOptions = Seq("-Ykind-projector:underscores", "-deprecation", "-feature")
@@ -67,15 +67,20 @@ trait SemagramsApp extends Defaults {
 }
 
 object apps extends Module {
-  object petri extends SemagramsApp {
-    def desc = "A petri net editor implemented with semagrams"
+  object graph extends SemagramsApp {
+    def desc = "simple graph editor"
 
-    def artifactName = "semagrams-petri"
+    def artifactName = "semagrams-graph"
   }
+  // object petri extends SemagramsApp {
+  //   def desc = "A petri net editor implemented with semagrams"
 
-  object elements extends SemagramsApp {
-    def desc = "A viewer for the category of elements of an acset"
+  //   def artifactName = "semagrams-petri"
+  // }
 
-    def artifactName = "semagrams-elements"
-  }
+  // object elements extends SemagramsApp {
+  //   def desc = "A viewer for the category of elements of an acset"
+
+  //   def artifactName = "semagrams-elements"
+  // }
 }

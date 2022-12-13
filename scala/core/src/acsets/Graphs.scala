@@ -1,5 +1,6 @@
 package semagrams.acsets
 
+import semagrams._
 import cats.data.State
 import upickle.default._
 
@@ -32,12 +33,18 @@ trait GraphOps[S: IsSchema] extends ACSetOps[S] {
     def src(e: Part) = a.subpart(Src, e)
     def tgt(e: Part) = a.subpart(Tgt, e)
 
-  def addVertex(): State[ACSet[S], Part] = addPart(V)
-  def addEdge(s: Part, t: Part): State[ACSet[S], Part] = for {
-    e <- addPart(E)
+  def addVertex: State[ACSet[S], Part] = addVertex(PropMap())
+
+  def addVertex(props: PropMap): State[ACSet[S], Part] = addPart(V, props)
+
+  def addEdge(s: Part, t: Part, props: PropMap): State[ACSet[S], Part] = for {
+    e <- addPart(E, props)
     _ <- setSubpart(Src, e, s)
     _ <- setSubpart(Tgt, e, t)
   } yield e
+
+  def addEdge(s: Part, t: Part): State[ACSet[S], Part] =
+    addEdge(s, t, PropMap())
 }
 
 implicit val graphOps: GraphOps[SchGraph.type] = new GraphOps[SchGraph.type] {}

@@ -1,3 +1,3 @@
-import { main } from './out/apps/elements/fullLinkJS.dest/main.js'
+import { GraphApp } from './out/apps/graph/fullLinkJS.dest/main.js'
 
-main(document.getElementById("app-container"))
+GraphApp.main(document.getElementById("app-container"))

@@ -8,41 +8,20 @@ import scala.collection.immutable.BitSet
 import com.raquo.domtypes.jsdom.defs.events.TypedTargetMouseEvent
 import org.scalajs.dom
 
-/** The MouseController provides two functionalities. One is to keep track of
-  * the current position of the mouse, and the buttons pressed. The other is to
-  * provide an event stream for mouse events on the global window.
+/** The state of the mouse is simply its positions and what buttons are
+  * currently pressed.
+  *
+  * It processes mouse events to keep this updated.
   */
 
-/** We provide our own enum for mouse buttons, so that we don't have to remember
-  * JavaScript's
-  */
-enum MouseButton:
-  case Left
-  case Middle
-  case Right
+class MouseController() extends Controller {
+  import MouseController.State
+  val $state = Var(State())
+  val mouseEvents = EventBus[Event]()
 
-object MouseButton {
-  def fromJS(idx: Int) = idx match {
-    case 0 => Left
-    case 1 => Middle
-    case 2 => Right
-  }
-}
-
-/** We simplify the mouse API to just these events
-  */
-enum MouseEvent {
-  case MouseDown(ent: Option[Entity], button: MouseButton)
-  case MouseUp(ent: Option[Entity], button: MouseButton)
-  case DoubleClick(ent: Option[Entity], button: MouseButton)
-  case MouseLeave(pos: Complex)
-  case MouseMove(pos: Complex)
-}
-
-object MouseEvent {
   def svgCoords(
       el: dom.SVGSVGElement,
-      ev: dom.MouseEvent,
+      ev: dom.MouseEvent
   ): Complex = {
     val pt = el.createSVGPoint()
     pt.x = ev.clientX
@@ -60,53 +39,18 @@ object MouseEvent {
       ev: TypedTargetMouseEvent[dom.Element]
   ) =
     MouseMove(svgCoords(el, ev))
-}
-
-/** The state of the mouse is simply its positions and what buttons are
-  * currently pressed.
-  *
-  * It processes mouse events to keep this updated.
-  */
-case class MouseState(
-    pos: Complex,
-    pressed: BitSet
-) {
-  def processEvent(evt: MouseEvent): MouseState = {
-    import MouseEvent._
-    evt match {
-      case MouseDown(pos, button) =>
-        this.copy(pressed = pressed + button.ordinal)
-      case MouseUp(pos, button) =>
-        this.copy(pressed = pressed - button.ordinal)
-      case MouseLeave(pos) => this.copy(pos = pos)
-      case MouseMove(pos)  => this.copy(pos = pos)
-      case _               => this
-    }
-  }
-}
-
-object MouseState {
-  def apply() = new MouseState(Complex(0, 0), BitSet())
-}
-
-case class MouseController(
-    $state: Var[MouseState],
-    mouseEvents: EventBus[MouseEvent],
-) extends Controller {
-  val handle = MouseController
 
   /** This attaches the necessary event listeners to the main window
     */
-  override def apply(el: SvgElement) = {
-    import MouseEvent._
+  def apply(es: EditorState, el: SvgElement) = {
     val svgEl = el.ref.asInstanceOf[dom.SVGSVGElement]
     el.amend(
-      onMouseLeave.map(MouseEvent.mouseLeave(svgEl)) --> mouseEvents,
-      onMouseMove.map(MouseEvent.mouseMove(svgEl)) --> mouseEvents,
-      mouseEvents --> $state.updater[MouseEvent]((state, evt) =>
+      onMouseLeave.map(mouseLeave(svgEl)) --> mouseEvents,
+      onMouseMove.map(mouseMove(svgEl)) --> mouseEvents,
+      mouseEvents --> $state.updater[Event]((state, evt) =>
         state.processEvent(evt)
       ),
-      clickable(Background)
+      mouseEvents --> es.events
     )
   }
 
@@ -114,23 +58,42 @@ case class MouseController(
     */
   def clickable(ent: Entity) = List(
     onMouseDown.stopPropagation.map(evt =>
-      MouseEvent.MouseDown(Some(ent), MouseButton.fromJS(evt.button))
+      MouseDown(Some(ent), MouseButton.fromJS(evt.button))
     )
       --> mouseEvents,
     onMouseUp.stopPropagation.map(evt =>
-      MouseEvent.MouseUp(Some(ent), MouseButton.fromJS(evt.button))
+      MouseUp(Some(ent), MouseButton.fromJS(evt.button))
     )
       --> mouseEvents,
     onDblClick.stopPropagation.map(evt =>
-      MouseEvent.DoubleClick(Some(ent), MouseButton.fromJS(evt.button))
+      DoubleClick(Some(ent), MouseButton.fromJS(evt.button))
     ) --> mouseEvents
   )
 }
 
-object MouseController extends ControllerHandle {
-  type Controller = MouseController
-
+object MouseController {
   def apply() = {
-    new MouseController(Var(MouseState()), EventBus[MouseEvent]())
+    new MouseController()
+  }
+
+  case class State(
+      pos: Complex,
+      pressed: BitSet
+  ) {
+    def processEvent(evt: Event): State = {
+      evt match {
+        case MouseDown(pos, button) =>
+          this.copy(pressed = pressed + button.ordinal)
+        case MouseUp(pos, button) =>
+          this.copy(pressed = pressed - button.ordinal)
+        case MouseLeave(pos) => this.copy(pos = pos)
+        case MouseMove(pos)  => this.copy(pos = pos)
+        case _               => this
+      }
+    }
+  }
+
+  object State {
+    def apply() = new State(Complex(0, 0), BitSet())
   }
 }
