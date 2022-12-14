@@ -23,27 +23,13 @@ object Main {
   object GraphApp extends Semagram {
 
     def run(es: EditorState): IO[Unit] = {
-      val VertexSprite = WithMiddleware(
-        Disc(),
-        Seq(
-          Hoverable(es.hover, MainHandle, PropMap() + (Fill, "lightgrey")),
-          Clickable(es.mouse, MainHandle)
-        )
-      )
-      val EdgeSprite = WithMiddleware(
-        Arrow(),
-        Seq(
-          Hoverable(es.hover, MainHandle, PropMap() + (Stroke, "lightgrey")),
-          Clickable(es.mouse, MainHandle)
-        )
-      )
       for {
         g <- IO(Var(Graph()))
         lg <- IO(g.signal.map(assignBends[SchGraph.type](Map(E -> (Src, Tgt)), 0.5)))
         _ <- es.makeViewport(lg,
           Seq(
-            ACSetEntitySource(V, VertexSprite),
-            ACSetEdgeSource(E, Src, Tgt, EdgeSprite)
+            ACSetEntitySource(V, BasicDisc),
+            ACSetEdgeSource(E, Src, Tgt, BasicArrow)
           ))
         _ <- es.bindForever(bindings(es, g))
       } yield ()

@@ -21,7 +21,9 @@ export sprites.{
   Hoverable,
   Clickable,
   ACSetEntitySource,
-  ACSetEdgeSource
+  ACSetEdgeSource,
+  BasicDisc,
+  BasicArrow
 }
 export util.{
   Complex,
