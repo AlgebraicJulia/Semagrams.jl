@@ -12,7 +12,7 @@ export semagrams.{
   MouseButton,
   KeyModifier,
   keyDown,
-  clickOnPart,
+  clickOnPart
 }
 export controllers.{
   DragController,
