@@ -13,8 +13,8 @@ trait Viewport {
 }
 
 case class EntityCollection(
-  em: EntityMap,
-  ordering: Seq[Entity]
+    em: EntityMap,
+    ordering: Seq[Entity]
 ) {
   def addSource[A](a: A, source: EntitySource[A]) = {
     val xs = source.entities(a, em)
@@ -34,7 +34,9 @@ class EntitySourceViewport[A](
   val transform = TransformState()
 
   val entities = state.map(a => {
-    entitySources.foldLeft(EntityCollection())((c, source) => c.addSource(a, source))
+    entitySources.foldLeft(EntityCollection())((c, source) =>
+      c.addSource(a, source)
+    )
   })
 
   val elt = svg.g(
@@ -45,9 +47,10 @@ class EntitySourceViewport[A](
 object Viewport {
   def render($m: Signal[EntityCollection]): Signal[Seq[SvgElement]] = {
     val $em = $m.map(_.em)
-    val $svgMap = $em.foldLeft(m => updateRendered($em)(Map[Entity, SvgElement](), m))(
-      updateRendered($em)
-    )
+    val $svgMap =
+      $em.foldLeft(m => updateRendered($em)(Map[Entity, SvgElement](), m))(
+        updateRendered($em)
+      )
     $m.combineWith($svgMap).map((m, svgMap) => m.ordering.map(svgMap))
   }
 

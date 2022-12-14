@@ -28,7 +28,7 @@ object Main {
       for {
         g <- IO(Var(Graph()))
         lg <- IO(
-          g.signal.map(assignBends[SchGraph.type](Map(E -> (Src, Tgt)), 0.5))
+          g.signal.map(assignBends[SchGraph.type](Map(E -> (Src, Tgt)), 0.35))
         )
         _ <- es.makeViewport(
           lg,
