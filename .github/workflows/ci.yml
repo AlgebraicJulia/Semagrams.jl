@@ -21,7 +21,9 @@ jobs:
       - name: Run Core Tests
         run: |
           cd scala
-          nix develop -c "npm install; mill core.test"
+          nix develop
+          npm install
+          mill core.test
 
   checkFormat:
     runs-on: ubuntu-latest
