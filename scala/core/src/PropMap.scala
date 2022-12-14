@@ -8,6 +8,7 @@ enum GenericProperty[T: ReadWriter] extends Property {
   case Stroke extends GenericProperty[String]
   case StrokeDasharray extends GenericProperty[String]
   case InnerSep extends GenericProperty[Double]
+  case OuterSep extends GenericProperty[Double]
   case MinimumSize extends GenericProperty[Double]
   case MinimumWidth extends GenericProperty[Double]
   case MinimumHeight extends GenericProperty[Double]

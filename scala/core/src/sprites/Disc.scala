@@ -8,13 +8,11 @@ import semagrams.util._
 
 case class Disc(defaults: PropMap) extends Sprite {
   def radius(data: PropMap): Double = {
-    // val textBox = boxSize(data(Content), data(FontSize))
+    val textBox = boxSize(data(Content), data(FontSize))
     val center = data(Center)
-    // val innerSep = data(InnerSep)
-    // val d =
-    //   data(MinimumWidth).max(textBox.x + innerSep).max(textBox.y + innerSep)
-    // val d = data(MinimumWidth)
-    val d = 40
+    val innerSep = data(InnerSep)
+    val d =
+      data(MinimumWidth).max(textBox.x + innerSep).max(textBox.y + innerSep)
     val r = d / 2
     r
   }
@@ -63,8 +61,9 @@ case class Disc(defaults: PropMap) extends Sprite {
     RenderedSprite(root, Map(MainHandle -> root))
   }
 
-  def boundaryPt(data: PropMap, dir: Complex) = {
-    val rad = radius(data)
+  def boundaryPt(orig: PropMap, dir: Complex) = {
+    val data = defaults ++ orig
+    val rad = radius(data) + data(OuterSep)
     dir.normalize * rad + data(Center)
   }
 }
@@ -76,6 +75,7 @@ object Disc {
     + (Fill, "white")
     + (Stroke, "black")
     + (InnerSep, 10)
+    + (OuterSep, 5)
     + (MinimumWidth, 40)
     + (MinimumHeight, 40)
 
