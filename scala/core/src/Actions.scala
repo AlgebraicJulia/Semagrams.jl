@@ -23,6 +23,7 @@ case class Actions[S: IsSchema](es: EditorState, m: Var[ACSet[S]]) {
   } yield ()
 
   def drag(i: Part) = for {
+    _ <- m.updateS_(ops.moveFront(i))
     c <- IO(m.now().subpart(Center, i))
     init <- es.mousePos
     offset <- IO(c - init)

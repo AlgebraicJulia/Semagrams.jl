@@ -29,6 +29,13 @@ case class ACSet[S: IsSchema](
     addPart(ob, PropMap())
   }
 
+  def moveFront(x: Part): ACSet[S] = {
+    val xs = parts(x.ob)
+    this.copy(
+      parts = parts + (x.ob -> (xs.filterNot(x == _) :+ x))
+    )
+  }
+
   def setSubpart(f: Property, x: Part, y: f.Value): ACSet[S] =
     this.copy(
       props = props + (x -> (props(x).set(f, y)))
@@ -161,6 +168,9 @@ trait ACSetOps[S: IsSchema] {
 
   def addPart(ob: Ob, props: PropMap): State[ACSet[S], Part] =
     State(_.addPart(ob, props))
+
+  def moveFront(x: Part): State[ACSet[S], Unit] =
+    State.modify(_.moveFront(x))
 
   def setSubpart(f: Property, x: Part, y: f.Value): State[ACSet[S], Unit] =
     State.modify(_.setSubpart(f, x, y))

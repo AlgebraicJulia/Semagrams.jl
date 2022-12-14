@@ -9,7 +9,7 @@ def ACSetEntitySource[S: IsSchema](
     sprite: Sprite
 ) =
   EntitySource[ACSet[S]]((acs, _m) =>
-    acs.parts(ob).map(i => (i, (sprite, acs.props(i)))).toMap
+    acs.parts(ob).map(i => (i, sprite, acs.props(i)))
   )
 
 def edgeProps(

@@ -32,19 +32,19 @@ object EntityMap {
 }
 
 case class EntitySource[A](
-    entities: (A, EntityMap) => EntityMap
+    entities: (A, EntityMap) => Seq[(Entity, Sprite, PropMap)]
 ) {
   def addEntities(a: A, m: EntityMap) = {
-    m ++ entities(a, m)
+    m ++ entities(a, m).map((e, s, p) => (e, (s, p))).toMap
   }
 
   def withProps(props: PropMap) = EntitySource[A](
-    entities(_, _).view.mapValues((s, p) => (s, p ++ props)).toMap
+    entities(_, _).map((e, s, p) => (e, s, p ++ props))
   )
 
   def addPropsBy(f: (Entity, PropMap, EntityMap) => PropMap) =
     EntitySource[A]((a, m) =>
-      entities(a, m).map({ case (e, (s, p)) => (e, (s, p ++ f(e, p, m))) })
+      entities(a, m).map((e, s, p) => (e, s, p ++ f(e, p, m)))
     )
 }
 

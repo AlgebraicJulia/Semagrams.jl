@@ -7,9 +7,24 @@ case class TransformState()
 trait Viewport {
   val transform: TransformState
 
-  val entities: Signal[EntityMap]
+  val entities: Signal[EntityCollection]
 
   val elt: SvgElement
+}
+
+case class EntityCollection(
+  em: EntityMap,
+  ordering: Seq[Entity]
+) {
+  def addSource[A](a: A, source: EntitySource[A]) = {
+    val xs = source.entities(a, em)
+    val xsMap = xs.map((e, s, p) => (e, (s, p))).toMap
+    EntityCollection(em ++ xsMap, ordering ++ xs.map(_._1))
+  }
+}
+
+object EntityCollection {
+  def apply() = new EntityCollection(EntityMap(), Seq())
 }
 
 class EntitySourceViewport[A](
@@ -19,7 +34,7 @@ class EntitySourceViewport[A](
   val transform = TransformState()
 
   val entities = state.map(a => {
-    entitySources.foldLeft(EntityMap())((m, source) => source.addEntities(a, m))
+    entitySources.foldLeft(EntityCollection())((c, source) => c.addSource(a, source))
   })
 
   val elt = svg.g(
@@ -28,10 +43,12 @@ class EntitySourceViewport[A](
 }
 
 object Viewport {
-  def render($m: Signal[EntityMap]): Signal[Seq[SvgElement]] = {
-    $m.foldLeft(m => updateRendered($m)(Map[Entity, SvgElement](), m))(
-      updateRendered($m)
-    ).map(_.values.toSeq)
+  def render($m: Signal[EntityCollection]): Signal[Seq[SvgElement]] = {
+    val $em = $m.map(_.em)
+    val $svgMap = $em.foldLeft(m => updateRendered($em)(Map[Entity, SvgElement](), m))(
+      updateRendered($em)
+    )
+    $m.combineWith($svgMap).map((m, svgMap) => m.ordering.map(svgMap))
   }
 
   def updateRendered(
