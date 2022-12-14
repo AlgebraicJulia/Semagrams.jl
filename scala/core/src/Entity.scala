@@ -39,12 +39,13 @@ case class EntitySource[A](
   }
 
   def withProps(props: PropMap) = EntitySource[A](
-    entities(_,_).view.mapValues((s, p) => (s, p ++ props)).toMap
+    entities(_, _).view.mapValues((s, p) => (s, p ++ props)).toMap
   )
 
-  def addPropsBy(f: (Entity, PropMap, EntityMap) => PropMap) = EntitySource[A]((a, m) =>
-    entities(a,m).map({ case (e, (s, p)) => (e, (s, p ++ f(e, p, m))) })
-  )
+  def addPropsBy(f: (Entity, PropMap, EntityMap) => PropMap) =
+    EntitySource[A]((a, m) =>
+      entities(a, m).map({ case (e, (s, p)) => (e, (s, p ++ f(e, p, m))) })
+    )
 }
 
 case object Background extends Entity

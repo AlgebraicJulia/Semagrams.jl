@@ -12,12 +12,11 @@ extension [A](v: Var[A]) {
   }
 
   def updateS[B](s: State[A, B]): IO[B] = IO.async_(cb =>
-    new Transaction(
-      _ => {
-        val a0 = v.now()
-        val (a1, b) = s.run(a0).value
-        v.set(a1)
-        cb(Right(b))
-      })
+    new Transaction(_ => {
+      val a0 = v.now()
+      val (a1, b) = s.run(a0).value
+      v.set(a1)
+      cb(Right(b))
+    })
   )
 }

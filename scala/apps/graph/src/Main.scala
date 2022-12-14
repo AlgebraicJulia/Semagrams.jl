@@ -14,7 +14,9 @@ def bindings(es: EditorState, g: Var[Graph]) = {
     keyDown("a").andThen(a.add(V)),
     keyDown("d").andThen(a.del),
     clickOnPart(MouseButton.Left, V).withMods().flatMap(a.drag),
-    clickOnPart(MouseButton.Left, V).withMods(KeyModifier.Shift).flatMap(a.dragEdge(E, Src, Tgt))
+    clickOnPart(MouseButton.Left, V)
+      .withMods(KeyModifier.Shift)
+      .flatMap(a.dragEdge(E, Src, Tgt))
   )
 }
 
@@ -25,12 +27,16 @@ object Main {
     def run(es: EditorState): IO[Unit] = {
       for {
         g <- IO(Var(Graph()))
-        lg <- IO(g.signal.map(assignBends[SchGraph.type](Map(E -> (Src, Tgt)), 0.5)))
-        _ <- es.makeViewport(lg,
+        lg <- IO(
+          g.signal.map(assignBends[SchGraph.type](Map(E -> (Src, Tgt)), 0.5))
+        )
+        _ <- es.makeViewport(
+          lg,
           Seq(
-            ACSetEntitySource(V, BasicDisc),
-            ACSetEdgeSource(E, Src, Tgt, BasicArrow)
-          ))
+            ACSetEntitySource(V, BasicDisc(es)),
+            ACSetEdgeSource(E, Src, Tgt, BasicArrow(es))
+          )
+        )
         _ <- es.bindForever(bindings(es, g))
       } yield ()
     }

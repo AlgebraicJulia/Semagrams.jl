@@ -1,6 +1,8 @@
 package semagrams.sprites
 
-val BasicDisc = WithMiddleware(
+import semagrams._
+
+def BasicDisc(es: EditorState) = WithMiddleware(
   Disc(),
   Seq(
     Hoverable(es.hover, MainHandle, PropMap() + (Fill, "lightgrey")),
@@ -8,7 +10,7 @@ val BasicDisc = WithMiddleware(
   )
 )
 
-val BasicArrow = WithMiddleware(
+def BasicArrow(es: EditorState) = WithMiddleware(
   Arrow(),
   Seq(
     Hoverable(es.hover, MainHandle, PropMap() + (Stroke, "lightgrey")),

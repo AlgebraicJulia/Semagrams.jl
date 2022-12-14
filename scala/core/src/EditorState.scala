@@ -96,10 +96,10 @@ class EditorState(val elt: SvgElement) {
     IO(hover.$state.now().state)
 
   def hoveredPart(ob: Ob): IO[Option[Part]] =
-    hovered.map(
-      e => e match {
+    hovered.map(e =>
+      e match {
         case Some(p: Part) if p.ob == ob => Some(p)
-        case _ => None
+        case _                           => None
       }
     )
 }

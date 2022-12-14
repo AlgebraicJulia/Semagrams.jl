@@ -4,7 +4,8 @@ import semagrams._
 import com.raquo.laminar.api.L._
 
 trait Middleware {
-  def modifySignal(ent: Entity, updates: Signal[PropMap]): Signal[PropMap] = updates
+  def modifySignal(ent: Entity, updates: Signal[PropMap]): Signal[PropMap] =
+    updates
   def modifyRenderedSprite(ent: Entity, rs: RenderedSprite): Unit = ()
 }
 

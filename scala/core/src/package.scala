@@ -11,9 +11,7 @@ export controllers.{
   MouseController,
   KeyboardController
 }
-export layout.{
-  assignBends
-}
+export layout.{assignBends}
 export sprites.{
   Arrow,
   Disc,
@@ -25,11 +23,4 @@ export sprites.{
   BasicDisc,
   BasicArrow
 }
-export util.{
-  Complex,
-  updateS,
-  updateS_,
-  fromMaybe,
-  toOption,
-  onCancelOrError
-}
+export util.{Complex, updateS, updateS_, fromMaybe, toOption, onCancelOrError}

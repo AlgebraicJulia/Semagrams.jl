@@ -12,13 +12,15 @@ trait Viewport {
   val elt: SvgElement
 }
 
-class EntitySourceViewport[A](state: Signal[A], entitySources: Seq[EntitySource[A]]) extends Viewport {
+class EntitySourceViewport[A](
+    state: Signal[A],
+    entitySources: Seq[EntitySource[A]]
+) extends Viewport {
   val transform = TransformState()
 
-  val entities = state.map(
-    a => {
-      entitySources.foldLeft(EntityMap())((m, source) => source.addEntities(a, m))
-    })
+  val entities = state.map(a => {
+    entitySources.foldLeft(EntityMap())((m, source) => source.addEntities(a, m))
+  })
 
   val elt = svg.g(
     children <-- Viewport.render(entities)

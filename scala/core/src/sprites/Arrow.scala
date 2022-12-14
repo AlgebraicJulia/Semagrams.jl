@@ -46,7 +46,9 @@ case class Arrow(defaults: PropMap) extends Sprite {
       fill := "white",
       opacity := "0",
       pathElts <-- data.map(p => blockPath(p(Start), p(End), 5, p(Bend))),
-      pointerEvents <-- data.map(p => if p(Interactable) then "auto" else "none")
+      pointerEvents <-- data.map(p =>
+        if p(Interactable) then "auto" else "none"
+      )
     )
     val root = g(arrow, handle)
     RenderedSprite(root, Map(MainHandle -> handle))
