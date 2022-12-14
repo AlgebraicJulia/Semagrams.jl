@@ -11,8 +11,8 @@ object ACSetSpec extends TestSuite {
   def tests = Tests {
     test("empty graph") {
       val g = Graph()
-      assert(g.vertices() == Set())
-      assert(g.edges() == Set())
+      assert(g.vertices() == Seq())
+      assert(g.edges() == Seq())
     }
 
     test("path graph") {
@@ -84,10 +84,10 @@ object ACSetSpec extends TestSuite {
 
       val (g, (x, y, z, k, l)) = mkpath.run(Graph()).value
 
-      assert(g.incident(Src, x) == Set(k))
-      assert(g.incident(Tgt, x) == Set())
-      assert(g.incident(Src, y) == Set(l))
-      assert(g.incident(Tgt, y) == Set(k))
+      assert(g.incident(Src, x) == Seq(k))
+      assert(g.incident(Tgt, x) == Seq())
+      assert(g.incident(Src, y) == Seq(l))
+      assert(g.incident(Tgt, y) == Seq(k))
     }
 
     test("removing parts") {
