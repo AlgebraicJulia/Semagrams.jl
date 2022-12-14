@@ -273,3 +273,28 @@ def dragPan[Model]: Action[Model, Unit] = for {
     transform.$state.set(t.shift(transform.logicalToScreen(p) - pos))
   }))
 } yield ()
+
+def log[Model](x:Any): Action[Model,Unit] = ops[Model].pure(println(x.toString()))
+
+
+
+def randPt[Model]: Action[Model,Complex] = 
+  val rand = new scala.util.Random
+  for
+    z <- ops[Model].ask.map(_.dims())
+  yield Complex(rand.between(0,z.x),rand.between(0,z.y))
+
+def randPts[Model](k: Int): Action[Model,Seq[Complex]] = 
+  val rand = new scala.util.Random
+  for
+    z <- ops[Model].ask.map(_.dims())
+  yield (1 to k).map(_ => Complex(rand.between(0,z.x),rand.between(0,z.y))
+  )
+  
+  
+  // val rand = new scala.util.Random
+  // for
+  //   z <- ops[Model].ask.map(_.dims())
+  // yield (1 to k).map(_ => 
+  //   Complex(rand.between(0,z.x),rand.between(0,z.y))
+  // )

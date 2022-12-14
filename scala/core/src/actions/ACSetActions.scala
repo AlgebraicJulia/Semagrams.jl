@@ -15,6 +15,44 @@ import cats.effect.syntax.all._
 
 import Action.ops
 
+
+
+def addPart[S : IsSchema](ob:Ob,props: PropMap=PropMap()): Action[ACSet[S],Part] = for
+  p <- updateModelS(
+    ACSetOps[S].addPart(ob,props)
+  )
+yield p
+
+def addParts[S : IsSchema](parts: Seq[(Ob,PropMap)]): Action[ACSet[S],Seq[Part]] = parts match
+  case Seq() => ops.pure(Seq())
+  case Seq(first, tail @ _*) => (for
+    p <- addPart.tupled(first)
+    ps <- addParts(tail)
+  yield p +: ps)
+
+
+
+def setSubpart[S : IsSchema](f: Property, x: Part, y: f.Value): Action[ACSet[S],Unit] = updateModelS(
+  ACSetOps[S].setSubpart(f,x,y)
+)
+
+def setSubparts[S : IsSchema](f: Property,parts:Seq[(Part,f.Value)]): Action[ACSet[S],Unit] = parts match
+  case Seq() => ops.pure(Seq())
+  case Seq((part,value),tail @ _*) => (for
+    _ <- updateModelS(
+      ACSetOps[S].setSubpart(f,part,value)
+    )
+    _ <- setSubparts(f,tail)
+  yield ())
+
+
+
+def remSubpart[S : IsSchema](f: Property, x: Part): Action[ACSet[S],Unit] = updateModelS(
+  ACSetOps[S].remSubpart(f,x)
+)
+
+
+
 def addPartPos[S: IsSchema](
     ob: Ob,
     props: PropMap
@@ -32,8 +70,7 @@ def remPart[S: IsSchema]: Action[ACSet[S], Unit] = for {
   _ <- update
 } yield ()
 
-def hoveredPart[M](ob: Ob) =
-  hoveredEntity[M](ob).map(_.map(_.asInstanceOf[Part]))
+def hoveredPart[M](ob: Ob) = hoveredEntity[M](ob).map(_.map(_.asInstanceOf[Part]))
 
 def dragEdge[S: IsSchema](
     ob: Ob,
@@ -46,15 +83,23 @@ def dragEdge[S: IsSchema](
     drag <- ops[ACSet[S]].ask.map(_.drag)
     $model <- ops[ACSet[S]].ask.map(_.$model)
     p <- mousePos
-    e <- updateModelS(aops.addPart(ob, PropMap().set(src, s).set(End, p)))
+    e <- updateModelS(aops.addPart(ob, PropMap().set(src, s).set(End, p))
+    )
     _ <- (for {
       _ <- drag.drag(Observer(p => $model.update(_.setSubpart(End, e, p))))
+      tt <- hovered
+      _ <- log("tt " + tt)
       t <- fromMaybe(hoveredPart[ACSet[S]](tgt.codom))
       _ <- updateModelS(aops.setSubpart(tgt, e, t))
     } yield ()).onCancelOrError(for {
+      tt <- hovered
+      _ <- log("other tt " + tt)
+      _ <- log("onCancel")
       _ <- ops.delay(drag.$state.set(None))
       _ <- updateModelS(aops.remPart(e))
-    } yield ())
+    } yield ()).onCancelOrError(
+      log("cancelcancel")
+    )
     _ <- update
   } yield ()
 }

@@ -85,4 +85,23 @@ case class Box() extends Sprite {
     }
     Complex(q1pt.x * dir.x.sign, q1pt.y * dir.y.sign) + data(Center)
   }
+
+  def boundaryNormal(data: PropMap,dir: Complex): Complex = {
+    val (pos,dims) = geom(data)
+    (dims.x,dims.y,dir.x,dir.y) match
+      case (_,_,0,y) => if y >= 0 then Complex(0,1) else Complex(0,-1)
+      case (0,y,x,_) => if x >= 0 then Complex(1,0) else Complex(-1,0)
+      case (x1,y1,x2,y2) => 
+        val slope1 = (y1/x1).abs
+        val slope2 = (y2/x2).abs
+        if slope2 >= slope1 
+          then if y2 >= 0 
+            then Complex(0,1)
+            else Complex(0,-1)
+          else if x2 >= 0
+            then Complex(1,0)
+            else Complex(-1,0)
+  }
+
+
 }

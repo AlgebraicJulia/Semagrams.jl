@@ -62,6 +62,12 @@ case class Disc() extends Sprite {
 
   def boundaryPt(data: PropMap, dir: Complex) = {
     val rad = radius(data)
-    dir.normalize * rad + data(Center)
+    val unitDir = if dir == Complex(0,0) 
+      then Complex(0,1) 
+      else dir.normalize
+    unitDir * rad + data(Center)
   }
+
+  def boundaryNormal(data: PropMap, dir: Complex) = boundaryPt(data,dir)
+
 }
