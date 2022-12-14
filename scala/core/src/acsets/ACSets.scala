@@ -10,14 +10,14 @@ import semagrams._
 case class ACSet[S: IsSchema](
     schema: S,
     counter: Int,
-    parts: Map[Ob, Seq[Part]],
+    parts: Map[Ob, Set[Part]],
     props: Map[Part, PropMap]
 ) {
   def addPart(ob: Ob, pm: PropMap): (ACSet[S], Part) = {
     val x = Part(counter, ob)
     (
       this.copy(
-        parts = parts + (ob -> (parts(ob) :+ x)),
+        parts = parts + (ob -> (parts(ob) + x)),
         counter = counter + 1,
         props = props + (x -> pm)
       ),
@@ -51,12 +51,12 @@ case class ACSet[S: IsSchema](
 
   def trySubpart(f: Property, x: Part): Option[f.Value] = props(x).get(f)
 
-  def incident(f: Property, dom: Ob, y: f.Value): Seq[Part] =
+  def incident(f: Property, dom: Ob, y: f.Value): Set[Part] =
     parts(dom).filter(trySubpart(f, _) == Some(y))
 
-  def incident(f: HomWithDom, y: Part): Seq[Part] = incident(f, f.dom, y)
+  def incident(f: HomWithDom, y: Part): Set[Part] = incident(f, f.dom, y)
 
-  def incident(f: AttrWithDom, y: f.Value): Seq[Part] = incident(f, f.dom, y)
+  def incident(f: AttrWithDom, y: f.Value): Set[Part] = incident(f, f.dom, y)
 
   def remPart(x: Part): ACSet[S] = {
     val visited = mutable.HashSet[Part]()
@@ -66,13 +66,13 @@ case class ACSet[S: IsSchema](
       visited.add(y)
       for (dom <- schema.obs) {
         for (f <- schema.homs(dom).filter(_.codom == y.ob)) {
-          next.pushAll(incident(f, dom, y).filter(e => !(visited contains e)))
+          next.pushAll(incident(f, dom, y) -- visited)
         }
       }
     }
 
     this.copy(
-      parts = parts.view.mapValues(_.filter(e => !(visited contains e))).toMap,
+      parts = parts.view.mapValues(_ -- visited).toMap,
       props = props.filter((e, _) => !(visited contains e))
     )
   }
@@ -104,7 +104,7 @@ implicit val beRW: ReadWriter[BarePart] =
 case class SerializableACSet(
     schema: ujson.Value,
     counter: Int,
-    parts: Map[String, Seq[BarePart]],
+    parts: Map[String, Set[BarePart]],
     props: Map[BarePart, Map[String, ujson.Value]]
 )
 
@@ -114,7 +114,7 @@ object ACSet {
   def apply[S: IsSchema](s: S): ACSet[S] = new ACSet[S](
     s,
     0,
-    s.obs.map(_ -> Seq[Part]()).toMap,
+    s.obs.map(_ -> Set[Part]()).toMap,
     Map[Part, PropMap]()
   )
 
