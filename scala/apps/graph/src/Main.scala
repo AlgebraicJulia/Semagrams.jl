@@ -7,40 +7,44 @@ import com.raquo.laminar.api.L._
 import cats.effect._
 import scala.scalajs.js.annotation.JSExportTopLevel
 
-val ops = summon[GraphOps[SchGraph.type]]
+def bindings(es: EditorState, g: Var[Graph]) = {
+  val a = Actions(es, g)
 
-def addVertexAction(es: EditorState, g: Var[Graph]) = for {
-  pos <- es.mousePos
-  _ <- g.updateS_(ops.addVertex(PropMap() + (Center, pos)))
-} yield ()
-
-def bindings(es: EditorState, g: Var[Graph]) = Seq(
-  keyDown("a").andThen(addVertexAction(es, g))
-)
+  Seq(
+    keyDown("a").andThen(a.add(V)),
+    keyDown("d").andThen(a.del),
+    clickOnPart(MouseButton.Left, V).withMods().flatMap(a.drag),
+    clickOnPart(MouseButton.Left, V).withMods(KeyModifier.Shift).flatMap(a.dragEdge(E, Src, Tgt))
+  )
+}
 
 object Main {
   @JSExportTopLevel("GraphApp")
   object GraphApp extends Semagram {
 
-    /**
-     * TODO:
-     * - Bindings
-     */
     def run(es: EditorState): IO[Unit] = {
       val VertexSprite = WithMiddleware(
         Disc(),
         Seq(
           Hoverable(es.hover, MainHandle, PropMap() + (Fill, "lightgrey")),
+          Clickable(es.mouse, MainHandle)
+        )
+      )
+      val EdgeSprite = WithMiddleware(
+        Arrow(),
+        Seq(
+          Hoverable(es.hover, MainHandle, PropMap() + (Stroke, "lightgrey")),
+          Clickable(es.mouse, MainHandle)
         )
       )
       for {
         g <- IO(Var(Graph()))
-        mainView <- IO(new Viewport(
-            Seq(
-              ACSetEntitySource(g.signal, V, VertexSprite)
-            )
+        lg <- IO(g.signal.map(assignBends[SchGraph.type](Map(E -> (Src, Tgt)), 0.5)))
+        _ <- es.makeViewport(lg,
+          Seq(
+            ACSetEntitySource(V, VertexSprite),
+            ACSetEdgeSource(E, Src, Tgt, EdgeSprite)
           ))
-        _ <- IO(es.register(mainView))
         _ <- es.bindForever(bindings(es, g))
       } yield ()
     }

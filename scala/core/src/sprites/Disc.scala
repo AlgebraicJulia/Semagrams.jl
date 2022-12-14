@@ -6,13 +6,15 @@ import semagrams._
 import semagrams.text._
 import semagrams.util._
 
-case class Disc() extends Sprite {
+case class Disc(defaults: PropMap) extends Sprite {
   def radius(data: PropMap): Double = {
-    val textBox = boxSize(data(Content), data(FontSize))
+    // val textBox = boxSize(data(Content), data(FontSize))
     val center = data(Center)
-    val innerSep = data(InnerSep)
-    val d =
-      data(MinimumWidth).max(textBox.x + innerSep).max(textBox.y + innerSep)
+    // val innerSep = data(InnerSep)
+    // val d =
+    //   data(MinimumWidth).max(textBox.x + innerSep).max(textBox.y + innerSep)
+    // val d = data(MinimumWidth)
+    val d = 40
     val r = d / 2
     r
   }
@@ -37,7 +39,7 @@ case class Disc() extends Sprite {
       init: PropMap,
       updates: L.Signal[PropMap]
   ): RenderedSprite = {
-    val data = updates.map(Disc.defaults ++ _)
+    val data = updates.map(defaults ++ _)
     val box = circle(
       geomUpdater(data),
       styleUpdater(data)
@@ -45,7 +47,7 @@ case class Disc() extends Sprite {
     val text = L.svg.text(
       xy <-- data.map(_(Center)),
       L.svg.tspan(
-        L.child <-- data.map(p => L.textToNode(p(Content))),
+        // L.child <-- data.map(p => L.textToNode(p(Content))),
         textAnchor := "middle",
         dominantBaseline := "central",
         style := "user-select: none"
@@ -76,4 +78,6 @@ object Disc {
     + (InnerSep, 10)
     + (MinimumWidth, 40)
     + (MinimumHeight, 40)
+
+  def apply() = new Disc(defaults)
 }

@@ -1,6 +1,7 @@
 package semagrams
 
 import semagrams._
+import semagrams.acsets._
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveElement
 import cats.effect._
@@ -21,6 +22,11 @@ class EditorState(val elt: SvgElement) {
   for (c <- controllers) {
     c(this, elt)
   }
+
+  def makeViewport[A](state: Signal[A], sources: Seq[EntitySource[A]]) = for {
+    v <- IO(new EntitySourceViewport(state, sources))
+    _ <- IO(register(v))
+  } yield v
 
   def register(v: Viewport) = {
     viewports.update(_ + v)
@@ -85,4 +91,15 @@ class EditorState(val elt: SvgElement) {
 
   def mousePos: IO[Complex] =
     IO(mouse.$state.now().pos)
+
+  def hovered: IO[Option[Entity]] =
+    IO(hover.$state.now().state)
+
+  def hoveredPart(ob: Ob): IO[Option[Part]] =
+    hovered.map(
+      e => e match {
+        case Some(p: Part) if p.ob == ob => Some(p)
+        case _ => None
+      }
+    )
 }

@@ -11,6 +11,20 @@ def baseSvg() = {
     svg.height := "100%",
     svg.width := "100%",
     svg.customSvgAttr("tabindex", StringAsIsCodec) := "0",
+    svg.style := "border:black;border-style:solid;background-color:white",
+    svg.defs(
+      svg.marker(
+        svg.idAttr := "arrowhead",
+        svg.markerWidth := "10",
+        svg.markerHeight := "7",
+        svg.refX := "10",
+        svg.refY := "3.5",
+        svg.orient := "auto",
+        svg.polygon(
+          svg.points := "0 0, 10 3.5, 0 7"
+        )
+      )
+    )
   )
 }
 

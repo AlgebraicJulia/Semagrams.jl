@@ -31,14 +31,20 @@ object EntityMap {
   def apply(): EntityMap = Map[Entity, (Sprite, PropMap)]()
 }
 
-case class EntitySource(
-    entities: Signal[EntityMap] => Signal[EntityMap]
+case class EntitySource[A](
+    entities: (A, EntityMap) => EntityMap
 ) {
-  def addEntities($m: Signal[EntityMap]) = {
-    $m.combineWith(entities($m)).map(_ ++ _)
+  def addEntities(a: A, m: EntityMap) = {
+    m ++ entities(a, m)
   }
 
-  def withProps(props: PropMap) = EntitySource($m =>
-    entities($m).map(_.view.mapValues((s, p) => (s, p ++ props)).toMap)
+  def withProps(props: PropMap) = EntitySource[A](
+    entities(_,_).view.mapValues((s, p) => (s, p ++ props)).toMap
+  )
+
+  def addPropsBy(f: (Entity, PropMap, EntityMap) => PropMap) = EntitySource[A]((a, m) =>
+    entities(a,m).map({ case (e, (s, p)) => (e, (s, p ++ f(e, p, m))) })
   )
 }
+
+case object Background extends Entity

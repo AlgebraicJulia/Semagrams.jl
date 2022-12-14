@@ -4,12 +4,21 @@ import com.raquo.laminar.api.L._
 
 case class TransformState()
 
-class Viewport(entitySources: Seq[EntitySource]) {
+trait Viewport {
+  val transform: TransformState
+
+  val entities: Signal[EntityMap]
+
+  val elt: SvgElement
+}
+
+class EntitySourceViewport[A](state: Signal[A], entitySources: Seq[EntitySource[A]]) extends Viewport {
   val transform = TransformState()
 
-  val entities = entitySources.foldLeft[Signal[EntityMap]](
-    Val(EntityMap())
-  )(($m, es) => es.addEntities($m))
+  val entities = state.map(
+    a => {
+      entitySources.foldLeft(EntityMap())((m, source) => source.addEntities(a, m))
+    })
 
   val elt = svg.g(
     children <-- Viewport.render(entities)

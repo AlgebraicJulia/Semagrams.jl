@@ -50,7 +50,8 @@ class MouseController() extends Controller {
       mouseEvents --> $state.updater[Event]((state, evt) =>
         state.processEvent(evt)
       ),
-      mouseEvents --> es.events
+      mouseEvents --> es.events,
+      clickable(Background)
     )
   }
 

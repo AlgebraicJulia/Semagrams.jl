@@ -18,6 +18,7 @@ enum GenericProperty[T: ReadWriter] extends Property {
   case End extends GenericProperty[Complex]
   case Bend extends GenericProperty[Double]
   case Style extends GenericProperty[String]
+  case Interactable extends GenericProperty[Boolean]
 
   type Value = T
 

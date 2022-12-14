@@ -2,6 +2,7 @@ package semagrams
 
 import com.raquo.laminar.api.L._
 import cats.effect._
+import semagrams.acsets._
 
 case class Binding[A](
     selector: PartialFunction[Event, IO[A]],
@@ -47,6 +48,12 @@ def keyUp(key: String) = bindEvent(KeyUp(key))
 def clickOn(button: MouseButton) = Binding(
   { case MouseDown(Some(ent), `button`) =>
     IO(ent)
+  }
+)
+
+def clickOnPart(button: MouseButton, ob: Ob) = Binding(
+  {
+    case MouseDown(Some(i: Part), `button`) if i.ob == ob => IO(i)
   }
 )
 

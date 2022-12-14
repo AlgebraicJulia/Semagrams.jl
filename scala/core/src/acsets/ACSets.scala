@@ -165,6 +165,9 @@ trait ACSetOps[S: IsSchema] {
   def setSubpart(f: Property, x: Part, y: f.Value): State[ACSet[S], Unit] =
     State.modify(_.setSubpart(f, x, y))
 
+  def remSubpart(f: Property, x: Part): State[ACSet[S], Unit] =
+    State.modify(_.remSubpart(f, x))
+
   def remPart(x: Part): State[ACSet[S], Unit] =
     State.modify(_.remPart(x))
 
