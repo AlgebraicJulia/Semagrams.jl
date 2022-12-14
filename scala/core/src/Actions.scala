@@ -2,6 +2,7 @@ package semagrams
 
 import semagrams._
 import semagrams.acsets.{given, _}
+import semagrams.util._
 
 import com.raquo.laminar.api.L._
 import cats.effect._

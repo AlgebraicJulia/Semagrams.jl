@@ -1,6 +1,7 @@
 package semagrams.sprites
 
 import semagrams._
+import semagrams.util._
 
 def BasicDisc(es: EditorState) = WithMiddleware(
   Disc(),

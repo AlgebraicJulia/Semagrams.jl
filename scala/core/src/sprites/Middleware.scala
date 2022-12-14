@@ -1,6 +1,7 @@
 package semagrams.sprites
 
 import semagrams._
+import semagrams.util._
 import com.raquo.laminar.api.L._
 
 trait Middleware {

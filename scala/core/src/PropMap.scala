@@ -1,7 +1,7 @@
 package semagrams
 
-import semagrams.util._
-import upickle.default._
+import semagrams.util.Complex
+import upickle.default.ReadWriter
 
 enum GenericProperty[T: ReadWriter] extends Property {
   case Fill extends GenericProperty[String]
@@ -44,8 +44,10 @@ case class PropMap(map: Map[Property, Any]) {
     this.copy(map = map + (k -> v.asInstanceOf[Any]))
   }
 
-  def +[T](kv: (GenericProperty[T], T)) =
-    this.copy(map = map + (kv._1 -> kv._2.asInstanceOf[Any]))
+  def +[T](kv: (GenericProperty[T], T)) = {
+    val (k, v) = kv
+    this.copy(map = map + (k.asInstanceOf[Property] -> v.asInstanceOf[Any]))
+  }
 
   def ++(other: PropMap): PropMap = {
     this.copy(map = map ++ other.map)

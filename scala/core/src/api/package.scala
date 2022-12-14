@@ -1,10 +1,19 @@
-package semagrams
+package semagrams.api
 
 import semagrams.controllers
 import semagrams.layout
 import semagrams.sprites
 import semagrams.util
 
+export semagrams.{
+  Actions,
+  EditorState,
+  Semagram,
+  MouseButton,
+  KeyModifier,
+  keyDown,
+  clickOnPart,
+}
 export controllers.{
   DragController,
   HoverController,

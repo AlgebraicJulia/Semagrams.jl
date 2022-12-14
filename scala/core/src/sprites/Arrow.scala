@@ -2,8 +2,8 @@ package semagrams.sprites
 
 import com.raquo.laminar.api.L.svg._
 import com.raquo.laminar.api._
-import semagrams.util._
 import semagrams._
+import semagrams.util._
 
 case class Arrow(defaults: PropMap) extends Sprite {
   def blockPath(

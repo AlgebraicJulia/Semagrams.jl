@@ -1,6 +1,6 @@
 package semagrams.graph
 
-import semagrams._
+import semagrams.api._
 import semagrams.acsets._
 
 import com.raquo.laminar.api.L._

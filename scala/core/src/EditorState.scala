@@ -2,6 +2,8 @@ package semagrams
 
 import semagrams._
 import semagrams.acsets._
+import semagrams.controllers._
+import semagrams.util.Complex
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveElement
 import cats.effect._

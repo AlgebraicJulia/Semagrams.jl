@@ -1,5 +1,7 @@
 package semagrams
 
+import semagrams.util.Complex
+
 enum MouseButton:
   case Left
   case Middle

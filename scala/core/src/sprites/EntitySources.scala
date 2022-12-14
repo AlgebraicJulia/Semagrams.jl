@@ -2,6 +2,7 @@ package semagrams.sprites
 
 import semagrams._
 import semagrams.acsets._
+import semagrams.util._
 import com.raquo.laminar.api.L._
 
 def ACSetEntitySource[S: IsSchema](
