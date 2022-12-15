@@ -28,6 +28,10 @@ case class Binding[A](
 
   def withMods(newModifiers: KeyModifier*) =
     Binding(selector, Some(newModifiers.toSet))
+
+  def filter(pred: A => Boolean) = map(a => if pred(a)
+    then a else ()
+  )
 }
 
 object Binding {
@@ -46,11 +50,10 @@ def keyDown(key: String) = bindEvent(KeyDown(key))
 
 def keyUp(key: String) = bindEvent(KeyUp(key))
 
-def clickOn(button: MouseButton) = Binding(
-  { case MouseDown(Some(ent), `button`) =>
-    IO(ent)
-  }
-)
+def clickOn(button: MouseButton) = Binding({
+        case MouseDown(Some(ent), `button`) => IO(ent)
+  })
+  
 
 def clickOnPart(button: MouseButton, ob: Ob) = Binding(
   {
@@ -63,6 +66,7 @@ def dblClickOn(button: MouseButton) = Binding(
     IO(ent)
   }
 )
+
 
 def dblClickOnPart(button: MouseButton, ob: Ob) = Binding(
   {

@@ -72,6 +72,19 @@ object apps extends Module {
 
     def artifactName = "semagrams-graph"
   }
+
+  object dwd extends SemagramsApp {
+    def desc = "A string diagram editor"
+
+    def artifactName = "semagrams-dwd"
+  }
+
+  object mwe extends SemagramsApp {
+    def desc = "A minimum working example"
+
+    def artifactName = "semagrams-mwe"
+  }
+
   // object petri extends SemagramsApp {
   //   def desc = "A petri net editor implemented with semagrams"
 
