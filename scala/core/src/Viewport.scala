@@ -1,8 +1,15 @@
 package semagrams
 
 import com.raquo.laminar.api.L._
+import semagrams.util._
 
-case class TransformState()
+case class TransformState(
+  m: Var[Transform]
+)
+
+object TransformState {
+  def apply() = new TransformState(Var(Transform.identity))
+}
 
 trait Viewport {
   val transform: TransformState

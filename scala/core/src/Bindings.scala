@@ -6,7 +6,8 @@ import semagrams.acsets._
 
 case class Binding[A](
     selector: PartialFunction[Event, IO[A]],
-    modifiers: Option[Set[KeyModifier]]
+    modifiers: Option[Set[KeyModifier]],
+    docs: String
 ) {
   def flatMap[B](g: A => IO[B]): Binding[B] =
     Binding(selector.andThen(_.flatMap(g)), modifiers)
@@ -31,12 +32,12 @@ case class Binding[A](
 
 object Binding {
   def apply[A](f: PartialFunction[Event, IO[A]]) =
-    new Binding[A](f, None)
+    new Binding[A](f, None, "")
 
   def apply[A](
       f: PartialFunction[Event, IO[A]],
       modifiers: Option[Set[KeyModifier]]
-  ) = new Binding[A](f, modifiers)
+  ) = new Binding[A](f, modifiers, "")
 }
 
 def bindEvent(ev: Event) = Binding({ case `ev` => IO(()) })

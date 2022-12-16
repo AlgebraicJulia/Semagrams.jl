@@ -17,3 +17,7 @@ case class Transform(z: Complex, w: Complex) {
 
   def shift(by: Complex) = this.copy(w = w + by)
 }
+
+object Transform {
+  val identity = Transform(1, 0)
+}
