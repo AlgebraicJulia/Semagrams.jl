@@ -276,6 +276,14 @@ def dragPan[Model]: Action[Model, Unit] = for {
 
 def log[Model](x:Any): Action[Model,Unit] = ops[Model].pure(println(x.toString()))
 
+def doAll[Model,A](as:Seq[Action[Model,A]]): Action[Model,Seq[A]] = as match
+  case Seq() => ops.pure(Seq())
+  case Seq(head,tail @_*) => for {
+    a <- head
+    as <- doAll(tail)
+  } yield a +: as
+
+
 
 
 def randPt[Model]: Action[Model,Complex] = 

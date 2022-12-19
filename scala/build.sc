@@ -71,11 +71,11 @@ object apps extends Module {
     def artifactName = "semagrams-petri"
   }
 
-  object elements extends SemagramsApp {
-    def desc = "A viewer for the category of elements of an acset"
+  // object elements extends SemagramsApp {
+  //   def desc = "A viewer for the category of elements of an acset"
 
-    def artifactName = "semagrams-elements"
-  }
+  //   def artifactName = "semagrams-elements"
+  // }
 
   object mwe extends SemagramsApp {
     def desc = "A minimum working example"

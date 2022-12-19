@@ -5,6 +5,8 @@ import com.raquo.laminar.api._
 import semagrams.util._
 import semagrams._
 
+import semagrams.util.Complex.{one,im}
+
 import Math.{log,E}
 
 import upickle.default._
@@ -19,13 +21,15 @@ export WireProp._
 
 case class Wire() extends Sprite {
 
-  def exAt(p: Complex) = 
+  def exAt(p: Complex,d:Double=5.0) = 
     import Path.Element._
+    
     Seq(
-      MoveTo(p+Complex(0,5)),
-      LineTo(p+Complex(0,-5)),
-      MoveTo(p+Complex(5,0)),
-      LineTo(p+Complex(-5,0)),
+      MoveTo(p+d*(one+im)),
+      LineTo(p-d*(one+im)),
+      MoveTo(p+d*(one-im)),
+      LineTo(p-d*(one-im)),
+      MoveTo(p)
     )
 
   
@@ -63,17 +67,20 @@ case class Wire() extends Sprite {
       p: PropMap,
       $p: L.Signal[PropMap]
   ): RenderedSprite = {
+    def s(p:PropMap) = p(Start)
+    def t(p:PropMap) = p(End)
+    def ds(p:PropMap) = p.get(StartDir).getOrElse(p(End)-p(Start))
+    def dt(p:PropMap) = p.get(EndDir).getOrElse(p(Start)-p(End))
     val wire = path(
       pathElts <-- $p.map(
-        p => curvedPath(p(Start), p(End), p(StartDir), p(EndDir),p(Bend))
+        p => curvedPath(s(p),t(p),ds(p),dt(p),p(Bend))
       ),
       stroke <-- $p.map(_(Stroke)),
       fill := "none",
-      // markerEnd := "url(#arrowhead)"
     )
     val handle = path(
       pathElts <-- $p.map(
-        p => blockPath(p(Start), p(End), p(StartDir), p(EndDir), 3, p(Bend))
+        p => blockPath(s(p),t(p),ds(p),dt(p),3,p(Bend))
       ),
       fill := "green",
       opacity := ".3",

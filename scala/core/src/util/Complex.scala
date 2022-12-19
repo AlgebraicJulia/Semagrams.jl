@@ -30,6 +30,10 @@ case class Complex(x: Double, y: Double) {
 
   def cong = Complex(x, -y)
 
+  def relativeTo(dims: Complex) = if dims.x==0 | dims.y==0
+    then this
+    else Complex(x/dims.x,y/dims.y)
+
   def abssq = x * x + y * y
 
   def abs = sqrt(abssq)
@@ -46,6 +50,7 @@ implicit def intToComplex(n: Int): Complex = Complex(n, 0)
 
 object Complex {
   val im = Complex(0, 1)
+  val one = Complex(1, 0)
   implicit val rw: ReadWriter[Complex] = macroRW
 
   def apply(x: Double, y: Double) = if x.isNaN || y.isNaN then
