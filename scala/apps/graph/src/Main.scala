@@ -7,16 +7,18 @@ import com.raquo.laminar.api.L._
 import cats.effect._
 import scala.scalajs.js.annotation.JSExportTopLevel
 
-def bindings(es: EditorState, g: Var[Graph]) = {
-  val a = Actions(es, g)
+def bindings(es: EditorState, g: Var[Graph], ui: UIState) = {
+  val a = Actions(es, g, ui)
 
   Seq(
-    keyDown("a").andThen(a.add(V)),
+    keyDown("a").andThen(a.add(V, PropMap().set(MinimumWidth, 60).set(MinimumHeight, 60))),
     keyDown("d").andThen(a.del),
+    keyDown("e").andThen(a.importExport),
     clickOnPart(MouseButton.Left, V).withMods().flatMap(a.drag),
     clickOnPart(MouseButton.Left, V)
       .withMods(KeyModifier.Shift)
-      .flatMap(a.dragEdge(E, Src, Tgt))
+      .flatMap(a.dragEdge(E, Src, Tgt)),
+    dblClickOnPart(MouseButton.Left, V).withMods().flatMap(a.edit(ImageURL, false)),
   )
 }
 
@@ -37,7 +39,8 @@ object Main {
             ACSetEdgeSource(E, Src, Tgt, BasicArrow(es))
           )
         )
-        _ <- es.bindForever(bindings(es, g))
+        ui <- es.makeUI()
+        _ <- es.bindForever(bindings(es, g, ui))
       } yield ()
     }
   }

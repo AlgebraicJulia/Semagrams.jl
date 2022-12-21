@@ -1,4 +1,4 @@
-package semagrams.text
+package semagrams.util
 
 import org.scalajs.dom
 import semagrams.util._

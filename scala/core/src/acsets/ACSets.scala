@@ -181,8 +181,21 @@ trait ACSetOps[S: IsSchema] {
   def remPart(x: Part): State[ACSet[S], Unit] =
     State.modify(_.remPart(x))
 
-  def subpartLens(f: Attr, x: Part) =
+  def subpartLens(f: Property, x: Part) =
     Lens[ACSet[S], f.Value](_.subpart(f, x))(y => s => s.setSubpart(f, x, y))
+
+  val serializedLens =
+    Lens[ACSet[S], String]
+      (acs => write(acs)(ACSet.rw[S]))
+      (s => acs => {
+         var res = acs
+         try {
+           res = read[ACSet[S]](s)(ACSet.rw[S])
+         } catch  {
+           case _ => ()
+         }
+         res
+       })
 }
 
 given [S: IsSchema]: ACSetOps[S] = new ACSetOps[S] {}

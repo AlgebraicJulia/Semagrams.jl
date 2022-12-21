@@ -5,6 +5,7 @@ import com.raquo.airstream.core.Transaction
 
 import cats.effect._
 import cats.data.State
+import monocle._
 
 extension [A](v: Var[A]) {
   def updateS_[B](s: State[A, B]): IO[Unit] = {
@@ -19,4 +20,14 @@ extension [A](v: Var[A]) {
       cb(Right(b))
     })
   )
+
+  def zoomL[B](l: Lens[A,B]) = new LensedVar(v, l)
+}
+
+class LensedVar[A,B](val v: Var[A], val l: Lens[A,B]) {
+  val writer = v.updater[B]((a,b) => l.replace(b)(a))
+
+  val signal = v.signal.map(l.get)
+
+  def zoomL[C](m: Lens[B,C]) = new LensedVar(v, l.andThen(m))
 }

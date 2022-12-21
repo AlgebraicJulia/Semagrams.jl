@@ -22,7 +22,6 @@ case class BoxPos(relative: Complex, absolute: Complex) {
     bd.pos + Complex(relative.x * bd.dims.x, relative.y * bd.dims.y) + absolute
 }
 
-
 case class AlignPoints(windowPoint: BoxPos, boxPoint: BoxPos) extends BoxPosition {
   def computePosition(windowDims: Complex, boxDims: Complex): Complex =
     windowPoint.compute(BoxData(Complex(0,0), windowDims)) -

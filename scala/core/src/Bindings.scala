@@ -64,6 +64,12 @@ def dblClickOn(button: MouseButton) = Binding(
   }
 )
 
+def dblClickOnPart(button: MouseButton, ob: Ob) = Binding(
+  {
+    case DoubleClick(Some(i: Part), `button`) if i.ob == ob => IO(i)
+  }
+)
+
 def releaseOn(button: MouseButton) = Binding(
   { case MouseUp(Some(ent), `button`) =>
     IO(ent)

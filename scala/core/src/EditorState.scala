@@ -3,7 +3,8 @@ package semagrams
 import semagrams._
 import semagrams.acsets._
 import semagrams.controllers._
-import semagrams.util.Complex
+import semagrams.ui._
+import semagrams.util._
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveElement
 import cats.effect._
@@ -17,10 +18,18 @@ class EditorState(val elt: SvgElement) {
   val drag = DragController()
   val keyboard = KeyboardController()
   val controllers = Seq(mouse, hover, drag, keyboard)
+  val size = Var(Complex(elt.ref.clientWidth, elt.ref.clientHeight))
+
+  dom.ResizeObserver(
+    (newsize,_) => {
+      size.set(Complex(elt.ref.clientWidth, elt.ref.clientHeight))
+    }
+  ).observe(elt.ref)
 
   elt.amend(
-    children <-- viewports.signal.map(_.map(_.elt).toSeq)
+    children <-- viewports.signal.map(_.map(_.elt).toSeq),
   )
+
   for (c <- controllers) {
     c(this, elt)
   }
@@ -29,6 +38,11 @@ class EditorState(val elt: SvgElement) {
     v <- IO(new EntitySourceViewport(state, sources))
     _ <- IO(register(v))
   } yield v
+
+  def makeUI() = for {
+    ui <- IO(new UIState(Var(Vector()), size.signal))
+    _ <- IO(register(ui.viewport))
+  } yield ui
 
   def register(v: Viewport) = {
     viewports.update(_ + v)

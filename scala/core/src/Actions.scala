@@ -2,17 +2,19 @@ package semagrams
 
 import semagrams._
 import semagrams.acsets.{given, _}
+import semagrams.ui._
 import semagrams.util._
+import semagrams.widgets._
 
 import com.raquo.laminar.api.L._
 import cats.effect._
 
-case class Actions[S: IsSchema](es: EditorState, m: Var[ACSet[S]]) {
+case class Actions[S: IsSchema](es: EditorState, m: Var[ACSet[S]], ui: UIState) {
   val ops = summon[ACSetOps[S]]
 
-  def add(ob: Ob) = for {
+  def add(ob: Ob, props: PropMap) = for {
     pos <- es.mousePos
-    _ <- m.updateS_(ops.addPart(ob, PropMap() + (Center, pos)))
+    _ <- m.updateS_(ops.addPart(ob, props + (Center, pos)))
   } yield ()
 
   val del = for {
@@ -54,4 +56,31 @@ case class Actions[S: IsSchema](es: EditorState, m: Var[ACSet[S]]) {
       _ <- m.updateS_(ops.remPart(e))
     } yield ())
   } yield ()
+
+  def edit(p: Property { type Value = String; }, multiline: Boolean)(i: Part): IO[Unit] = for {
+    _ <- IO(m.update(acs => if (acs.trySubpart(p, i).isEmpty) {
+                       acs.setSubpart(p, i, "")
+                     } else {
+                       acs
+                     }
+            ))
+    _ <- ui.addKillableHtmlEntity(
+      kill => {
+        val v = m.zoomL(ops.subpartLens(p, i))
+        val t = TextInput(v, multiline)(kill)
+        if (multiline) {
+          PositionWrapper(Position.topToBotMid(10), t)
+        } else {
+          PositionWrapper(Position.botMid(10), t)
+        }
+      }
+    )
+  } yield ()
+
+  def importExport = ui.addKillableHtmlEntity(
+    kill => PositionWrapper(
+      Position.topToBotMid(10),
+      TextInput(m.zoomL(ops.serializedLens), true)(kill)
+    )
+  )
 }
