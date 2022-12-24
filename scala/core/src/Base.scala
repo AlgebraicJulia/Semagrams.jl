@@ -29,15 +29,15 @@ def baseSvg() = {
 }
 
 abstract class Semagram {
-  def run(es: EditorState): IO[Unit]
+  def run(es: EditorState, init: String): IO[Unit]
 
   @JSExport
-  def main(div: dom.Element) = {
+  def main(div: dom.Element, init: String) = {
     val base = baseSvg()
     val es = new EditorState(
       base
     )
     render(div, base)
-    run(es).unsafeRunAndForget()(unsafe.IORuntime.global)
+    run(es, init).unsafeRunAndForget()(unsafe.IORuntime.global)
   }
 }

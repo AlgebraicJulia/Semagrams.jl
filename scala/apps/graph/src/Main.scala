@@ -1,8 +1,9 @@
 package semagrams.graph
 
 import semagrams.api._
-import semagrams.acsets._
+import semagrams.acsets.{_, given}
 
+import upickle.default._
 import com.raquo.laminar.api.L._
 import cats.effect._
 import scala.scalajs.js.annotation.JSExportTopLevel
@@ -26,9 +27,9 @@ object Main {
   @JSExportTopLevel("GraphApp")
   object GraphApp extends Semagram {
 
-    def run(es: EditorState): IO[Unit] = {
+    def run(es: EditorState, init: String): IO[Unit] = {
       for {
-        g <- IO(Var(Graph()))
+        g <- IO(Var(read[Graph](init)(ACSet.rw)))
         lg <- IO(
           g.signal.map(assignBends[SchGraph.type](Map(E -> (Src, Tgt)), 0.35))
         )
