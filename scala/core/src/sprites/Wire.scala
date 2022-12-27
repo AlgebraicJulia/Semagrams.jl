@@ -1,19 +1,22 @@
 package semagrams.sprites
 
-import com.raquo.laminar.api.L.svg.{!= as neq,_}
+import com.raquo.laminar.api.L.svg.{!= as neq,text as Ltext,_}
 import com.raquo.laminar.api._
 import semagrams.util._
-import semagrams._
+import semagrams.{text as sematext,_}
 
 import semagrams.util.Complex.{one,im}
 
 import Math.{log,E}
+import upickle.default.ReadWriter
 
-import upickle.default._
 
 enum WireProp[T: ReadWriter] extends Property:
   case StartDir extends WireProp[Complex]
   case EndDir extends WireProp[Complex]
+  case WireLabel extends WireProp[String]
+  case LabelAnchor extends WireProp[Double]
+  case LabelOffset extends WireProp[Complex]
 
   type Value = T
   val rw = summon[ReadWriter[T]]
@@ -71,24 +74,51 @@ case class Wire() extends Sprite {
     def t(p:PropMap) = p(End)
     def ds(p:PropMap) = p.get(StartDir).getOrElse(p(End)-p(Start))
     def dt(p:PropMap) = p.get(EndDir).getOrElse(p(Start)-p(End))
-    val wire = path(
-      pathElts <-- $p.map(
-        p => curvedPath(s(p),t(p),ds(p),dt(p),p(Bend))
+    def b(p:PropMap) = p.get(Bend).getOrElse(50.0)
+
+    def ppath(p:PropMap) = curvedPath(s(p),t(p),ds(p),dt(p),b(p))
+
+    val anchor = p.get(LabelAnchor).getOrElse(.5)
+    val offset = p.get(LabelOffset).getOrElse(10*im)
+
+    def labelPos(p:PropMap) = {
+      val crv = ppath(p)(1)
+      crv.pos(s(p),anchor) + offset * crv.dir(s(p),anchor)
+    }
+
+    def label(p:PropMap) = p.get(WireLabel).getOrElse("")
+    def fontsize(p:PropMap) = p.get(FontSize).getOrElse(16.0)
+    def pstroke(p:PropMap) = p.get(Stroke).getOrElse("black")
+
+    val txt = L.svg.text(
+      xy <-- $p.map(labelPos),
+      L.svg.tspan(
+        L.child <-- $p.map(p => L.textToNode(label(p))),
+        textAnchor := "middle",
+        dominantBaseline := "central",
+        style := "user-select: none"
       ),
-      stroke <-- $p.map(_(Stroke)),
-      fill := "none",
+      fontSize <-- $p.map(fontsize(_).toString())
+    )
+
+    val wire = path(
+      pathElts <-- $p.map(ppath),
+      stroke <-- $p.map(pstroke),
+      fill := "none"
     )
     val handle = path(
       pathElts <-- $p.map(
-        p => blockPath(s(p),t(p),ds(p),dt(p),3,p(Bend))
+        p => blockPath(s(p),t(p),ds(p),dt(p),3,b(p))
       ),
       fill := "green",
       opacity := ".3",
       stroke := "none",
     )
 
+  
+
     
-    val root = g(wire, handle)
+    val root = g(wire, handle,txt)
     RenderedSprite(root, Map(MainHandle -> handle))
   }
 

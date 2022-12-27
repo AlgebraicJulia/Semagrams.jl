@@ -57,6 +57,7 @@ case class PropMap(map: Map[Property, Any]) {
   def -(p: Property): PropMap = this -- Seq(p)
 
   def contains(p: Property) = map contains p
+
 }
 
 object PropMap {

@@ -23,6 +23,7 @@ case class EditorState[Model](
 ) {
 
   def dims(): Complex = Complex(elt.ref.clientWidth, elt.ref.clientHeight)
+
 }
 
 object EditorState {

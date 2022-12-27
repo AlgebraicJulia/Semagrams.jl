@@ -53,6 +53,14 @@ extension [Model, A](action: Action[Model, A]) {
     Action[Model, A](es =>
       action(es).onCancel(fin(es).map(_ => ())).handleErrorWith(_ => fin(es))
     )
+
+  def withFilter(p: A => Boolean) = for
+    a <- action
+    _ <- p(a) match
+      case true => ops[Model].pure(())
+      case false => fromMaybe(ops[Model].pure(None))
+  yield a
+
 }
 
 object Action {
@@ -282,8 +290,6 @@ def doAll[Model,A](as:Seq[Action[Model,A]]): Action[Model,Seq[A]] = as match
     a <- head
     as <- doAll(tail)
   } yield a +: as
-
-
 
 
 def randPt[Model]: Action[Model,Complex] = 

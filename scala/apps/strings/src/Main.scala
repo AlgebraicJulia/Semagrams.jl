@@ -11,7 +11,7 @@ import semagrams.controllers._
 import semagrams.sprites.{Box as BoxSprite,Wire as WireSprite,_}
 import semagrams.util._
 import Complex.{one,im}
-
+import scala.math.max
 
 import upickle.default._
 
@@ -21,6 +21,7 @@ import upickle.default._
 import PortType._
 import Orientation._
 import BoxBorder._
+import org.scalajs.dom.SVGRectElement
 
 
 
@@ -31,8 +32,20 @@ enum PortType(porttype:String):
   def rev = this match
     case InPort => OutPort
     case OutPort => InPort
+
 object PortType {
   implicit val rw: ReadWriter[PortType] = macroRW
+}
+
+case class Slot(ptype: PortType, index: Int) {
+  def incr(): Slot = Slot(ptype,index+1)
+  def decr(): Slot = Slot(ptype,max(0,index-1))
+  def rev() = Slot(ptype.rev,index)
+
+}
+
+object Slot {
+  implicit val rw: ReadWriter[Slot] = macroRW
 }
 
 enum Orientation(val dir: Complex):
@@ -57,24 +70,38 @@ enum Orientation(val dir: Complex):
 
 
   // Get port information z = center of box/diagram 
-  def getPortType(z: Complex) = if dir.dot(z) >= 0
+  def getBoxPortType(z: Complex) = if z.dot(dir) >= 0
     then OutPort
     else InPort
   
-  def getPortSlot(z:Complex,nports:Int,dims: Complex): Int =
-    // val pdist = z.dot()
-    // val start = -dims.dot(im*dir)/2
-    // val incr = start.abs/nports
-    // val slot = (for
-    //   i <- 0 to nports-1
-    //   spot = start + (1 + 2*i)*incr
-    //   if z.dot(im*dir) < spot
-    // yield i)
-    // slot.toSeq match
-    //   case Seq() => nports
-    //   case Seq(first,_*) => first
-    nports    
+  def getDiagPortType(z: Complex,dims: Complex): Option[PortType] = if z.dot(dir).abs > .35 * dims.dot(dir).abs 
+    then Some(getBoxPortType(z))
+    else None
+
+  def getSlot(z:Complex,ptype:PortType,nports:Int,dims:Complex): Slot =
+
+    val port_dir = -im * dir
+    val z_shift = z.dot(port_dir)
+    val start = -dims.dot(port_dir)/2
+    val incr = -start/nports
+
+    val slot = this match
+      case TopToBottom | RightToLeft => (for
+        i <- 0 to nports-1
+        spot = start + (1 + 2*i)*incr
+        if z_shift < spot
+      yield i)
+      case BottomToTop | LeftToRight => (for
+        i <- (0 to nports-1).reverse
+        spot = start + (1 + 2*i)*incr
+        if z_shift > spot
+      yield i).reverse
+
+    slot.toSeq match
+      case Seq() => Slot(ptype,nports)
+      case Seq(idx,_*) => Slot(ptype,idx)
     
+
 
 object Orientation {
   implicit val rw: ReadWriter[Orientation] = macroRW
@@ -127,20 +154,17 @@ case object portBox extends HomWithDom {
   val dom = Port
   val codom = Box
 }
-case object portIndex extends AttrWithDom with PValue[Int] {
-  val dom = Box
-}
 case object portWire extends HomWithDom {
   val dom = Port
   val codom = Wire
 }
-case object ptType extends AttrWithDom with PValue[PortType] {
+case object portSlot extends AttrWithDom with PValue[Slot] {
   val dom = Port
 }
 
-case object DiagramOptions extends Ob
+case object Diag extends Ob
 case object diagOrientation extends AttrWithDom with PValue[Orientation] {
-  val dom = DiagramOptions
+  val dom = Diag
 }
 
 
@@ -150,8 +174,8 @@ case object diagOrientation extends AttrWithDom with PValue[Orientation] {
 case object StringSchemaOb extends StaticSchema {
   val schema = BasicSchema(
     Box,boxLabel,Wire,wireLabel,
-    Port,portBox,portWire,ptType,portIndex,
-    DiagramOptions,diagOrientation
+    Port,portBox,portWire,portSlot,
+    Diag,diagOrientation
   )
 }
 type StringSchema = StringSchemaOb.type
@@ -165,70 +189,51 @@ type StringSchema = StringSchemaOb.type
 
 type DWD = ACSet[StringSchema]
   extension (d:ACSet[StringSchema]) {
-// case class DWD(d:ACSet[StringSchema]) {
     def boxes: Seq[Part] = d.parts(Box).toSeq
     def wires: Seq[Part] = d.parts(Wire).toSeq
     def ports: Seq[Part] = d.parts(Port).toSeq
     def boxOf(p: Part): Option[Part] = d.trySubpart(portBox,p)
     def wireOf(p: Part): Option[Part] = d.trySubpart(portWire,p)
-    def indexOf(p: Part): Int = d.trySubpart(portIndex,p).getOrElse(
-      ports.indexOf(p)
-    )
-    def typeOf(p: Part): PortType = d.trySubpart(ptType,p).getOrElse(OutPort)
+    def slotOf(p: Part): Option[Slot] = d.trySubpart(portSlot,p)
+    
+    def labelOf(p: Part): Option[String] = p.entityType match
+      case Box => d.props(p).get(boxLabel)
+      case Wire => d.props(p).get(wireLabel)
+      case _ => None
+    
 
-    def portsOf(e: Entity): Seq[Part] = e.entityType match
-      case w @ Wire => ports.filter(p => wireOf(p) == Some(e))
-      case b @ Box => ports.filter(p => boxOf(p) == Some(e))
-      case BackgroundType => ports.filter(p => boxOf(p) == None)
+    def portsOf(pt: Part): Seq[Part] = pt match
+      case w @ Part(_,Wire) => ports.filter(p => wireOf(p) == Some(w))
+      case b @ Part(_,Box) => ports.filter(p => boxOf(p) == Some(b))
+      case bg @ Part(_,Diag) => ports.filter(p => boxOf(p) == None)
       case _ => Seq()
     
-    def portsOf(e: Entity,pt:PortType): Seq[Part] = portsOf(e).filter(typeOf(_) == pt)
+    def portsOf(pt: Part,ptype:PortType): Seq[Part] = portsOf(pt).map(p => (p,slotOf(p)))
+      .collect({ 
+        case (p,Some(slot)) if slot.ptype == ptype => p })
     
     def endPt(p: Part): Option[Part] = wireOf(p).flatMap(w => 
       portsOf(w).filterNot(_==p).headOption
     )
+
+    def background: Part = d.parts(Diag).toSeq match
+      case Seq() => Part(0,Diag)
+      case Seq(bg, _*) => bg
+    
          
-    def orientation: Orientation = (for
-      opt <- d.parts(DiagramOptions).toSeq
-      o <- d.trySubpart(diagOrientation,opt) 
-    yield o) match
-      case Seq(x,_ @_*) => x
-      case Seq() => TopToBottom
+    def orientation: Orientation = d.trySubpart(diagOrientation,background) match
+      case Some(o) => o
+      case None => TopToBottom
     
     
         
 }
 
 object DWD {
-  def apply(orientation: Orientation=Orientation.TopToBottom) = 
-    val (opt,_) = ACSet[StringSchema]().addPart(DiagramOptions,PropMap().set(diagOrientation,orientation))
+  def apply(orientation: Orientation=Orientation.LeftToRight) = 
+    val (opt,_) = ACSet[StringSchema]().addPart(Diag,PropMap().set(diagOrientation,orientation))
     opt
 }
-
-
-def buildDiag() =
-  val (d1,b1) = DWD().addPart(Box,PropMap().set(Center,Complex(300,200)))
-  val (d2,b2) = d1.addPart(Box,PropMap().set(Center,Complex(200,200)))
-  val (d3,w) = d2.addPart(Wire)
-  val (d4,p1) = d3.addPart(Port,PropMap().set(portBox,b1).set(portWire,w).set(ptType,OutPort))
-  val (d5,p2) = d4.addPart(Port,PropMap().set(portWire,w).set(ptType,InPort))
-  // val (d6,w2) = d5.addPart(Wire)
-  // val (d7,p3) = d6.addPart(BoxPort,PropMap().set(portBox,b1).set(portWireB,w2).set(portTypeB,OutPort))
-  // val (d8,p4) = d7.addPart(BoxPort,PropMap().set(portBox,b2).set(portWireB,w2).set(portTypeB,OutPort))
-  d5
-  // val (d9,w3) = d8.addPart(Wire)
-  // val (d10,p5) = d9.addPart(BoxPort,PropMap().set(portBox,b1).set(portWireB,w3).set(portTypeB,InPort))
-  // val (d11,p6) = d10.addPart(BoxPort,PropMap().set(portBox,b2).set(portWireB,w3).set(portTypeB,InPort))
-
-  // val (d12,w4) = d11.addPart(Wire)
-  // val (d13,p7) = d12.addPart(BoxPort,PropMap().set(portBox,b1).set(portWireB,w4).set(portTypeB,InPort))
-  // val (d14,p8) = d13.addPart(BoxPort,PropMap().set(portBox,b2).set(portWireB,w4).set(portTypeB,OutPort))
-
-  // val (d15,w5) = d14.addPart(Wire)
-  // val (d16,p9) = d15.addPart(BoxPort,PropMap().set(portBox,b1).set(portWireB,w5).set(portTypeB,OutPort))
-  // val (d17,p10) = d16.addPart(BoxPort,PropMap().set(portBox,b2).set(portWireB,w5).set(portTypeB,InPort))
-
-  // d17
 
 //================== Interaction ========================
 
@@ -238,301 +243,6 @@ val ops = Action.ops[DWD]
 val aops = summon[ACSetOps[StringSchema]]
 
 
-// Adding
-
-def addBox(props:PropMap = PropMap()): Action[DWD,Part] = for
-  p <- mousePos
-  b <- ops.ask.flatMap(_ => addPart(Box,
-    PropMap().set(Center,p)
-  ))
-yield b
-
-def addWire(p: Part,props:PropMap = PropMap()): Action[DWD,Part] = for
-  w <- ops.ask.flatMap(_ => addPart(Wire,props))
-  _ <- ops.ask.map(_ => setSubpart(portWire,p,w))
-yield w
-
-
-
-def addPort(b:Entity,pt:PortType,baseprops:PropMap = PropMap()): Action[DWD,Part] = 
-  val props = b.entityType match
-    case Box => baseprops.set(portBox,b.asInstanceOf[Part]).set(ptType,pt)
-    case _ => baseprops.set(ptType,pt)
-  addPart(Port,props)
-
-def plug(w: Part,p: Part): Action[DWD,Unit] = setSubpart(portWire,p,w)
-def unplug(w: Part,p: Part): Action[DWD,Unit] = for
-  wp <- ops.ask.map(_.$model.now().trySubpart(portWire,p))
-  _ <- wp == Some(w) match
-    case true => updateModelS(
-      aops.remSubpart(portWire,p)
-    )
-    case false => ops.pure(())
-yield ()
-
-def plug(wOpt: Option[Part],p: Part): Action[DWD,Unit] = wOpt match
-  case Some(w) => plug(w,p)
-  case None => ops.pure(())
-def unplug(wOpt: Option[Part],p: Part): Action[DWD,Unit] = wOpt match
-  case Some(w) => unplug(w,p)
-  case None => ops.pure(())
-
-
-// Deleting
-
-def remPort(p: Part): Action[DWD, Unit] = ops.ask.map(_.$model.now().trySubpart(portBox,p))
-  .flatMap(_ match
-    case None => remDiagPort(p)
-    case Some(b) => remBoxPort(p)
-  )
-
-
-def remBoxPort(p: Part): Action[DWD,Unit] = for
-  m <- ops.ask.map(_.$model.now())
-  w = m.wireOf(p)
-  pt = m.typeOf(p)
-  _ <- unplug(w,p)
-  p2 <- addPort(Background,pt.rev)
-  _ <- ops.ask.map(_ => plug(w,p2))
-  _ <- ops.ask.flatMap(_ =>
-    updateModel(_.remPart(p))  
-  )
-yield ()
-
-def remDiagPort(p: Part): Action[DWD,Unit] = for
-  m <- ops.ask.map(_.$model.now())
-  p2Opt = m.endPt(p)
-  wOpt = m.wireOf(p)
-  _ <- p2Opt match 
-    case Some(p2) => unplug(wOpt,p2)
-    case None => ops.pure(())
-  _ <- wOpt match
-    case Some(w) => ops.ask.flatMap(_ =>
-      updateModel(_.remPart(w))
-    )
-    case None => ops.pure(())
-yield ()
-
-def remWire(w: Part): Action[DWD,Unit] = for
-  m <- ops.ask.map(_.$model.now())
-  ps = m.portsOf(w)
-  _ <- ops.ask.flatMap(_ => doAll(ps.map(p =>
-    unplug(w,p)  
-  )))
-  _ <- ops.ask.flatMap(_ =>
-    updateModel(_.remPart(w))
-  )
-yield ()
-
-def remBox(b: Part): Action[DWD,Unit] = for
-  m <- ops.ask.map(_.$model.now())
-  ps = m.portsOf(b)
-  _ <- doAll(ps.map(remBoxPort(_)))
-  _ <- ops.ask.flatMap(_ =>
-    updateModel(_.remPart(b))
-  )
-yield ()
-
-
-
-
-
-
-
-
-// def scootPortsB(b: Part,pt:PortType,slot:Int) : Action[DWD,Unit] = for
-//   m <- ops.ask.map(_.$model.now())
-//   ports = m.portsOf(b,pt).toSeq
-//   port_idxs = ports.zipWithIndex.map(
-//     (p,k) => m.trySubpart(portIndexB,p).getOrElse(ports.length+k)
-//   )
-//   new_idxs = port_idxs.map(i => if slot > i then i else i+1)
-//   _ <- ops.ask.map(_ => setSubparts(portIndexB,ports.zip(new_idxs)))
-// yield ()
-   
-  
-
-
-// def addBoxPort(b:Entity,w:Entity,pt:PortType,slot:Int,props:PropMap = PropMap()): Action[DWD,Part] = for
-//   _ <- scootPortsB(b.asInstanceOf[Part],pt,slot)
-//   p <- ops.ask.flatMap(_ => addPart(BoxPort, 
-//     props.set(portWireB,w.asInstanceOf[Part])
-//       .set(portBox,b.asInstanceOf[Part])
-//       .set(portTypeB,pt)
-//       .set(portIndexB,slot)
-//   ))
-// yield p
-
-
-
-
-// def addWire(b1:Entity,b2:Entity,props:PropMap): Action[DWD,(Part,Part,Part)] = for
-//   w <- ops.ask.flatMap((_ => addPart(Wire,props)))
-//   p1 <- addPort(b1,w)
-//   p2 <- addPort(b2,w)
-// yield (w,p1,p2)
-
-// def addWire(b1:Entity,props:PropMap = PropMap()): Action[DWD,(Part,Part)] = for
-//   w <- ops.ask.flatMap((_ => addPart(Wire,props)))
-//   p1 <- addPort(b1,w)
-// yield (w,p1)
-
-
-def getBoxPortType(b: Part): Action[DWD,PortType] = for
-  z <- mousePos
-  m <- ops.ask.map(_.$model.now())
-yield
-  val c = m.props(b)(Center)
-  m.orientation.getPortType(z - c)
-
-
-def getBoxPortSlot(b: Entity,pt:PortType) = for
-  z <- mousePos
-  m <- ops.ask.map(_.$model.now())
-yield
-  val nports = m.portsOf(b,pt).size
-  val (c,dims) = BoxSprite().geom(m.props(b.asInstanceOf[Part]))
-  m.orientation.getPortSlot(z - c,nports,dims)
-
-
-def getDiagPortType(): Action[DWD,Option[PortType]] = for
-  z <- mousePos
-  m <- ops.ask.map(_.$model.now())
-  dims <- ops.ask.map(_.dims())
-yield
-  val o = m.orientation
-  val c: Complex = dims/2
-  val pt = o.getPortType(z - c)
-  val brdr = border(o,pt)
-  
-  val dl = brdr.dir.dot(z - c) / brdr.dir.dot(dims)
-  dl match
-    case dl if dl > .33 => Some(OutPort)
-    case dl if dl < -.33 => Some(InPort)
-    case _ => None
-
-  
-  
-
-
-def initialize(d:DWD): Action[DWD,Unit] = for
-  _ <- ops.ask.flatMap(_ => updateModel(_ => d))
-  // ns <- ops.ask.map(_.$model.now().parts(Box).toSeq)
-  // zs <- randPts(ns.length)
-  // _ <- ops.ask.flatMap(
-  //   _ => setSubparts(Center,ns.zip(zs))
-  // )
-yield ()
-  
-
-
-def dragString(b:Entity = Background): Action[DWD,Part] = for
-  $m <- ops.ask.map(_.$model)
-  z <- mousePos
-  pt <- b.entityType match
-    case BackgroundType => fromMaybe(getDiagPortType())
-    case Box => getBoxPortType(b.asInstanceOf[Part])
-    case _ => fromMaybe(ops.pure(None))
-  p <- b.entityType match
-    case BackgroundType => addPort(Background,pt)
-    case Box => addPort(b,pt)
-    case _ => fromMaybe(ops.pure(None))
-  w <- addWire(p,PropMap().set(Start,z).set(End,z+1))  
-  // pi <- b.entityType match
-  //   case Box => getBoxPortSlot(b,pt)
-  //   case _ => ops.pure($m.now().diagPorts(pt).size)
-  drag <- ops.ask.map(_.drag)
-  _ <- (for 
-    _ <- drag.drag(
-      Observer(z => $m.update(
-        _.setSubpart(End,w,z)
-      ))
-    )
-    b2Opt <- hoveredPart(Box)
-    pt2 <- b2Opt match
-      case Some(b2) => getBoxPortType(b2)
-      case None => fromMaybe(getDiagPortType())
-    // pi2 <- b2Opt match
-    //   case Some(b2) => getBoxPortSlot(b2,pt2)
-    //   case None => ops.pure($m.now().diagPorts(pt).size)
-    p2 <- b2Opt match 
-      // case Some(b2) => addBoxPort(b2,w,pt2,pi2)
-      case Some(b2) => addPort(b2,pt2)
-      case None => addPort(Background,pt2)
-    _ <- plug(w,p2)
-    _ <- updateModelS(
-      aops.remSubpart(End,w)
-    )
-    _ <- updateModelS(
-      aops.remSubpart(Start,w)
-    )
-  yield ()).onCancelOrError(for
-    _ <- ops.delay(drag.$state.set(None))
-    _ <- updateModelS(aops.remPart(w))
-  yield ())
-  _ <- update
-yield w
-
-
-
-
-
-
-def dragPort(p:Part): Action[DWD,Part] = for
-  $m <- ops.ask.map(_.$model)
-  // z <- mousePos
-  // w <- addWire(PropMap().set(Start,z).set(End,z+1))  
-  // pt <- b.entityType match
-  //   case BackgroundType => fromMaybe(getDiagPortType())
-  //   case Box => getBoxPortType(b.asInstanceOf[Part])
-  //   case _ => fromMaybe(ops.pure(None))
-  // p <- b.entityType match
-  //   case BackgroundType => addDiagPort(w,pt)
-  //   case Box => addBoxPort(b,w,pt)
-  //   case _ => fromMaybe(ops.pure(None))
-  // drag <- ops.ask.map(_.drag)
-  // _ <- (for 
-  //   _ <- drag.drag(
-  //     Observer(z => $m.update(
-  //       _.setSubpart(End,w,z)
-  //     ))
-  //   )
-  //   b2Opt <- hoveredPart(Box)
-  //   pt2 <- b2Opt match
-  //     case Some(b2) => getBoxPortType(b2)
-  //     case None => fromMaybe(getDiagPortType())
-  //   _ <- log(s"dragString: $pt")
-  //   p2 <- b2Opt match 
-  //     case Some(b2) => addBoxPort(b2,w,pt2)
-  //     case None => addDiagPort(w,pt2)
-  //   _ <- updateModelS(
-  //     aops.remSubpart(End,w)
-  //   )
-  //   _ <- updateModelS(
-  //     aops.remSubpart(Start,w)
-  //   )
-  // yield ()).onCancelOrError(for
-  //   _ <- ops.delay(drag.$state.set(None))
-  //   _ <- updateModelS(aops.remPart(w))
-  // yield ())
-  // _ <- update
-yield p
-
-
-def setString(strAttr: PValue[String],n: Entity): Action[DWD,Unit] = editStringProp(strAttr)(n.asInstanceOf[Part])
-
-
-
-def test(b:Entity): Action[DWD,Unit] = for
-  pt <- getDiagPortType()
-yield ()
-
-
-def logModel: Action[DWD,Unit] = for
-  m <- ops.ask.map(_.$model.now())
-  _ <- log(m.parts)
-  _ <- log(m.props)
-yield ()
 
 
 // Bindings
@@ -540,51 +250,438 @@ yield ()
 
 
 val bindings = Bindings[DWD, Unit](
-  // =========== Boxes ===============
-  // Add box
-  clickOn(ClickType.Double,MouseButton.Left,BackgroundType)
-    .flatMap(_ => addBox())
-    .map(_ => ()),
-  // Drag box
-  clickOn(ClickType.Single,MouseButton.Left,Box)
-    .flatMap(b => dragPart(b.asInstanceOf[Part])),
   // testing
-  clickOn(ClickType.Double,MouseButton.Left,Box)
-    .flatMap(b => test(b)),
-  // Set box label
-  clickOn(ClickType.Double,MouseButton.Left,Box)
-    .flatMap(setString(boxLabel,_)),
-  // Remove part
+  keyDown("t").andThen(hovered)
+    .flatMap(e => test(e)),
+  clickOn(ClickType.Single,MouseButton.Right,BackgroundType)
+    .flatMap(_ => logModel),
+  // Construction
+  clickOn(ClickType.Double,MouseButton.Left,BackgroundType)
+    .flatMap(_ => addBoxPos())
+    .map(_ => ()),
+  // // Remove part
   keyDown("Delete").andThen(hovered)
     .flatMap(e => e match
       case Some(p @ Part(_,Port)) => remPort(p)
       case Some(w @ Part(_,Wire)) => remWire(w)
       case Some(b @ Part(_,Box)) => remBox(b)
-      case _ => remPart
+      case _ => ops.pure(())
     ),
   // Drag wire
-  clickOn(ClickType.Single,MouseButton.Left,Box)
+  clickOnPart(ClickType.Single,MouseButton.Left)
     .withMods(KeyModifier.Shift)
-    .flatMap(box1 => dragString(box1))
+    .flatMap(part => dragStringFrom(part))
     .map(_ => ()),
   clickOn(ClickType.Single,MouseButton.Left,BackgroundType)
     .withMods(KeyModifier.Shift)
-    .flatMap(_ => dragString())
+    .flatMap(_ => dragStringFromDiag())
     .map(_ => ()),
-  // Pan diagram (breaks )
+  // Drag box
+  clickOn(ClickType.Single,MouseButton.Left,Box)
+    .flatMap(b => dragPart(b.asInstanceOf[Part])),
+  // Set box label
+  clickOn(ClickType.Double,MouseButton.Left,Box)
+    .flatMap(b => setString(boxLabel,b.asInstanceOf[Part])),
+  // // Pan & Zoom (breaks port placement)
   // clickOn(ClickType.Single,MouseButton.Left,BackgroundType)
   //   .flatMap(_ => dragPan),
-  clickOn(ClickType.Single,MouseButton.Right,BackgroundType)
-    .flatMap(_ => logModel),
-  keyDown("+").andThen(zoomBy(1.1)),
-  keyDown("_").andThen(zoomBy(1/1.1)),
+  // keyDown("+").andThen(zoomBy(1.1)),
+  // keyDown("_").andThen(zoomBy(1/1.1)),
 )
 
 
 
+
+// Actions
+
+// Testing
+
+
+def init(): Action[DWD,Unit] = for
+  dims <- ops.ask.map(_.dims())
+  
+  bg <- background()
+  p00 <- addPort(bg,Slot(InPort,0))
+  p01 <- addPort(bg,Slot(InPort,1))
+
+  b1 <- addBox(dims/3,PropMap().set(boxLabel,"F"))
+  p10 <- addPort(b1,Slot(InPort,0))
+  p11 <- addPort(b1,Slot(OutPort,0))
+  p12 <- addPort(b1,Slot(OutPort,1))
+
+  b2 <- addBox(2*dims/3,PropMap().set(boxLabel,"G"))
+  p20 <- addPort(b2,Slot(InPort,0))
+  p21 <- addPort(b2,Slot(InPort,1))
+  p22 <- addPort(b2,Slot(OutPort,0))
+
+  p30 <- addPort(bg,Slot(OutPort,0))
+  p31 <- addPort(bg,Slot(OutPort,1))
+  
+  _ <- addWire(p12,p20,PropMap().set(wireLabel,"X"))
+  _ <- addWire(p00,p10)
+  _ <- addWire(p11,p30)
+  _ <- addWire(p01,p21)
+  _ <- addWire(p22,p31)
+  
+
+yield ()
+
+
+def test(eOpt:Option[Entity]): Action[DWD,Unit] = eOpt match
+  case None => (for
+    _ <- log("test bg")
+    slot <- getDiagSlotPos()
+    _ <- log(slot)
+  yield ())
+  case Some(e) => e.entityType match
+    case Box => (for 
+      _ <- log(s"test box: $e")
+      m <- modelNow()
+      _ <- log(m.portsOf(e.asInstanceOf[Part],InPort).map(p => (p,m.slotOf(p))))
+      _ <- log(m.portsOf(e.asInstanceOf[Part],OutPort).map(p => (p,m.slotOf(p))))
+    yield ())
+    case Wire => (for 
+      _ <- log(s"test wire: $e")
+    yield ())
+    case Port => (for
+      _ <- log(s"test port: $e")
+    yield ())
+    case x => log(s"?? unknown test $x")
+
+
+// Creation
+
+def addBox(z:Complex,props: PropMap = PropMap()): Action[DWD,Part] = ops.ask.flatMap(
+  _ => addPart(Box,props.set(Center,z))
+)
+
+def addBoxPos(props:PropMap = PropMap()) = mousePos.flatMap(z => addBox(z,props))
+
+def addWire(src:Part,tgt:Part,props:PropMap = PropMap()): Action[DWD,Part] = (src.entityType,tgt.entityType) match
+  case (Port,Port) => (for
+    w <- ops.ask.flatMap(_ => addPart(Wire,props))
+    _ <- ops.ask.flatMap(_ => setSubpart(portWire,src,w))
+    _ <- ops.ask.flatMap(_ => setSubpart(portWire,tgt,w))
+    _ <- delay(.1)
+  yield w)
+
+def addPort(part:Part,slot:Slot,props:PropMap = PropMap()): Action[DWD,Part] = for
+  _ <- part.entityType match
+    case Box | Diag => ops.ask.flatMap(_ => addSlot(part,slot))
+  p <- part.entityType match
+    case Box => ops.ask.flatMap(_ => addPart(Port,props.set(portSlot,slot).set(portBox,part)))
+    case Diag => ops.ask.flatMap(_ => addPart(Port,props.set(portSlot,slot)))
+yield p
+
+
+def addPortPos(part:Part,props:PropMap = PropMap()): Action[DWD,Part] = for
+  slot <- part.entityType match
+    case Box => ops.ask.flatMap(_ => getBoxSlotPos(part))
+    case Diag => ops.ask.flatMap(_ => getDiagSlotPos())
+  p <- addPort(part,slot)
+yield p
+
+
+def addPortZ(z:Complex,props:PropMap = PropMap()): Action[DWD,Part] = ops.ask.flatMap(
+  _ => addPart(Port,props.set(Center,z))
+)
+
+
+
+
+// Port insertion
+
+def insertPort(port:Part, part:Part,slot:Slot): Action[DWD,Unit] = for
+  _ <- part.entityType match
+    case Box | Diag => ops.ask.flatMap(_ => addSlot(part:Part,slot:Slot))
+  _ <- part.entityType match
+    case Box => (for 
+      _ <- ops.ask.flatMap(_ => setSubpart(portSlot,port,slot))
+      _ <- ops.ask.flatMap(_ => setSubpart(portBox,port,part))
+    yield ())
+    case Diag => ops.ask.flatMap(_ => setSubpart(portSlot,port,slot))
+yield ()
+
+def insertPortPos(port:Part,part:Part): Action[DWD,Unit] = for
+  slot <- part.entityType match
+    case Box => getBoxSlotPos(part)
+    case Diag => getDiagSlotPos()
+  _ <- insertPort(port,part,slot)  
+yield ()
+
+def addSlot(part:Part,slot:Slot): Action[DWD,Unit] = for
+  m <- modelNow()
+  pslots = m.portsOf(part,slot.ptype)
+    .map(p => (p,m.slotOf(p)))
+    .collect({ case (p,Some(pslot)) if pslot.index >= slot.index => (p,pslot) })      
+  _ <- ops.ask.flatMap(_ => doAll(pslots.map({ case (p,pslot) => setSubpart(portSlot,p,pslot.incr()) })))
+yield ()
+
+
+def mergePorts(anchored:Part,dragged:Part) = for
+  m <- modelNow()
+  anchor = m.boxOf(anchored) match
+    case Some(b) => b
+    case None => m.background
+  p_fin <- m.wireOf(anchored) match
+    // Already wired
+    case Some(w) => insertPortPos(dragged,anchor)
+    // Safe to merge
+    case None => m.slotOf(anchored) match
+      case Some(slot) => (for
+        // Don't use remWire b/c it rearranges ports
+        _ <- ops.ask.flatMap(_ => updateModelS(aops.remPart(anchored)))
+        _ <- ops.ask.flatMap(_ => setSubpart(portSlot,dragged,slot))
+        _ <- m.boxOf(anchored) match
+          case Some(b) => ops.ask.flatMap(_ => setSubpart(portBox,dragged,b))
+          case None => ops.pure(())
+      yield dragged)
+      case None => insertPortPos(dragged,anchor)
+yield dragged
+
+
+// Port removal
+
+def unplug(plug: Part,socket: Part): Action[DWD,Unit] = for
+  m <- modelNow()  
+  _ <- (plug.entityType,socket.entityType) match
+    case (Port,Wire) => unplugPortWire(plug,socket)
+    case (Wire,Port) => unplugPortWire(socket,plug)
+    case (Port,Box) => unplugPortBox(plug,socket)
+    case (Box,Port) => unplugPortBox(socket,plug)
+    case (Port,Diag) => unplugPortDiag(plug)
+    case (Diag,Port) => unplugPortDiag(socket)
+yield ()
+
+def unplugPortWire(p:Part,w:Part) = for
+  m <- modelNow()
+  if m.wireOf(p) == Some(w)
+  _ <- ops.ask.flatMap(_ => remSubpart(portWire,p))
+yield ()
+
+def unplugPortBox(p:Part,b:Part) = for 
+  m <- modelNow()
+  if m.boxOf(p) == Some(b)
+  _ <- ops.ask.flatMap(_ => remSubpart(portBox,p))
+  slotOpt = m.slotOf(p)
+  _ <- slotOpt match
+    case None => ops.pure(())
+    case Some(slot) => (for
+      _ <- ops.ask.flatMap(_ => remSubpart(portSlot,p))
+      _ <- ops.ask.flatMap(_ => removeSlot(b,slot))
+    yield ())
+yield ()
+
+def unplugPortDiag(p:Part) = for 
+  m <- modelNow()
+  if m.boxOf(p) == None
+  slot = m.slotOf(p)
+  _ <- slot match
+    case None => ops.pure(())
+    case Some(sl) => (for
+      _ <- ops.ask.flatMap(_ => remSubpart(portSlot,p))
+      _ <- ops.ask.flatMap(_ => removeSlot(m.background,sl))
+    yield ())
+yield ()
+
+def removeSlot(part:Part,slot:Slot): Action[DWD,Unit] = for
+  m <- modelNow()
+  pslots = m.portsOf(part,slot.ptype)
+    .map(p => (p,m.slotOf(p)))
+    .collect({ case (p,Some(pslot)) if pslot.index > slot.index => (p,pslot) })
+  _ <- ops.ask.flatMap(_ => doAll(pslots.map({ case (p,pslot) => setSubpart(portSlot,p,pslot.decr())})))
+yield ()
+
+
+// Dragging
+
+
+
+def dragString(): Action[DWD,Part] = for
+  bg <- background()
+  w <- dragStringFrom(bg)
+yield w
+
+
+def dragStringFrom(src:Part): Action[DWD,Part] = src.entityType match
+  case Box => dragStringFromBox(src)
+  case Diag => dragStringFromDiag()
+  case Port => dragStringFromPort(src)
+
+def dragStringFromBox(b:Part): Action[DWD,Part] = for
+  p1 <- addPortPos(b)
+  p2 <- mousePos.flatMap(z => addPortZ(z))
+  w <- addWire(p1,p2)
+  _ <- dragPort(p2)
+yield w
+
+def dragStringFromDiag(): Action[DWD,Part] = for
+  bg <- background()
+  p1 <- addPortPos(bg)
+  p2 <- mousePos.flatMap(z => addPortZ(z))
+  w <- addWire(p1,p2)
+  _ <- dragPort(p2)
+yield w
+
+
+def dragStringFromPort(p1:Part): Action[DWD,Part] = for
+  m <- modelNow()
+  w <- m.wireOf(p1) match
+    // Already wired => unplug & drag
+    case Some(w) => (for
+      _ <- m.boxOf(p1) match
+        case Some(b) => unplug(p1,b)
+        case None => unplug(p1,m.background)    
+      z <- mousePos
+      _ <- ops.ask.flatMap(_ => setSubpart(Center,p1,z))
+      _ <- dragPort(p1)
+    yield w)
+    // No wire => add new port & drag
+    case None => (for
+      p2 <- mousePos.flatMap(z => addPortZ(z))
+      w <- addWire(p1,p2)
+      _ <- dragPort(p2)
+    yield w)
+yield w
+
+
+def dragPort(p2:Part): Action[DWD,Unit] = for
+  $m <- ops.ask.map(_.$model)
+  z0 <- mousePos
+  drag <- ops.ask.map(_.drag)
+  _ <- (for 
+    _ <- drag.drag(
+      Observer(z => $m.update(
+        _.setSubpart(Center,p2,z + 10*(z0 - z).normalize)
+          .setSubpart(Direction,p2,(z - z0).normalize)
+      ))
+    )
+    target <- hovered
+    _ <- target match
+      case None => insertPortPos(p2,$m.now().background)
+      case Some(b2) => b2.entityType match
+        case Box => insertPortPos(p2,b2.asInstanceOf[Part])
+        case Port => mergePorts(b2.asInstanceOf[Part],p2)
+    _ <- updateModelS(
+      aops.remSubpart(Center,p2)
+    )
+    _ <- updateModelS(
+      aops.remSubpart(Direction,p2)
+    )
+  yield ()).onCancelOrError(for
+    _ <- ops.delay(drag.$state.set(None))
+  yield ())
+  _ <- update
+yield ()
+
+
+// Deleting
+
+def remPort(p: Part): Action[DWD, Unit] = for
+  m <- modelNow()
+  boxOpt = m.boxOf(p)
+  _ <- boxOpt match
+    case Some(b) => remBoxPort(p,b)
+    case None => remDiagPort(p)
+yield ()
+
+def remBoxPort(p:Part,b:Part) = for
+  m <- modelNow()
+  if m.boxOf(p) == Some(b)
+  _ <- unplug(p,b)
+  _ <- insertPortPos(p,m.background)
+yield ()
+
+def remDiagPort(p:Part) = for
+  m <- modelNow()
+  wOpt = m.wireOf(p)
+  _ <- wOpt match
+    case None => ops.pure(())
+    case Some(w) => remWire(w)
+  _ <- updateModelS(aops.remPart(p))
+yield ()
+
+def remWire(w: Part): Action[DWD,Unit] = for
+  m <- modelNow()
+  ps = m.portsOf(w)
+  _ <- ops.ask.flatMap(_ => doAll(ps.map(p =>
+    unplug(p,w)  
+  )))
+  _ <- ops.ask.flatMap(_ =>
+    updateModelS(aops.remPart(w))
+  )
+yield ()
+
+def remBox(b: Part): Action[DWD,Unit] = for
+  m <- modelNow()
+  bg <- background()
+  ps = m.portsOf(b)
+  _ <- doAll(ps.map(p => (for
+    _ <- ops.ask.flatMap(_ => remSubpart(portBox,p))
+    _ <- ops.ask.flatMap(_ => insertPortPos(p,bg))
+  yield ())))
+  _ <- ops.ask.flatMap(_ =>
+    updateModel(_.remPart(b))
+  )
+yield ()
+
+
+
+// Helpers
+
+def modelNow() = ops.ask.map(_.$model.now())
+def background() = modelNow().map(_.background)
+
+def setString(strAttr: PValue[String],pt: Part): Action[DWD,Unit] = editStringProp(strAttr)(pt)
+
+
+
+def logModel: Action[DWD,Unit] = for
+  m <- modelNow()
+  _ <- log(m.parts)
+  _ <- doAll(m.props.toSeq.map(log))
+yield ()
+
+
+
+// Hacky. Doesn't check box ID b/c I don't know how to find it
+def getBoxDims(b:Part): Action[DWD,Complex] = for
+  rects <- ops.ask.map(
+    _.playArea.ref.children.flatMap(_.children).flatMap(_.children)
+      .filter(_.nodeName=="rect").map(_.asInstanceOf[SVGRectElement])
+  )
+  dims = rects.map(r => Complex(r.width.baseVal.value,r.height.baseVal.value))
+  bs <- modelNow().map(_.boxes)
+yield 
+  bs.zip(dims).find({case (bi,d) => bi==b}) match
+    case Some((_,z)) => z
+    case None => 
+      Complex(40,40)
+
+def getBoxSlotPos(b:Part): Action[DWD,Slot] = for
+  m <- modelNow()
+  dims <- getBoxDims(b)
+  z <- mousePos
+  o = m.orientation
+  c = m.props(b)(Center)
+  ptype = o.getBoxPortType(z - c)
+  n_pts = m.portsOf(b,ptype).size
+yield o.getSlot(z-c,ptype,n_pts,dims)
+
+def getDiagSlotPos(): Action[DWD,Slot] = for
+  m <- modelNow()
+  dims <- ops.ask.map(_.dims())
+  z <- mousePos
+  o = m.orientation
+  c = dims/2
+  ptype = o.getBoxPortType(z - c)
+  n_pts = m.portsOf(m.background,ptype).size
+yield o.getSlot(z-c,ptype,n_pts,dims)
+
+
 // =========== Rendering =======================
 
-// Entity & Prop extraction
+// Part & Prop extraction
 
 def extractBoxes(d: DWD): List[(Part,PropMap)] = d.boxes.map(b => 
   val o = d.orientation
@@ -598,60 +695,45 @@ def extractBoxes(d: DWD): List[(Part,PropMap)] = d.boxes.map(b =>
 
 
 def extractBoxPorts(d: DWD,sprites: Sprites): List[(Part,PropMap)] = d.boxes.toList.flatMap(b =>
-    val (spr,props) = sprites(b)
-    val (_,dims) = BoxSprite().geom(props)
-    val c: Complex = props(Center)
-    val o = d.orientation
+  val (spr,props) = sprites(b)
+  val (_,dims) = BoxSprite().geom(props)
+  val c: Complex = props(Center)
+  val o = d.orientation
 
-    d.portsOf(b).toList.map(p =>
-      val (ptype,slot) = portSlotB(d,p)
+  d.portsOf(b).toList.map(p => (p,d.slotOf(p))).collect({
+    case (p,Some(pslot)) =>
+      val Slot(ptype,slot) = pslot
       val n_ports = d.portsOf(b,ptype).size
       val brdr = border(o,ptype)
       val ppos = c + portDelta(brdr,dims,slot,n_ports)
 
       (p,PropMap()
         .set(Center,ppos)
-        .set(Content,"")
+        .set(Content,s"")
         .set(Direction,brdr.dir)
       )
-    )
+  })
 )
 
-def extractDiagPorts(d: DWD,sprites: Sprites,dims:Complex): List[(Part,PropMap)] = 
-  val c = dims/2
+
+def extractDiagPorts(d: DWD,sprites: Sprites,dims: Complex): List[(Part,PropMap)] = 
+  val c: Complex = dims/2
   val o = d.orientation
- 
-  d.portsOf(Background).toList.map(p =>
-  
-    val (ptype,slot) = portSlot(d,p)
-    val n_ports = d.portsOf(Background,ptype).size
-    val brdr = border(o,ptype)
-    val ppos = c + portDelta(brdr,dims,slot,n_ports)
+  val bg = d.background
 
-    
+  d.portsOf(bg).toList.map(p => 
+    (d.slotOf(p),d.props(p).get(Center)) match
+      case (Some(pslot),None) =>
+        val Slot(ptype,slot) = pslot
+        val n_ports = d.portsOf(bg,ptype).size
+        val brdr = border(o,ptype)
+        val ppos = c + portDelta(brdr,dims,slot,n_ports)
 
-    (p,PropMap()
-      .set(Center,ppos)
-      .set(Content,"")
-      // Boundary inputs point in the opposite direction from box inputs
-      .set(Direction,-brdr.dir)           
-    )
+        (p,PropMap().set(Center,ppos).set(Content,s"").set(Direction,-brdr.dir))
+      case (_,Some(z)) => (p,PropMap().set(Center,z).set(Content,s""))
+      case _ => (p,PropMap().set(Center,dims/2).set(Content,"No slot"))
   )
-
-
-// def extractDiagPorts(d: DWD,sprites: Sprites): List[(Part,PropMap)] = 
-//   val (spr,props) = sprites(Background)
-//   // val c: Complex = props(Center)
-//   val o = d.orientation
-
-//   val boxports = d.portsOf(b).toList.zipWithIndex.map((p,k) =>
-//     val (ptype,slot) = portSlot(d,p)
-//     val n_ports = d.portsOf(b,ptype).size
-//     val brdr = border(o,ptype)
-//     val ppos = c + portDelta(brdr,dims,slot,n_ports)
-
-//     (p,PropMap().set(Center,ppos))
-// )
+        
 
 
 def border(o: Orientation,pt: PortType): BoxBorder = (o,pt) match
@@ -670,77 +752,31 @@ def portDelta(brdr: BoxBorder, dims: Complex,slot: Int,n_ports: Int) =
     case Right => Complex(dims.x/2,frac * dims.y)
 
 
-
-def portSlot(d: DWD, e: Entity): (PortType,Int) = e match
-  case b @ Part(_,Box) => portSlotB(d,b)
-  case _ => portSlotD(d,Background)
-
-def portSlotB(d: DWD, p: Entity): (PortType,Int) = (for
-  pt <- d.trySubpart(ptType,p.asInstanceOf[Part])
-  b <- d.trySubpart(portBox,p.asInstanceOf[Part])
-yield 
-  (pt,d.portsOf(b,pt).toSeq.indexOf(p))
-) match 
-  case Some(pair) => pair
-  case None => (OutPort,0)
+def extractWires(d: DWD,sprites:Sprites) = d.wires.toList
+  .map(w => (w,d.portsOf(w)))
+  .map({
+    case (w,Seq(s,t)) => (w,wireProps(d,w,s,t,sprites))
+    case (w,badports) => 
+      println(s"Bad port assignment: $w -> ${d.portsOf(w)}")
+      (w,PropMap().set(Start,Complex(0,0)).set(End,Complex(100,100)))
+  })
 
 
-def portSlotD(d: DWD, p: Entity): (PortType,Int) = d.trySubpart(ptType,p.asInstanceOf[Part])
-  .map(pt =>
-    val slots = d.portsOf(Background,pt).toSeq
-    (pt,slots.indexOf(p))
-  ) match 
-    case Some(pair) => pair
-    case None => (OutPort,0)
+def wireProps(d: DWD,w: Part,s: Part, t: Part, sprites: Sprites): PropMap = {
+  val (_,sprops) = sprites(s)
+  val (_,tprops) = sprites(t)
 
-
-def extractWires(d: DWD,sprites:Sprites) = d.wires.toList.map(w =>
-  d.portsOf(w).toSeq match
-    case Seq(s,t,u @_*) => 
-      if u.length > 0 
-        then println("Warning: extra wire ports: " + d.portsOf(w))
-      (w,wireProps(d,s,t,sprites))
-    case Seq(s) => (w,dragProps(d,s,w,sprites))
-    case _ => (w,dragProps(d,w,sprites))
-
-)
-def dragProps(d: DWD,w:Part,sprites: Sprites) = {
-  val zs = d.trySubpart(Start,w).getOrElse(Complex(0,0))
-  val zt = d.trySubpart(End,w).getOrElse(Complex(10,10))
-  val dir = if zs == zt then one else (zt-zs).normalize
-  val dzs = d.trySubpart(StartDir,w).getOrElse(dir)
+  val zs = sprops(Center)
+  val zt = tprops(Center)
+  val dzs = sprops.get(Direction).getOrElse((zt - zs).normalize)
+  val dzt = tprops.get(Direction).getOrElse((zs - zt).normalize)
+  val label = d.labelOf(w).getOrElse(s"${w.ob}${w.id}")
 
   PropMap()
-    .set(Start,zs)
-    .set(StartDir,dzs)
-    .set(End,zt - 10*dir)
-    .set(Bend,0)
+    .set(Start,zs).set(End,zt)
+    .set(StartDir,dzs).set(EndDir,dzt)
+    .set(WireLabel,label)
 }
-
-def dragProps(d: DWD,s: Part,w:Part,sprites: Sprites) = {
-  val zs = sprites(s)._2.get(Center).getOrElse(Complex(0,0))
-  val zt = d.trySubpart(End,w).getOrElse(Complex(10,10))
-  val dir = if zs == zt then Complex(1,0) else (zt-zs).normalize
-  val dzs = sprites(s)._2.get(Direction).getOrElse(dir)
-
-  PropMap()
-    .set(Start,zs)
-    .set(StartDir,dzs)
-    .set(End,zt - 10*dir)
-    .set(Bend,0)
-}
-
-
-def wireProps(d: DWD,s: Part, t: Part, sprites: Sprites) = 
-  val (sspr,sprops) = sprites(s)
-  val (tspr,tprops) = sprites(t)  
-
-  PropMap()
-    .set(Start,sprops(Center))
-    .set(StartDir,sprops(Direction))
-    .set(End,tprops(Center))
-    .set(EndDir,tprops(Direction))
-    .set(Bend,100)
 
 
   // Middleware (controllers & defaults)
@@ -770,11 +806,11 @@ def boxPortMiddleware(
   WithDefaults(PropMap() 
     + (Stroke,"none")
     + (Fill, "red")
-    + (MinimumWidth, 10)
-    + (MinimumHeight, 10)
+    + (MinimumWidth, 12)
+    + (MinimumHeight, 12)
     + (InnerSep, 5)
     + (FontSize, 16)
-    + (Style, "filter: opacity(0.7)")
+    + (Style, "filter: opacity(0.5)")
   ),
   Hoverable(hover,MainHandle,
     PropMap() + (Style, "filter: opacity(1)")
@@ -789,11 +825,11 @@ def diagPortMiddleware(
   WithDefaults(PropMap() 
     + (Stroke,"none")
     + (Fill, "blue")
-    + (MinimumWidth, 15)
-    + (MinimumHeight, 15)
+    + (MinimumWidth, 18)
+    + (MinimumHeight, 18)
     + (InnerSep, 10)
     + (FontSize, 16)
-    + (Style, "filter: opacity(0.7)")
+    + (Style, "filter: opacity(0.5)")
   ),
   Hoverable(hover,MainHandle,
     PropMap() + (Style, "filter: opacity(1)")
@@ -805,9 +841,10 @@ def wireMiddleware(
   hover:HoverController, 
   mouse:MouseController
 ) = Stack(
-  WithDefaults(PropMap() + (Stroke,"black")),
+  WithDefaults(PropMap() + (Stroke,"black") + (Bend,100)
+),
   Hoverable(hover,MainHandle,
-    PropMap() + (Style, "filter: opacity(0.7)")
+    PropMap() + (Style, "filter: opacity(1)")
   ),
   Clickable(mouse, MainHandle)
 )
@@ -815,56 +852,25 @@ def wireMiddleware(
 // Sprite makers
 
 
-def boxMaker(
-  hover:HoverController,
-  mouse:MouseController
-) = SpriteMaker[DWD](
-  BoxSprite(),
-  (d:DWD,spr) => extractBoxes(d),
-  boxMiddleware(hover,mouse)
-)
+def boxMaker(hover:HoverController,mouse:MouseController) = 
+  SpriteMaker[DWD](BoxSprite(),(d:DWD,spr) => extractBoxes(d),boxMiddleware(hover,mouse))
 
-def boxPortMaker(
-  hover:HoverController,
-  mouse:MouseController
-) = SpriteMaker[DWD](
-  Disc(),
-  (d:DWD,spr) => extractBoxPorts(d,spr),
-  boxPortMiddleware(hover,mouse)
-)
+def boxPortMaker(hover:HoverController,mouse:MouseController) = 
+  SpriteMaker[DWD](Disc(),(d:DWD,spr) => extractBoxPorts(d,spr),boxPortMiddleware(hover,mouse))
 
-def diagPortMaker(
-  hover:HoverController,
-  mouse:MouseController,
-  dims:Complex
-) = SpriteMaker[DWD](
-  Disc(),
-  (d:DWD,spr) => extractDiagPorts(d,spr,dims),
-  diagPortMiddleware(hover,mouse)
-)
+def diagPortMaker(hover:HoverController,mouse:MouseController,dims:Complex) = 
+  SpriteMaker[DWD](Disc(),(d:DWD,spr) => extractDiagPorts(d,spr,dims),diagPortMiddleware(hover,mouse))
 
-def wireMaker(hover:HoverController,mouse:MouseController) = SpriteMaker[DWD](
-  WireSprite(),
-  extractWires,
-  wireMiddleware(hover,mouse)
-)
+def wireMaker(hover:HoverController,mouse:MouseController) = 
+  SpriteMaker[DWD](WireSprite(),extractWires,wireMiddleware(hover,mouse))
 
 
 // // DOM object (svg)
 
-def renderApp(
-  $appModel: Var[DWD],
-  hover: HoverController,
-  mouse: MouseController,
-  dims: Complex
-) = {
-  val spriteMaps = SpriteMaps[DWD](
-    $appModel.signal,                     // : Signal[DWD]
-    List(
-      boxMaker(hover,mouse),
-      boxPortMaker(hover,mouse),
-      diagPortMaker(hover,mouse,dims),
-      wireMaker(hover,mouse),
+def renderApp($appModel: Var[DWD],hover: HoverController,mouse: MouseController,dims: Complex) = {
+  val spriteMaps = SpriteMaps[DWD]($appModel.signal,
+    List(boxMaker(hover,mouse),boxPortMaker(hover,mouse),
+      diagPortMaker(hover,mouse,dims),wireMaker(hover,mouse)
     )
   )
   
@@ -874,15 +880,14 @@ def renderApp(
 }
 
 
+
+
 //================ Main =====================
 
 val serializer = ACSet.rw[StringSchema]
 
 object Main {
 
-  // val d: DWD = buildGraph()
-
-  
 
   @JSExportTopLevel("main")
   def main(el: dom.Element): Unit = {
@@ -891,7 +896,7 @@ object Main {
       dims <- ops.ask.map(_.dims())
       hover <- ops.ask.map(_.hover)
       mouse <- ops.ask.map(_.mouse)
-      // _ <- initialize(buildDiag())
+      _ <- ops.ask.flatMap(_ => init())
       _ <- addRelative(renderApp($model,hover,mouse,dims))
       _ <- bindings.runForever
     } yield ()
