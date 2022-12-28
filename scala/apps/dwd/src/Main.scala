@@ -644,7 +644,7 @@ yield ()
 
 
 
-// Hacky. Doesn't check box ID b/c I don't know how to find it
+// !!! Fix me !!! playArea is gone
 def getBoxDims(b:Part): Action[DWD,Complex] = for
   rects <- ops.ask.map(
     _.playArea.ref.children.flatMap(_.children).flatMap(_.children)
@@ -897,14 +897,14 @@ object Main {
       hover <- ops.ask.map(_.hover)
       mouse <- ops.ask.map(_.mouse)
       _ <- ops.ask.flatMap(_ => init())
-      _ <- addRelative(renderApp($model,hover,mouse,dims))
+      _ <- addSceneElt(renderApp($model,hover,mouse,dims))
       _ <- bindings.runForever
     } yield ()
 
     dom.document.querySelector("head")
       .appendChild(styleTag().ref)
 
-    plutoMain[DWD](el,DWD(),serializer,action)
+    plutoMain[DWD](el,DWD(),serializer,action,Complex(600,400))
   }
 }
 

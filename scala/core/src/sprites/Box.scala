@@ -98,14 +98,14 @@ case class Box() extends Sprite {
         val slope1 = (y1/x1).abs
         val slope2 = (y2/x2).abs
         if slope2 >= slope1 
-          then 
-            if y2 >= 0 
-            then Complex(0,1)
-            else Complex(0,-1)
-          else 
-            if x2 >= 0
-            then Complex(1,0)
-            else Complex(-1,0)
+        then 
+          if y2 >= 0 
+          then Complex(0,1)
+          else Complex(0,-1)
+        else 
+          if x2 >= 0
+          then Complex(1,0)
+          else Complex(-1,0)
   }
 
 

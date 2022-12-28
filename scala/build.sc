@@ -79,7 +79,7 @@ object apps extends Module {
   object dwd extends SemagramsApp {
     def desc = "A string diagram editor"
 
-    def artifactName = "semagrams-strings"
+    def artifactName = "semagrams-dwd"
   }
 
 
