@@ -10,6 +10,7 @@ import semagrams.actions._
 import semagrams.controllers._
 import semagrams.sprites.{Box as BoxSprite,Wire as WireSprite,_}
 import semagrams.util._
+import semagrams.widgets._
 import Complex.{one,im}
 import scala.math.max
 
@@ -873,10 +874,24 @@ def renderApp($appModel: Var[DWD],hover: HoverController,mouse: MouseController,
       diagPortMaker(hover,mouse,dims),wireMaker(hover,mouse)
     )
   )
-  
   svg.g(
-    spriteMaps.attach
+    spriteMaps.attach,
+    wrappedHtml(
+      button("Copy to clipboard",
+        // disabled <-- disableBtnVar,
+        typ:="button",
+        onClick --> (_ => {
+          dom.window.navigator.clipboard.writeText(
+            $appModel.now().toSerializable.toString()
+          )
+          println("copied to clipboard")
+        })
+      ),
+      Complex(0,0),
+      Complex(100,100)
+    )
   )
+
 }
 
 

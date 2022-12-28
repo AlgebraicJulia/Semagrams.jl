@@ -246,7 +246,7 @@ def runUntil[Model](
   _ <- target.cancel
 } yield {}
 
-def addRelative[Model](child: SvgElement): Action[Model, Unit] = for {
+def addRelative[Model](child: Element): Action[Model, Unit] = for {
   childCommands <- ops[Model].ask.map(_.relativeChildCommands)
   _ <- ops.delay(childCommands.onNext(CollectionCommand.Append(child)))
 } yield ()
