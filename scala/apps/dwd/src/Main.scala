@@ -875,7 +875,20 @@ def renderApp($appModel: Var[DWD],hover: HoverController,mouse: MouseController,
   )
   
   svg.g(
-    spriteMaps.attach
+    spriteMaps.attach,
+    wrappedHtml(
+      button("Copy to clipboard",
+        typ:="button",
+        onClick --> (_ => {
+          dom.window.navigator.clipboard.writeText(
+            $appModel.now().toSerializable.toString()
+          )
+          println("copied to clipboard")
+        })
+      ),
+      Complex(0,0),
+      Complex(100,100)
+    )
   )
 }
 
