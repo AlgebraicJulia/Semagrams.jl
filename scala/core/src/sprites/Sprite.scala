@@ -37,4 +37,9 @@ trait Sprite {
       data: PropMap,
       dir: Complex
   ): Complex
+
+  def boundaryNormal(
+    data: PropMap,
+    dir: Complex
+  ): Complex
 }

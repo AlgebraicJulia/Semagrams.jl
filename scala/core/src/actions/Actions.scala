@@ -53,6 +53,15 @@ extension [Model, A](action: Action[Model, A]) {
     Action[Model, A](es =>
       action(es).onCancel(fin(es).map(_ => ())).handleErrorWith(_ => fin(es))
     )
+
+  // I'm sure there is a better way to write this
+  def withFilter(p: A => Boolean) = for
+    a <- action
+    _ <- p(a) match
+      case true => ops[Model].pure(())
+      case false => fromMaybe(ops[Model].pure(None))
+  yield a
+
 }
 
 object Action {
@@ -278,3 +287,13 @@ def dragPan[Model]: Action[Model, Unit] = for {
     transform.$state.set(t.shift(transform.logicalToScreen(p) - pos))
   }))
 } yield ()
+
+def log[Model](x:Any): Action[Model,Unit] = ops[Model].pure(println(x.toString()))
+
+def doAll[Model,A](as:Seq[Action[Model,A]]): Action[Model,Seq[A]] = as match
+  case Seq() => ops.pure(Seq())
+  case Seq(head,tail @_*) => for {
+    a <- head
+    as <- doAll(tail)
+  } yield a +: as
+

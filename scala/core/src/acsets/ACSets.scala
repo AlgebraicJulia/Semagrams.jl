@@ -165,8 +165,13 @@ trait ACSetOps[S: IsSchema] {
   def setSubpart(f: Property, x: Part, y: f.Value): State[ACSet[S], Unit] =
     State.modify(_.setSubpart(f, x, y))
 
+  def setSubparts(x: Part, pm: PropMap): State[ACSet[S], Unit] =
+    State.modify(_.setSubparts(x,pm))
+
   def remPart(x: Part): State[ACSet[S], Unit] =
     State.modify(_.remPart(x))
+
+  def remSubpart(f: Property, x: Part): State[ACSet[S],Unit] = State.modify(_.remSubpart(f,x))
 
   def subpartLens(f: Attr, x: Part) =
     Lens[ACSet[S], f.Value](_.subpart(f, x))(y => s => s.setSubpart(f, x, y))
