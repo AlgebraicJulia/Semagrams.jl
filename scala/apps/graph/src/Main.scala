@@ -8,6 +8,8 @@ import com.raquo.laminar.api.L._
 import cats.effect._
 import scala.scalajs.js.annotation.JSExportTopLevel
 
+case class LabelFor(e: Entity) extends Entity
+
 def bindings(es: EditorState, g: Var[Graph], ui: UIState) = {
   val a = Actions(es, g, ui)
 
@@ -37,6 +39,7 @@ object Main {
           lg,
           Seq(
             ACSetEntitySource(V, BasicDisc(es)),
+            ACSetEntitySource(V, BasicBox(es)),
             ACSetEdgeSource(E, Src, Tgt, BasicArrow(es))
           )
         )

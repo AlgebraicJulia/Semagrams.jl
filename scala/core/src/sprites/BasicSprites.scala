@@ -11,6 +11,14 @@ def BasicDisc(es: EditorState) = WithMiddleware(
   )
 )
 
+def BasicBox(es: EditorState) = WithMiddleware(
+  Box(),
+  Seq(
+    Hoverable(es.hover, MainHandle, PropMap() + (Fill, "lightgrey")),
+    Clickable(es.mouse, MainHandle)
+  )
+)
+
 def BasicArrow(es: EditorState) = WithMiddleware(
   Arrow(),
   Seq(

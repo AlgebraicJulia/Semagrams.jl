@@ -6,35 +6,6 @@ import semagrams._
 import semagrams.text._
 import semagrams.util._
 
-extension [A, B](s: L.Signal[Tuple2[A, B]])
-  def splitTuple: Tuple2[L.Signal[A], L.Signal[B]] = (s.map(_._1), s.map(_._2))
-
-object Box {
-  def geom(data: PropMap): (Complex, Complex) = {
-    val textBox = boxSize(data(Content), data(FontSize))
-    val center = data(Center)
-    val innerSep = data(InnerSep)
-    val width = data(MinimumWidth).max(textBox.x + innerSep)
-    val height = data(MinimumHeight).max(textBox.y + innerSep)
-    val dims = Complex(width, height)
-    val pos = center - dims / 2
-    (pos, dims)
-  }
-
-  def geomUpdater(updates: L.Signal[PropMap]) = {
-    val (pos, dims) = updates.map(geom).splitTuple
-    List(xy <-- pos, wh <-- dims)
-  }
-
-  def styleUpdater(data: L.Signal[PropMap]) = {
-    List(
-      fill <-- data.map(_(Fill)),
-      stroke <-- data.map(_(Stroke)),
-      style <-- data.map(_.get(Style).getOrElse(""))
-    )
-  }
-}
-
 case class Disc(defaults: PropMap) extends Sprite {
   def radius(data: PropMap): Double = {
     val textBox = boxSize(data(Content), data(FontSize))
