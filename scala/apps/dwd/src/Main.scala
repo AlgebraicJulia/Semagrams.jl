@@ -646,16 +646,16 @@ yield ()
 
 // !!! Fix me !!! playArea is gone
 def getBoxDims(b:Part): Action[DWD,Complex] = for
-  rects <- ops.ask.map(
-    _.playArea.ref.children.flatMap(_.children).flatMap(_.children)
-      .filter(_.nodeName=="rect").map(_.asInstanceOf[SVGRectElement])
-  )
-  dims = rects.map(r => Complex(r.width.baseVal.value,r.height.baseVal.value))
+  // rects <- ops.ask.map(
+  //   _.playArea.ref.children.flatMap(_.children).flatMap(_.children)
+  //     .filter(_.nodeName=="rect").map(_.asInstanceOf[SVGRectElement])
+  // )
+  // dims = rects.map(r => Complex(r.width.baseVal.value,r.height.baseVal.value))
   bs <- modelNow().map(_.boxes)
 yield 
-  bs.zip(dims).find({case (bi,d) => bi==b}) match
-    case Some((_,z)) => z
-    case None => 
+  // bs.zip(dims).find({case (bi,d) => bi==b}) match
+  //   case Some((_,z)) => z
+  //   case None => 
       Complex(40,40)
 
 def getBoxSlotPos(b:Part): Action[DWD,Slot] = for
