@@ -11,7 +11,7 @@ import semagrams.text._
 extension [A, B](s: L.Signal[Tuple2[A, B]])
   def splitTuple: Tuple2[L.Signal[A], L.Signal[B]] = (s.map(_._1), s.map(_._2))
 
-case class Box(defaults: PropMap) extends Sprite {
+case class Box(props: PropMap) extends Sprite {
   import Box._
 
   def render(
@@ -19,20 +19,23 @@ case class Box(defaults: PropMap) extends Sprite {
       init: PropMap,
       updates: L.Signal[PropMap]
   ): RenderedSprite = {
+    println(props)
+    val data = updates.map(props ++ _)
+
     val box = rect(
-      geomUpdater(updates),
-      styleUpdater(updates)
+      geomUpdater(data),
+      styleUpdater(data)
     )
 
     val text = L.svg.text(
-      xy <-- updates.map(_(Center)),
+      xy <-- data.map(_(Center)),
       L.svg.tspan(
-        L.child <-- updates.map(p => L.textToNode(p(Content))),
+        L.child <-- data.map(p => L.textToNode(p(Content))),
         textAnchor := "middle",
         dominantBaseline := "central",
         style := "user-select: none"
       ),
-      fontSize <-- updates.map(_(FontSize).toString)
+      fontSize <-- data.map(_(FontSize).toString)
     )
 
     val root = g(
@@ -103,5 +106,7 @@ object Box {
     + (MinimumHeight, 40)
 
   def apply() = new Box(defaults)
+
+  def apply(props: PropMap) = new Box(defaults ++ props)
 
 }

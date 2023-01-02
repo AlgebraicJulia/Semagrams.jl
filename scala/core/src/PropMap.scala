@@ -15,6 +15,7 @@ enum GenericProperty[T: ReadWriter] extends Property {
   case FontSize extends GenericProperty[Double]
   case Content extends GenericProperty[String]
   case ImageURL extends GenericProperty[String]
+  case Label extends GenericProperty[String]
   case Center extends GenericProperty[Complex]
   case Start extends GenericProperty[Complex]
   case End extends GenericProperty[Complex]

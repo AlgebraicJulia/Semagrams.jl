@@ -4,6 +4,7 @@ import com.raquo.laminar.api.L._
 import cats.effect._
 import org.scalajs.dom
 import scala.scalajs.js.annotation._
+import scala.scalajs.js
 import com.raquo.domtypes.generic.codecs.StringAsIsCodec
 
 def baseSvg() = {
@@ -29,15 +30,15 @@ def baseSvg() = {
 }
 
 abstract class Semagram {
-  def run(es: EditorState, init: String): IO[Unit]
+  def run(es: EditorState, init: Option[String]): IO[Unit]
 
   @JSExport
-  def main(div: dom.Element, init: String) = {
+  def main(div: dom.Element, init: js.UndefOr[String]) = {
     val base = baseSvg()
     val es = new EditorState(
       base
     )
     render(div, base)
-    run(es, init).unsafeRunAndForget()(unsafe.IORuntime.global)
+    run(es, init.toOption).unsafeRunAndForget()(unsafe.IORuntime.global)
   }
 }

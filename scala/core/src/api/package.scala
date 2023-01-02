@@ -30,12 +30,14 @@ export layout.{
 export sprites.{
   Arrow,
   Disc,
+  Box,
   WithMiddleware,
   Hoverable,
   Clickable,
   ACSetEntitySource,
   ACSetEdgeSource,
   BasicDisc,
+  BasicBox,
   BasicArrow
 }
 export ui.{

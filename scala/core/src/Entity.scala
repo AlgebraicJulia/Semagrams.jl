@@ -46,6 +46,12 @@ case class EntitySource[A](
     EntitySource[A]((a, m) =>
       entities(a, m).map((e, s, p) => (e, s, p ++ f(e, p, m)))
     )
+
+  def updateEntities(f: (Entity, PropMap) => (Entity, PropMap)) = {
+    EntitySource[A]((a, m) =>
+      entities(a, m).map((e, s, p) => { val (e1, p1) = f(e,p); (e1, s, p1) })
+    )
+  }
 }
 
 case object Background extends Entity

@@ -17,6 +17,11 @@ def bindings(es: EditorState, g: Var[Graph], ui: UIState) = {
     keyDown("a").andThen(a.add(V, PropMap().set(MinimumWidth, 60).set(MinimumHeight, 60))),
     keyDown("d").andThen(a.del),
     keyDown("e").andThen(a.importExport),
+    keyDown("l").andThen(
+      for {
+        mv <- es.hoveredPart(V)
+        _ <- mv.map(v => a.edit(Label, false)(v)).getOrElse(IO(()))
+      } yield ()),
     clickOnPart(MouseButton.Left, V).withMods().flatMap(a.drag),
     clickOnPart(MouseButton.Left, V)
       .withMods(KeyModifier.Shift)
@@ -29,9 +34,20 @@ object Main {
   @JSExportTopLevel("GraphApp")
   object GraphApp extends Semagram {
 
-    def run(es: EditorState, init: String): IO[Unit] = {
+    def run(es: EditorState, init: Option[String]): IO[Unit] = {
+      val initg = init match {
+        case Some(s) => read[Graph](s)(ACSet.rw)
+        case None => Graph()
+      }
+      val LabelBox = Box(
+        PropMap()
+          + (MinimumHeight, 8)
+          + (MinimumWidth, 8)
+          + (InnerSep, 0)
+          + (OuterSep, 5)
+      )
       for {
-        g <- IO(Var(read[Graph](init)(ACSet.rw)))
+        g <- IO(Var(initg))
         lg <- IO(
           g.signal.map(assignBends[SchGraph.type](Map(E -> (Src, Tgt)), 0.35))
         )
@@ -39,7 +55,15 @@ object Main {
           lg,
           Seq(
             ACSetEntitySource(V, BasicDisc(es)),
-            ACSetEntitySource(V, BasicBox(es)),
+            ACSetEntitySource[SchGraph.type](V, LabelBox).updateEntities(
+              (e,p) => (
+                LabelFor(e),
+                PropMap()
+                  + (Center, p(Center) + Complex(0,-70))
+                  + (Content, p.get(Label).getOrElse(""))
+                  + (Stroke, "none")
+              )
+            ),
             ACSetEdgeSource(E, Src, Tgt, BasicArrow(es))
           )
         )
