@@ -10,6 +10,7 @@ export semagrams.{
   Actions,
   EditorState,
   Semagram,
+  Sprite,
   MouseButton,
   KeyModifier,
   PropMap,
@@ -25,20 +26,22 @@ export controllers.{
   KeyboardController
 }
 export layout.{
-  assignBends
+  assignBends,
+  FixedRangeExceptEnds
 }
 export sprites.{
   Arrow,
   Disc,
-  Box,
+  Rect,
   WithMiddleware,
   Hoverable,
   Clickable,
   ACSetEntitySource,
   ACSetEdgeSource,
   BasicDisc,
-  BasicBox,
-  BasicArrow
+  BasicRect,
+  BasicArrow,
+  BasicWrapper
 }
 export ui.{
   UIState

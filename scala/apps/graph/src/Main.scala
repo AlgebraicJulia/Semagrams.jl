@@ -2,6 +2,7 @@ package semagrams.graph
 
 import semagrams.api._
 import semagrams.acsets.{_, given}
+import Graph._
 
 import upickle.default._
 import com.raquo.laminar.api.L._

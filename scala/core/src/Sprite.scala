@@ -16,6 +16,11 @@ case class RenderedSprite(
     handles: Map[Handle, SvgElement]
 )
 
+case class BoundingBox(
+  pos: Complex,
+  dims: Complex
+)
+
 /** A Sprite contains the information necessary to turn a PropMap into a
   * reactive SVG on the screen.
   *
@@ -38,4 +43,6 @@ trait Sprite {
       data: PropMap,
       dir: Complex
   ): Complex
+
+  def bbox(data: PropMap): BoundingBox
 }

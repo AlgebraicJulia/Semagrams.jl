@@ -4,22 +4,20 @@ import com.raquo.laminar.api.L.svg._
 import com.raquo.laminar.api._
 import semagrams.util._
 import semagrams._
-import semagrams.text._
 
 //FIXME: Move these into util
 
 extension [A, B](s: L.Signal[Tuple2[A, B]])
   def splitTuple: Tuple2[L.Signal[A], L.Signal[B]] = (s.map(_._1), s.map(_._2))
 
-case class Box(props: PropMap) extends Sprite {
-  import Box._
+case class Rect(props: PropMap) extends Sprite {
+  import Rect._
 
   def render(
       ent: Entity,
       init: PropMap,
       updates: L.Signal[PropMap]
   ): RenderedSprite = {
-    println(props)
     val data = updates.map(props ++ _)
 
     val box = rect(
@@ -48,7 +46,7 @@ case class Box(props: PropMap) extends Sprite {
 
   def boundaryPt(data: PropMap, dir: Complex) = {
     // Normalize to first quadrant
-    val (_, dims) = geom(data)
+    val (_, dims) = geom(props ++ data)
     val q1dir = Complex(dir.x.abs, dir.y.abs)
     val q1pt = if (q1dir.x == 0) {
       Complex(0, dims.y / 2)
@@ -67,15 +65,20 @@ case class Box(props: PropMap) extends Sprite {
     }
     Complex(q1pt.x * dir.x.sign, q1pt.y * dir.y.sign) + data(Center)
   }
+
+  def bbox(data: PropMap) = {
+    val (pos, dims) = geom(props ++ data)
+    BoundingBox(pos, dims)
+  }
 }
 
-object Box {
+object Rect {
   def geom(data: PropMap): (Complex, Complex) = {
-    val textBox = boxSize(data(Content), data(FontSize))
+    val textRect = boxSize(data(Content), data(FontSize))
     val center = data(Center)
     val innerSep = data(InnerSep)
-    val width = data(MinimumWidth).max(textBox.x + innerSep)
-    val height = data(MinimumHeight).max(textBox.y + innerSep)
+    val width = data(MinimumWidth).max(textRect.x + innerSep)
+    val height = data(MinimumHeight).max(textRect.y + innerSep)
     val dims = Complex(width, height)
     val pos = center - dims / 2
     (pos, dims)
@@ -102,11 +105,11 @@ object Box {
     + (Stroke, "black")
     + (InnerSep, 10)
     + (OuterSep, 5)
-    + (MinimumWidth, 40)
-    + (MinimumHeight, 40)
+    + (MinimumWidth, 80)
+    + (MinimumHeight, 80)
 
-  def apply() = new Box(defaults)
+  def apply() = new Rect(defaults)
 
-  def apply(props: PropMap) = new Box(defaults ++ props)
+  def apply(props: PropMap) = new Rect(defaults ++ props)
 
 }

@@ -31,4 +31,6 @@ case class GenericHTMLSprite(
 
   // Doesn't really make sense in this context
   def boundaryPt(data: PropMap, dir: Complex): Complex = Complex(0,0)
+
+  def bbox(data: PropMap) = BoundingBox(0, 0)
 }

@@ -3,10 +3,9 @@ package semagrams.sprites
 import com.raquo.laminar.api.L.svg._
 import com.raquo.laminar.api._
 import semagrams._
-import semagrams.text._
 import semagrams.util._
 
-case class Disc(defaults: PropMap) extends Sprite {
+case class Disc(props: PropMap) extends Sprite {
   def radius(data: PropMap): Double = {
     val textBox = boxSize(data(Content), data(FontSize))
     val center = data(Center)
@@ -37,7 +36,7 @@ case class Disc(defaults: PropMap) extends Sprite {
       init: PropMap,
       updates: L.Signal[PropMap]
   ): RenderedSprite = {
-    val data = updates.map(defaults ++ _)
+    val data = updates.map(props ++ _)
     val box = circle(
       geomUpdater(data),
       styleUpdater(data)
@@ -57,7 +56,7 @@ case class Disc(defaults: PropMap) extends Sprite {
       href <-- data.map(_(ImageURL)),
       clipPathAttr := "inset(0% round 50%)",
       pointerEvents := "none",
-      Box.geomUpdater(data),
+      Rect.geomUpdater(data),
     )
 
     val root = g(
@@ -70,10 +69,12 @@ case class Disc(defaults: PropMap) extends Sprite {
   }
 
   def boundaryPt(orig: PropMap, dir: Complex) = {
-    val data = defaults ++ orig
+    val data = props ++ orig
     val rad = radius(data) + data(OuterSep)
     dir.normalize * rad + data(Center)
   }
+
+  def bbox(data: PropMap) = Rect(props).bbox(data)
 }
 
 object Disc {
@@ -89,4 +90,6 @@ object Disc {
     + (MinimumHeight, 40)
 
   def apply() = new Disc(defaults)
+
+  def apply(pm: PropMap) = new Disc(defaults ++ pm)
 }

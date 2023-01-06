@@ -3,26 +3,16 @@ package semagrams.sprites
 import semagrams._
 import semagrams.util._
 
-def BasicDisc(es: EditorState) = WithMiddleware(
-  Disc(),
+def BasicWrapper(hoverProps: PropMap)(sprite: Sprite)(es: EditorState) = WithMiddleware(
+  sprite,
   Seq(
-    Hoverable(es.hover, MainHandle, PropMap() + (Fill, "lightgrey")),
+    Hoverable(es.hover, MainHandle, hoverProps),
     Clickable(es.mouse, MainHandle)
   )
 )
 
-def BasicBox(es: EditorState) = WithMiddleware(
-  Box(),
-  Seq(
-    Hoverable(es.hover, MainHandle, PropMap() + (Fill, "lightgrey")),
-    Clickable(es.mouse, MainHandle)
-  )
-)
+val BasicArrow = BasicWrapper(PropMap() + (Stroke, "lightgrey"))(Arrow())
 
-def BasicArrow(es: EditorState) = WithMiddleware(
-  Arrow(),
-  Seq(
-    Hoverable(es.hover, MainHandle, PropMap() + (Stroke, "lightgrey")),
-    Clickable(es.mouse, MainHandle)
-  )
-)
+val BasicDisc = BasicWrapper(PropMap() + (Fill, "lightgrey"))(Disc())
+
+val BasicRect = BasicWrapper(PropMap() + (Fill, "lightgrey"))(Rect())

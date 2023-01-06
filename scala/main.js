@@ -1,3 +1,3 @@
-import { GraphApp } from './out/apps/graph/fullLinkJS.dest/main.js'
+import { App } from './out/apps/stringdiagrams/fullLinkJS.dest/main.js'
 
-GraphApp.main(document.getElementById("app-container"))
+App.main(document.getElementById("app-container"))

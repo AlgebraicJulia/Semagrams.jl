@@ -16,11 +16,23 @@ trait Spacer {
           .toMap
       )
       .foldLeft(Map[X, Double]())(_ ++ _)
+
+  def assignPositions[S: IsSchema](ob: Ob, by: Property, p: Property { type Value = Double })(
+    a: ACSet[S]
+  ): ACSet[S] = {
+    val positions = spaceBy(a.trySubpart(by, _))(a.parts(ob))
+    positions.foldLeft(a)({ case (b, (e, pos)) => b.setSubpart(p, e, pos) })
+  }
 }
 
 case class FixedRange(from: Double, to: Double) extends Spacer {
   def assignPos(i: Int, n: Int) =
-    from + (i / (n - 1)) * (to - from)
+    from + (i.toFloat / (n.toFloat - 1)) * (to - from)
+}
+
+case class FixedRangeExceptEnds(from: Double, to: Double) extends Spacer {
+  def assignPos(i: Int, n: Int) = FixedRange(from, to).assignPos(i+1, n+2)
+
 }
 
 case class FixedSpacing(spacing: Double, centered: Boolean) extends Spacer {
@@ -63,3 +75,4 @@ def assignBends[S: IsSchema](edges: Map[Ob, (Hom, Hom)], spacing: Double)(
 
   bends.foldLeft(a)({ case (b, (i, bend)) => b.setSubpart(Bend, i, bend) })
 }
+

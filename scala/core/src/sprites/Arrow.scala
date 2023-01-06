@@ -56,6 +56,8 @@ case class Arrow(defaults: PropMap) extends Sprite {
 
   def boundaryPt(data: PropMap, dir: Complex): Complex =
     Complex(0, 0)
+
+  def bbox(data: PropMap) = BoundingBox(0, 0)
 }
 
 object Arrow {

@@ -27,4 +27,6 @@ case class WithMiddleware(
   def boundaryPt(props: PropMap, dir: Complex) = {
     s.boundaryPt(props, dir)
   }
+
+  def bbox(data: PropMap) = s.bbox(data)
 }
