@@ -1,6 +1,6 @@
 package semagrams.acsets
 
-object WiringDiagrams {
+object DirectedPortGraph {
   case object Box extends Ob
   case object InPort extends Ob
   case object OutPort extends Ob
@@ -26,7 +26,7 @@ object WiringDiagrams {
     val codom = InPort
   }
 
-  case object SchWiringDiagram extends StaticSchema {
+  case object SchDirectedPortGraph extends StaticSchema {
     val schema = BasicSchema(
       Box,
       InPort,
@@ -39,9 +39,9 @@ object WiringDiagrams {
     )
   }
 
-  type WiringDiagram = ACSet[SchWiringDiagram.type]
+  type DirectedPortGraph = ACSet[SchDirectedPortGraph.type]
 
-  object WiringDiagram {
-    def apply() = ACSet[SchWiringDiagram.type]()
+  object DirectedPortGraph {
+    def apply() = ACSet[SchDirectedPortGraph.type]()
   }
 }

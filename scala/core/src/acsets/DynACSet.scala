@@ -110,10 +110,12 @@ given IsSchema[DynSchema] = new IsSchema[DynSchema] {
     def obs = s.obs
     def homs(x: Ob) = s.allhoms.filter(_.dom == x)
     def attrs(x: Ob) = s.allattrs.filter(_.dom == x)
+    def globals = Seq()
 
     def obsByString = s.obsByString
     def homsByString = s.homsByString
     def attrsByString = s.attrsByString
+    def globalsByString = Map()
 
   val rw = readwriter[DynSchema]
 }

@@ -7,7 +7,11 @@ import com.raquo.laminar.api.L._
 
 import cats.effect._
 
-case class AnonEntity(token: Unique.Token) extends Entity
+case class AnonEntity(token: Unique.Token) extends Entity {
+  val ty = AnonEntity
+}
+
+object AnonEntity extends EntityType
 
 val newEntity: IO[Entity] = for {
   t <- IO.unique

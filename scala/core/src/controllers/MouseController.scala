@@ -51,7 +51,7 @@ class MouseController() extends Controller {
         state.processEvent(evt)
       ),
       mouseEvents --> es.events,
-      clickable(Background)
+      clickable(Background())
     )
   }
 

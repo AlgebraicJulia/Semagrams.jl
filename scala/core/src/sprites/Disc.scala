@@ -68,13 +68,13 @@ case class Disc(props: PropMap) extends Sprite {
     RenderedSprite(root, Map(MainHandle -> root))
   }
 
-  def boundaryPt(orig: PropMap, dir: Complex) = {
+  override def boundaryPt(handle: Handle, orig: PropMap, dir: Complex) = {
     val data = props ++ orig
     val rad = radius(data) + data(OuterSep)
-    dir.normalize * rad + data(Center)
+    Some(dir.normalize * rad + data(Center))
   }
 
-  def bbox(data: PropMap) = Rect(props).bbox(data)
+  override def bbox(handle: Handle, data: PropMap) = Rect(props).bbox(handle, data)
 }
 
 object Disc {

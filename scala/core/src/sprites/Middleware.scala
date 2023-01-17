@@ -24,9 +24,9 @@ case class WithMiddleware(
     rendered
   }
 
-  def boundaryPt(props: PropMap, dir: Complex) = {
-    s.boundaryPt(props, dir)
+  override def boundaryPt(handle: Handle, props: PropMap, dir: Complex) = {
+    s.boundaryPt(handle, props, dir)
   }
 
-  def bbox(data: PropMap) = s.bbox(data)
+  override def bbox(handle: Handle, data: PropMap) = s.bbox(handle, data)
 }

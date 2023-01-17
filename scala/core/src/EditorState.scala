@@ -118,4 +118,12 @@ class EditorState(val elt: SvgElement) {
         case _                           => None
       }
     )
+
+  def hoveredEntity(ty: EntityType): IO[Option[Entity]] =
+    hovered.map(e =>
+      e match {
+        case Some(p: Entity) if p.ty == ty => Some(p)
+        case _                           => None
+      }
+    )
 }

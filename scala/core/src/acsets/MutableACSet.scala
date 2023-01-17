@@ -6,6 +6,7 @@ import scala.collection.mutable
 class MutableACSet[S: IsSchema](
     val schema: S,
     var counter: Int,
+    var globals: PropMap,
     val parts: Map[Ob, mutable.Seq[Part]],
     val props: mutable.Map[Part, PropMap]
 ) {
@@ -60,6 +61,7 @@ class MutableACSet[S: IsSchema](
     new ACSet[S](
       schema,
       counter,
+      globals,
       parts.map((ob, ents) => (ob, ents.toSeq)).toMap,
       props.toMap
     )
@@ -70,6 +72,7 @@ object MutableACSet {
   def apply[S: IsSchema](s: S) = new MutableACSet(
     s,
     0,
+    PropMap(),
     s.obs.map(ob => (ob, mutable.Seq[Part]())).toMap,
     mutable.Map[Part, PropMap]()
   )

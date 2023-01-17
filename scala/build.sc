@@ -67,11 +67,11 @@ trait SemagramsApp extends Defaults {
 }
 
 object apps extends Module {
-  object graph extends SemagramsApp {
-    def desc = "simple graph editor"
+  // object graph extends SemagramsApp {
+  //   def desc = "simple graph editor"
 
-    def artifactName = "semagrams-graph"
-  }
+  //   def artifactName = "semagrams-graph"
+  // }
 
   object stringdiagrams extends SemagramsApp {
     def desc = "simple string diagram editor"

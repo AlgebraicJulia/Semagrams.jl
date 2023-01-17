@@ -5,10 +5,12 @@ import upickle.default._
 
 export semagrams.{Entity, Property}
 
-trait Ob
+trait Ob extends EntityType
 
 case class Part(id: Int, ob: Ob) extends Entity {
   def asElt(x: Ob) = if (x == ob) Some(this) else None
+
+  val ty = ob
 }
 
 trait Hom extends Property {
@@ -28,19 +30,24 @@ trait AttrWithDom extends Attr {
   val dom: Ob
 }
 
+trait Global extends Property
+
 trait IsSchema[S] {
   extension (s: S)
     def obs: Seq[Ob]
     def homs(x: Ob): Seq[Hom]
     def attrs(x: Ob): Seq[Attr]
+    def globals: Seq[Global]
 
     def obsByString: Map[String, Ob]
     def homsByString: Map[String, Hom]
     def attrsByString: Map[String, Attr]
+    def globalsByString: Map[String, Global]
 
     def contains(x: Ob): Boolean = obs contains x
     def contains(x: Ob, f: Hom): Boolean = homs(x) contains f
     def contains(x: Ob, f: Attr): Boolean = attrs(x) contains f
+    def contains(f: Global): Boolean = globals contains f
 
   val rw: ReadWriter[S]
 }
@@ -50,10 +57,11 @@ case class BasicSchema(
     homsByString: Map[String, Hom],
     attrsByString: Map[String, Attr],
     homs: Map[Ob, Seq[Hom]],
-    attrs: Map[Ob, Seq[Attr]]
+    attrs: Map[Ob, Seq[Attr]],
+    globals: Map[String, Global]
 ) {
   def extend(
-      gens: (Ob | (Ob, Hom) | (Ob, Attr) | HomWithDom | AttrWithDom)*
+      gens: (Ob | (Ob, Hom) | (Ob, Attr) | HomWithDom | AttrWithDom | Global)*
   ): BasicSchema = {
     val newObs = gens.collect({ case (ob: Ob) => ob })
     val newHoms = gens
@@ -71,6 +79,12 @@ case class BasicSchema(
           case (ob: Ob, attr: Attr) => (ob, attr)
         }
       )
+    val newGlobals = gens
+      .collect(
+        {
+          case (g: Global) => g
+        }
+      )
     val newAttrsByOb = newAttrs.groupMap(_._1)(_._2)
     val homMaps = (homs.toList ++ newObs.map(ob => (ob, Seq[Hom]())))
       .groupMapReduce(_._1)(_._2)(_ ++ _)
@@ -81,19 +95,21 @@ case class BasicSchema(
       homsByString ++ newHoms.map((_, f) => (f.toString, f)).toMap,
       attrsByString ++ newAttrs.map((_, f) => (f.toString, f)).toMap,
       homMaps.map((ob, fs) => (ob, fs ++ newHomsByOb.getOrElse(ob, Seq()))),
-      attrMaps.map((ob, fs) => (ob, fs ++ newAttrsByOb.getOrElse(ob, Seq())))
+      attrMaps.map((ob, fs) => (ob, fs ++ newAttrsByOb.getOrElse(ob, Seq()))),
+      globals ++ newGlobals.map(g => (g.toString(), g))
     )
   }
 }
 
 object BasicSchema {
-  def apply(gens: (Ob | (Ob, Hom) | (Ob, Attr) | HomWithDom | AttrWithDom)*) =
+  def apply(gens: (Ob | (Ob, Hom) | (Ob, Attr) | HomWithDom | AttrWithDom | Global)*) =
     new BasicSchema(
       Map[String, Ob](),
       Map[String, Hom](),
       Map[String, Attr](),
       Map[Ob, Seq[Hom]](),
-      Map[Ob, Seq[Attr]]()
+      Map[Ob, Seq[Attr]](),
+      Map[String, Global]()
     ).extend(gens*)
 }
 
@@ -113,10 +129,12 @@ trait IsStaticSchema[S: ValueOf] extends IsSchema[S] {
     def obs = schema.obs.values.toSeq
     def homs(x: Ob) = schema.homs(x)
     def attrs(x: Ob) = schema.attrs(x)
+    def globals = schema.globals.values.toSeq
 
     def obsByString = schema.obs
     def homsByString = schema.homsByString
     def attrsByString = schema.attrsByString
+    def globalsByString = schema.globals
 
   val theS = summon[ValueOf[S]].value
 

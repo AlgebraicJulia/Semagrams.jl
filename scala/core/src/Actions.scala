@@ -35,7 +35,12 @@ case class Actions[S: IsSchema](es: EditorState, m: Var[ACSet[S]], ui: UIState) 
     )
   } yield ()
 
-  def dragEdge(ob: Ob, src: Hom, tgt: Hom)(s: Part) = for {
+  def dragEdge[E1 <: Entity, E2 <: Entity](
+    ob: Ob,
+    src: PValue[E1],
+    tgt: PValue[E2],
+    tgtType: EntityType
+  )(s: E1) = for {
     p <- es.mousePos
     e <- m.updateS(
       ops.addPart(
@@ -45,9 +50,9 @@ case class Actions[S: IsSchema](es: EditorState, m: Var[ACSet[S]], ui: UIState) 
     )
     _ <- (for {
       _ <- es.drag.drag(Observer(p => m.update(_.setSubpart(End, e, p))))
-      t <- fromMaybe(es.hoveredPart(tgt.codom))
+      t <- fromMaybe(es.hoveredEntity(tgtType))
       _ <- m.updateS_(for {
-        _ <- ops.setSubpart(tgt, e, t)
+        _ <- ops.setSubpart(tgt, e, t.asInstanceOf[E2])
         _ <- ops.remSubpart(End, e)
         _ <- ops.remSubpart(Interactable, e)
       } yield ())

@@ -53,11 +53,6 @@ case class Arrow(defaults: PropMap) extends Sprite {
     val root = g(arrow, handle)
     RenderedSprite(root, Map(MainHandle -> handle))
   }
-
-  def boundaryPt(data: PropMap, dir: Complex): Complex =
-    Complex(0, 0)
-
-  def bbox(data: PropMap) = BoundingBox(0, 0)
 }
 
 object Arrow {

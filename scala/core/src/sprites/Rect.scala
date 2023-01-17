@@ -44,7 +44,7 @@ case class Rect(props: PropMap) extends Sprite {
     RenderedSprite(root, Map(MainHandle -> root))
   }
 
-  def boundaryPt(data: PropMap, dir: Complex) = {
+  override def boundaryPt(handle: Handle, data: PropMap, dir: Complex) = {
     // Normalize to first quadrant
     val (_, dims) = geom(props ++ data)
     val q1dir = Complex(dir.x.abs, dir.y.abs)
@@ -63,12 +63,12 @@ case class Rect(props: PropMap) extends Sprite {
         dims.y / 2
       )
     }
-    Complex(q1pt.x * dir.x.sign, q1pt.y * dir.y.sign) + data(Center)
+    Some(Complex(q1pt.x * dir.x.sign, q1pt.y * dir.y.sign) + data(Center))
   }
 
-  def bbox(data: PropMap) = {
+  override def bbox(handle: Handle, data: PropMap) = {
     val (pos, dims) = geom(props ++ data)
-    BoundingBox(pos, dims)
+    Some(BoundingBox(pos, dims))
   }
 }
 

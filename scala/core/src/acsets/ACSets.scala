@@ -10,6 +10,7 @@ import semagrams._
 case class ACSet[S: IsSchema](
     schema: S,
     counter: Int,
+    globalMap: PropMap,
     parts: Map[Ob, Seq[Part]],
     props: Map[Part, PropMap]
 ) {
@@ -121,6 +122,7 @@ object ACSet {
   def apply[S: IsSchema](s: S): ACSet[S] = new ACSet[S](
     s,
     0,
+    PropMap(),
     s.obs.map(_ -> Seq[Part]()).toMap,
     Map[Part, PropMap]()
   )
@@ -141,6 +143,7 @@ object ACSet {
     new ACSet[S](
       s,
       sacs.counter,
+      PropMap(),
       sacs.parts.map((sob, sparts) => {
         val ob = s.obsByString(sob)
         val parts = sparts.map((e: BarePart) => Part(e.id, ob))

@@ -40,9 +40,13 @@ trait Sprite {
   ): SvgElement = render(ent, init, updates).root
 
   def boundaryPt(
-      data: PropMap,
-      dir: Complex
-  ): Complex
+    handle: Handle,
+    data: PropMap,
+    dir: Complex
+  ): Option[Complex] = None
 
-  def bbox(data: PropMap): BoundingBox
+  def bbox(
+    handle: Handle,
+    data: PropMap
+  ): Option[BoundingBox] = None
 }

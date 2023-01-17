@@ -23,7 +23,11 @@ trait PValue[T: ReadWriter] extends Property {
   val rw = summon[ReadWriter[T]]
 }
 
-trait Entity
+trait EntityType
+
+trait Entity {
+  val ty: EntityType
+}
 
 type EntityMap = Map[Entity, (Sprite, PropMap)]
 
@@ -54,4 +58,8 @@ case class EntitySource[A](
   }
 }
 
-case object Background extends Entity
+case class Background() extends Entity {
+  val ty = Background
+}
+
+object Background extends EntityType

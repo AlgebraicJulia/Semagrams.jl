@@ -4,6 +4,7 @@ import semagrams._
 import semagrams.util._
 import com.raquo.laminar.api.L._
 import org.scalajs.dom.KeyboardEvent
+import org.scalajs.dom.console
 
 /** Like the MouseController, this both provides a subscription to keyboard
   * events and also keeps track of the current state of the keyboard itself.

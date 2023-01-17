@@ -14,7 +14,10 @@ export semagrams.{
   MouseButton,
   KeyModifier,
   PropMap,
+  EntitySource,
+  EntityMap,
   keyDown,
+  clickOn,
   clickOnPart,
   dblClickOnPart
 }
@@ -33,6 +36,7 @@ export sprites.{
   Arrow,
   Disc,
   Rect,
+  WireStub,
   WithMiddleware,
   Hoverable,
   Clickable,
@@ -41,6 +45,7 @@ export sprites.{
   BasicDisc,
   BasicRect,
   BasicArrow,
+  BasicWire,
   BasicWrapper
 }
 export ui.{
@@ -52,5 +57,6 @@ export util.{
   updateS_,
   fromMaybe,
   toOption,
-  onCancelOrError
+  onCancelOrError,
+  realToComplex
 }
