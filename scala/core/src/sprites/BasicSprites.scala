@@ -6,8 +6,8 @@ import semagrams.util._
 def BasicWrapper(hoverProps: PropMap)(sprite: Sprite)(es: EditorState) = WithMiddleware(
   sprite,
   Seq(
-    Hoverable(es.hover, MainHandle, hoverProps),
-    Clickable(es.mouse, MainHandle)
+    Hoverable(es.hover, hoverProps),
+    Clickable(es.mouse)
   )
 )
 

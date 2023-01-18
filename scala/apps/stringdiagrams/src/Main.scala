@@ -16,51 +16,12 @@ def bindings(es: EditorState, g: Var[WiringDiagram], ui: UIState) = {
     keyDown("a").andThen(a.add(Box, PropMap().set(boxTy, BoxType(Seq((),()), Seq(()))))),
     keyDown("d").andThen(a.del),
     keyDown("e").andThen(a.importExport),
-    clickOn[SrcPort](MouseButton.Left, SrcPort)
-      .withMods(KeyModifier.Shift)
-      .flatMap(a.dragEdge[SrcPort, TgtPort](Wire, Src, Tgt, TgtPort)),
+    // clickOn[SrcPort](MouseButton.Left, SrcPort)
+    //   .withMods(KeyModifier.Shift)
+    //   .flatMap(a.dragEdge[SrcPort, TgtPort](Wire, Src, Tgt, TgtPort)),
     clickOnPart(MouseButton.Left, Box).withMods().flatMap(a.drag),
   )
 }
-
-// def portSource[S: IsSchema](ob: Ob, parent: Hom, sprite: Sprite, dir: Double) = {
-//   ACSetEntitySource[S](ob, sprite).addPropsBy(
-//     (e,p,entities) => {
-//       val (parentSprite, parentProps) = entities(p(parent))
-//       val c = parentSprite.boundaryPt(parentProps, Complex(dir, 0))
-//         + Complex(0, parentSprite.bbox(parentProps).dims.y / 2) * Complex(p(RelPos),0)
-//       p + (Center, c)
-//     }
-//   )
-// }
-
-def PortSprite(dir: Complex, es: EditorState) =
-  BasicWrapper(PropMap() + (Stroke, "lightgrey"))(
-    WireStub(PropMap() + (Stroke, "black"), dir)
-  )(es)
-
-def spacePorts
-  (entityMap: EntityMap, parent: Entity)(portEntities: Seq[Entity], sprite: Sprite, dir: Double) =
-{
-  val (parentSprite, parentProps) = entityMap(parent)
-  val spacer = FixedRangeExceptEnds(-1,1)
-  portEntities.zipWithIndex.map(
-    (e,i) => {
-      val c = parentSprite.boundaryPt(MainHandle, parentProps, Complex(dir, 0))
-      + Complex(0, parentSprite.bbox(MainHandle, parentProps).dims.y / 2) * spacer.assignPos(i, portEntities.length)
-      (e, sprite, PropMap() + (Center, c))
-    })
-}
-
-def PortSource(inSprite: Sprite, outSprite: Sprite) = EntitySource[WiringDiagram]((acs, m) =>
-    acs.parts(Box).flatMap(
-      b => {
-        val ty = acs.subpart(boxTy, b)
-        val spacer = spacePorts(m, b)
-        spacer(ty.inports.zipWithIndex.map((_, i) => TgtPort.Box(b.id, i)), inSprite, -1)
-        ++ spacer(ty.outports.zipWithIndex.map((_, i) => SrcPort.Box(b.id, i)), outSprite, 1)
-      })
-  )
 
 object Main {
   @JSExportTopLevel("App")
@@ -80,7 +41,6 @@ object Main {
           lg,
           Seq(
             ACSetEntitySource(Box, BasicRect(es)),
-            PortSource(PortSprite(-10, es), PortSprite(10, es)),
             ACSetEdgeSource(Wire, Src, Tgt, BasicWire(es))
           )
         )

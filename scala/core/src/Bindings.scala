@@ -53,14 +53,14 @@ def clickOn(button: MouseButton) = Binding(
 )
 
 def clickOn[E <: Entity](button: MouseButton, ty: EntityType) = Binding(
-  { case MouseDown(Some(ent), `button`) if ent.ty == ty =>
-    IO(ent.asInstanceOf[E])
+  { case MouseDown(Some(ent,handle), `button`) if ent.ty == ty =>
+    IO((ent.asInstanceOf[E], handle))
   }
 )
 
 def clickOnPart(button: MouseButton, ob: Ob) = Binding(
   {
-    case MouseDown(Some(i: Part), `button`) if i.ob == ob => IO(i)
+    case MouseDown(Some((i: Part,_)), `button`) if i.ob == ob => IO(i)
   }
 )
 
@@ -72,7 +72,7 @@ def dblClickOn(button: MouseButton) = Binding(
 
 def dblClickOnPart(button: MouseButton, ob: Ob) = Binding(
   {
-    case DoubleClick(Some(i: Part), `button`) if i.ob == ob => IO(i)
+    case DoubleClick(Some((i: Part, handle)), `button`) if i.ob == ob => IO((i,handle))
   }
 )
 

@@ -20,7 +20,7 @@ case class Actions[S: IsSchema](es: EditorState, m: Var[ACSet[S]], ui: UIState) 
   val del = for {
     ment <- es.hovered
     _ <- ment match {
-      case Some(ent: Part) => m.updateS_(ops.remPart(ent))
+      case Some((ent: Part, _)) => m.updateS_(ops.remPart(ent))
       case _               => IO(())
     }
   } yield ()

@@ -7,7 +7,6 @@ import semagrams.controllers._
 
 case class Hoverable(
     hover: HoverController,
-    handle: Handle,
     extraProps: PropMap
 ) extends Middleware {
   override def modifySignal(ent: Entity, $p: Signal[PropMap]) = {
@@ -17,9 +16,10 @@ case class Hoverable(
   }
 
   override def modifyRenderedSprite(ent: Entity, rs: RenderedSprite) = {
-    rs.handles(handle)
-      .amend(
-        hover.hoverable(ent)
+    rs.handles.map(
+      (handle, elt) => elt.amend(
+        hover.hoverable(ent, handle)
       )
+    )
   }
 }
