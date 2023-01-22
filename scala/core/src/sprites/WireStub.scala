@@ -2,6 +2,7 @@ package semagrams.sprites
 
 import semagrams._
 import semagrams.util._
+import semagrams.acsets._
 
 import com.raquo.laminar.api.L
 import com.raquo.laminar.api.L.svg._
@@ -9,11 +10,11 @@ import com.raquo.laminar.api.L.svg._
 case class WireStub(defaults: PropMap, dir: Complex) extends Sprite {
   def present(
       ent: Entity,
-      init: PropMap,
-      updates: L.Signal[PropMap],
+      init: ACSet,
+      updates: L.Signal[ACSet],
       attachHandlers: HandlerAttacher
   ): L.SvgElement = {
-    val data = updates.map(defaults ++ _)
+    val data = updates.map(defaults ++ _.props)
     val stub = line(
       z1 <-- data.map(_(Center)),
       z2 <-- data.map(_(Center) + dir),

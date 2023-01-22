@@ -1,5 +1,6 @@
 package semagrams.sprites
 
+import semagrams.acsets._
 import com.raquo.laminar.api.L.svg._
 import com.raquo.laminar.api._
 import semagrams._
@@ -30,11 +31,11 @@ case class Arrow(defaults: PropMap) extends Sprite {
 
   def present(
       ent: Entity,
-      init: PropMap,
-      updates: L.Signal[PropMap],
+      init: ACSet,
+      updates: L.Signal[ACSet],
       attachHandlers: HandlerAttacher
   ): L.SvgElement = {
-    val data = updates.map(defaults ++ _)
+    val data = updates.map(defaults ++ _.props)
     val arrow = path(
       pathElts <-- data.map(p => curvedPath(p(Start), p(End), p(Bend))),
       stroke <-- data.map(_(Stroke)),

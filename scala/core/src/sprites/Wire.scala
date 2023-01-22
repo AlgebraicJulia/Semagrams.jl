@@ -4,6 +4,7 @@ import com.raquo.laminar.api.L.svg.{!= as neq,text as Ltext,_}
 import com.raquo.laminar.api._
 import semagrams.util._
 import semagrams._
+import semagrams.acsets._
 // import semagrams.{text as sematext,_}
 
 import semagrams.util.Complex.{im}
@@ -64,10 +65,12 @@ case class Wire() extends Sprite {
 
   def present(
       ent: Entity,
-      p: PropMap,
-      $p: L.Signal[PropMap],
+      acs: ACSet,
+      $acs: L.Signal[ACSet],
       attachHandlers: HandlerAttacher
   ): L.SvgElement = {
+    val p = acs.props
+    val $p = $acs.map(_.props)
     def s(p:PropMap) = p(Start)
     def t(p:PropMap) = p(End)
     def ds(p:PropMap): Complex = p.get(StartDir).getOrElse(10.0)

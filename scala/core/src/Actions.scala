@@ -12,9 +12,13 @@ import cats.effect._
 case class Actions(es: EditorState, m: Var[ACSet], ui: UIState) {
   import ACSet._
 
-  def add(ob: Ob, props: PropMap) = for {
+  def addAtMouse(ob: Ob, props: PropMap) = for {
     pos <- es.mousePos
     _ <- m.updateS_(addPart(ob, props + (Center, pos)))
+  } yield ()
+
+  def add(part: Part, ob: Ob, props: PropMap) = for {
+    _ <- m.updateS_(addPart(part, ob, props))
   } yield ()
 
   val del = for {
@@ -25,15 +29,17 @@ case class Actions(es: EditorState, m: Var[ACSet], ui: UIState) {
     }
   } yield ()
 
-  // def drag(i: Part) = for {
-  //   _ <- m.updateS_(ops.moveFront(i))
-  //   c <- IO(m.now().subpart(Center, i))
-  //   init <- es.mousePos
-  //   offset <- IO(c - init)
-  //   _ <- es.drag.dragStart(
-  //     Observer(p => m.update(_.setSubpart(i, Center, p + offset)))
-  //   )
-  // } yield ()
+  def drag(i: Part) = for {
+    _ <- m.updateS_(moveFront(i))
+    c <- IO(m.now().subpart(Center, i))
+    init <- es.mousePos
+    offset <- IO(c - init)
+    _ <- es.drag.dragStart(
+      Observer(p => m.update(_.setSubpart(i, Center, p + offset)))
+    )
+  } yield ()
+
+  val debug = IO(m.now()).flatMap(IO.println)
 
   // def dragEdge[E1 <: Entity, E2 <: Entity](
   //   ob: Ob,

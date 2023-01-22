@@ -1,5 +1,6 @@
 package semagrams
 
+import semagrams.acsets._
 import semagrams.util._
 import com.raquo.laminar.api.L._
 
@@ -18,19 +19,19 @@ type HandlerAttacher = (Entity, SvgElement) => Unit
 trait Sprite {
   def present(
       ent: Entity,
-      init: PropMap,
-      updates: Signal[PropMap],
+      init: ACSet,
+      updates: Signal[ACSet],
       attachHandlers: HandlerAttacher
   ): SvgElement
 
   def boundaryPt(
     subent: Entity,
-    data: PropMap,
+    data: ACSet,
     dir: Complex
   ): Option[Complex] = None
 
   def bbox(
     subent: Entity,
-    data: PropMap
+    data: ACSet
   ): Option[BoundingBox] = None
 }

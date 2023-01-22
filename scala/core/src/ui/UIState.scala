@@ -1,6 +1,7 @@
 package semagrams.ui
 
 import semagrams._
+import semagrams.acsets._
 import semagrams.sprites.GenericHTMLSprite
 import semagrams.util._
 import com.raquo.laminar.api.L._
@@ -18,10 +19,10 @@ val newEntity: IO[Entity] = for {
 } yield AnonEntity(t)
 
 case class UIState(
-  sprites: Var[Vector[(Entity, Sprite, PropMap)]],
+  sprites: Var[Vector[(Entity, Sprite, ACSet)]],
   globalSize: Signal[Complex]
 ) {
-  def addEntity(e: Entity, s: Sprite, p: PropMap) =
+  def addEntity(e: Entity, s: Sprite, p: ACSet) =
     IO(sprites.update(
       entities => {
         val i = entities.indexWhere(_._1 == e)
@@ -34,11 +35,14 @@ case class UIState(
     ))
 
   def addHtmlEntity(e: Entity, build: () => HtmlElement) =
-    addEntity(e, GenericHTMLSprite(build, globalSize), PropMap())
+    addEntity(e, GenericHTMLSprite(build, globalSize), ACSet(SchEmpty))
 
 
   def addKillableHtmlEntity(e: Entity, build: Observer[Unit] => HtmlElement): IO[Unit] =
-    addEntity(e, GenericHTMLSprite(() => build(Observer(_ => remEntity(e))), globalSize), PropMap())
+    addEntity(
+      e,
+      GenericHTMLSprite(() => build(Observer(_ => remEntity(e))), globalSize), ACSet(SchEmpty)
+    )
 
 
   def addKillableHtmlEntity(build: Observer[Unit] => HtmlElement): IO[Unit] = for {

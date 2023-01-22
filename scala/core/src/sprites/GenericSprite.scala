@@ -3,7 +3,7 @@ package semagrams.sprites
 import com.raquo.laminar.api.L._
 import semagrams._
 import semagrams.util._
-import com.raquo.airstream.core.Signal
+import semagrams.acsets._
 
 case class GenericHTMLSprite(
   build: () => HtmlElement,
@@ -11,8 +11,8 @@ case class GenericHTMLSprite(
 ) extends Sprite {
   def present(
     ent: Entity,
-    init: PropMap,
-    updates: Signal[PropMap],
+    init: ACSet,
+    updates: Signal[ACSet],
     attachHandlers: HandlerAttacher
   ): SvgElement = {
     val elt = build()

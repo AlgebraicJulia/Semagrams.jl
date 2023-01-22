@@ -40,12 +40,13 @@ export sprites.{
   WithMiddleware,
   Hoverable,
   Clickable,
-  // ACSetEntitySource,
+  ACSetEntitySource,
   // ACSetEdgeSource,
   BasicDisc,
   BasicRect,
   BasicArrow,
   BasicWire,
+  BasicDPBox,
   BasicWrapper
 }
 export ui.{

@@ -1,3 +1,3 @@
-import { App } from './out/apps/stringdiagrams/fullLinkJS.dest/main.js'
+import { App } from './out/apps/wiringdiagrams/fullLinkJS.dest/main.js'
 
 App.main(document.getElementById("app-container"))

@@ -4,6 +4,7 @@ import com.raquo.laminar.api.L.svg._
 import com.raquo.laminar.api._
 import semagrams.util._
 import semagrams._
+import semagrams.acsets._
 
 //FIXME: Move these into util
 
@@ -15,11 +16,11 @@ case class Rect(props: PropMap) extends Sprite {
 
   def present(
       ent: Entity,
-      init: PropMap,
-      updates: L.Signal[PropMap],
+      init: ACSet,
+      updates: L.Signal[ACSet],
       attachHandlers: HandlerAttacher
   ): L.SvgElement = {
-    val data = updates.map(props ++ _)
+    val data = updates.map(props ++ _.props)
 
     val box = rect(
       geomUpdater(data),
@@ -47,9 +48,9 @@ case class Rect(props: PropMap) extends Sprite {
     root
   }
 
-  override def boundaryPt(_subent: Entity, data: PropMap, dir: Complex) = {
+  override def boundaryPt(_subent: Entity, data: ACSet, dir: Complex) = {
     // Normalize to first quadrant
-    val (_, dims) = geom(props ++ data)
+    val (_, dims) = geom(props ++ data.props)
     val q1dir = Complex(dir.x.abs, dir.y.abs)
     val q1pt = if (q1dir.x == 0) {
       Complex(0, dims.y / 2)
@@ -66,11 +67,11 @@ case class Rect(props: PropMap) extends Sprite {
         dims.y / 2
       )
     }
-    Some(Complex(q1pt.x * dir.x.sign, q1pt.y * dir.y.sign) + data(Center))
+    Some(Complex(q1pt.x * dir.x.sign, q1pt.y * dir.y.sign) + data.props(Center))
   }
 
-  override def bbox(_subent: Entity, data: PropMap) = {
-    val (pos, dims) = geom(props ++ data)
+  override def bbox(_subent: Entity, data: ACSet) = {
+    val (pos, dims) = geom(props ++ data.props)
     Some(BoundingBox(pos, dims))
   }
 }

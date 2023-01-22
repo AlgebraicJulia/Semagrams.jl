@@ -43,6 +43,18 @@ case class PartType(path: Seq[Ob]) extends EntityType {
   def extend(x: Ob) = PartType(path :+ x)
 }
 
+// The empty list refers to the acset itself
+case class Part(path: Seq[(Ob, Id)]) extends Entity {
+  override val ty: PartType = PartType(path.map(_._1))
+
+  def extend(x: Ob, i: Id) = Part(path :+ (x, i))
+
+  override def extend(e: Entity) = e match {
+    case (p: Part) => Part(path ++ p.path)
+    case _ => SubEntity(this, e)
+  }
+}
+
 trait Schema {
   val obs: Seq[Ob]
   val homs: Seq[Hom]
@@ -96,15 +108,15 @@ case class Parts(
       acsets = acsets.filterNot(_._1 == i)
     )
   }
+
+  def moveFront(i: Id) = {
+    this.copy(
+      ids = ids.filterNot(_ == i) :+ i
+    )
+  }
 }
 
 
-// The empty list refers to the acset itself
-case class Part(path: Seq[(Ob, Id)]) extends Entity {
-  override val ty: PartType = PartType(path.map(_._1))
-
-  def extend(x: Ob, i: Id) = Part(path :+ (x, i))
-}
 
 val ROOT = Part(Seq())
 
@@ -147,7 +159,10 @@ case class ACSet(
     }
   }
 
-  def parts(i: Part, x: Ob): Seq[Id] = subacset(i).partsMap(x).ids
+  def parts(i: Part, x: Ob): Seq[(Part, ACSet)] = {
+    val ps = subacset(i).partsMap(x)
+    ps.ids.map(id => (i.extend(x, id), ps.acsets(id)))
+  }
 
   def subpart(f: Property, i: Part): f.Value = subacset(i).props(f)
 
@@ -168,6 +183,16 @@ case class ACSet(
   def addPart(p: Part, x: Ob): (ACSet, Part) = addPart(p, x, PropMap())
 
   def addPart(x: Ob): (ACSet, Part) = addPart(ROOT, x, PropMap())
+
+  def moveFront(p: Part): ACSet = {
+    assert(p.path.length > 0)
+    val (prefix, (x, i)) = (Part(p.path.dropRight(1)), p.path.last)
+    val sub = subacset(prefix)
+    val newsub = sub.copy(
+      partsMap = sub.partsMap + (x -> sub.partsMap(x).moveFront(i))
+    )
+    setSubacset(prefix, newsub)
+  }
 
   def setSubpart(p: Part, f: Property, v: f.Value): ACSet = {
     val sub = subacset(p)
@@ -226,6 +251,10 @@ case class ACSet(
     val toRemove = visited.toSeq
     toRemove.foldLeft(this)(_.remPartOnly(_))
   }
+
+  def addProps(newProps: PropMap): ACSet = {
+    this.copy(props = props ++ newProps)
+  }
 }
 
 object ACSet {
@@ -234,7 +263,7 @@ object ACSet {
   def apply(s: Schema, props: PropMap): ACSet =
     new ACSet(s, props, s.obs.map(ob => ob -> Parts(0, Seq(), Map())).toMap)
 
-  def addPart(p: Part, x: Ob): State[ACSet, Part] = State(_.addPart(p,x))
+  def addPart(p: Part, x: Ob, props: PropMap): State[ACSet, Part] = State(_.addPart(p, x, props))
 
   def addPart(x: Ob, props: PropMap): State[ACSet, Part] = State(_.addPart(x, props))
 
@@ -245,4 +274,6 @@ object ACSet {
     State.modify(_.remSubpart(p, f))
 
   def remPart(p: Part): State[ACSet, Unit] = State.modify(_.remPart(p))
+
+  def moveFront(p: Part): State[ACSet, Unit] = State.modify(_.moveFront(p))
 }

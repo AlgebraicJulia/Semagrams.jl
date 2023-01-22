@@ -4,6 +4,7 @@ import com.raquo.laminar.api.L.svg._
 import com.raquo.laminar.api._
 import semagrams._
 import semagrams.util._
+import semagrams.acsets._
 
 case class Disc(props: PropMap) extends Sprite {
   def radius(data: PropMap): Double = {
@@ -33,11 +34,11 @@ case class Disc(props: PropMap) extends Sprite {
 
   def present(
       ent: Entity,
-      init: PropMap,
-      updates: L.Signal[PropMap],
+      init: ACSet,
+      updates: L.Signal[ACSet],
       attachHandlers: HandlerAttacher
   ): L.SvgElement = {
-    val data = updates.map(props ++ _)
+    val data = updates.map(props ++ _.props)
     val box = circle(
       geomUpdater(data),
       styleUpdater(data)
@@ -71,13 +72,13 @@ case class Disc(props: PropMap) extends Sprite {
     root
   }
 
-  override def boundaryPt(subent: Entity, orig: PropMap, dir: Complex) = {
-    val data = props ++ orig
+  override def boundaryPt(subent: Entity, orig: ACSet, dir: Complex) = {
+    val data = props ++ orig.props
     val rad = radius(data) + data(OuterSep)
     Some(dir.normalize * rad + data(Center))
   }
 
-  override def bbox(subent: Entity, data: PropMap) = Rect(props).bbox(subent, data)
+  override def bbox(subent: Entity, data: ACSet) = Rect(props).bbox(subent, data)
 }
 
 object Disc {
