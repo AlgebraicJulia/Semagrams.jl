@@ -13,31 +13,49 @@ def ACSetEntitySource(
     acs.parts(ROOT, ob).map({ case (i, acs) => (i, sprite, acs) })
   )
 
-def edgeProps[E1 <: Entity, E2 <: Entity](
-    src: PValue[E1],
-    tgt: PValue[E2]
-)(_e: Entity, p: PropMap, m: EntityMap): PropMap = {
+def findBoundary(p: Part, m: EntityMap, dir: Complex): Option[Complex] = for {
+  ((sprite, acs), subp) <- p.path match {
+    case Nil => None
+    case (x,id)::rest => m.get(Part(Seq((x,id)))).map((_, Part(rest)))
+  }
+  bp <- sprite.boundaryPt(subp, acs, dir)
+} yield bp
+
+def findCenter(p: Part, m: EntityMap): Option[Complex] = for {
+  ((sprite, acs), subp) <- p.path match {
+    case Nil => None
+    case (x,id)::rest => m.get(Part(Seq((x,id)))).map((_, Part(rest)))
+  }
+  c <- sprite.center(subp, acs)
+} yield c
+/**
+ * Need to update this to look up the sprite for just the first part of src/tgt,
+ * and then pass the rest of the path of the part into a method on that sprite.
+ */
+def edgeProps(
+    src: Hom,
+    tgt: Hom
+)(_e: Entity, acs: ACSet, m: EntityMap): PropMap = {
+  val p = acs.props
   val s = p.get(src)
   val t = p.get(tgt)
-  val spos = s.map(i => m(i)._2.props(Center)).getOrElse(p(Start))
-  val tpos = t.map(i => m(i)._2.props(Center)).getOrElse(p(End))
+  val spos = s.flatMap(findCenter(_,m)).getOrElse(p(Start))
+  val tpos = t.flatMap(findCenter(_,m)).getOrElse(p(End))
   val dir = spos - tpos
   val bend = p.get(Bend).getOrElse(0.0)
   val rot = Complex(0, bend).exp
   val start = s
-    .map(m(_))
-    .map((sprite, props) => sprite.boundaryPt(ROOT, props, -dir * rot)).get
+    .flatMap(findBoundary(_, m, -dir * rot))
     .getOrElse(spos)
   val nd = t
-    .map(m(_))
-    .map((sprite, props) => sprite.boundaryPt(ROOT, props, dir * rot.cong)).get
+    .flatMap(findBoundary(_, m, dir * rot.cong))
     .getOrElse(tpos)
   PropMap() + (Start, start) + (End, nd)
 }
 
-// def ACSetEdgeSource[S: IsSchema, E1 <: Entity, E2 <: Entity](
-//     ob: Ob,
-//     src: PValue[E1],
-//     tgt: PValue[E2],
-//     sprite: Sprite
-// ) = ACSetEntitySource[S](ob, sprite).addPropsBy(edgeProps(src, tgt))
+def ACSetEdgeSource(
+    ob: Ob,
+    src: Hom,
+    tgt: Hom,
+    sprite: Sprite
+) = ACSetEntitySource(ob, sprite).addPropsBy(edgeProps(src, tgt))

@@ -95,7 +95,7 @@ object Rect {
 
   def styleUpdater(data: L.Signal[PropMap]) = {
     List(
-      fill <-- data.map(_(Fill)),
+      fill <-- data.map(d => if d.get(Hovered).isDefined then "lightgrey" else d(Fill)),
       stroke <-- data.map(_(Stroke)),
       style <-- data.map(_.get(Style).getOrElse(""))
     )

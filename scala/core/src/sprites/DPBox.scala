@@ -31,6 +31,24 @@ case class DPBox(
   outPort: Ob
 ) extends Sprite {
 
+  def computePortCenters(data: ACSet): ACSet = {
+    def helper(acs: ACSet, portOb: Ob, dir: (-1) | 1): ACSet = {
+      import Complex.im
+      val ports = acs.parts(ROOT, portOb)
+      val bbox = boxSprite.bbox(ROOT, acs).get
+      val sideCenter = bbox.pos + bbox.dims / 2 + (dir * bbox.dims.x / 2)
+      val spacer = FixedRangeExceptEnds(-bbox.dims.y / 2, bbox.dims.y / 2)
+      val n = ports.length
+      val cs = ports.zipWithIndex.map(
+        {
+          case ((p, sub), i) => (p, sideCenter + spacer.assignPos(i,n) * im)
+        }
+      )
+      cs.foldLeft(acs)((acs, pc) => acs.setSubpart(pc._1, Center, pc._2))
+    }
+    helper(helper(data, inPort, -1), outPort, 1)
+  }
+
   def present(
     ent: Entity,
     init: ACSet,
@@ -39,45 +57,19 @@ case class DPBox(
   ): L.SvgElement = {
     val rect = boxSprite.present(ent, init, updates, attachHandlers)
 
-    val $bbox = updates.map(acs => boxSprite.bbox(ROOT, acs).get)
+    val layout = updates.map(computePortCenters)
 
-    val spacer = FixedRangeExceptEnds(-1, 1)
-
-    val inPorts = updates.map(_.parts(ROOT, inPort))
-      .splitWithIndexAndLength(_._1)(
-        (p, d, $d, $in) => {
-          val $c = $bbox.combineWith($in).map(
-            {
-              case (bbox, i, n) =>
-                bbox.pos
-                + Complex(0, bbox.dims.y / 2)
-                + Complex(0, bbox.dims.y / 2 * spacer.assignPos(i, n))
-            })
-          inPortSprite.present(
-            ent.extend(p),
-            d._2,
-            $d.combineWith($c).map({ case (_, acs, c) => acs.setSubpart(ROOT, Center, c) }),
-            attachHandlers
-          )
+    val inPorts = layout.map(_.parts(ROOT, inPort))
+      .split(_._1)(
+        (p, d, $d) => {
+          inPortSprite.present(ent.extend(p), d._2, $d.map(_._2), attachHandlers)
         }
       )
 
-    val outPorts = updates.map(_.parts(ROOT, outPort))
-      .splitWithIndexAndLength(_._1)(
-        (p, d, $d, $in) => {
-          val $c = $bbox.combineWith($in).map(
-            {
-              case (bbox, i, n) =>
-                bbox.pos
-                + Complex(bbox.dims.x, bbox.dims.y / 2)
-                + Complex(0, bbox.dims.y / 2 * spacer.assignPos(i, n))
-            })
-          outPortSprite.present(
-            ent.extend(p),
-            d._2,
-            $d.combineWith($c).map({ case (_, acs, c) => acs.setSubpart(ROOT, Center, c) }),
-            attachHandlers
-          )
+    val outPorts = layout.map(_.parts(ROOT, outPort))
+      .split(_._1)(
+        (p, d, $d) => {
+          outPortSprite.present(ent.extend(p), d._2, $d.map(_._2), attachHandlers)
         }
       )
 
@@ -86,5 +78,18 @@ case class DPBox(
       L.children <-- inPorts,
       L.children <-- outPorts
     )
+  }
+
+  override def boundaryPt(subent: Entity, data: ACSet, dir: Complex): Option[Complex] = subent match {
+    case Part(Nil) => boxSprite.boundaryPt(subent, data, dir)
+    case _ => None
+  }
+
+  override def center(subent: Entity, data: ACSet): Option[Complex] = subent match {
+    case Part(Nil) => data.props.get(Center)
+    case Part((ob, i)::Nil) if ob == inPort || ob == outPort => {
+      computePortCenters(data).trySubpart(Center, subent.asInstanceOf[Part])
+    }
+    case _ => None
   }
 }

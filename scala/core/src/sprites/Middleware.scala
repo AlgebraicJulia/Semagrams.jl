@@ -30,5 +30,9 @@ case class WithMiddleware(
     s.boundaryPt(subent, acs, dir)
   }
 
+  override def center(subent: Entity, acs: ACSet) = {
+    s.center(subent, acs)
+  }
+
   override def bbox(subent: Entity, acs: ACSet) = s.bbox(subent, acs)
 }

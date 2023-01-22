@@ -18,7 +18,7 @@ case class WireStub(defaults: PropMap, dir: Complex) extends Sprite {
     val stub = line(
       z1 <-- data.map(_(Center)),
       z2 <-- data.map(_(Center) + dir),
-      stroke <-- data.map(_(Stroke))
+      stroke <-- data.map(d => if d.get(Hovered).isDefined then "lightgrey" else d(Stroke))
     )
     val offset = (dir * Complex(0,1)).normalize * 5
     val handle = polygon(
@@ -30,11 +30,10 @@ case class WireStub(defaults: PropMap, dir: Complex) extends Sprite {
       ),
       fill := "white",
       opacity := "0"
-      // pointerEvents <-- data.map(p =>
-      //   if p(Interactable) then "auto" else "none"
-      // )
     )
     attachHandlers(ent, handle)
     g(stub, handle)
   }
+
+  override def center(_subent: Entity, acs: ACSet) = acs.props.get(Center)
 }

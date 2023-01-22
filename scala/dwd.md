@@ -22,3 +22,9 @@ The minimum change needed to be made is that sprites should have subsprites that
 The remnant of the "handle" system then comes simply via what you pass into the click/hover handlers.
 
 Basically, we change the sprite interface so that you *pass in* a function with two arguments, one being a svg element, and the other being the part/handle that you want to attach to that svg element.
+
+## Next steps
+
+- Outer ports
+- Labels
+- Zooming

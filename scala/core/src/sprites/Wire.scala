@@ -104,11 +104,12 @@ case class Wire() extends Sprite {
 
     val wire = path(
       pathElts <-- $p.map(ppath),
-      stroke <-- $p.map(pstroke),
+      stroke <-- $p.map(p => if p.get(Hovered).isDefined then "lightgrey" else pstroke(p)),
       fill := "none",
       style := "user-select: none",
       pointerEvents := "none"
     )
+
     val handle = path(
       pathElts <-- $p.map(
         p => blockPath(s(p),t(p),ds(p),dt(p),3,b(p))
@@ -117,7 +118,9 @@ case class Wire() extends Sprite {
       opacity := ".0",
       stroke := "none",
       style := "user-select: none",
-      pointerEvents := "none"
+      pointerEvents <-- $p.map(p =>
+        if p.get(Interactable) != Some(false) then "auto" else "none"
+      )
     )
 
     attachHandlers(ent, handle)

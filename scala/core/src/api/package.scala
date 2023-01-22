@@ -41,11 +41,12 @@ export sprites.{
   Hoverable,
   Clickable,
   ACSetEntitySource,
-  // ACSetEdgeSource,
+  ACSetEdgeSource,
   BasicDisc,
   BasicRect,
   BasicArrow,
   BasicWire,
+  BasicWireStub,
   BasicDPBox,
   BasicWrapper
 }

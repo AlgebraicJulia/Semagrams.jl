@@ -23,6 +23,7 @@ enum GenericProperty[T: ReadWriter] extends Property {
   case RelPos extends GenericProperty[Double]
   case Style extends GenericProperty[String]
   case Interactable extends GenericProperty[Boolean]
+  case Hovered extends GenericProperty[Unit]
 
   type Value = T
 

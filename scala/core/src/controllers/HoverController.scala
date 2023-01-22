@@ -1,6 +1,7 @@
 package semagrams.controllers
 
 import semagrams._
+import semagrams.acsets._
 import semagrams.util._
 import com.raquo.laminar.api.L._
 import semagrams.util.CustomModifier
@@ -20,9 +21,11 @@ class HoverController() extends Controller {
 
   /** This makes a certain SVG record hovering
     */
-  def hoverable(ent: Entity) = List(
+  def hoverable(ent: Entity, acs: Var[ACSet]) = List(
     onMouseEnter --> $state.updater((state, _) => state.hover(ent)),
-    onMouseLeave --> $state.updater((state, _) => state.leave(ent))
+    onMouseLeave --> $state.updater((state, _) => state.leave(ent)),
+    onMouseEnter --> acs.updater((acs, _) => acs.setSubpart(ent.asInstanceOf[Part], Hovered, ())),
+    onMouseLeave --> acs.updater((acs, _) => acs.remSubpart(ent.asInstanceOf[Part], Hovered))
   )
 
   /** This most commonly would be used to style a certain entity based on

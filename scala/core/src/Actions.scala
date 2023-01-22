@@ -41,32 +41,31 @@ case class Actions(es: EditorState, m: Var[ACSet], ui: UIState) {
 
   val debug = IO(m.now()).flatMap(IO.println)
 
-  // def dragEdge[E1 <: Entity, E2 <: Entity](
-  //   ob: Ob,
-  //   src: PValue[E1],
-  //   tgt: PValue[E2],
-  //   tgtType: EntityType
-  // )(s: E1) = for {
-  //   p <- es.mousePos
-  //   e <- m.updateS(
-  //     addPart(
-  //       ob,
-  //       PropMap().set(src, s).set(End, p).set(Interactable, false)
-  //     )
-  //   )
-  //   _ <- (for {
-  //     _ <- es.drag.drag(Observer(p => m.update(_.setSubpart(e, End, p))))
-  //     t <- fromMaybe(es.hoveredEntity(tgtType))
-  //     _ <- m.updateS_(for {
-  //       _ <- setSubpart(e, tgt, t.asInstanceOf[E2])
-  //       _ <- remSubpart(End, e)
-  //       _ <- remSubpart(Interactable, e)
-  //     } yield ())
-  //   } yield ()).onCancelOrError(for {
-  //     _ <- IO(es.drag.$state.set(None))
-  //     _ <- m.updateS_(remPart(e))
-  //   } yield ())
-  // } yield ()
+  def dragEdge(
+    ob: Ob,
+    src: Hom,
+    tgt: Hom,
+  )(s: Part) = for {
+    p <- es.mousePos
+    e <- m.updateS(
+      addPart(
+        ob,
+        PropMap().set(src, s).set(End, p).set(Interactable, false)
+      )
+    )
+    _ <- (for {
+      _ <- es.drag.drag(Observer(p => m.update(_.setSubpart(e, End, p))))
+      t <- fromMaybe(es.hoveredPart(tgt.codom))
+      _ <- m.updateS_(for {
+        _ <- setSubpart(e, tgt, t)
+        _ <- remSubpart(e, End)
+        _ <- remSubpart(e, Interactable)
+      } yield ())
+    } yield ()).onCancelOrError(for {
+      _ <- IO(es.drag.$state.set(None))
+      _ <- m.updateS_(remPart(e))
+    } yield ())
+  } yield ()
 
   // def edit(p: Property { type Value = String; }, multiline: Boolean)(i: Part): IO[Unit] = for {
   //   _ <- IO(m.update(acs => if (acs.trySubpart(p, i).isEmpty) {
