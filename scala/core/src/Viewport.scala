@@ -73,7 +73,7 @@ object Viewport {
         val propMapStream =
           $m.changes.map(_.get(ent)).collect { case Some(x) => x._2 }
         val $propMap = propMapStream.toSignal(propMap)
-        (ent, sprite.present(ent, propMap, $propMap))
+        (ent, sprite.present(ent, propMap, $propMap, (ent, elt) => ()))
       })
       .toMap
     (r -- removed) ++ newElements

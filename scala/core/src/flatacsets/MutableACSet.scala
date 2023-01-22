@@ -1,4 +1,4 @@
-package semagrams.acsets
+package semagrams.flatacsets
 
 import semagrams._
 import scala.collection.mutable

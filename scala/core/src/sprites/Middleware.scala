@@ -7,26 +7,27 @@ import com.raquo.laminar.api.L._
 trait Middleware {
   def modifySignal(ent: Entity, updates: Signal[PropMap]): Signal[PropMap] =
     updates
-  def modifyRenderedSprite(ent: Entity, rs: RenderedSprite): Unit = ()
+  def wrapHandler(f: HandlerAttacher): HandlerAttacher
 }
 
 case class WithMiddleware(
     s: Sprite,
     middleware: Seq[Middleware]
 ) extends Sprite {
-  def render(ent: Entity, init: PropMap, updates: Signal[PropMap]) = {
+  def present(ent: Entity, init: PropMap, updates: Signal[PropMap], attachHandlers: HandlerAttacher) = {
     val modified =
       middleware.foldLeft(updates)((s, m) => m.modifySignal(ent, s))
-    val rendered = s.render(ent, init, modified)
-    for (m <- middleware) {
-      m.modifyRenderedSprite(ent, rendered)
-    }
-    rendered
+    s.present(
+      ent,
+      init,
+      modified,
+      middleware.foldLeft(attachHandlers)((f, m) => m.wrapHandler(f))
+    )
   }
 
-  override def boundaryPt(handle: Handle, props: PropMap, dir: Complex) = {
-    s.boundaryPt(handle, props, dir)
+  override def boundaryPt(subent: Entity, props: PropMap, dir: Complex) = {
+    s.boundaryPt(subent, props, dir)
   }
 
-  override def bbox(handle: Handle, data: PropMap) = s.bbox(handle, data)
+  override def bbox(subent: Entity, data: PropMap) = s.bbox(subent, data)
 }

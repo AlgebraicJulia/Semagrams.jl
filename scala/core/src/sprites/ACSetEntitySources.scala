@@ -5,13 +5,13 @@ import semagrams.acsets._
 import semagrams.util._
 import com.raquo.laminar.api.L._
 
-def ACSetEntitySource[S: IsSchema](
-    ob: Ob,
-    sprite: Sprite
-) =
-  EntitySource[ACSet[S]]((acs, _m) =>
-    acs.parts(ob).map(i => (i, sprite, acs.props(i)))
-  )
+// def ACSetEntitySource(
+//     ob: Ob,
+//     sprite: Sprite
+// ) =
+//   EntitySource[ACSet]((acs, _m) =>
+//     acs.parts(ob).map(i => (i, sprite, acs.props(i)))
+//   )
 
 def edgeProps[E1 <: Entity, E2 <: Entity](
     src: PValue[E1],
@@ -26,18 +26,18 @@ def edgeProps[E1 <: Entity, E2 <: Entity](
   val rot = Complex(0, bend).exp
   val start = s
     .map(m(_))
-    .map((sprite, props) => sprite.boundaryPt(MainHandle, props, -dir * rot)).get
+    .map((sprite, props) => sprite.boundaryPt(???, props, -dir * rot)).get
     .getOrElse(spos)
   val nd = t
     .map(m(_))
-    .map((sprite, props) => sprite.boundaryPt(MainHandle, props, dir * rot.cong)).get
+    .map((sprite, props) => sprite.boundaryPt(???, props, dir * rot.cong)).get
     .getOrElse(tpos)
   PropMap() + (Start, start) + (End, nd)
 }
 
-def ACSetEdgeSource[S: IsSchema, E1 <: Entity, E2 <: Entity](
-    ob: Ob,
-    src: PValue[E1],
-    tgt: PValue[E2],
-    sprite: Sprite
-) = ACSetEntitySource[S](ob, sprite).addPropsBy(edgeProps(src, tgt))
+// def ACSetEdgeSource[S: IsSchema, E1 <: Entity, E2 <: Entity](
+//     ob: Ob,
+//     src: PValue[E1],
+//     tgt: PValue[E2],
+//     sprite: Sprite
+// ) = ACSetEntitySource[S](ob, sprite).addPropsBy(edgeProps(src, tgt))

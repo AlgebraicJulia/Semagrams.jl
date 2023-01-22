@@ -17,12 +17,12 @@ trait Spacer {
       )
       .foldLeft(Map[X, Double]())(_ ++ _)
 
-  def assignPositions[S: IsSchema](ob: Ob, by: Property, p: Property { type Value = Double })(
-    a: ACSet[S]
-  ): ACSet[S] = {
-    val positions = spaceBy(a.trySubpart(by, _))(a.parts(ob))
-    positions.foldLeft(a)({ case (b, (e, pos)) => b.setSubpart(p, e, pos) })
-  }
+  // def assignPositions(ob: Ob, by: Property, p: Property { type Value = Double })(
+  //   a: ACSet
+  // ): ACSet = {
+  //   val positions = spaceBy(a.trySubpart(by, _))(a.parts(ob))
+  //   positions.foldLeft(a)({ case (b, (e, pos)) => b.setSubpart(p, e, pos) })
+  // }
 }
 
 case class FixedRange(from: Double, to: Double) extends Spacer {
@@ -46,33 +46,32 @@ case class FixedSpacing(spacing: Double, centered: Boolean) extends Spacer {
   }
 }
 
-def assignBends[S: IsSchema](edges: Map[Ob, (Hom, Hom)], spacing: Double)(
-    a: ACSet[S]
-): ACSet[S] = {
-  def ends(i: Part) = {
-    val (src, tgt) = edges(i.ob)
-    for {
-      s <- a.trySubpart(src, i)
-      t <- a.trySubpart(tgt, i)
-    } yield (s, t)
-  }
+// def assignBends(edges: Map[Ob, (Hom, Hom)], spacing: Double)(
+//     a: ACSet
+// ): ACSet = {
+//   def ends(i: Part) = {
+//     val (src, tgt) = edges(i.ob)
+//     for {
+//       s <- a.trySubpart(src, i)
+//       t <- a.trySubpart(tgt, i)
+//     } yield (s, t)
+//   }
 
-  def sortedEnds(i: Part) =
-    ends(i).map({
-      case (s, t) if s.id <= t.id => (s, t)
-      case (s, t)                 => (t, s)
-    })
+//   def sortedEnds(i: Part) =
+//     ends(i).map({
+//       case (s, t) if s.id <= t.id => (s, t)
+//       case (s, t)                 => (t, s)
+//     })
 
-  val parts = edges.keys.map(a.parts(_).toSeq).foldLeft(Seq[Part]())(_ ++ _)
-  val bends = FixedSpacing(spacing, true)
-    .spaceBy(sortedEnds)(parts)
-    .map((i, bend) =>
-      ends(i) match {
-        case Some((s, t)) if s.id > t.id => (i, -bend)
-        case _                           => (i, bend)
-      }
-    )
+//   val parts = edges.keys.map(a.parts(_).toSeq).foldLeft(Seq[Part]())(_ ++ _)
+//   val bends = FixedSpacing(spacing, true)
+//     .spaceBy(sortedEnds)(parts)
+//     .map((i, bend) =>
+//       ends(i) match {
+//         case Some((s, t)) if s.id > t.id => (i, -bend)
+//         case _                           => (i, bend)
+//       }
+//     )
 
-  bends.foldLeft(a)({ case (b, (i, bend)) => b.setSubpart(Bend, i, bend) })
-}
-
+//   bends.foldLeft(a)({ case (b, (i, bend)) => b.setSubpart(Bend, i, bend) })
+// }

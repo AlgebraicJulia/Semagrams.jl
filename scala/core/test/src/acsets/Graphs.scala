@@ -3,6 +3,7 @@ package semagrams.acsets
 import utest._
 import upickle.default._
 import semagrams.acsets._
+import Graphs._
 import semagrams._
 import semagrams.util._
 

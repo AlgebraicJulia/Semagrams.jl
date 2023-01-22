@@ -1,4 +1,4 @@
-package semagrams.acsets
+package semagrams.flatacsets
 
 import upickle.default._
 import scala.collection.mutable

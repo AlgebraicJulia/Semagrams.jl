@@ -13,11 +13,12 @@ extension [A, B](s: L.Signal[Tuple2[A, B]])
 case class Rect(props: PropMap) extends Sprite {
   import Rect._
 
-  def render(
+  def present(
       ent: Entity,
       init: PropMap,
-      updates: L.Signal[PropMap]
-  ): RenderedSprite = {
+      updates: L.Signal[PropMap],
+      attachHandlers: HandlerAttacher
+  ): L.SvgElement = {
     val data = updates.map(props ++ _)
 
     val box = rect(
@@ -41,10 +42,12 @@ case class Rect(props: PropMap) extends Sprite {
       text
     )
 
-    RenderedSprite(root, Map(MainHandle -> root))
+    attachHandlers(ent, root)
+
+    root
   }
 
-  override def boundaryPt(handle: Handle, data: PropMap, dir: Complex) = {
+  override def boundaryPt(_subent: Entity, data: PropMap, dir: Complex) = {
     // Normalize to first quadrant
     val (_, dims) = geom(props ++ data)
     val q1dir = Complex(dir.x.abs, dir.y.abs)
@@ -66,7 +69,7 @@ case class Rect(props: PropMap) extends Sprite {
     Some(Complex(q1pt.x * dir.x.sign, q1pt.y * dir.y.sign) + data(Center))
   }
 
-  override def bbox(handle: Handle, data: PropMap) = {
+  override def bbox(_subent: Entity, data: PropMap) = {
     val (pos, dims) = geom(props ++ data)
     Some(BoundingBox(pos, dims))
   }

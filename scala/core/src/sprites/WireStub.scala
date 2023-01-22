@@ -7,11 +7,12 @@ import com.raquo.laminar.api.L
 import com.raquo.laminar.api.L.svg._
 
 case class WireStub(defaults: PropMap, dir: Complex) extends Sprite {
-  def render(
+  def present(
       ent: Entity,
       init: PropMap,
-      updates: L.Signal[PropMap]
-  ): RenderedSprite = {
+      updates: L.Signal[PropMap],
+      attachHandlers: HandlerAttacher
+  ): L.SvgElement = {
     val data = updates.map(defaults ++ _)
     val stub = line(
       z1 <-- data.map(_(Center)),
@@ -32,6 +33,7 @@ case class WireStub(defaults: PropMap, dir: Complex) extends Sprite {
       //   if p(Interactable) then "auto" else "none"
       // )
     )
-    RenderedSprite(g(stub, handle), Map(MainHandle -> handle))
+    attachHandlers(ent, handle)
+    g(stub, handle)
   }
 }

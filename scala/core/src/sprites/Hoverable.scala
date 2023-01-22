@@ -15,11 +15,11 @@ case class Hoverable(
       .map(_ ++ _)
   }
 
-  override def modifyRenderedSprite(ent: Entity, rs: RenderedSprite) = {
-    rs.handles.map(
-      (handle, elt) => elt.amend(
-        hover.hoverable(ent, handle)
-      )
+  override def wrapHandler(f: HandlerAttacher) = (ent, elt) => {
+    elt.amend(
+      hover.hoverable(ent)
     )
+
+    f(ent, elt)
   }
 }

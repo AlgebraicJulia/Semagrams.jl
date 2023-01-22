@@ -29,7 +29,7 @@ export controllers.{
   KeyboardController
 }
 export layout.{
-  assignBends,
+  // assignBends,
   FixedRangeExceptEnds
 }
 export sprites.{
@@ -40,8 +40,8 @@ export sprites.{
   WithMiddleware,
   Hoverable,
   Clickable,
-  ACSetEntitySource,
-  ACSetEdgeSource,
+  // ACSetEntitySource,
+  // ACSetEdgeSource,
   BasicDisc,
   BasicRect,
   BasicArrow,

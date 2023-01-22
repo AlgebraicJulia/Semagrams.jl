@@ -31,11 +31,12 @@ case class Disc(props: PropMap) extends Sprite {
     )
   }
 
-  def render(
+  def present(
       ent: Entity,
       init: PropMap,
-      updates: L.Signal[PropMap]
-  ): RenderedSprite = {
+      updates: L.Signal[PropMap],
+      attachHandlers: HandlerAttacher
+  ): L.SvgElement = {
     val data = updates.map(props ++ _)
     val box = circle(
       geomUpdater(data),
@@ -65,16 +66,18 @@ case class Disc(props: PropMap) extends Sprite {
       text
     )
 
-    RenderedSprite(root, Map(MainHandle -> root))
+    attachHandlers(ent, root)
+
+    root
   }
 
-  override def boundaryPt(handle: Handle, orig: PropMap, dir: Complex) = {
+  override def boundaryPt(subent: Entity, orig: PropMap, dir: Complex) = {
     val data = props ++ orig
     val rad = radius(data) + data(OuterSep)
     Some(dir.normalize * rad + data(Center))
   }
 
-  override def bbox(handle: Handle, data: PropMap) = Rect(props).bbox(handle, data)
+  override def bbox(subent: Entity, data: PropMap) = Rect(props).bbox(subent, data)
 }
 
 object Disc {

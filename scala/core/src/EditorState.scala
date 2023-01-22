@@ -108,13 +108,13 @@ class EditorState(val elt: SvgElement) {
   def mousePos: IO[Complex] =
     IO(mouse.$state.now().pos)
 
-  def hovered: IO[Option[(Entity, Handle)]] =
+  def hovered: IO[Option[Entity]] =
     IO(hover.$state.now().state)
 
-  def hoveredPart(ob: Ob): IO[Option[Part]] =
+  def hoveredPart(ty: PartType): IO[Option[Part]] =
     hovered.map(e =>
       e match {
-        case Some((p: Part, MainHandle)) if p.ob == ob => Some(p)
+        case Some(p: Part) if p.ty == ty => Some(p)
         case _                           => None
       }
     )
@@ -122,7 +122,7 @@ class EditorState(val elt: SvgElement) {
   def hoveredEntity(ty: EntityType): IO[Option[Entity]] =
     hovered.map(e =>
       e match {
-        case Some((p: Part, MainHandle)) if p.ty == ty => Some(p)
+        case Some(p: Part) if p.ty == ty => Some(p)
         case _                           => None
       }
     )

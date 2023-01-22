@@ -62,11 +62,12 @@ case class Wire() extends Sprite {
       ++ Seq(ClosePath)
   }
 
-  def render(
+  def present(
       ent: Entity,
       p: PropMap,
-      $p: L.Signal[PropMap]
-  ): RenderedSprite = {
+      $p: L.Signal[PropMap],
+      attachHandlers: HandlerAttacher
+  ): L.SvgElement = {
     def s(p:PropMap) = p(Start)
     def t(p:PropMap) = p(End)
     def ds(p:PropMap): Complex = p.get(StartDir).getOrElse(10.0)
@@ -116,7 +117,7 @@ case class Wire() extends Sprite {
       pointerEvents := "none"
     )
 
-    val root = g(wire, handle,txt)
-    RenderedSprite(root, Map(MainHandle -> handle))
+    attachHandlers(ent, handle)
+    g(wire, handle, txt)
   }
 }

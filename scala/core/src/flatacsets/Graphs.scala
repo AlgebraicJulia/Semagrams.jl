@@ -1,4 +1,4 @@
-package semagrams.acsets
+package semagrams.flatacsets
 
 import semagrams._
 import cats.data.State
@@ -27,25 +27,26 @@ object Graphs {
   trait HasGraph[S: IsSchema]
 
   trait GraphOps[S: IsSchema] extends ACSetOps[S] {
-    extension (a: ACSet[S])
+    extension (a: ACSet[S]) {
       def vertices() = a.parts(V)
       def edges() = a.parts(E)
 
       def src(e: Part) = a.subpart(Src, e)
       def tgt(e: Part) = a.subpart(Tgt, e)
+    }
 
-      def addVertex: State[ACSet[S], Part] = addVertex(PropMap())
+    def addVertex: State[ACSet[S], Part] = addVertex(PropMap())
 
-      def addVertex(props: PropMap): State[ACSet[S], Part] = addPart(V, props)
+    def addVertex(props: PropMap): State[ACSet[S], Part] = addPart(V, props)
 
-      def addEdge(s: Part, t: Part, props: PropMap): State[ACSet[S], Part] = for {
-        e <- addPart(E, props)
-        _ <- setSubpart(Src, e, s)
-        _ <- setSubpart(Tgt, e, t)
-      } yield e
+    def addEdge(s: Part, t: Part, props: PropMap): State[ACSet[S], Part] = for {
+      e <- addPart(E, props)
+      _ <- setSubpart(Src, e, s)
+      _ <- setSubpart(Tgt, e, t)
+    } yield e
 
-      def addEdge(s: Part, t: Part): State[ACSet[S], Part] =
-        addEdge(s, t, PropMap())
+    def addEdge(s: Part, t: Part): State[ACSet[S], Part] =
+      addEdge(s, t, PropMap())
   }
 
   implicit val graphOps: GraphOps[SchGraph.type] = new GraphOps[SchGraph.type] {}

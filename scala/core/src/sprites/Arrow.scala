@@ -28,11 +28,12 @@ case class Arrow(defaults: PropMap) extends Sprite {
     Seq(MoveTo(s), Cubic(cs, ce, e))
   }
 
-  def render(
+  def present(
       ent: Entity,
       init: PropMap,
-      updates: L.Signal[PropMap]
-  ): RenderedSprite = {
+      updates: L.Signal[PropMap],
+      attachHandlers: HandlerAttacher
+  ): L.SvgElement = {
     val data = updates.map(defaults ++ _)
     val arrow = path(
       pathElts <-- data.map(p => curvedPath(p(Start), p(End), p(Bend))),
@@ -50,8 +51,8 @@ case class Arrow(defaults: PropMap) extends Sprite {
         if p(Interactable) then "auto" else "none"
       )
     )
-    val root = g(arrow, handle)
-    RenderedSprite(root, Map(MainHandle -> handle))
+    attachHandlers(ent, handle)
+    g(arrow, handle)
   }
 }
 

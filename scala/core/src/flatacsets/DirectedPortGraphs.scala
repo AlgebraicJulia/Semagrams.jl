@@ -1,4 +1,4 @@
-package semagrams.acsets
+package semagrams.flatacsets
 
 object DirectedPortGraph {
   case object Box extends Ob

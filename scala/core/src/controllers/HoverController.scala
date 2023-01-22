@@ -20,9 +20,9 @@ class HoverController() extends Controller {
 
   /** This makes a certain SVG record hovering
     */
-  def hoverable(ent: Entity, handle: Handle) = List(
-    onMouseEnter --> $state.updater((state, _) => state.hover(ent, handle)),
-    onMouseLeave --> $state.updater((state, _) => state.leave(ent, handle))
+  def hoverable(ent: Entity) = List(
+    onMouseEnter --> $state.updater((state, _) => state.hover(ent)),
+    onMouseLeave --> $state.updater((state, _) => state.leave(ent))
   )
 
   /** This most commonly would be used to style a certain entity based on
@@ -40,12 +40,12 @@ object HoverController {
   // By default, we start with nothing hovered.
   def apply() = new HoverController()
 
-  case class State(state: Option[(Entity, Handle)]) {
-    def hover(ent: Entity, handle: Handle) = State(Some(ent, handle))
-    def leave(ent: Entity, handle: Handle) = State(
+  case class State(state: Option[Entity]) {
+    def hover(ent: Entity) = State(Some(ent))
+    def leave(ent: Entity) = State(
       // Only unhover if we are actually leaving the entity
       // that we were hovering over in the first place.
-      if Some((ent, handle)) == state
+      if Some(ent) == state
       then None
       else state
     )
