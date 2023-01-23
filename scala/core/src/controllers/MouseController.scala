@@ -58,13 +58,11 @@ class MouseController() extends Controller {
   /** This makes a certain SVG element record clicking
     */
   def clickable(ent: Entity) = List(
-    onMouseDown.stopPropagation.map(evt =>
-      MouseDown(Some(ent), MouseButton.fromJS(evt.button))
-    )
+    onMouseDown.stopPropagation.map(evt => MouseDown(Some(ent), MouseButton.fromJS(evt.button))
+)
       --> mouseEvents,
-    onMouseUp.stopPropagation.map(evt =>
-      MouseUp(Some(ent), MouseButton.fromJS(evt.button))
-    )
+    onMouseUp.stopPropagation.map(evt => MouseUp(Some(ent), MouseButton.fromJS(evt.button))
+)
       --> mouseEvents,
     onDblClick.stopPropagation.map(evt =>
       DoubleClick(Some(ent), MouseButton.fromJS(evt.button))

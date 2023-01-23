@@ -168,17 +168,24 @@ case class ACSet(
 
   def trySubpart(f: Property, i: Part): Option[f.Value] = trySubacset(i).flatMap(_.props.get(f))
 
-  def addPart(p: Part, x: Ob, props: PropMap): (ACSet, Part) = {
+  def addPart(p: Part, x: Ob, init: ACSet): (ACSet, Part) = {
     val sub = subacset(p)
     val subschema = schema.subschema(p.ty.asInstanceOf[PartType].extend(x))
-    val (newparts, i) = sub.partsMap(x).addPart(ACSet(subschema, props))
+    val (newparts, i) = sub.partsMap(x).addPart(init)
     val newSub = sub.copy(
       partsMap = sub.partsMap + (x -> newparts)
     )
     (setSubacset(p, newSub), p.extend(x,i))
   }
 
+  def addPart(p: Part, x: Ob, props: PropMap): (ACSet, Part) = {
+    val subschema = schema.subschema(p.ty.asInstanceOf[PartType].extend(x))
+    addPart(p, x, ACSet(subschema, props))
+  }
+
   def addPart(x: Ob, props: PropMap): (ACSet, Part) = addPart(ROOT, x, props)
+
+  def addPart(x: Ob, init: ACSet): (ACSet, Part) = addPart(ROOT, x, init)
 
   def addPart(p: Part, x: Ob): (ACSet, Part) = addPart(p, x, PropMap())
 
@@ -275,6 +282,10 @@ object ACSet {
   def addPart(p: Part, x: Ob, props: PropMap): State[ACSet, Part] = State(_.addPart(p, x, props))
 
   def addPart(x: Ob, props: PropMap): State[ACSet, Part] = State(_.addPart(x, props))
+
+  def addPart(x: Ob, init: ACSet): State[ACSet, Part] = State(_.addPart(x, init))
+
+  def addPart(x: Ob): State[ACSet, Part] = State(_.addPart(x, PropMap()))
 
   def setSubpart(p: Part, f: Property, v: f.Value): State[ACSet, Unit] =
     State.modify(_.setSubpart(p, f, v))

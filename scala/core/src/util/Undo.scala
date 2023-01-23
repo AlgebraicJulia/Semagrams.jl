@@ -22,7 +22,7 @@ case class UndoState[A](
 
   def update(a: A) = if recording
     then UndoState[A](recording, present::past, a, Nil)
-    else this.copy(present=a)
+    else this.copy(present=a, future=Nil)
 }
 
 class UndoableVar[A](init: A) extends SignalSource[A] with Sink[A] {

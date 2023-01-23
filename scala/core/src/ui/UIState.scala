@@ -41,7 +41,8 @@ case class UIState(
   def addKillableHtmlEntity(e: Entity, build: Observer[Unit] => HtmlElement): IO[Unit] =
     addEntity(
       e,
-      GenericHTMLSprite(() => build(Observer(_ => remEntity(e))), globalSize), ACSet(SchEmpty)
+      GenericHTMLSprite(() => build(Observer(_ => remEntity(e))), globalSize),
+      ACSet(SchEmpty)
     )
 
 
@@ -49,6 +50,19 @@ case class UIState(
     e <- newEntity
     _ <- addKillableHtmlEntity(e, build)
   } yield ()
+
+  def dialogue[A](build: Observer[A] => HtmlElement): IO[A] = for {
+    e <- newEntity
+    // I don't know why this is necessary
+    _ <- IO.print("")
+    a <- IO.async[A](cb =>
+      addEntity(
+        e,
+        GenericHTMLSprite(() => build(Observer(a => { cb(Right(a)); remEntity(e) })), globalSize),
+        ACSet(SchEmpty)
+      ).flatMap(_ => IO(None))
+    )
+  } yield a
 
   def remEntity(e: Entity) = {
     sprites.update(_.filterNot(_._1 == e))

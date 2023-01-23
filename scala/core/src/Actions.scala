@@ -12,9 +12,9 @@ import cats.effect._
 case class Actions(es: EditorState, m: UndoableVar[ACSet], ui: UIState) {
   import ACSet._
 
-  def addAtMouse(ob: Ob, props: PropMap) = for {
+  def addAtMouse(ob: Ob, init: ACSet) = for {
     pos <- es.mousePos
-    _ <- m.updateS_(addPart(ob, props + (Center, pos)))
+    _ <- m.updateS_(addPart(ob, init.setSubpart(ROOT, Center, pos)))
   } yield ()
 
   def add(part: Part, ob: Ob, props: PropMap) = for {
@@ -29,7 +29,7 @@ case class Actions(es: EditorState, m: UndoableVar[ACSet], ui: UIState) {
     }
   } yield ()
 
-  def drag(i: Part) = for {
+  def drag(i: Part) = (for {
     _ <- IO(m.save())
     _ <- IO(m.unrecord())
     _ <- m.updateS_(moveFront(i))
@@ -37,10 +37,10 @@ case class Actions(es: EditorState, m: UndoableVar[ACSet], ui: UIState) {
     init <- es.mousePos
     offset <- IO(c - init)
     _ <- es.drag.drag(
-      Observer(p => m.update(_.setSubpart(i, Center, p + offset)))
+      Observer(p => { m.update(_.setSubpart(i, Center, p + offset)) })
     )
     _ <- IO(m.record())
-  } yield ()
+  } yield ()).start.map(_ => ())
 
   val debug = IO(m.now()).flatMap(IO.println)
 
@@ -48,7 +48,7 @@ case class Actions(es: EditorState, m: UndoableVar[ACSet], ui: UIState) {
     ob: Ob,
     src: Hom,
     tgt: Hom,
-  )(s: Part) = for {
+  )(s: Part) = (for {
     _ <- IO(m.save())
     _ <- IO(m.unrecord())
     p <- es.mousePos
@@ -71,7 +71,7 @@ case class Actions(es: EditorState, m: UndoableVar[ACSet], ui: UIState) {
       _ <- m.updateS_(remPart(e))
     } yield ())
     _ <- IO(m.record())
-  } yield ()
+  } yield ())
 
   def edit(p: Property { type Value = String; }, multiline: Boolean)(i: Part): IO[Unit] = for {
     _ <- IO(m.update(acs => if (acs.trySubpart(p, i).isEmpty) {

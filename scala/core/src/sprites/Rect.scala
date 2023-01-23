@@ -43,7 +43,7 @@ case class Rect(props: PropMap) extends Sprite {
       text
     )
 
-    attachHandlers(ent, root)
+    attachHandlers(ent, box)
 
     root
   }

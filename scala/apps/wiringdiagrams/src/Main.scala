@@ -9,11 +9,35 @@ import com.raquo.laminar.api.L._
 import cats.effect._
 import scala.scalajs.js.annotation.JSExportTopLevel
 
+import ACSet._
+
+val mkAdd = for {
+  _ <- addPart(OutPort)
+  _ <- addPart(InPort)
+  _ <- addPart(InPort)
+  _ <- setSubpart(ROOT, Content, "+")
+} yield ()
+
+val mkZero = for {
+  _ <- addPart(OutPort)
+  _ <- setSubpart(ROOT, Content, "0")
+} yield ()
+
+val monoidOps = Seq(
+  ("Add", mkAdd.run(WiringDiagram()).value._1),
+  ("Zero", mkZero.run(WiringDiagram()).value._1),
+)
+
 def bindings(es: EditorState, g: UndoableVar[ACSet], ui: UIState) = {
   val a = Actions(es, g, ui)
 
   Seq(
-    keyDown("a").andThen(a.addAtMouse(Box, PropMap())),
+    keyDown("a").andThen(
+      for {
+        choice <- ui.dialogue[ACSet](
+          cb => PositionWrapper(Position.botMid(10), Select(monoidOps)(cb)))
+        _ <- a.addAtMouse(Box, choice)
+      } yield ()),
     keyDown("?").andThen(a.debug),
     keyDown("o").andThen(
       for {
@@ -38,6 +62,14 @@ def bindings(es: EditorState, g: UndoableVar[ACSet], ui: UIState) = {
     keyDown("Z")
       .withMods(KeyModifier.Ctrl, KeyModifier.Shift)
       .andThen(IO(g.redo())),
+    keyDown("s").andThen(
+      for {
+        _ <- IO.println("Make a choice!")
+        choice <- ui.dialogue(
+          cb => PositionWrapper(Position.botMid(10), Select(Seq(("Choice 1", 1), ("Choice 2", 2)))(cb)))
+        _ <- IO.println(choice)
+      } yield ()
+    ),
     clickOnPart(MouseButton.Left, PartType(Seq(Box, OutPort)))
       .withMods(KeyModifier.Shift)
       .flatMap(a.dragEdge(Wire, Src, Tgt)),

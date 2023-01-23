@@ -5,6 +5,7 @@ import semagrams.layout
 import semagrams.sprites
 import semagrams.ui
 import semagrams.util
+import semagrams.widgets
 
 export semagrams.{
   Actions,
@@ -62,4 +63,9 @@ export util.{
   toOption,
   onCancelOrError,
   realToComplex
+}
+export widgets.{
+  Select,
+  Position,
+  PositionWrapper
 }
