@@ -55,6 +55,7 @@ export ui.{
 }
 export util.{
   Complex,
+  UndoableVar,
   updateS,
   updateS_,
   fromMaybe,

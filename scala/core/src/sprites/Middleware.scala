@@ -18,6 +18,7 @@ case class WithMiddleware(
   def present(ent: Entity, init: ACSet, updates: Signal[ACSet], attachHandlers: HandlerAttacher) = {
     val modified =
       middleware.foldLeft(updates)((s, m) => m.modifySignal(ent, s))
+
     s.present(
       ent,
       init,

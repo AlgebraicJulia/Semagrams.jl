@@ -1,65 +1,53 @@
 package semagrams.acsets
 
+import semagrams._
+
 object WiringDiagrams {
   case object Box extends Ob {
     override val schema = SchWiringDiagram
+  }
+
+  case object PrimBox extends Ob {
+    override val schema = SchPrimBox
+  }
+
+  case object Program extends Attr with PValue[String] {
+    val dom = ROOT.ty
   }
 
   case object OutPort extends Ob
 
   case object InPort extends Ob
 
+  case object SchPrimBox extends Schema {
+    val obs = Seq(OutPort, InPort)
+    val homs = Seq()
+    val attrs = Seq(Program)
+  }
+
   case object Wire extends Ob
 
   case object Src extends Hom {
-    val dom = PartType(Seq(Wire))
-    val codom = PartType(Seq(Box, OutPort))
+    val doms = Seq(PartType(Seq(Wire)))
+    val codoms = Seq(
+      PartType(Seq(Box, OutPort)),
+      PartType(Seq(PrimBox, OutPort)),
+      PartType(Seq(InPort))
+    )
   }
 
   case object Tgt extends Hom {
-    val dom = PartType(Seq(Wire))
-    val codom = PartType(Seq(Box, InPort))
-  }
-
-  case object InWire extends Ob
-
-  case object InSrc extends Hom {
-    val dom = PartType(Seq(InWire))
-    val codom = PartType(Seq(InPort))
-  }
-
-  case object InTgt extends Hom {
-    val dom = PartType(Seq(InWire))
-    val codom = PartType(Seq(Box, InPort))
-  }
-
-  case object OutWire extends Ob
-
-  case object OutSrc extends Hom {
-    val dom = PartType(Seq(OutWire))
-    val codom = PartType(Seq(Box, OutPort))
-  }
-
-  case object OutTgt extends Hom {
-    val dom = PartType(Seq(OutWire))
-    val codom = PartType(Seq(OutPort))
-  }
-
-  case object ThroughWire extends Ob
-
-  case object ThroughSrc extends Hom {
-    val dom = PartType(Seq(ThroughWire))
-    val codom = PartType(Seq(InPort))
-  }
-
-  case object ThroughTgt extends Hom {
-    val dom = PartType(Seq(ThroughWire))
-    val codom = PartType(Seq(OutPort))
+    val doms = Seq(PartType(Seq(Wire)))
+    val codoms = Seq(
+      PartType(Seq(Box, InPort)),
+      PartType(Seq(PrimBox, InPort)),
+      PartType(Seq(OutPort))
+    )
   }
 
   case object SchWiringDiagram extends Schema {
-    val obs = Seq(Box, OutPort, InPort, Wire, InWire, OutWire, ThroughWire)
-    val homs = Seq(Src, Tgt, InSrc, InTgt, OutSrc, OutTgt, ThroughSrc, ThroughTgt)
+    val obs = Seq(Box, OutPort, InPort, Wire)
+    val homs = Seq(Src, Tgt)
     val attrs = Seq()
   }
 

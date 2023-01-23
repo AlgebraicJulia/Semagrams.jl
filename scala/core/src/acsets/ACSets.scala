@@ -4,6 +4,7 @@ import semagrams._
 import cats.data.State
 import scala.collection.mutable
 import upickle.default._
+import monocle.Lens
 
 /**
  * In this file, we define nested ACSets.
@@ -26,17 +27,16 @@ trait Ob {
 }
 
 trait Hom extends Property {
-  val dom: PartType
-  val codom: PartType
+  val doms: Seq[PartType]
+  val codoms: Seq[PartType]
 
   type Value = Part
 
   val rw = summon[ReadWriter[String]].bimap(_.toString, _ => ???)
 }
 
-trait Attr {
-  val dom: Seq[Ob]
-  type codom
+trait Attr extends Property {
+  val dom: PartType
 }
 
 case class PartType(path: Seq[Ob]) extends EntityType {
@@ -73,7 +73,7 @@ trait Schema {
   def homsInto(ty: PartType): Seq[(Seq[Ob], Hom)] = ty.path match {
     case Nil => Seq()
     case ob::rest =>
-      homs.filter(_.codom == ty).map((Seq(), _))
+      homs.filter(_.codoms contains ty).map((Seq(), _))
         ++ ob.schema.homsInto(PartType(rest)).map({ case (obs, f) => (ob +: obs, f) })
   }
 }
@@ -211,7 +211,8 @@ case class ACSet(
   }
 
   def incident(p: Part, f: Hom): Seq[Part] = {
-    val prefix = Part(p.path.dropRight(f.codom.path.length))
+    val codom = f.codoms.find(c => p.ty.path.drop(p.ty.path.length - c.path.length) == c.path).get
+    val prefix = Part(p.path.dropRight(codom.path.length))
     /**
      * Essentially, we look at all parts with part type f.dom, and filter which ones
      * have a property f set to p
@@ -222,17 +223,21 @@ case class ACSet(
         acs.partsMap(ob).acsets.toSeq.flatMap((i, acs) => helper(acs, part.extend(ob, i), rest))
     }
 
-    helper(subacset(prefix), prefix, f.dom.path)
+    f.doms.flatMap(dom => helper(subacset(prefix), prefix, dom.path))
   }
 
   def remPartOnly(p: Part): ACSet = {
-    assert(p.path.length > 0)
-    val (pre, (x, i)) = (p.path.dropRight(1), p.path.last)
-    val sub = subacset(Part(pre))
-    val newSub = sub.copy(
-      partsMap = sub.partsMap + (x -> sub.partsMap(x).remPart(i))
-    )
-    setSubacset(Part(pre), newSub)
+    if hasPart(p) then {
+      assert(p.path.length > 0)
+      val (pre, (x, i)) = (p.path.dropRight(1), p.path.last)
+      val sub = subacset(Part(pre))
+      val newSub = sub.copy(
+        partsMap = sub.partsMap + (x -> sub.partsMap(x).remPart(i))
+      )
+      setSubacset(Part(pre), newSub)
+    } else {
+      this
+    }
   }
 
   def remPart(p: Part): ACSet = {
@@ -241,11 +246,15 @@ case class ACSet(
     while (!queue.isEmpty) {
       val q = queue.dequeue()
       visited.add(q)
-      for ((obs, f) <- schema.homsInto(q.ty)) {
+      for ((_, f) <- schema.homsInto(q.ty)) {
         queue.enqueueAll(
           incident(q, f)
             .filter(!visited.contains(_))
         )
+      }
+      val sub = subacset(q)
+      for (ob <- sub.schema.obs) {
+        queue.enqueueAll(parts(q, ob).map(_._1).filter(!visited.contains(_)))
       }
     }
     val toRemove = visited.toSeq
@@ -276,4 +285,7 @@ object ACSet {
   def remPart(p: Part): State[ACSet, Unit] = State.modify(_.remPart(p))
 
   def moveFront(p: Part): State[ACSet, Unit] = State.modify(_.moveFront(p))
+
+  def subpartLens(f: Property, x: Part) =
+    Lens[ACSet, f.Value](_.subpart(f, x))(y => s => s.setSubpart(x, f, y))
 }

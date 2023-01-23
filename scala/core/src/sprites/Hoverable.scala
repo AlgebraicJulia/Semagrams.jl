@@ -8,19 +8,18 @@ import semagrams.acsets._
 
 case class Hoverable(
     hover: HoverController,
-    acs: Var[ACSet]
 ) extends Middleware {
-  // override def modifySignal(ent: Entity, $acs: Signal[ACSet]) = {
-  //   Signal
-  //     .combine(
-  //       $acs,
-  //       hover.switchState(ent, PropMap() + (Hovered, true), PropMap() + (Hovered, false)))
-  //     .map(_.addProps(_))
-  // }
+  override def modifySignal(ent: Entity, $acs: Signal[ACSet]) = {
+    Signal
+      .combine(
+        $acs,
+        hover.switchState(ent, PropMap() + (Hovered, ()), PropMap()))
+      .map(_.addProps(_))
+  }
 
   override def wrapHandler(f: HandlerAttacher) = (ent, elt) => {
     elt.amend(
-      hover.hoverable(ent, acs)
+      hover.hoverable(ent)
     )
 
     f(ent, elt)

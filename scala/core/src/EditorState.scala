@@ -119,6 +119,14 @@ class EditorState(val elt: SvgElement) {
       }
     )
 
+  def hoveredPart(tys: Seq[PartType]): IO[Option[Part]] =
+    hovered.map(e =>
+      e match {
+        case Some(p: Part) if tys contains p.ty => Some(p)
+        case _                           => None
+      }
+    )
+
   def hoveredEntity(ty: EntityType): IO[Option[Entity]] =
     hovered.map(e =>
       e match {

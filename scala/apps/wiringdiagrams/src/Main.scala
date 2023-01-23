@@ -9,7 +9,7 @@ import com.raquo.laminar.api.L._
 import cats.effect._
 import scala.scalajs.js.annotation.JSExportTopLevel
 
-def bindings(es: EditorState, g: Var[ACSet], ui: UIState) = {
+def bindings(es: EditorState, g: UndoableVar[ACSet], ui: UIState) = {
   val a = Actions(es, g, ui)
 
   Seq(
@@ -32,16 +32,20 @@ def bindings(es: EditorState, g: Var[ACSet], ui: UIState) = {
       .withMods(KeyModifier.Shift)
       .andThen(a.add(ROOT, InPort, PropMap())),
     keyDown("d").andThen(a.del),
+    keyDown("z")
+      .withMods(KeyModifier.Ctrl)
+      .andThen(IO(g.undo())),
+    keyDown("Z")
+      .withMods(KeyModifier.Ctrl, KeyModifier.Shift)
+      .andThen(IO(g.redo())),
     clickOnPart(MouseButton.Left, PartType(Seq(Box, OutPort)))
       .withMods(KeyModifier.Shift)
       .flatMap(a.dragEdge(Wire, Src, Tgt)),
-    clickOnPart(MouseButton.Left, PartType(Seq(Box, OutPort)))
-      .withMods(KeyModifier.Ctrl)
-      .flatMap(a.dragEdge(OutWire, OutSrc, OutTgt)),
     clickOnPart(MouseButton.Left, PartType(Seq(InPort)))
       .withMods(KeyModifier.Shift)
-      .flatMap(a.dragEdge(InWire, InSrc, InTgt)),
+      .flatMap(a.dragEdge(Wire, Src, Tgt)),
     clickOnPart(MouseButton.Left, PartType(Seq(Box))).withMods().flatMap(a.drag),
+    dblClickOnPart(MouseButton.Left, PartType(Seq(Box))).flatMap(a.edit(Content, false))
   )
 }
 
@@ -69,19 +73,17 @@ object Main {
     def run(es: EditorState, init: Option[String]): IO[Unit] = {
       val initg = WiringDiagram()
       for {
-        g <- IO(Var(initg))
+        g <- IO(UndoableVar(initg))
         lg <- IO(
           es.size.signal.combineWith(g.signal).map(layoutPorts)
         )
         _ <- es.makeViewport(
           lg,
           Seq(
-            ACSetEntitySource(Box, BasicDPBox(InPort, OutPort)(es, g)),
-            ACSetEntitySource(InPort, BasicWireStub(15)(es, g)),
-            ACSetEntitySource(OutPort, BasicWireStub(-15)(es, g)),
-            ACSetEdgeSource(Wire, Src, Tgt, BasicWire(es, g)),
-            ACSetEdgeSource(InWire, InSrc, InTgt, BasicWire(es, g)),
-            ACSetEdgeSource(OutWire, OutSrc, OutTgt, BasicWire(es, g)),
+            ACSetEntitySource(Box, BasicDPBox(InPort, OutPort)(es)),
+            ACSetEntitySource(InPort, BasicWireStub(15)(es)),
+            ACSetEntitySource(OutPort, BasicWireStub(-15)(es)),
+            ACSetEdgeSource(Wire, Src, Tgt, BasicWire(es)),
           )
         )
         ui <- es.makeUI()

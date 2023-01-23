@@ -9,7 +9,7 @@ import semagrams.widgets._
 import com.raquo.laminar.api.L._
 import cats.effect._
 
-case class Actions(es: EditorState, m: Var[ACSet], ui: UIState) {
+case class Actions(es: EditorState, m: UndoableVar[ACSet], ui: UIState) {
   import ACSet._
 
   def addAtMouse(ob: Ob, props: PropMap) = for {
@@ -30,13 +30,16 @@ case class Actions(es: EditorState, m: Var[ACSet], ui: UIState) {
   } yield ()
 
   def drag(i: Part) = for {
+    _ <- IO(m.save())
+    _ <- IO(m.unrecord())
     _ <- m.updateS_(moveFront(i))
     c <- IO(m.now().subpart(Center, i))
     init <- es.mousePos
     offset <- IO(c - init)
-    _ <- es.drag.dragStart(
+    _ <- es.drag.drag(
       Observer(p => m.update(_.setSubpart(i, Center, p + offset)))
     )
+    _ <- IO(m.record())
   } yield ()
 
   val debug = IO(m.now()).flatMap(IO.println)
@@ -46,6 +49,8 @@ case class Actions(es: EditorState, m: Var[ACSet], ui: UIState) {
     src: Hom,
     tgt: Hom,
   )(s: Part) = for {
+    _ <- IO(m.save())
+    _ <- IO(m.unrecord())
     p <- es.mousePos
     e <- m.updateS(
       addPart(
@@ -55,7 +60,7 @@ case class Actions(es: EditorState, m: Var[ACSet], ui: UIState) {
     )
     _ <- (for {
       _ <- es.drag.drag(Observer(p => m.update(_.setSubpart(e, End, p))))
-      t <- fromMaybe(es.hoveredPart(tgt.codom))
+      t <- fromMaybe(es.hoveredPart(tgt.codoms))
       _ <- m.updateS_(for {
         _ <- setSubpart(e, tgt, t)
         _ <- remSubpart(e, End)
@@ -65,27 +70,28 @@ case class Actions(es: EditorState, m: Var[ACSet], ui: UIState) {
       _ <- IO(es.drag.$state.set(None))
       _ <- m.updateS_(remPart(e))
     } yield ())
+    _ <- IO(m.record())
   } yield ()
 
-  // def edit(p: Property { type Value = String; }, multiline: Boolean)(i: Part): IO[Unit] = for {
-  //   _ <- IO(m.update(acs => if (acs.trySubpart(p, i).isEmpty) {
-  //                      acs.setSubpart(p, i, "")
-  //                    } else {
-  //                      acs
-  //                    }
-  //           ))
-  //   _ <- ui.addKillableHtmlEntity(
-  //     kill => {
-  //       val v = m.zoomL(ops.subpartLens(p, i))
-  //       val t = TextInput(v, multiline)(kill)
-  //       if (multiline) {
-  //         PositionWrapper(Position.topToBotMid(10), t)
-  //       } else {
-  //         PositionWrapper(Position.botMid(10), t)
-  //       }
-  //     }
-  //   )
-  // } yield ()
+  def edit(p: Property { type Value = String; }, multiline: Boolean)(i: Part): IO[Unit] = for {
+    _ <- IO(m.update(acs => if (acs.trySubpart(p, i).isEmpty) {
+                       acs.setSubpart(i, p, "")
+                     } else {
+                       acs
+                     }
+            ))
+    _ <- ui.addKillableHtmlEntity(
+      kill => {
+        val v = m.zoomL(subpartLens(p, i))
+        val t = TextInput(v, multiline)(kill)
+        if (multiline) {
+          PositionWrapper(Position.topToBotMid(10), t)
+        } else {
+          PositionWrapper(Position.botMid(10), t)
+        }
+      }
+    )
+  } yield ()
 
   // def importExport = ui.addKillableHtmlEntity(
   //   kill => PositionWrapper(

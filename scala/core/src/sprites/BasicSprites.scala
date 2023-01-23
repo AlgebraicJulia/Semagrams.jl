@@ -6,10 +6,10 @@ import semagrams.acsets._
 
 import com.raquo.laminar.api.L._
 
-def BasicWrapper(sprite: Sprite)(es: EditorState, acs: Var[ACSet]) = WithMiddleware(
+def BasicWrapper(sprite: Sprite)(es: EditorState) = WithMiddleware(
   sprite,
   Seq(
-    Hoverable(es.hover, acs),
+    Hoverable(es.hover),
     Clickable(es.mouse)
   )
 )
@@ -22,14 +22,13 @@ val BasicRect = BasicWrapper(Rect())
 
 val BasicWire = BasicWrapper(Wire())
 
-def BasicDPBox(inPort: Ob, outPort: Ob) = BasicWrapper(
-  DPBox(
-    Rect(),
-    WireStub(PropMap() + (Stroke, "black"), -10),
-    WireStub(PropMap() + (Stroke, "black"), 10),
+def BasicDPBox(inPort: Ob, outPort: Ob)(es: EditorState) = DPBox(
+    BasicRect(es),
+    BasicWireStub(-10)(es),
+    BasicWireStub(10)(es),
     inPort,
     outPort
   )
-)
+
 
 def BasicWireStub(extend: Double) = BasicWrapper(WireStub(PropMap() + (Stroke, "black"), extend))

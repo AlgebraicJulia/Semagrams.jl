@@ -7,7 +7,7 @@ import cats.effect._
 import cats.data.State
 import monocle._
 
-extension [A](v: Var[A]) {
+extension [A](v: UndoableVar[A]) {
   def updateS_[B](s: State[A, B]): IO[Unit] = {
     IO(v.update(s.run(_).value._1))
   }
@@ -24,7 +24,7 @@ extension [A](v: Var[A]) {
   def zoomL[B](l: Lens[A,B]) = new LensedVar(v, l)
 }
 
-class LensedVar[A,B](val v: Var[A], val l: Lens[A,B]) {
+class LensedVar[A,B](val v: UndoableVar[A], val l: Lens[A,B]) {
   val writer = v.updater[B]((a,b) => l.replace(b)(a))
 
   val signal = v.signal.map(l.get)
