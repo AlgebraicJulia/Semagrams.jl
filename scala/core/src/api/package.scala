@@ -30,7 +30,7 @@ export controllers.{
   KeyboardController
 }
 export layout.{
-  // assignBends,
+  assignBends,
   FixedRangeExceptEnds
 }
 export sprites.{

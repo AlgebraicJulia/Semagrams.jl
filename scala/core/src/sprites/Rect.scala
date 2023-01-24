@@ -43,14 +43,16 @@ case class Rect(props: PropMap) extends Sprite {
       text
     )
 
-    attachHandlers(ent, box)
+    attachHandlers(ent, root)
 
     root
   }
 
   override def boundaryPt(_subent: Entity, data: ACSet, dir: Complex) = {
     // Normalize to first quadrant
-    val (_, dims) = geom(props ++ data.props)
+    val (_, boxdims) = geom(props ++ data.props)
+    val os = (props ++ data.props)(OuterSep)
+    val dims = Complex(boxdims.x + 2*os, boxdims.y + 2*os)
     val q1dir = Complex(dir.x.abs, dir.y.abs)
     val q1pt = if (q1dir.x == 0) {
       Complex(0, dims.y / 2)
@@ -74,6 +76,8 @@ case class Rect(props: PropMap) extends Sprite {
     val (pos, dims) = geom(props ++ data.props)
     Some(BoundingBox(pos, dims))
   }
+
+  override def center(_subent: Entity, data: ACSet) = Some(data.props(Center))
 }
 
 object Rect {
@@ -109,8 +113,8 @@ object Rect {
     + (Stroke, "black")
     + (InnerSep, 10)
     + (OuterSep, 5)
-    + (MinimumWidth, 80)
-    + (MinimumHeight, 80)
+    + (MinimumWidth, 40)
+    + (MinimumHeight, 40)
 
   def apply() = new Rect(defaults)
 

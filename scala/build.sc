@@ -78,6 +78,12 @@ object apps extends Module {
 
     def artifactName = "semagrams-wiringdiagrams"
   }
+
+  object simplepetri extends SemagramsApp {
+    def desc = "simple petri editor"
+
+    def artifactName = "semagrams-simplepetri"
+  }
   // object petri extends SemagramsApp {
   //   def desc = "A petri net editor implemented with semagrams"
 

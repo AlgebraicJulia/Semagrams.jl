@@ -62,14 +62,6 @@ def bindings(es: EditorState, g: UndoableVar[ACSet], ui: UIState) = {
     keyDown("Z")
       .withMods(KeyModifier.Ctrl, KeyModifier.Shift)
       .andThen(IO(g.redo())),
-    keyDown("s").andThen(
-      for {
-        _ <- IO.println("Make a choice!")
-        choice <- ui.dialogue(
-          cb => PositionWrapper(Position.botMid(10), Select(Seq(("Choice 1", 1), ("Choice 2", 2)))(cb)))
-        _ <- IO.println(choice)
-      } yield ()
-    ),
     clickOnPart(MouseButton.Left, PartType(Seq(Box, OutPort)))
       .withMods(KeyModifier.Shift)
       .flatMap(a.dragEdge(Wire, Src, Tgt)),

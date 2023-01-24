@@ -26,7 +26,7 @@ case class Disc(props: PropMap) extends Sprite {
 
   def styleUpdater(data: L.Signal[PropMap]) = {
     List(
-      fill <-- data.map(_(Fill)),
+      fill <-- data.map(d => if d.get(Hovered).isDefined then "lightgrey" else d(Fill)),
       stroke <-- data.map(_(Stroke)),
       style <-- data.map(_.get(Style).getOrElse(""))
     )
@@ -79,6 +79,8 @@ case class Disc(props: PropMap) extends Sprite {
   }
 
   override def bbox(subent: Entity, data: ACSet) = Rect(props).bbox(subent, data)
+
+  override def center(_subent: Entity, data: ACSet) = Some(data.props(Center))
 }
 
 object Disc {

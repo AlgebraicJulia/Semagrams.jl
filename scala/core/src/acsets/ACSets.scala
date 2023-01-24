@@ -24,6 +24,8 @@ import monocle.Lens
 
 trait Ob {
   val schema: Schema = SchEmpty
+
+  def asDom() = Seq(PartType(Seq(this)))
 }
 
 trait Hom extends Property {

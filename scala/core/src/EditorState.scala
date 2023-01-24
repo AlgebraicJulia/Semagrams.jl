@@ -84,12 +84,13 @@ class EditorState(val elt: SvgElement) {
         (
             (bnd: Binding[A]) =>
               bnd.modifiers match {
-                case Some(mods) =>
+                case Some(mods) => {
                   if (keyboard.keyState.now().modifiers == mods) {
                     bnd.selector.lift(ev)
                   } else {
                     None
                   }
+                }
                 case None => bnd.selector.lift(ev)
               }
         ).unlift
