@@ -1,3 +1,3 @@
-import { main } from './out/apps/dwd/fullLinkJS.dest/main.js'
+import { App } from './out/apps/simplepetri/fullLinkJS.dest/main.js'
 
-main(document.getElementById("app-container"))
+App.main(document.getElementById("app-container"))

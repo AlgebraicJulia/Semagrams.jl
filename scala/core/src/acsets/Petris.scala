@@ -1,82 +1,36 @@
 package semagrams.acsets
 
-import semagrams._
-
 object Petris {
   case object S extends Ob
   case object T extends Ob
   case object I extends Ob
   case object O extends Ob
 
-  case object IT extends HomWithDom {
-    val dom = I
-    val codom = T
+  case object IT extends Hom {
+    val doms = I.asDom()
+    val codoms = T.asDom()
   }
-  case object IS extends HomWithDom {
-    val dom = I
-    val codom = S
+  case object IS extends Hom {
+    val doms = I.asDom()
+    val codoms = S.asDom()
   }
-  case object OT extends HomWithDom {
-    val dom = O
-    val codom = T
+  case object OT extends Hom {
+    val doms = O.asDom()
+    val codoms = T.asDom()
   }
-  case object OS extends HomWithDom {
-    val dom = O
-    val codom = S
-  }
-
-  case object SchPetri extends StaticSchema {
-    val schema = BasicSchema(
-      S,
-      T,
-      I,
-      O,
-      IT,
-      IS,
-      OT,
-      OS
-    )
+  case object OS extends Hom {
+    val doms = O.asDom()
+    val codoms = S.asDom()
   }
 
-  type Petri = ACSet[SchPetri.type]
+  case object SchPetri extends Schema {
+    val obs = Seq(S,T,I,O)
+    val homs = Seq(IT,IS,OT,OS)
+    val attrtypes = Seq()
+    val attrs = Seq()
+  }
 
   object Petri {
-    def apply() = ACSet[SchPetri.type]()
-  }
-
-  case object TName extends AttrWithDom with PValue[String] {
-    val dom = T
-  }
-
-  case object SName extends AttrWithDom with PValue[String] {
-    val dom = S
-  }
-
-  case object SchLabelledPetri extends StaticSchema {
-    val schema = SchPetri.extend(TName, SName)
-  }
-
-  type LabelledPetri = ACSet[SchLabelledPetri.type]
-
-  object LabelledPetri {
-    def apply() = ACSet[SchLabelledPetri.type]()
-  }
-
-  case object Rate extends AttrWithDom with PValue[Double] {
-    val dom = T
-  }
-
-  case object Concentration extends AttrWithDom with PValue[Double] {
-    val dom = S
-  }
-
-  case object SchLabelledReactionNet extends StaticSchema {
-    val schema = SchLabelledPetri.extend(Concentration, Rate)
-  }
-
-  type LabelledReactionNet = ACSet[SchLabelledReactionNet.type]
-
-  object LabelledReactionNet {
-    def apply() = ACSet[SchLabelledReactionNet.type]()
+    def apply() = ACSet(SchPetri)
   }
 }

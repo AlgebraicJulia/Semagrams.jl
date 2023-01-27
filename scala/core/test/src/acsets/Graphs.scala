@@ -3,6 +3,7 @@ package semagrams.acsets
 import utest._
 import upickle.default._
 import semagrams.acsets._
+import Graphs._
 import semagrams._
 import semagrams.util._
 
@@ -11,16 +12,16 @@ object ACSetSpec extends TestSuite {
   def tests = Tests {
     test("empty graph") {
       val g = Graph()
-      assert(g.vertices() == Set())
-      assert(g.edges() == Set())
+      assert(g.vertices() == Seq())
+      assert(g.edges() == Seq())
     }
 
     test("path graph") {
       import Graph._
       val mkpath = for {
-        x <- addVertex()
-        y <- addVertex()
-        z <- addVertex()
+        x <- addVertex
+        y <- addVertex
+        z <- addVertex
         k <- addEdge(x, y)
         l <- addEdge(y, z)
       } yield (x, y, z, k, l)
@@ -37,9 +38,9 @@ object ACSetSpec extends TestSuite {
     test("generic properties") {
       import Graph._
       val mkpath = for {
-        x <- addVertex()
-        y <- addVertex()
-        z <- addVertex()
+        x <- addVertex
+        y <- addVertex
+        z <- addVertex
         k <- addEdge(x, y)
         l <- addEdge(y, z)
         _ <- setSubpart(Center, x, Complex(4, 5))
@@ -75,27 +76,27 @@ object ACSetSpec extends TestSuite {
     test("incident") {
       import Graph._
       val mkpath = for {
-        x <- addVertex()
-        y <- addVertex()
-        z <- addVertex()
+        x <- addVertex
+        y <- addVertex
+        z <- addVertex
         k <- addEdge(x, y)
         l <- addEdge(y, z)
       } yield (x, y, z, k, l)
 
       val (g, (x, y, z, k, l)) = mkpath.run(Graph()).value
 
-      assert(g.incident(Src, x) == Set(k))
-      assert(g.incident(Tgt, x) == Set())
-      assert(g.incident(Src, y) == Set(l))
-      assert(g.incident(Tgt, y) == Set(k))
+      assert(g.incident(Src, x) == Seq(k))
+      assert(g.incident(Tgt, x) == Seq())
+      assert(g.incident(Src, y) == Seq(l))
+      assert(g.incident(Tgt, y) == Seq(k))
     }
 
     test("removing parts") {
       import Graph._
       val makeAndRemove = for {
-        x <- addVertex()
-        y <- addVertex()
-        z <- addVertex()
+        x <- addVertex
+        y <- addVertex
+        z <- addVertex
         k <- addEdge(x, y)
         l <- addEdge(y, z)
         _ <- remPart(y)
@@ -112,9 +113,9 @@ object ACSetSpec extends TestSuite {
     test("serialization") {
       import Graph._
       val mkpath = for {
-        x <- addVertex()
-        y <- addVertex()
-        z <- addVertex()
+        x <- addVertex
+        y <- addVertex
+        z <- addVertex
         k <- addEdge(x, y)
         l <- addEdge(y, z)
         _ <- setSubpart(Center, x, Complex(4,5))

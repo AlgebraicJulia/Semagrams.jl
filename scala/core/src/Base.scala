@@ -1,59 +1,44 @@
 package semagrams
 
 import com.raquo.laminar.api.L._
-import com.raquo.domtypes.generic.codecs.StringAsIsCodec
+import cats.effect._
 import org.scalajs.dom
+import scala.scalajs.js.annotation._
 import scala.scalajs.js
-import semagrams.actions._
-import upickle.default._
-import semagrams.util._
+import com.raquo.domtypes.generic.codecs.StringAsIsCodec
 
-def baseSvg(dims: Complex) = svg.svg(
-  wh := dims,
-  svg.customSvgAttr("tabindex", StringAsIsCodec) := "0",
-  svg.style := "border:black;border-style:solid;background-color:white",
-  svg.defs(
-    svg.marker(
-      svg.idAttr := "arrowhead",
-      svg.markerWidth := "10",
-      svg.markerHeight := "7",
-      svg.refX := "10",
-      svg.refY := "3.5",
-      svg.orient := "auto",
-      svg.polygon(
-        svg.points := "0 0, 10 3.5, 0 7"
+def baseSvg() = {
+  svg.svg(
+    svg.height := "100%",
+    svg.width := "100%",
+    svg.customSvgAttr("tabindex", StringAsIsCodec) := "0",
+    svg.style := "border:black;border-style:solid;background-color:white",
+    svg.defs(
+      svg.marker(
+        svg.idAttr := "arrowhead",
+        svg.markerWidth := "10",
+        svg.markerHeight := "7",
+        svg.refX := "10",
+        svg.refY := "3.5",
+        svg.orient := "auto",
+        svg.polygon(
+          svg.points := "0 0, 10 3.5, 0 7"
+        )
       )
     )
   )
-)
+}
 
-def plutoMain[Model](
-    parentDiv: dom.Element,
-    initModel: Model,
-    serializer: ReadWriter[Model],
-    action: Action[Model, Unit],
-    dims: Complex
-) = {
-  val $model = Var(initModel)
-  val appElement = baseSvg(dims)
+abstract class Semagram {
+  def run(es: EditorState, init: Option[String]): IO[Unit]
 
-  js.Object.defineProperty(
-    parentDiv,
-    "value",
-    new {
-      override val get = () => write($model.now())(serializer)
-      override val set =
-        (newVal) => $model.set(read(newVal.asInstanceOf[String])(serializer))
-    }
-  )
-
-  val update: () => Unit = () => {
-    parentDiv.dispatchEvent(dom.CustomEvent("input", null))
+  @JSExport
+  def main(div: dom.Element, init: js.UndefOr[String]) = {
+    val base = baseSvg()
+    val es = new EditorState(
+      base
+    )
+    render(div, base)
+    run(es, init.toOption).unsafeRunAndForget()(unsafe.IORuntime.global)
   }
-
-  val editorState = EditorState($model, appElement, update)
-
-  render(parentDiv, appElement)
-
-  runAction(editorState, action)
 }

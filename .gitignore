@@ -19,3 +19,8 @@
 /scala/node_modules/
 /scala/dist/
 /scala/out/
+/.metals/
+/assets/askem-hackathon-pres/pres.html
+/assets/askem-hackathon-pres/pres_files/
+scala/.vscode/settings.json
+scala/project/build.properties

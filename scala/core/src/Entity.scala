@@ -1,6 +1,8 @@
 package semagrams
 
+import semagrams.acsets._
 import upickle.default._
+import com.raquo.laminar.api.L._
 
 trait Property {
   type Value
@@ -25,14 +27,48 @@ trait PValue[T: ReadWriter] extends Property {
 trait EntityType
 
 trait Entity {
-  val entityType: EntityType
+  val ty: EntityType
 
-  def withType(ty: EntityType) =
-    if entityType == ty then Some(this) else None
+  def extend(sub: Entity): Entity = SubEntity(this, sub)
 }
 
-object BackgroundType extends EntityType
-
-object Background extends Entity {
-  val entityType = BackgroundType
+case class SubEntity(parent: Entity, child: Entity) extends Entity {
+  val ty = SubEntityType(parent.ty, child.ty)
 }
+
+case class SubEntityType(parentTy: EntityType, childTy: EntityType) extends EntityType
+
+type EntityMap = Map[Entity, (Sprite, ACSet)]
+
+object EntityMap {
+  def apply(): EntityMap = Map[Entity, (Sprite, ACSet)]()
+}
+
+case class EntitySource[A](
+    entities: (A, EntityMap) => Seq[(Entity, Sprite, ACSet)]
+) {
+  def addEntities(a: A, m: EntityMap) = {
+    m ++ entities(a, m).map((e, s, p) => (e, (s, p))).toMap
+  }
+
+  def withProps(props: PropMap) = EntitySource[A](
+    entities(_, _).map((e, s, a) => (e, s, a.addProps(props)))
+  )
+
+  def addPropsBy(f: (Entity, ACSet, EntityMap) => PropMap) =
+    EntitySource[A]((g, m) =>
+      entities(g, m).map((e, s, a) => (e, s, a.addProps(f(e, a, m))))
+    )
+
+  def updateEntities(f: (Entity, ACSet) => (Entity, ACSet)) = {
+    EntitySource[A]((g, m) =>
+      entities(g, m).map((e, s, a) => { val (e1, a1) = f(e,a); (e1, s, a1) })
+    )
+  }
+}
+
+case class Background() extends Entity {
+  val ty = Background
+}
+
+object Background extends EntityType
