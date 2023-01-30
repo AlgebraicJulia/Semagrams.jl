@@ -49,6 +49,7 @@ def petriFromCLJson(s: String): ACSet = {
       }
     }
   )
+
   springLayoutPetri(
     mkPetri.run(Petri()).value._1,
     BoundingBox(Complex(100,100), Complex(800, 800))
@@ -61,7 +62,7 @@ def clJsonFromPetri(petri: ACSet): String = {
     .map(ob => ob -> petri.partsOnly(ROOT, ob).zipWithIndex.toMap).toMap
   def juliaIndex(p: Part) = {
     val (ob, i) = p.path(0)
-    indexConversion(ob)(p)
+    1 + indexConversion(ob)(p)
   }
   val cljson = conversionSpec.map(
     {
@@ -195,6 +196,7 @@ object Main {
   object App extends Semagram {
 
     def run(es: EditorState, init: Option[String]): IO[Unit] = {
+      println(clJsonFromPetri(petriFromCLJson(init.get)))
       for {
         // initg <- IO(init
         //               .map(s => petriFromCLJson(read[catlab.ACSet](s)))

@@ -36,8 +36,8 @@ trait Hom extends Property {
 
   // THIS IS A HORRIBLE HACK TO WORK IN A SPECIFIC CASE, FIX SOON
   val rw = summon[ReadWriter[Int]].bimap(
-    _.path(0)._2.id + 1,
-    i => Part(Seq((codoms(0).path(0), Id(i-1))))
+    _.path(0)._2.id,
+    i => Part(Seq((codoms(0).path(0), Id(i))))
   )
 }
 
