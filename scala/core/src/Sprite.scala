@@ -3,11 +3,15 @@ package semagrams
 import semagrams.acsets._
 import semagrams.util._
 import com.raquo.laminar.api.L._
+import scala.util.Random
 
 case class BoundingBox(
   pos: Complex,
   dims: Complex
-)
+) {
+  def sample(): Complex =
+    Complex(Random.nextDouble() * dims.x + pos.x, Random.nextDouble() * dims.y + pos.y)
+}
 
 type HandlerAttacher = (Entity, SvgElement) => Unit
 

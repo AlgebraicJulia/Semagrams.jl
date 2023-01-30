@@ -40,7 +40,7 @@ class EditorState(val elt: SvgElement) {
   } yield v
 
   def makeUI() = for {
-    ui <- IO(new UIState(Var(Vector()), size.signal))
+    ui <- IO(new UIState(Var(Vector()), () => (), size.signal))
     _ <- IO(register(ui.viewport))
   } yield ui
 

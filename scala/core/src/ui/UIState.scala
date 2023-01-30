@@ -20,6 +20,7 @@ val newEntity: IO[Entity] = for {
 
 case class UIState(
   sprites: Var[Vector[(Entity, Sprite, ACSet)]],
+  focus: () => Unit,
   globalSize: Signal[Complex]
 ) {
   def addEntity(e: Entity, s: Sprite, p: ACSet) =
@@ -58,7 +59,14 @@ case class UIState(
     a <- IO.async[A](cb =>
       addEntity(
         e,
-        GenericHTMLSprite(() => build(Observer(a => { cb(Right(a)); remEntity(e) })), globalSize),
+        GenericHTMLSprite(
+          () => build(
+            Observer(
+              a => {
+                cb(Right(a))
+                remEntity(e)
+                focus()
+              })), globalSize),
         ACSet(SchEmpty)
       ).flatMap(_ => IO(None))
     )

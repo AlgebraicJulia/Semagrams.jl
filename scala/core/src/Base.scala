@@ -11,7 +11,7 @@ def baseSvg() = {
   svg.svg(
     svg.height := "100%",
     svg.width := "100%",
-    svg.customSvgAttr("tabindex", StringAsIsCodec) := "0",
+    svg.customSvgAttr("tabindex", StringAsIsCodec) := "-1",
     svg.style := "border:black;border-style:solid;background-color:white",
     svg.defs(
       svg.marker(
@@ -35,9 +35,7 @@ abstract class Semagram {
   @JSExport
   def main(div: dom.Element, init: js.UndefOr[String]) = {
     val base = baseSvg()
-    val es = new EditorState(
-      base
-    )
+    val es = new EditorState(base)
     render(div, base)
     run(es, init.toOption).unsafeRunAndForget()(unsafe.IORuntime.global)
   }

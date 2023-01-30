@@ -1,5 +1,7 @@
 package semagrams.acsets
 
+import semagrams._
+
 object Petris {
   case object S extends Ob
   case object T extends Ob
@@ -23,10 +25,17 @@ object Petris {
     val codoms = S.asDom()
   }
 
+  case object SName extends Attr with PValue[String] {
+    val dom = PartType(Seq(S))
+  }
+
+  case object TName extends Attr with PValue[String] {
+    val dom = PartType(Seq(T))
+  }
+
   case object SchPetri extends Schema {
     val obs = Seq(S,T,I,O)
     val homs = Seq(IT,IS,OT,OS)
-    val attrtypes = Seq()
     val attrs = Seq()
   }
 
