@@ -31,29 +31,33 @@ val conversionSpec = Seq(
   (O, "O", Seq((OS, "os"), (OT, "ot"))),
 )
 
-def petriFromCLJson(s: String): ACSet = {
-  val cljson = read[catlab.ACSet](s)
-  val mkPetri: State[ACSet, Unit] = conversionSpec.traverse_(
-    {
-      case (ob, obS, propSpecs) => {
-        val propses = cljson(obS).map(
-          m => {
-            propSpecs.foldLeft(PropMap())(
-              {
-                case (pm, (p, pS)) => pm.set(p, read[p.Value](m(pS))(p.rw))
-              }
-            )
-          }
-        )
-        addParts(ROOT, ob, propses)
+def petriFromCLJson(s: String): Option[ACSet] = {
+  try {
+    val cljson = read[catlab.ACSet](s)
+    val mkPetri: State[ACSet, Unit] = conversionSpec.traverse_(
+      {
+        case (ob, obS, propSpecs) => {
+          val propses = cljson(obS).map(
+            m => {
+              propSpecs.foldLeft(PropMap())(
+                {
+                  case (pm, (p, pS)) => pm.set(p, read[p.Value](m(pS))(p.rw))
+                }
+              )
+            }
+          )
+          addParts(ROOT, ob, propses)
+        }
       }
-    }
-  )
+    )
+    Some(springLayoutPetri(
+      mkPetri.run(Petri()).value._1,
+      BoundingBox(Complex(100,100), Complex(800, 800))
+    ))
+  } catch {
+    case e => return None
+  }
 
-  springLayoutPetri(
-    mkPetri.run(Petri()).value._1,
-    BoundingBox(Complex(100,100), Complex(800, 800))
-  )
 }
 
 def clJsonFromPetri(petri: ACSet): String = {
@@ -196,7 +200,6 @@ object Main {
   object App extends Semagram {
 
     def run(es: EditorState, init: Option[String]): IO[Unit] = {
-      println(clJsonFromPetri(petriFromCLJson(init.get)))
       for {
         // initg <- IO(init
         //               .map(s => petriFromCLJson(read[catlab.ACSet](s)))

@@ -5,10 +5,8 @@ import semagrams.util._
 
 def TextInput[A](v: LensedVar[A,String], multiline: Boolean)(finished: Observer[Unit]) = {
   val common = Seq(
-    controlled(
-      value <-- v.signal,
-      onInput.mapToValue --> v.writer
-    ),
+    value <-- v.signal,
+    onInput.mapToValue --> v.writer,
     onKeyDown.stopPropagation
       .filter(Set("Enter", "Escape") contains _.key)
       .mapTo(())

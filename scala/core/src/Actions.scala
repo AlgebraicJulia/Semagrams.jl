@@ -15,7 +15,7 @@ case class Actions(
   m: UndoableVar[ACSet],
   ui: UIState,
   serialize: ACSet => String,
-  deserialize: String => ACSet,
+  deserialize: String => Option[ACSet],
 ) {
   import ACSet._
 
@@ -108,7 +108,7 @@ case class Actions(
   def importExport = ui.addKillableHtmlEntity(
     kill => PositionWrapper(
       Position.topToBotMid(10),
-      TextInput(m.zoomL(Lens(serialize)(s => _ => deserialize(s))), true)(kill)
+      TextInput(m.zoomL(Lens(serialize)(s => a => deserialize(s).getOrElse(a))), true)(kill)
     )
   )
 }

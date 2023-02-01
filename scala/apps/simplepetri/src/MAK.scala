@@ -41,9 +41,9 @@ case class MassActionEquation(
 
 def escapeUnderscores(s: String) = s.replaceAll("_","\\\\_")
 
-def variable(petri: ACSet, s: Part): Variable = {
+def variable(petri: ACSet, s: Part, default: String): Variable = {
   petri.trySubpart(Content, s) match {
-    case Some("") | None => Variable(s"\\mathcal{S}_{${s.path(0)._2.id + 1}}")
+    case Some("") | None => Variable(s"${default}_{${s.path(0)._2.id + 1}}")
     case Some(name) if name.length > 1 => Variable(s"\\mathrm{${escapeUnderscores(name)}}")
     case Some(name) => Variable(escapeUnderscores(name))
   }
@@ -54,32 +54,30 @@ def massActionEquations(petri: ACSet): String = {
   val ss = petri.partsOnly(ROOT, S).sortBy(_.path(0)._2.id)
   val inputMatrix = ts.map(
     t => (t -> ss.map(
-      s => (s -> petri.incident(s, IS).filter(petri.subpart(IT,_) == t).length)
+      s => (s -> petri.incident(s, IS).filter(petri.trySubpart(IT,_) == Some(t)).length)
     ).toMap)
   ).toMap
   val outputMatrix = ts.map(
     t => (t -> ss.map(
-      s => (s -> petri.incident(s, OS).filter(petri.subpart(OT,_) == t).length)
+      s => (s -> petri.incident(s, OS).filter(petri.trySubpart(OT,_) == Some(t)).length)
     ).toMap)
   ).toMap
   val eqs = ss.map(
     s => MassActionEquation(
-      variable(petri, s),
+      variable(petri, s, "C"),
       ts.map(t => {
         val (i,o) = (inputMatrix(t)(s), outputMatrix(t)(s))
         (
           o - i,
-          variable(petri, t),
+          variable(petri, t, "r"),
           ss.map(s1 => {
-            (variable(petri, s1), inputMatrix(t)(s1))
+            (variable(petri, s1, "C"), inputMatrix(t)(s1))
           }).filter(_._2 != 0)
         )
       }).filter(_._1 != 0)
     )
   )
-  val s = s"\\begin{align*} ${eqs.map(_.toLatex()).mkString(" \\\\ \n")} \\end{align*}"
-  println(s)
-  s
+  s"\\begin{align*} ${eqs.map(_.toLatex()).mkString(" \\\\ \n")} \\end{align*}"
 }
 
 @js.native
