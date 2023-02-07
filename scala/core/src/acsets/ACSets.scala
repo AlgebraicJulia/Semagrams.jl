@@ -34,7 +34,11 @@ trait Hom extends Property {
 
   type Value = Part
 
-  val rw = summon[ReadWriter[String]].bimap(_.toString, _ => ???)
+  // THIS IS A HORRIBLE HACK TO WORK IN A SPECIFIC CASE, FIX SOON
+  val rw = summon[ReadWriter[Int]].bimap(
+    _.path(0)._2.id,
+    i => Part(Seq((codoms(0).path(0), Id(i - 1))))
+  )
 }
 
 trait Attr extends Property {
@@ -88,14 +92,19 @@ case class Parts(
   ids: Seq[Id],
   acsets: Map[Id, ACSet]
 ) {
-  def addPart(a: ACSet): (Parts, Id) = {
-    val i = Id(nextId)
+  def addParts(partacsets: Seq[ACSet]): (Parts, Seq[Id]) = {
+    val newIds = nextId.to(nextId + partacsets.length - 1).map(Id.apply)
     val newPd = Parts(
-      nextId + 1,
-      ids :+ i,
-      acsets + (i -> a)
+      nextId + partacsets.length,
+      ids ++ newIds,
+      acsets ++ newIds.zip(partacsets).toMap
     )
-    (newPd, i)
+    (newPd, newIds)
+  }
+
+  def addPart(acset: ACSet): (Parts, Id) = {
+    val (p, newIds) = addParts(Seq(acset))
+    (p, newIds(0))
   }
 
   def setAcset(i: Id, acs: ACSet) = {
@@ -117,7 +126,6 @@ case class Parts(
     )
   }
 }
-
 
 
 val ROOT = Part(Seq())
@@ -166,6 +174,11 @@ case class ACSet(
     ps.ids.map(id => (i.extend(x, id), ps.acsets(id)))
   }
 
+  def partsOnly(i: Part, x: Ob): Seq[Part] = {
+    val ps = subacset(i).partsMap(x)
+    ps.ids.map(id => i.extend(x, id))
+  }
+
   def subpart(f: Property, i: Part): f.Value = subacset(i).props(f)
 
   def trySubpart(f: Property, i: Part): Option[f.Value] = trySubacset(i).flatMap(_.props.get(f))
@@ -178,6 +191,21 @@ case class ACSet(
       partsMap = sub.partsMap + (x -> newparts)
     )
     (setSubacset(p, newSub), p.extend(x,i))
+  }
+
+  def addParts(p: Part, x: Ob, inits: Seq[ACSet]): (ACSet, Seq[Part]) = {
+    val sub = subacset(p)
+    val subschema = schema.subschema(p.ty.asInstanceOf[PartType].extend(x))
+    val (newparts, ids) = sub.partsMap(x).addParts(inits)
+    val newSub = sub.copy(
+      partsMap = sub.partsMap + (x -> newparts)
+    )
+    (setSubacset(p, newSub), ids.map(i => p.extend(x,i)))
+  }
+
+  def addPartsProps(p: Part, x: Ob, props: Seq[PropMap]): (ACSet, Seq[Part]) = {
+    val subschema = schema.subschema(p.ty.asInstanceOf[PartType].extend(x))
+    addParts(p, x, props.map(p => ACSet(subschema, p)))
   }
 
   def addPart(p: Part, x: Ob, props: PropMap): (ACSet, Part) = {
@@ -281,7 +309,14 @@ object ACSet {
   def apply(s: Schema, props: PropMap): ACSet =
     new ACSet(s, props, s.obs.map(ob => ob -> Parts(0, Seq(), Map())).toMap)
 
-  def addPart(p: Part, x: Ob, props: PropMap): State[ACSet, Part] = State(_.addPart(p, x, props))
+  def addParts(p: Part, x: Ob, props: Seq[PropMap]): State[ACSet, Seq[Part]] =
+    State(_.addPartsProps(p, x, props))
+
+  def addPart(p: Part, x: Ob, props: PropMap): State[ACSet, Part] =
+    State(_.addPart(p, x, props))
+
+  def addPart(p: Part, x: Ob): State[ACSet, Part] =
+    State(_.addPart(p, x))
 
   def addPart(x: Ob, props: PropMap): State[ACSet, Part] = State(_.addPart(x, props))
 

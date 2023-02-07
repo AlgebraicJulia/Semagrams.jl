@@ -5,11 +5,18 @@ import semagrams.acsets.{given, _}
 import semagrams.ui._
 import semagrams.util._
 import semagrams.widgets._
+import monocle._
 
 import com.raquo.laminar.api.L._
 import cats.effect._
 
-case class Actions(es: EditorState, m: UndoableVar[ACSet], ui: UIState) {
+case class Actions(
+  es: EditorState,
+  m: UndoableVar[ACSet],
+  ui: UIState,
+  serialize: ACSet => String,
+  deserialize: String => Option[ACSet],
+) {
   import ACSet._
 
   def addAtMouse(ob: Ob, init: ACSet) = for {
@@ -98,10 +105,10 @@ case class Actions(es: EditorState, m: UndoableVar[ACSet], ui: UIState) {
     )
   } yield ()
 
-  // def importExport = ui.addKillableHtmlEntity(
-  //   kill => PositionWrapper(
-  //     Position.topToBotMid(10),
-  //     TextInput(m.zoomL(ops.serializedLens), true)(kill)
-  //   )
-  // )
+  def importExport = ui.addKillableHtmlEntity(
+    kill => PositionWrapper(
+      Position.topToBotMid(10),
+      TextInput(m.zoomL(Lens(serialize)(s => a => deserialize(s).getOrElse(a))), true)(kill)
+    )
+  )
 }
