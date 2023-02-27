@@ -23,7 +23,7 @@ export semagrams.{
   keyDown,
   clickOn,
   clickOnPart,
-  dblClickOnPart
+  dblClickOnPart,
 }
 export semagrams.GenericProperty._
 export controllers.{

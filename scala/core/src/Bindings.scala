@@ -47,32 +47,38 @@ def keyDown(key: String) = bindEvent(KeyDown(key))
 def keyUp(key: String) = bindEvent(KeyUp(key))
 
 def clickOn(button: MouseButton) = Binding(
-  { case MouseDown(Some(ent), `button`) =>
+  { case Click(Some(ent), `button`) =>
     IO(ent)
   }
 )
 
 def clickOn[E <: Entity](button: MouseButton, ty: EntityType) = Binding(
   { case MouseDown(Some(ent), `button`) if ent.ty == ty =>
-    IO(ent.asInstanceOf[E])
+      println("B - clickOn")
+      IO(ent.asInstanceOf[E])
   }
 )
 
 def clickOnPart(button: MouseButton, ty: PartType) = Binding(
   {
-    case MouseDown(Some(i: Part), `button`) if i.ty == ty => IO(i)
+    case MouseDown(Some(i: Part), `button`) if i.ty == ty => 
+      println("B - clickOnPart")
+      IO(i)
   }
 )
 
 def dblClickOn(button: MouseButton) = Binding(
   { case DoubleClick(Some(ent), `button`) =>
-    IO(ent)
+      println("B - dblClickOn")
+      IO(ent)
   }
 )
 
 def dblClickOnPart(button: MouseButton, ty: PartType) = Binding(
   {
-    case DoubleClick(Some(i: Part), `button`) if i.ty == ty => IO(i)
+    case DoubleClick(Some(i: Part), `button`) => // if i.ty == ty => 
+      println("B - dblClickOnPart")
+      IO(i)
   }
 )
 

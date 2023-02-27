@@ -59,6 +59,7 @@ case class Part(path: Seq[(Ob, Id)]) extends Entity {
     case (p: Part) => Part(path ++ p.path)
     case _ => SubEntity(this, e)
   }
+
 }
 
 trait Schema {

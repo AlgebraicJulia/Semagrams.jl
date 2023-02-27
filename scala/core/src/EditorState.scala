@@ -76,7 +76,8 @@ class EditorState(val elt: SvgElement) {
   }
 
   def nextEvent[A](stream: EventStream[A]): IO[A] =
-    IO.async_(cb => elt.amend(attachEventStream(stream, cb)))
+    IO.async_(cb => 
+      elt.amend(attachEventStream(stream, cb)))
 
   def bindNoCatch[A](bindings: Seq[Binding[A]]): IO[A] =
     nextEvent(events.events.collect(((ev: Event) => {
