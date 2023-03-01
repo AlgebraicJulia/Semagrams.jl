@@ -47,7 +47,7 @@ def keyDown(key: String) = bindEvent(KeyDown(key))
 def keyUp(key: String) = bindEvent(KeyUp(key))
 
 def clickOn(button: MouseButton) = Binding(
-  { case Click(Some(ent), `button`) =>
+  { case MouseDown(Some(ent), `button`) =>
     IO(ent)
   }
 )
@@ -74,9 +74,10 @@ def dblClickOn(button: MouseButton) = Binding(
   }
 )
 
+
 def dblClickOnPart(button: MouseButton, ty: PartType) = Binding(
   {
-    case DoubleClick(Some(i: Part), `button`) => // if i.ty == ty => 
+    case DoubleClick(Some(i: Part), `button`) if i.ty == ty => 
       println("B - dblClickOnPart")
       IO(i)
   }
@@ -91,5 +92,22 @@ def releaseOn(button: MouseButton) = Binding(
 def mouseUp(button: MouseButton) = Binding(
   { case MouseUp(e, `button`) =>
     IO(e)
+  }
+)
+
+def menuOn() = Binding(
+  { case ContextMenu(Some(ent)) =>
+      println("B - menuOn")
+      IO(ent)
+  }
+)
+
+
+
+def menuOnPart(ty: PartType) = Binding(
+  {
+    case ContextMenu(Some(i: Part)) if i.ty == ty => 
+      println("B - menuOnPart")
+      IO(i)
   }
 )

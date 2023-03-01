@@ -47,6 +47,15 @@ trait Attr extends Property {
 
 case class PartType(path: Seq[Ob]) extends EntityType {
   def extend(x: Ob) = PartType(path :+ x)
+
+  def head = PartType(path.slice(0,1))
+  def tail = PartType(path.tail)
+
+  def <(that:PartType): Boolean = that.path match
+    case Seq() => true
+    case Seq(thathead,thattail @_*) =>
+      head == thathead && tail < PartType(thattail)
+  
 }
 
 // The empty list refers to the acset itself
@@ -60,6 +69,16 @@ case class Part(path: Seq[(Ob, Id)]) extends Entity {
     case _ => SubEntity(this, e)
   }
 
+  def head: Part = Part(path.slice(0,1))
+  def tail: Part = Part(path.tail)
+
+
+  def <(that: Part): Boolean = that.path match
+    case Seq() => true
+    case Seq(thathead,thattail @_*) => 
+      head == thathead && tail < Part(thattail)
+  
+  def in(ptype:PartType) = ty < ptype
 }
 
 trait Schema {

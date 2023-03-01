@@ -15,7 +15,7 @@ def bindings(es: EditorState, g: Var[Graph], ui: UIState) = {
   val a = Actions(es, g, ui)
 
   Seq(
-    keyDown("a").andThen(a.add(V, PropMap().set(MinimumWidth, 60).set(MinimumHeight, 60))),
+    keyDown("a").andThen(a.add_(V, PropMap().set(MinimumWidth, 60).set(MinimumHeight, 60))),
     keyDown("d").andThen(a.del),
     keyDown("e").andThen(a.importExport),
     keyDown("l").andThen(

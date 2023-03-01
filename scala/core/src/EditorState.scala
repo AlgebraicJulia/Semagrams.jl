@@ -136,4 +136,19 @@ class EditorState(val elt: SvgElement) {
         case _                           => None
       }
     )
+
+
+
+  import semagrams.widgets.{Menu,PositionWrapper,Position}
+
+  def makeMenu(ui:UIState,entries:Seq[(String,Part => IO[Unit])])(i:Part) = for {
+    pos <- mousePos
+    choice <- ui.dialogue[Part => IO[Matchable]](
+      cb => PositionWrapper(Position.atPos(pos), Menu(entries)(cb))
+    )
+    _ <- choice(i)
+  } yield ()
+
+
+
 }

@@ -64,33 +64,52 @@ def dwdFromJson(s:String): Option[ACSet] = Some(DWD())
 def jsonFromDWD(dwd: ACSet): String = ""
 
 
-// val mkAdd = for {
-//   _ <- addPart(OutPort)
-//   _ <- addPart(InPort)
-//   _ <- addPart(InPort)
-//   _ <- setSubpart(ROOT, Content, "+")
-// } yield ()
-
-// val mkZero = for {
-//   _ <- addPart(OutPort)
-//   _ <- setSubpart(ROOT, Content, "0")
-// } yield ()
-
-// val monoidOps = Seq(
-//   ("Add", mkAdd.run(DWD()).value._1),
-//   ("Zero", mkZero.run(DWD()).value._1),
-// )
 
 def bindings(es: EditorState, g: UndoableVar[ACSet], ui: UIState) = {
   val a = Actions(es, g, ui,jsonFromDWD,dwdFromJson)
 
+  val boxMenu = Seq(
+    ("Rename", (b:Part) => IO(println("rename fired")).>>(a.edit(Content,false)(b))),
+    ("Add Input", (b:Part) => IO(println("addIn"))),
+  )
+
+  val wireMenu = Seq(
+    ("Rename", (b:Part) => IO(println("rename fired")).>>(a.edit(WireProp.WireLabel,false)(b))),
+  )
+
+
+  def getPort(ent:Entity): IO[Part] = 
+    println(s"getPort: $ent")
+    ent match
+      case Background() => a.add(ROOT,InPort,PropMap())
+      case p:Part => p.ty.path match
+        case prefix :+ InPort => IO(p)
+        case prefix :+ OutPort => IO(p)
+        case Seq(Box) => for {
+          pt <- getPortType(p)
+          _ = println(s"getPortType: $pt")
+          p <- a.add(p,pt,PropMap())
+        } yield p
+
+  def getPortType(b:Part) = for {
+    z <- es.mousePos
+    c = g.now().subpart(Center,b)
+    pt = if (z-c).x < 0
+      then InPort
+      else OutPort
+  } yield pt
+
+
   Seq(
-    dblClickOnPart(MouseButton.Left,PartType(Seq(Box)))
-      .flatMap(a.edit(Content,false)),      
+    // dblClickOnPart(MouseButton.Left,PartType(Seq(Box)))
+    //   .flatMap(a.edit(Content,false)),      
     dblClickOn(MouseButton.Left).flatMap(ent => 
       ent match
         case Background() => a.addAtMouse(Box)
-        case _ => IO(println(s"dblClickOn: $ent"))
+        case p:Part => p.ty.path match
+          case Seq(Box,_*) => a.edit(Content,false)(p)
+          case _ => IO(println(s"dblClickOn: p=$p"))        
+        case _ => IO(println(s"dblClickOn: ent=$ent"))
     ),
     keyDown("?").andThen(a.debug),
     keyDown("o").andThen(for {
@@ -100,9 +119,9 @@ def bindings(es: EditorState, g: UndoableVar[ACSet], ui: UIState) = {
       )
       _ <- pt.ty match
         case ROOT.ty =>
-          a.add(ROOT,OutPort,PropMap())
+          a.add_(ROOT,OutPort,PropMap())
         case PartType(Seq(Box,_*)) =>
-          a.add(Part(pt.path.slice(0,1)), OutPort, PropMap())
+          a.add_(Part(pt.path.slice(0,1)), OutPort, PropMap())
         case _ => 
           IO(println(s"bad add output: $pt"))          
     } yield ()),
@@ -113,9 +132,9 @@ def bindings(es: EditorState, g: UndoableVar[ACSet], ui: UIState) = {
       )
       _ <- pt.ty match
         case ROOT.ty =>
-          a.add(ROOT,InPort,PropMap())
+          a.add_(ROOT,InPort,PropMap())
         case PartType(Seq(Box,_*)) =>
-          a.add(Part(pt.path.slice(0,1)), InPort, PropMap())
+          a.add_(Part(pt.path.slice(0,1)), InPort, PropMap())
         case _ => 
           IO(println(s"bad add output: $pt"))          
     } yield ()),
@@ -126,21 +145,36 @@ def bindings(es: EditorState, g: UndoableVar[ACSet], ui: UIState) = {
     keyDown("Z")
       .withMods(KeyModifier.Ctrl, KeyModifier.Shift)
       .andThen(IO(g.redo())),
-    // clickOnPart(MouseButton.Left, PartType(Seq(Box))).withMods().flatMap(a.drag),
-    // clickOnPart(MouseButton.Left, PartType(Seq(Box, OutPort)))
-    //   .withMods(KeyModifier.Shift)
-    //   .flatMap(a.dragEdge(Wire, Src, Tgt)),
-    // clickOnPart(MouseButton.Left, PartType(Seq(InPort)))
-    //   .withMods(KeyModifier.Shift)
-    //   .flatMap(a.dragEdge(Wire, Src, Tgt)),
-    // keyDown("a").andThen(
-    //   for {
-    //     choice <- ui.dialogue[ACSet](
-    //       cb => PositionWrapper(Position.botMid(10), Select(monoidOps)(cb)))
-    //     _ <- a.addAtMouse(Box, choice)
-    //   } yield ()),
-  )
+    clickOnPart(MouseButton.Left, PartType(Seq(Box)))
+      .withMods().flatMap(a.drag),
+    clickOnPart(MouseButton.Left, PartType(Seq(Box, OutPort)))
+      .withMods(KeyModifier.Shift)
+      .flatMap(a.dragEdge(Wire, Src, Tgt, Some(getPort))),
+    clickOnPart(MouseButton.Left, PartType(Seq(Box, InPort)))
+      .withMods(KeyModifier.Shift)
+      .flatMap(a.dragEdge(Wire, Src, Tgt, Some(getPort))),
+    clickOnPart(MouseButton.Left, PartType(Seq(InPort)))
+      .withMods(KeyModifier.Shift)
+      .flatMap(a.dragEdge(Wire, Src, Tgt, Some(getPort))),
+    clickOnPart(MouseButton.Left, PartType(Seq(InPort)))
+      .withMods(KeyModifier.Shift)
+      .flatMap(a.dragEdge(Wire, Src, Tgt, Some(getPort))),
+    menuOnPart(PartType(Seq(Box)))
+      .flatMap(es.makeMenu(ui,boxMenu)),
+    menuOnPart(PartType(Seq(Wire)))
+      .flatMap(es.makeMenu(ui,wireMenu)),
+    clickOnPart(MouseButton.Left, PartType(Seq(Box)))
+      .withMods(KeyModifier.Shift).flatMap(b => for {
+        p <- a.add(b,OutPort,PropMap())
+        _ <- a.dragEdge(Wire,Src,Tgt,Some(getPort))(p)
+      } yield ())
+   )
 }
+
+
+
+  
+
 
 def layoutPorts(dims: Complex, init: ACSet): ACSet = {
   import Complex.im
@@ -178,8 +212,8 @@ object Main {
           lg,
           Seq(
             ACSetEntitySource(Box, AltDPBox(InPort, OutPort)(es)).withProps(PropMap() + (FontSize,22)),
-            ACSetEntitySource(InPort, BasicPort()(es)),
-            ACSetEntitySource(OutPort, BasicPort()(es)),
+            ACSetEntitySource(InPort, BasicPort()(es)).withProps(PropMap() + (MinimumWidth,40) + (Fill,"green")),
+            ACSetEntitySource(OutPort, BasicPort()(es)).withProps(PropMap() + (MinimumWidth,40) + (Fill,"red")),
             ACSetEdgeSource(Wire, Src, Tgt, BasicWire(es)),
           )
         )

@@ -42,19 +42,19 @@ def bindings(es: EditorState, g: UndoableVar[ACSet], ui: UIState) = {
     keyDown("o").andThen(
       for {
         mb <- es.hoveredPart(PartType(Seq(Box)))
-        _ <- mb.map(b => a.add(b, OutPort, PropMap())).getOrElse(IO(()))
+        _ <- mb.map(b => a.add_(b, OutPort, PropMap())).getOrElse(IO(()))
       } yield ()),
     keyDown("i").andThen(
       for {
         mb <- es.hoveredPart(PartType(Seq(Box)))
-        _ <- mb.map(b => a.add(b, InPort, PropMap())).getOrElse(IO(()))
+        _ <- mb.map(b => a.add_(b, InPort, PropMap())).getOrElse(IO(()))
       } yield ()),
     keyDown("O")
       .withMods(KeyModifier.Shift)
-      .andThen(a.add(ROOT, OutPort, PropMap())),
+      .andThen(a.add_(ROOT, OutPort, PropMap())),
     keyDown("I")
       .withMods(KeyModifier.Shift)
-      .andThen(a.add(ROOT, InPort, PropMap())),
+      .andThen(a.add_(ROOT, InPort, PropMap())),
     keyDown("d").andThen(a.del),
     keyDown("z")
       .withMods(KeyModifier.Ctrl)

@@ -30,6 +30,10 @@ case class Actions(
   } yield ()
 
   def add(part: Part, ob: Ob, props: PropMap) = for {
+    i <- m.updateS(addPart(part, ob, props))
+  } yield i
+
+  def add_(part: Part, ob: Ob, props: PropMap) = for {
     _ <- m.updateS_(addPart(part, ob, props))
   } yield ()
 
@@ -60,7 +64,9 @@ case class Actions(
     ob: Ob,
     src: Hom,
     tgt: Hom,
-  )(s: Part) = for {
+    promoteTgt: Option[Entity => IO[Part]] = None
+  )(s: Part) = 
+    for {
     _ <- IO(m.save())
     _ <- IO(m.unrecord())
     p <- es.mousePos
@@ -72,7 +78,16 @@ case class Actions(
     )
     _ <- (for {
       _ <- es.drag.drag(Observer(p => m.update(_.setSubpart(e, End, p))))
-      t <- fromMaybe(es.hoveredPart(tgt.codoms))
+      t <- {
+        println(s"dragEdge: $promoteTgt")
+        promoteTgt match
+          case None => fromMaybe(es.hoveredPart(tgt.codoms))
+          case Some(f) => for {
+            ent <- es.hovered
+            _ = println(ent)
+            p <- f(ent.getOrElse(Background()))
+          } yield p
+      }
       _ <- m.updateS_(for {
         _ <- setSubpart(e, tgt, t)
         _ <- remSubpart(e, End)

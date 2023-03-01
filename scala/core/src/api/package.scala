@@ -24,6 +24,7 @@ export semagrams.{
   clickOn,
   clickOnPart,
   dblClickOnPart,
+  menuOnPart
 }
 export semagrams.GenericProperty._
 export controllers.{
@@ -52,7 +53,8 @@ export sprites.{
   BasicWire,
   BasicWireStub,
   BasicDPBox,
-  BasicWrapper
+  BasicWrapper,
+  WireProp
 }
 export ui.{
   UIState
@@ -70,5 +72,6 @@ export util.{
 export widgets.{
   Select,
   Position,
-  PositionWrapper
+  PositionWrapper,
+  Menu
 }
