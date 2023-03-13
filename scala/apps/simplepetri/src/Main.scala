@@ -184,8 +184,8 @@ def bindings(es: EditorState, g: UndoableVar[ACSet], ui: UIState) = {
     clickOnPart(MouseButton.Left, PartType(Seq(T)))
       .withMods(KeyModifier.Shift)
       .flatMap(a.dragEdge(O, OT, OS)),
-    clickOnPart(MouseButton.Left, PartType(Seq(S))).withMods().flatMap(a.drag),
-    clickOnPart(MouseButton.Left, PartType(Seq(T))).withMods().flatMap(a.drag),
+    clickOnPart(MouseButton.Left, PartType(Seq(S))).withMods().flatMap(a.dragMove),
+    clickOnPart(MouseButton.Left, PartType(Seq(T))).withMods().flatMap(a.dragMove),
     keyDown("e").andThen(for {
                            mx <- es.hoveredPart(Seq(PartType(Seq(S)), PartType(Seq(T))))
                            _ <- mx.map(x => a.edit(Content, false)(x)).getOrElse(IO(()))

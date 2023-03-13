@@ -65,7 +65,11 @@ def jsonFromDWD(dwd: ACSet): String = ""
 
 
 
-def bindings(es: EditorState, g: UndoableVar[ACSet], ui: UIState) = {
+def bindings(
+  es: EditorState, 
+  g: UndoableVar[ACSet], 
+  ui: UIState
+) = {
   val a = Actions(es, g, ui,jsonFromDWD,dwdFromJson)
 
   val boxMenu = Seq(
@@ -78,26 +82,80 @@ def bindings(es: EditorState, g: UndoableVar[ACSet], ui: UIState) = {
   )
 
 
-  def getPort(ent:Entity): IO[Part] = 
-    println(s"getPort: $ent")
-    ent match
-      case Background() => a.add(ROOT,InPort,PropMap())
-      case p:Part => p.ty.path match
-        case prefix :+ InPort => IO(p)
-        case prefix :+ OutPort => IO(p)
-        case Seq(Box) => for {
-          pt <- getPortType(p)
-          _ = println(s"getPortType: $pt")
-          p <- a.add(p,pt,PropMap())
-        } yield p
 
-  def getPortType(b:Part) = for {
+
+
+  def getPort(ent:Entity): IO[Part] = 
+    ent match
+      // case Background() => for {
+      //   (ptype,pnum) <- getBgPortInfo()
+      //   p <- a.add(ROOT,ptype,PropMap().set(Content,pnum))
+      // } yield p
+      case i:Part => i.ty.path match
+        case prefix :+ InPort => IO(i)
+        case prefix :+ OutPort => IO(i)
+        // case Seq(Box) => for {
+        //   ptype <- getBoxPortType(i)
+        //   p <- a.add(i,ptype,PropMap())
+        // } yield p
+        case _ => IO(ROOT)
+
+
+  def getBgPortType() = for {
     z <- es.mousePos
-    c = g.now().subpart(Center,b)
-    pt = if (z-c).x < 0
+    c = es.size.now()/2
+    ptype = if (z-c).x < 0
       then InPort
       else OutPort
-  } yield pt
+  } yield ptype
+
+  def getBgPortInfo = for
+    ptype <- getBgPortType()
+    nports = g.now().partsMap
+      .get(ptype).map(pts => pts.nextId)
+      .getOrElse(0)
+    size = es.size.now()
+    p <- es.mousePos
+  yield (ptype,portNumber(p,size,nports))
+
+  def portNumber(pos:Complex,size:Complex,nports:Int) =
+    // println(s"portNumber: $pos, $size, $nports")
+    val l = (0 to nports+1)
+      .map(_ * size.y/(nports + 1))
+    // println(s"l = $l")
+    // println(s"l = ${l.map(_ < pos.y)}")
+      
+    l.filter(_ < pos.y).length
+
+
+  def getBoxPortType(b:Part) = for
+    z <- es.mousePos
+    c <- fromMaybe(IO(g.now().subacset(b).props.get(Center)))
+    ptype = if (z-c).x < 0
+      then InPort
+      else OutPort
+  yield ptype
+
+  def getBoxSize(b:Part) = for 
+    p <- es.mousePos
+    box = g.now().subacset(b)
+    // size = 
+  yield println(size)
+
+  def getBoxPortInfo(b:Part) = for 
+    ptype <- getBoxPortType(b)
+    gx = g.now()
+    ports = gx.subacset(b).partsMap(ptype)
+  yield println(ports)
+
+
+  def portFromPos(p:Part): IO[(PartType,Int)] = p.ty.path match
+    case Seq() => (for 
+      tp <- getBgPortType()
+    yield (ROOT.ty.extend(InPort),0))
+    case Seq(Box,_*) => (for
+      _ <- IO(())
+    yield (p.ty.extend(InPort),0))
 
 
   Seq(
@@ -113,10 +171,7 @@ def bindings(es: EditorState, g: UndoableVar[ACSet], ui: UIState) = {
     ),
     keyDown("?").andThen(a.debug),
     keyDown("o").andThen(for {
-      pt <- es.hovered.map(_ match
-        case Some(p:Part) => p
-        case _ => ROOT
-      )
+      pt <- fromMaybe(es.hoveredPart)
       _ <- pt.ty match
         case ROOT.ty =>
           a.add_(ROOT,OutPort,PropMap())
@@ -126,10 +181,7 @@ def bindings(es: EditorState, g: UndoableVar[ACSet], ui: UIState) = {
           IO(println(s"bad add output: $pt"))          
     } yield ()),
     keyDown("i").andThen(for {
-      pt <- es.hovered.map(_ match
-        case Some(p:Part) => p
-        case _ => ROOT
-      )
+      pt <- fromMaybe(es.hoveredPart)
       _ <- pt.ty match
         case ROOT.ty =>
           a.add_(ROOT,InPort,PropMap())
@@ -145,29 +197,49 @@ def bindings(es: EditorState, g: UndoableVar[ACSet], ui: UIState) = {
     keyDown("Z")
       .withMods(KeyModifier.Ctrl, KeyModifier.Shift)
       .andThen(IO(g.redo())),
-    clickOnPart(MouseButton.Left, PartType(Seq(Box)))
-      .withMods().flatMap(a.drag),
+    // clickOnPart(MouseButton.Left, PartType(Seq(Box)))
+    //   .withMods().flatMap(a.dragMove),
     clickOnPart(MouseButton.Left, PartType(Seq(Box, OutPort)))
       .withMods(KeyModifier.Shift)
-      .flatMap(a.dragEdge(Wire, Src, Tgt, Some(getPort))),
+      .flatMap(a.dragEdge(Wire, Src, Tgt)),
     clickOnPart(MouseButton.Left, PartType(Seq(Box, InPort)))
       .withMods(KeyModifier.Shift)
-      .flatMap(a.dragEdge(Wire, Src, Tgt, Some(getPort))),
+      .flatMap(a.dragEdge(Wire, Src, Tgt)),
     clickOnPart(MouseButton.Left, PartType(Seq(InPort)))
       .withMods(KeyModifier.Shift)
-      .flatMap(a.dragEdge(Wire, Src, Tgt, Some(getPort))),
+      .flatMap(a.dragEdge(Wire, Src, Tgt)),
     clickOnPart(MouseButton.Left, PartType(Seq(InPort)))
       .withMods(KeyModifier.Shift)
-      .flatMap(a.dragEdge(Wire, Src, Tgt, Some(getPort))),
+      .flatMap(a.dragEdge(Wire, Src, Tgt)),
+    // clickOn(MouseButton.Left)
+    //   .withMods(KeyModifier.Shift)
+      // .flatMap(src => a.makeWire(Wire,Src,Tgt)),
     menuOnPart(PartType(Seq(Box)))
       .flatMap(es.makeMenu(ui,boxMenu)),
     menuOnPart(PartType(Seq(Wire)))
       .flatMap(es.makeMenu(ui,wireMenu)),
-    clickOnPart(MouseButton.Left, PartType(Seq(Box)))
-      .withMods(KeyModifier.Shift).flatMap(b => for {
-        p <- a.add(b,OutPort,PropMap())
-        _ <- a.dragEdge(Wire,Src,Tgt,Some(getPort))(p)
-      } yield ())
+    // clickOnPart(MouseButton.Left, PartType(Seq(Box)))
+    //   .withMods(KeyModifier.Shift).flatMap(b => for {
+    //     pt <- getBoxPortType(b)
+    //     p <- a.add(b,pt,PropMap())
+    //     _ <- a.dragEdge(Wire,Src,Tgt)(p)
+    //   } yield ()),
+    clickOn(MouseButton.Left)
+      .withMods(KeyModifier.Shift)
+      .flatMap(
+        ent => ent match
+          case Background() => for {
+            pt <- getBgPortType()
+            p <- a.add(ROOT,pt,PropMap())
+            _ <- a.dragEdge(Wire,Src,Tgt)(p)
+          } yield ()
+      ),
+    // clickOn(MouseButton.Left)
+    //   .flatMap(_ => getBgPortInfo)
+    //   .flatMap(info => IO(println(info))),
+    clickOnPart(MouseButton.Left,PartType(Seq(Box)))
+      .flatMap(b => getBoxSize(b))
+          
    )
 }
 

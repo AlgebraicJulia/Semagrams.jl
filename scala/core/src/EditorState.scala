@@ -8,6 +8,7 @@ import semagrams.util._
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveElement
 import cats.effect._
+import cats.implicits._
 import org.scalajs.dom
 
 class EditorState(val elt: SvgElement) {
@@ -62,10 +63,14 @@ class EditorState(val elt: SvgElement) {
     (element: SvgElement) =>
       ReactiveElement.bindSubscription(element) { ctx =>
         val s = es.recoverToTry.foreach { e =>
-          import scala.util.{Failure, Success}
+          import scala.util.{Failure, Success}          
           e match {
-            case Success(evt)   => cb(Right(evt))
-            case Failure(error) => cb(Left(error))
+            case Success(evt)   => 
+              // if evt.isInstanceOf[DoubleClick]
+              // then 
+              cb(Right(evt))
+            case Failure(error) => 
+              cb(Left(error))
           }
           sub.foreach(_.kill())
           sub = None
@@ -77,7 +82,8 @@ class EditorState(val elt: SvgElement) {
 
   def nextEvent[A](stream: EventStream[A]): IO[A] =
     IO.async_(cb => 
-      elt.amend(attachEventStream(stream, cb)))
+      elt.amend(attachEventStream(stream, cb))
+    )
 
   def bindNoCatch[A](bindings: Seq[Binding[A]]): IO[A] =
     nextEvent(events.events.collect(((ev: Event) => {
@@ -98,11 +104,51 @@ class EditorState(val elt: SvgElement) {
       )
     }).unlift)).flatten
 
+
+  
+  def bindHelper[A](ev:Event) = ((bnd:Binding[A]) => 
+    bnd.modifiers match
+      case Some(mods) =>
+        if (keyboard.keyState.now().modifiers == mods)
+        then bnd.selector.lift(ev)
+        else None
+      case None => bnd.selector.lift(ev)
+  ).unlift
+    
+  
+  def bindNoCatchFirst[A](bindings: Seq[Binding[A]]): IO[A] =
+    nextEvent(
+      events.events.collect(
+        ((ev: Event) =>
+          val b = bindings.collectFirst(bindHelper(ev))
+
+          val bs = bindings.collect(bindHelper(ev))
+
+          // ev match
+          //   case e @ (_:DoubleClick | _:MouseDown) => println(s"bncf: $b, $bs")
+          //   case _ => ()
+          
+          bs match
+            case Seq() => None
+            case Seq(b,rest@_*) => Some(doAll(b,rest))
+          // oa
+        ).unlift
+      )
+    ).flatten
+
+  def doAll[A](a1: IO[A],as:Seq[IO[A]]): IO[A] = as match
+    case Seq() => a1
+    case Seq(a2,rest @_*) => for { 
+      first <- a1
+      last <- doAll(a2,rest)
+    } yield last
+
+
   def bind[A](bindings: Seq[Binding[A]]): IO[Option[A]] =
-    bindNoCatch[A](bindings).map(Some(_)).handleError(_ => None)
+    bindNoCatchFirst[A](bindings).map(Some(_)).handleError(_ => None)
 
   def bindUntilFail[A](bindings: Seq[Binding[A]]): IO[Unit] =
-    bindNoCatch[A](bindings).foreverM.handleError(_ => ())
+    bindNoCatchFirst[A](bindings).foreverM.handleError(_ => ())
 
   def bindForever[A](bindings: Seq[Binding[A]]): IO[Nothing] =
     bind[A](bindings).foreverM
@@ -112,6 +158,15 @@ class EditorState(val elt: SvgElement) {
 
   def hovered: IO[Option[Entity]] =
     IO(hover.$state.now().state)
+
+  def hoveredPart: IO[Option[Part]] = hovered.map(
+    h => h match
+      case Some(e) => e match
+        case Background() => Some(ROOT)
+        case p:Part => Some(p)
+        case _ => None
+      case None => Some(ROOT)
+  )
 
   def hoveredPart(ty: PartType): IO[Option[Part]] =
     hovered.map(e =>

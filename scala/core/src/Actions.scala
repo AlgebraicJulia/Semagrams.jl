@@ -9,6 +9,7 @@ import monocle._
 
 import com.raquo.laminar.api.L._
 import cats.effect._
+import semagrams.controllers.HoverController
 
 case class Actions(
   es: EditorState,
@@ -43,62 +44,128 @@ case class Actions(
       case Some(ent: Part) => m.updateS_(remPart(ent))
       case _               => IO(())
     }
+    _ = es.hover.
+    
+    $state.set(HoverController.State(None))
   } yield ()
 
-  def drag(i: Part) = for {
-    _ <- IO(m.save())
-    _ <- IO(m.unrecord())
-    _ <- m.updateS_(moveFront(i))
-    c <- IO(m.now().subpart(Center, i))
-    init <- es.mousePos
-    offset <- IO(c - init)
-    _ <- es.drag.drag(
-      Observer(p => { m.update(_.setSubpart(i, Center, p + offset)) })
+  // def drag(i: Part) = for {
+  //   _ <- IO(m.save())
+  //   _ <- IO(m.unrecord())
+  //   _ <- m.updateS_(moveFront(i))
+  //   c <- IO(m.now().subpart(Center, i))
+  //   init <- es.mousePos
+  //   offset <- IO(c - init)
+  //   _ <- es.drag.drag(
+  //     Observer(p => { m.update(_.setSubpart(i, Center, p + offset)) })
+  //   )
+  //   _ <- IO(m.record())
+  // } yield ()
+
+
+
+  def drag[Memo,Return](
+      start: () => IO[Memo],
+      during: (Memo,Complex) => Unit,
+      end: Memo => IO[Return]
+    ): Part => IO[Return] = (s:Part) => for {
+      _ <- IO(m.save())
+      _ <- IO(m.unrecord())
+      m0 = m.now()
+      memo <- start()
+      ret <- (for {
+        _ <- es.drag.drag(Observer(p => during(memo,p)))
+        ret0 <- end(memo)
+      } yield ret0).onCancelOrError(for
+        _ <- IO(es.drag.$state.set(None))
+        _ <- IO(m.set(m0))
+      yield ())
+      _ <- IO(m.record())
+    } yield ret.asInstanceOf[Return]
+
+
+
+
+
+  // Memo = Offset, Return = Unit
+  def dragMove(i: Part) = 
+    def start = () => for 
+      _ <- m.updateS_(moveFront(i))
+      c <- IO(m.now().subpart(Center, i))
+      init <- es.mousePos
+    yield c - init
+
+    def during = (offset:Complex,p:Complex) => m.update(
+      _.setSubpart(i, Center, p + offset)
     )
-    _ <- IO(m.record())
-  } yield ()
+
+    def end = (offset:Complex) => IO(())
+
+    drag(start,during,end)(i)
+
+
 
   val debug = IO(m.now()).flatMap(IO.println)
+  def die[A]: IO[A] = fromMaybe(IO(None))
+  
 
+  // Memo = Return = wire
+  // def makeWire(w:Ob,src:Hom,tgt:Hom) = (s:Part) => {
+
+  //   def start = () => for 
+
+  //   yield 
+  // }
+
+
+  // Memo = Part, Return = Part
   def dragEdge(
     ob: Ob,
     src: Hom,
     tgt: Hom,
-    promoteTgt: Option[Entity => IO[Part]] = None
-  )(s: Part) = 
-    for {
-    _ <- IO(m.save())
-    _ <- IO(m.unrecord())
-    p <- es.mousePos
-    e <- m.updateS(
-      addPart(
-        ob,
-        PropMap().set(src, s).set(End, p).set(Interactable, false)
-      )
-    )
-    _ <- (for {
-      _ <- es.drag.drag(Observer(p => m.update(_.setSubpart(e, End, p))))
-      t <- {
-        println(s"dragEdge: $promoteTgt")
-        promoteTgt match
-          case None => fromMaybe(es.hoveredPart(tgt.codoms))
-          case Some(f) => for {
-            ent <- es.hovered
-            _ = println(ent)
-            p <- f(ent.getOrElse(Background()))
-          } yield p
-      }
-      _ <- m.updateS_(for {
-        _ <- setSubpart(e, tgt, t)
-        _ <- remSubpart(e, End)
-        _ <- remSubpart(e, Interactable)
-      } yield ())
-    } yield ()).onCancelOrError(for {
-      _ <- IO(es.drag.$state.set(None))
-      _ <- m.updateS_(remPart(e))
-    } yield ())
-    _ <- IO(m.record())
-  } yield ()
+  )(s: Part): IO[Part] = {
+
+    def start = () => for
+      p <- es.mousePos
+      e <- if src.codoms.contains(s.ty)
+        then m.updateS(addPart(ob, 
+          PropMap().set(src,s).set(End, p).set(Interactable, false)
+        ))
+        else if tgt.codoms.contains(s.ty)
+          then m.updateS(addPart(ob, 
+            PropMap().set(tgt,s).set(Start, p).set(Interactable, false)
+          ))
+          else die
+    yield e
+
+    def during = (e:Part,p:Complex) => if m.now().hasSubpart(src,e)
+      then m.update(_.setSubpart(e, End, p))
+      else m.update(_.setSubpart(e, Start, p))
+
+    def end = (e:Part) => for
+      t <- fromMaybe(es.hoveredPart)
+      out <- if m.now().hasSubpart(src,e) && tgt.codoms.contains(t.ty) 
+        then m.updateS(for {
+          _ <- setSubpart(e, tgt, t)
+          _ <- remSubpart(e, End)
+          _ <- remSubpart(e, Interactable)
+        } yield e)
+        else if m.now().hasSubpart(tgt,e) && src.codoms.contains(t.ty)
+          then m.updateS(for {
+            _ <- setSubpart(e, src, t)
+            _ <- remSubpart(e, Start)
+            _ <- remSubpart(e, Interactable)
+          } yield e)
+          else fromMaybe(IO(None))
+    yield out
+
+    drag(start,during,end)(s)
+
+  }
+
+
+  // def killDrag(m0:ACSet) = for
+  // yield ()
 
   def edit(p: Property { type Value = String; }, multiline: Boolean)(i: Part): IO[Unit] = for {
     _ <- IO(m.update(acs => if (acs.trySubpart(p, i).isEmpty) {
@@ -119,6 +186,8 @@ case class Actions(
       }
     )
   } yield ()
+
+
 
   def importExport = ui.addKillableHtmlEntity(
     kill => PositionWrapper(

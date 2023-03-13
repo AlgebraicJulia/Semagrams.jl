@@ -50,7 +50,7 @@ def edgeProps(
   val nd = t
     .flatMap(findBoundary(_, m, dir * rot.cong))
     .getOrElse(tpos)
-  PropMap() + (Start, start) + (End, nd)
+  PropMap() + (Start, spos) + (End, tpos)
 }
 
 def ACSetEdgeSource(

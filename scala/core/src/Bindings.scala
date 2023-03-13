@@ -54,7 +54,6 @@ def clickOn(button: MouseButton) = Binding(
 
 def clickOn[E <: Entity](button: MouseButton, ty: EntityType) = Binding(
   { case MouseDown(Some(ent), `button`) if ent.ty == ty =>
-      println("B - clickOn")
       IO(ent.asInstanceOf[E])
   }
 )
@@ -62,14 +61,12 @@ def clickOn[E <: Entity](button: MouseButton, ty: EntityType) = Binding(
 def clickOnPart(button: MouseButton, ty: PartType) = Binding(
   {
     case MouseDown(Some(i: Part), `button`) if i.ty == ty => 
-      println("B - clickOnPart")
       IO(i)
   }
 )
 
 def dblClickOn(button: MouseButton) = Binding(
   { case DoubleClick(Some(ent), `button`) =>
-      println("B - dblClickOn")
       IO(ent)
   }
 )
@@ -77,9 +74,7 @@ def dblClickOn(button: MouseButton) = Binding(
 
 def dblClickOnPart(button: MouseButton, ty: PartType) = Binding(
   {
-    case DoubleClick(Some(i: Part), `button`) if i.ty == ty => 
-      println("B - dblClickOnPart")
-      IO(i)
+    case DoubleClick(Some(i: Part), `button`) if i.ty == ty => IO(i)
   }
 )
 
@@ -97,7 +92,6 @@ def mouseUp(button: MouseButton) = Binding(
 
 def menuOn() = Binding(
   { case ContextMenu(Some(ent)) =>
-      println("B - menuOn")
       IO(ent)
   }
 )
@@ -107,7 +101,6 @@ def menuOn() = Binding(
 def menuOnPart(ty: PartType) = Binding(
   {
     case ContextMenu(Some(i: Part)) if i.ty == ty => 
-      println("B - menuOnPart")
       IO(i)
   }
 )

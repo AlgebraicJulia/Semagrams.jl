@@ -68,7 +68,7 @@ def bindings(es: EditorState, g: UndoableVar[ACSet], ui: UIState) = {
     clickOnPart(MouseButton.Left, PartType(Seq(InPort)))
       .withMods(KeyModifier.Shift)
       .flatMap(a.dragEdge(Wire, Src, Tgt)),
-    clickOnPart(MouseButton.Left, PartType(Seq(Box))).withMods().flatMap(a.drag),
+    clickOnPart(MouseButton.Left, PartType(Seq(Box))).withMods().flatMap(a.dragMove),
     dblClickOnPart(MouseButton.Left, PartType(Seq(Box))).flatMap(a.edit(Content, false))
   )
 }

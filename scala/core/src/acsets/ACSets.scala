@@ -202,6 +202,11 @@ case class ACSet(
   def subpart(f: Property, i: Part): f.Value = subacset(i).props(f)
 
   def trySubpart(f: Property, i: Part): Option[f.Value] = trySubacset(i).flatMap(_.props.get(f))
+  
+  def hasSubpart(f:Property,i: Part) = trySubpart(f,i) match
+    case Some(j) => true
+    case None => false
+  
 
   def addPart(p: Part, x: Ob, init: ACSet): (ACSet, Part) = {
     val sub = subacset(p)
@@ -318,6 +323,12 @@ case class ACSet(
     toRemove.foldLeft(this)(_.remPartOnly(_))
   }
 
+  def remParts(ps: Seq[Part]): ACSet = ps match
+    case Seq() => this
+    case Seq(p,rest @_*) => this.remPart(p).remParts(rest)
+
+  
+
   def addProps(newProps: PropMap): ACSet = {
     this.copy(props = props ++ newProps)
   }
@@ -351,6 +362,9 @@ object ACSet {
     State.modify(_.remSubpart(p, f))
 
   def remPart(p: Part): State[ACSet, Unit] = State.modify(_.remPart(p))
+
+  def remParts(ps: Seq[Part]): State[ACSet,Unit] = State.modify(_.remParts(ps))
+  
 
   def moveFront(p: Part): State[ACSet, Unit] = State.modify(_.moveFront(p))
 

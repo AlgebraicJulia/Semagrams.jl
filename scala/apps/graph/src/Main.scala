@@ -23,7 +23,7 @@ def bindings(es: EditorState, g: Var[Graph], ui: UIState) = {
         mv <- es.hoveredPart(V)
         _ <- mv.map(v => a.edit(Label, false)(v)).getOrElse(IO(()))
       } yield ()),
-    clickOnPart(MouseButton.Left, V).withMods().flatMap(a.drag),
+    clickOnPart(MouseButton.Left, V).withMods().flatMap(a.dragMove),
     clickOnPart(MouseButton.Left, V)
       .withMods(KeyModifier.Shift)
       .flatMap(a.dragEdge(E, Src, Tgt)),

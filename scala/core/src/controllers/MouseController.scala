@@ -48,6 +48,9 @@ class MouseController() extends Controller {
       onMouseLeave.map(mouseLeave(svgEl)) --> mouseEvents,
       onMouseMove.map(mouseMove(svgEl)) --> mouseEvents,
       mouseEvents --> $state.updater[Event]((state, evt) =>
+        // evt match
+        //   case e:DoubleClick => println(s"dc: $evt")
+        //   case _ => ()
         state.processEvent(evt)
       ),
       mouseEvents --> es.events,
@@ -59,22 +62,17 @@ class MouseController() extends Controller {
     */
   def clickable(ent: Entity) = List(
     onContextMenu.stopPropagation.preventDefault.map(evt =>
-      println("C - onContextMenu")
       ContextMenu(Some(ent))
     ) --> mouseEvents,
-    onMouseDown.stopPropagation.map(evt => 
-      println("C - onMouseDown")
+    onMouseDown.stopPropagation.map(evt =>
+      // println("mc click")
       MouseDown(Some(ent), MouseButton.fromJS(evt.button))
     ) --> mouseEvents,
     onMouseUp.stopPropagation.map(evt => 
       MouseUp(Some(ent), MouseButton.fromJS(evt.button))
     ) --> mouseEvents,
-    // onClick.stopPropagation.map(evt =>
-    //   println("C - onClick")
-    //   Click(Some(ent), MouseButton.fromJS(evt.button))
-    // ) --> mouseEvents,
     onDblClick.stopPropagation.map(evt =>
-      println("C - onDblClick")
+      // println("mc doubleclick")
       DoubleClick(Some(ent), MouseButton.fromJS(evt.button))
     ) --> mouseEvents,
   )
@@ -90,7 +88,7 @@ object MouseController {
       pressed: BitSet
   ) {
     def processEvent(evt: Event): State = {
-      evt match {
+      val p = evt match {
         case MouseDown(_, button) =>
           this.copy(pressed = pressed + button.ordinal)
         case MouseUp(_, button) =>
@@ -99,6 +97,10 @@ object MouseController {
         case MouseMove(pos)  => this.copy(pos = pos)
         case e               => this
       }
+      // if evt.isInstanceOf[DoubleClick]
+      // then println(s"pe: $p")
+
+      p
     }
   }
 
