@@ -16,7 +16,7 @@ import upickle.default.ReadWriter
 enum WireProp[T: ReadWriter] extends Property {
   case StartDir extends WireProp[Complex]
   case EndDir extends WireProp[Complex]
-  case WireLabel extends WireProp[String]
+  // case WireLabel extends WireProp[String]
   case LabelAnchor extends WireProp[Double]
   case LabelOffset extends WireProp[Complex]
 
@@ -73,7 +73,7 @@ case class Wire() extends Sprite {
     val $p = $acs.map(_.props)
     def s(p:PropMap) = p(Start)
     def t(p:PropMap) = p(End)
-    def ds(p:PropMap): Complex = p.get(StartDir).getOrElse(10.0)
+    def ds(p:PropMap): Complex = p.get(StartDir).getOrElse(-10.0)
     def dt(p:PropMap): Complex = p.get(EndDir).getOrElse(-10.0)
     def b(p:PropMap) = p.get(Bend).getOrElse(10.0)
 
@@ -87,7 +87,7 @@ case class Wire() extends Sprite {
       crv.pos(s(p),anchor) + offset * crv.dir(s(p),anchor)
     }
 
-    def label(p:PropMap) = p.get(WireLabel).getOrElse("")
+    def label(p:PropMap) = p.get(Content).getOrElse("")
     def fontsize(p:PropMap) = p.get(FontSize).getOrElse(16.0)
     def pstroke(p:PropMap) = p.get(Stroke).getOrElse("black")
 

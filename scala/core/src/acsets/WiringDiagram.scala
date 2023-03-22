@@ -12,7 +12,7 @@ object WiringDiagrams {
   }
 
   case object Program extends Attr with PValue[String] {
-    val dom = ROOT.ty
+    val dom = Seq(ROOT.ty)
   }
 
   case object OutPort extends Ob

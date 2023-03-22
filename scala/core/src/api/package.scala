@@ -54,7 +54,8 @@ export sprites.{
   BasicWireStub,
   BasicDPBox,
   BasicWrapper,
-  WireProp
+  WireProp,
+  findCenter
 }
 export ui.{
   UIState

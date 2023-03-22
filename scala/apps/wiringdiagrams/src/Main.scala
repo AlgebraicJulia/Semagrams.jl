@@ -36,7 +36,7 @@ def bindings(es: EditorState, g: UndoableVar[ACSet], ui: UIState) = {
       for {
         choice <- ui.dialogue[ACSet](
           cb => PositionWrapper(Position.botMid(10), Select(monoidOps)(cb)))
-        _ <- a.addAtMouse(Box, choice)
+        _ <- a.addAtMouse_(Box, choice)
       } yield ()),
     keyDown("?").andThen(a.debug),
     keyDown("o").andThen(

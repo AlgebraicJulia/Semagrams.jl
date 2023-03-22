@@ -10,7 +10,7 @@ case object WireType extends Ob {
   override val schema = SchType
 }
 case object WireTypeName extends Attr with PValue[String] {
-  val dom = ROOT.ty
+  val dom = Seq(ROOT.ty)
 }
 case object SchType extends Schema {
   val obs = Seq()

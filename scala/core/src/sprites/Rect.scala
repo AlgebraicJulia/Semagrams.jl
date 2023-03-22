@@ -22,20 +22,42 @@ case class Rect(props: PropMap) extends Sprite {
   ): L.SvgElement = {
     val data = updates.map(props ++ _.props)
 
-    val box = rect(
-      geomUpdater(data),
-      styleUpdater(data)
-    )
+    
 
     val text = L.svg.text(
       xy <-- data.map(_(Center)),
-      L.svg.tspan(
-        L.child <-- data.map(p => L.textToNode(p(Content))),
-        textAnchor := "middle",
-        dominantBaseline := "central",
-        style := "user-select: none"
+      L.children <-- data.map(p => 
+        val splits = p(Content).split('\n').zipWithIndex
+        val l = splits.length
+        splits.toIndexedSeq.map({case (t,i) => 
+          L.svg.tspan(
+            L.textToNode(t),
+            textAnchor := "middle",
+            // dominantBaseline := "central",
+            x <-- data.map(p => p(Center).x.toString()),
+            y <-- data.map(
+              p => (p(Center).y + p(FontSize)*(i + 1 - l/2.0)).toString()
+            ),
+            style := "user-select: none"
+          )
+        })
       ),
-      fontSize <-- data.map(_(FontSize).toString)
+      fontSize <-- data.map(_(FontSize).toString),
+    )
+       // textAnchor := "middle",
+        // dominantBaseline := "central",
+        // style := "user-select: none"
+      // )),
+      // L.svg.tspan(
+      //   L.child <-- data.map(p => L.textToNode(p(Content))),
+      //   textAnchor := "middle",
+      //   dominantBaseline := "central",
+      //   style := "user-select: none"
+      // ),
+ 
+    val box = rect(
+      geomUpdater(data),
+      styleUpdater(data),
     )
 
     val root = g(

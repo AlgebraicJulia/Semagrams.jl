@@ -8,17 +8,24 @@ def TextInput[A](v: LensedVar[A,String], multiline: Boolean)(finished: Observer[
     value <-- v.signal,
     onInput.mapToValue --> v.writer,
     onKeyDown.stopPropagation
-      .filter(Set("Enter", "Escape") contains _.key)
+      .filter(k => k.key=="Escape")
       .mapTo(())
       --> finished,
     onBlur.mapTo(()) --> finished,
   )
   if (multiline) {
     textArea(
-      height := "100%",
-      width := "400px",
+      height := "100px",
+      width := "150px",
       resize := "none",
-      common
+      common,
+      onMountCallback(el => {
+        val ref = el.thisNode.ref
+        ref.focus()
+        // val length = ref.value.length()
+        // ref.setSelectionRange(0, length)
+      }),
+      // visibility := "hidden"
     )
   } else {
     input(

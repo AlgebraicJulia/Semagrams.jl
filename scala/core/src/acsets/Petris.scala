@@ -26,11 +26,11 @@ object Petris {
   }
 
   case object SName extends Attr with PValue[String] {
-    val dom = PartType(Seq(S))
+    val dom = Seq(PartType(Seq(S)))
   }
 
   case object TName extends Attr with PValue[String] {
-    val dom = PartType(Seq(T))
+    val dom = Seq(PartType(Seq(T)))
   }
 
   case object SchPetri extends Schema {

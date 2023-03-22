@@ -81,6 +81,8 @@ case class Disc(props: PropMap) extends Sprite {
   override def bbox(subent: Entity, data: ACSet) = Rect(props).bbox(subent, data)
 
   override def center(_subent: Entity, data: ACSet) = Some(data.props(Center))
+
+
 }
 
 object Disc {
@@ -100,5 +102,6 @@ object Disc {
   def apply(pm: PropMap) = new Disc(defaults ++ pm)
 
   def boundaryNormal(data: PropMap, dir: Complex) = dir.normalize
+
 
 }

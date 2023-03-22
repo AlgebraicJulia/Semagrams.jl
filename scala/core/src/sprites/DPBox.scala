@@ -92,4 +92,6 @@ case class DPBox(
     }
     case _ => None
   }
+
+  override def bbox(subent: Entity,data:ACSet) = boxSprite.bbox(subent,data)
 }

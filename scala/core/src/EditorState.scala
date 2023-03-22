@@ -21,6 +21,8 @@ class EditorState(val elt: SvgElement) {
   val controllers = Seq(mouse, hover, drag, keyboard)
   val size = Var(Complex(elt.ref.clientWidth, elt.ref.clientHeight))
 
+  val entities = Var(EntityCollection())
+
   dom.ResizeObserver(
     (newsize,_) => {
       size.set(Complex(elt.ref.clientWidth, elt.ref.clientHeight))
@@ -30,6 +32,11 @@ class EditorState(val elt: SvgElement) {
   elt.amend(
     children <-- viewports.signal.map(_.map(_.elt).toSeq),
   )
+
+  // es.elt.amend(
+  //   vp.entities --> x.writer   
+  // )
+
 
   for (c <- controllers) {
     c(this, elt)
@@ -47,6 +54,9 @@ class EditorState(val elt: SvgElement) {
 
   def register(v: Viewport) = {
     viewports.update(_ + v)
+    elt.amend(
+      viewports.now().toSeq(0).entities --> entities.writer  
+    )
   }
 
   def deregister(v: Viewport) = {
@@ -131,7 +141,8 @@ class EditorState(val elt: SvgElement) {
           bs match
             case Seq() => None
             case Seq(b,rest@_*) => Some(doAll(b,rest))
-          // oa
+          
+
         ).unlift
       )
     ).flatten
@@ -140,6 +151,7 @@ class EditorState(val elt: SvgElement) {
     case Seq() => a1
     case Seq(a2,rest @_*) => for { 
       first <- a1
+      // _ = println(first)
       last <- doAll(a2,rest)
     } yield last
 
@@ -199,7 +211,10 @@ class EditorState(val elt: SvgElement) {
   def makeMenu(ui:UIState,entries:Seq[(String,Part => IO[Unit])])(i:Part) = for {
     pos <- mousePos
     choice <- ui.dialogue[Part => IO[Matchable]](
-      cb => PositionWrapper(Position.atPos(pos), Menu(entries)(cb))
+      cb => PositionWrapper(
+        Position.atPos(pos), 
+        Menu(entries)(cb)
+      )
     )
     _ <- choice(i)
   } yield ()

@@ -17,6 +17,8 @@ trait Viewport {
   val entities: Signal[EntityCollection]
 
   val elt: SvgElement
+
+
 }
 
 case class EntityCollection(

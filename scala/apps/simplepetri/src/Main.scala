@@ -166,8 +166,8 @@ def bindings(es: EditorState, g: UndoableVar[ACSet], ui: UIState) = {
   val a = Actions(es, g, ui, clJsonFromPetri, petriFromCLJson)
 
   Seq(
-    keyDown("s").andThen(a.addAtMouse(S)),
-    keyDown("t").andThen(a.addAtMouse(T)),
+    keyDown("s").andThen(a.addAtMouse_(S)),
+    keyDown("t").andThen(a.addAtMouse_(T)),
     keyDown("d").andThen(a.del),
     keyDown("E")
       .withMods(KeyModifier.Shift)
@@ -191,7 +191,7 @@ def bindings(es: EditorState, g: UndoableVar[ACSet], ui: UIState) = {
                            _ <- mx.map(x => a.edit(Content, false)(x)).getOrElse(IO(()))
                          } yield ()),
     dblClickOnPart(MouseButton.Left, PartType(Seq(S))).flatMap(a.edit(Content, false)),
-    dblClickOnPart(MouseButton.Left, PartType(Seq(T))).flatMap(a.edit(Content, false))
+    dblClickOnPart(MouseButton.Left, PartType(Seq(T))).flatMap(a.edit(Content, false)),
   )
 }
 

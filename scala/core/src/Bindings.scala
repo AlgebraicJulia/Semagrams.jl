@@ -53,17 +53,28 @@ def clickOn(button: MouseButton) = Binding(
 )
 
 def clickOn[E <: Entity](button: MouseButton, ty: EntityType) = Binding(
-  { case MouseDown(Some(ent), `button`) if ent.ty == ty =>
-      IO(ent.asInstanceOf[E])
+  { case MouseDown(Some(ent), `button`) 
+      if ent.ty == ty => IO(ent.asInstanceOf[E])
+    case MouseDown(Some(ent), `button`) if 
+      (ty == ROOT.ty && ent == Background()) => IO(ROOT.asInstanceOf[E])
   }
 )
 
 def clickOnPart(button: MouseButton, ty: PartType) = Binding(
   {
-    case MouseDown(Some(i: Part), `button`) if i.ty == ty => 
-      IO(i)
+    case MouseDown(Some(i: Part), `button`) 
+      if i.ty == ty => IO(i)
+    case MouseDown(Some(i: Part), `button`) if 
+      (ty == ROOT.ty && i == Background()) => IO(ROOT)
   }
 )
+
+def clickOnPart(button: MouseButton) = Binding({
+  case MouseDown(Some(ent), `button`) => ent match
+    case Background() => IO(ROOT)
+    case p:Part => IO(p)
+  
+})
 
 def dblClickOn(button: MouseButton) = Binding(
   { case DoubleClick(Some(ent), `button`) =>
@@ -74,9 +85,21 @@ def dblClickOn(button: MouseButton) = Binding(
 
 def dblClickOnPart(button: MouseButton, ty: PartType) = Binding(
   {
-    case DoubleClick(Some(i: Part), `button`) if i.ty == ty => IO(i)
+    case DoubleClick(Some(i: Part), `button`) 
+      if i.ty == ty => IO(i)
+    case DoubleClick(Some(Background()), `button`) 
+      if ty == ROOT.ty => IO(ROOT)
+    // case DoubleClick(x,b) => 
+    //   println(s"unknown $x, $b")
+    //   IO(ROOT)
   }
 )
+
+def dblClickOnPart(button: MouseButton) = Binding({
+  case DoubleClick(Some(ent), `button`) => ent match
+    case Background() => IO(ROOT)
+    case p:Part => IO(p)
+})
 
 def releaseOn(button: MouseButton) = Binding(
   { case MouseUp(Some(ent), `button`) =>

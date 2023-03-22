@@ -6,6 +6,9 @@ import scala.collection.mutable
 import upickle.default._
 import monocle.Lens
 
+import scala.language.implicitConversions
+import scala.reflect.ClassTag
+
 /**
  * In this file, we define nested ACSets.
  *
@@ -26,6 +29,7 @@ trait Ob {
   val schema: Schema = SchEmpty
 
   def asDom() = Seq(PartType(Seq(this)))
+
 }
 
 trait Hom extends Property {
@@ -39,10 +43,11 @@ trait Hom extends Property {
     _.path(0)._2.id,
     i => Part(Seq((codoms(0).path(0), Id(i - 1))))
   )
+
 }
 
 trait Attr extends Property {
-  val dom: PartType
+  val dom: Seq[PartType]
 }
 
 case class PartType(path: Seq[Ob]) extends EntityType {
@@ -51,12 +56,22 @@ case class PartType(path: Seq[Ob]) extends EntityType {
   def head = PartType(path.slice(0,1))
   def tail = PartType(path.tail)
 
+  def headOb = path.headOption
+  def lastOb = path.lastOption 
+
   def <(that:PartType): Boolean = that.path match
     case Seq() => true
     case Seq(thathead,thattail @_*) =>
       head == thathead && tail < PartType(thattail)
   
 }
+
+object PartType {
+  given obIsPartType: Conversion[Ob,PartType] = (ob:Ob) => PartType(Seq(ob))
+  given seqIsPartType: Conversion[Seq[Ob],PartType] = PartType(_)
+}
+
+
 
 // The empty list refers to the acset itself
 case class Part(path: Seq[(Ob, Id)]) extends Entity {
@@ -102,7 +117,43 @@ trait Schema {
       homs.filter(_.codoms contains ty).map((Seq(), _))
         ++ ob.schema.homsInto(PartType(rest)).map({ case (obs, f) => (ob +: obs, f) })
   }
+
+
 }
+
+
+// case class CaseObject(name:String) extends Ob derives ReadWriter
+// object CaseObject {
+//   implicit def objectIsPartType(ob:CaseObject): PartType = PartType(Seq(ob))
+//   implicit def obSeqIsPartType(obs:Seq[CaseObject]): PartType = PartType(obs)
+// }
+
+
+// case class CaseHom(name:String,doms:Seq[CaseObject],codoms:Seq[CaseObject]) extends Hom derives ReadWriter
+
+
+// import scala.quoted.*
+// case class CaseAttr[T:ReadWriter](name:String,doms:Seq[CaseObject],tt:Type[T]) extends Attr with PValue[T]
+
+
+
+  // implicit def 
+
+// }
+// object CaseAttr {
+//   implicit attrRW: ReadWriter[CaseAttr] = 
+// }
+
+
+// case class CaseSchema(obs: Set[CaseObject])
+
+
+object Schema {
+  // implicit val rw: ReadWriter[Schema] = readwriter[(Seq[Ob],Seq[Hom],Seq[Attr])].bimap(
+
+  // )
+}
+
 
 
 case class Id(id: Int)
@@ -161,6 +212,12 @@ case class ACSet(
   props: PropMap,
   partsMap: Map[Ob, Parts],
 ) {
+
+
+  
+
+
+
   def subacset(p: Part): ACSet = trySubacset(p).get
 
   def trySubacset(p: Part): Option[ACSet] = p.path match {
@@ -370,4 +427,6 @@ object ACSet {
 
   def subpartLens(f: Property, x: Part) =
     Lens[ACSet, f.Value](_.subpart(f, x))(y => s => s.setSubpart(x, f, y))
+
+
 }
