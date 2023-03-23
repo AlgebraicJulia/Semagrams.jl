@@ -17,6 +17,7 @@ import semagrams.EntityCollection
 
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
+import semagrams.sprites.{AltDPBox,BasicPort}
 
 case object Box extends Ob {
   override val schema = SchBox
@@ -94,33 +95,6 @@ def bindings(
     ("Rename", (b:Part) => IO(println("rename fired")).>>(a.edit(Content,true)(b))),
   )
 
-  def liftDWD(p:Part,lifttype:PartType): IO[Part] = p.ty match 
-    case tp if tp == lifttype => IO(p)
-    case tp if tp.extend(InPort) == lifttype => 
-      a.add(p,InPort,PropMap())
-    case tp if tp.extend(OutPort) == lifttype => 
-      a.add(p,OutPort,PropMap())
-    case _ => a.die
-    
-
-
-
-
-  def getPort(ent:Entity): IO[Part] = 
-    ent match
-      // case Background() => for {
-      //   (ptype,pnum) <- getBgPortInfo()
-      //   p <- a.add(ROOT,ptype,PropMap().set(Content,pnum))
-      // } yield p
-      case i:Part => i.ty.path match
-        case prefix :+ InPort => IO(i)
-        case prefix :+ OutPort => IO(i)
-        // case Seq(Box) => for {
-        //   ptype <- getBoxPortType(i)
-        //   p <- a.add(i,ptype,PropMap())
-        // } yield p
-        case _ => IO(ROOT)
-
 
   def getBgPortType() = for {
     z <- es.mousePos
@@ -140,56 +114,11 @@ def bindings(
   yield (ptype,portNumber(p,size,nports))
 
   def portNumber(pos:Complex,size:Complex,nports:Int) =
-    // println(s"portNumber: $pos, $size, $nports")
-    val l = (0 to nports+1)
-      .map(_ * size.y/(nports + 1))
-    // println(s"l = $l")
-    // println(s"l = ${l.map(_ < pos.y)}")
-      
+    val l = (0 to nports+1).map(
+      _ * size.y/(nports + 1)
+    )
     l.filter(_ < pos.y).length
 
-
-  def getBoxPortType(b:Part) = for
-    z <- es.mousePos
-    c <- fromMaybe(IO(g.now().subacset(b).props.get(Center)))
-    ptype = if (z-c).x < 0
-      then InPort
-      else OutPort
-  yield ptype
-
-  val x = Var(EntityCollection())
-  
-  es.elt.amend(
-    vp.entities --> x.writer   
-  )
-  
-  
-  def test[T:ClassTag](t:T) = IO(println(summon[ClassTag[T]].toString()))
-    
-  //   for
-  //   bb <- a.getBBox(b)
-  // yield println(bb)
-
-  def getBoxSize(b:Part) = for 
-    p <- es.mousePos
-    box = g.now().subacset(b)
-    // e = x.now()
-  yield ()
-
-  def getBoxPortInfo(b:Part) = for 
-    ptype <- getBoxPortType(b)
-    gx = g.now()
-    ports = gx.subacset(b).partsMap(ptype)
-  yield println(ports)
-
-
-  def portFromPos(p:Part): IO[(PartType,Int)] = p.ty.path match
-    case Seq() => (for 
-      tp <- getBgPortType()
-    yield (ROOT.ty.extend(InPort),0))
-    case Seq(Box,_*) => (for
-      _ <- IO(())
-    yield (p.ty.extend(InPort),0))
 
 
   import MouseButton._
@@ -226,7 +155,7 @@ def bindings(
       .flatMap(b => 
         // println(s"dbl box $b")
         a.edit(Content,true)(b)),
-    clickOnPart(Left).withMods(Ctrl)
+    clickOnPart(Left).withMods()
       .flatMap(p => 
         // println(s"clickOnPart $p")
         p.ty match
@@ -254,77 +183,8 @@ def bindings(
       .andThen(IO(g.redo())),
     // to remove
     keyDown("?").andThen(a.debug),
-    keyDown("t").andThen(test("string")),
     keyDown("s").andThen(a.importExport)
-    // keyDown("x").andThen(test2),
-    // keyDown("o").andThen(for {
-    //   pt <- fromMaybe(es.hoveredPart)
-    //   _ <- pt.ty match
-    //     case ROOT.ty =>
-    //       a.add_(ROOT,OutPort,PropMap())
-    //     case PartType(Seq(Box,_*)) =>
-    //       a.add_(Part(pt.path.slice(0,1)), OutPort, PropMap())
-    //     case _ => 
-    //       IO(println(s"bad add output: $pt"))          
-    // } yield ()),
-    // keyDown("i").andThen(for {
-    //   pt <- fromMaybe(es.hoveredPart)
-    //   _ <- pt.ty match
-    //     case ROOT.ty =>
-    //       a.add_(ROOT,InPort,PropMap())
-    //     case PartType(Seq(Box,_*)) =>
-    //       a.add_(Part(pt.path.slice(0,1)), InPort, PropMap())
-    //     case _ => 
-    //       IO(println(s"bad add output: $pt"))          
-    // } yield ()),
-
   )
-
-    // clickOnPart(MouseButton.Left, PartType(Seq(Box)))
-    //   .flatMap(a.dragMove),
-    
-
-
-
-    // dblClickOnPart(MouseButton.Left,PartType(Seq(Box)))
-    //   .flatMap(a.edit(Content,false)),      
-    // clickOnPart(MouseButton.Left, PartType(Seq(Box, OutPort)))
-    //   .withMods(KeyModifier.Shift)
-    //   .flatMap(a.dragEdge(Wire, Src, Tgt)),
-    // clickOnPart(MouseButton.Left, PartType(Seq(Box, InPort)))
-    //   .withMods(KeyModifier.Shift)
-    //   .flatMap(a.dragEdge(Wire, Src, Tgt)),
-    // clickOnPart(MouseButton.Left, PartType(Seq(InPort)))
-    //   .withMods(KeyModifier.Shift)
-    //   .flatMap(a.dragEdge(Wire, Src, Tgt)),
-    // clickOnPart(MouseButton.Left, PartType(Seq(InPort)))
-    //   .withMods(KeyModifier.Shift)
-    //   .flatMap(a.dragEdge(Wire, Src, Tgt)),
-    // clickOn(MouseButton.Left)
-    //   .withMods(KeyModifier.Shift)
-      // .flatMap(src => a.makeWire(Wire,Src,Tgt)),
-    // clickOnPart(MouseButton.Left, PartType(Seq(Box)))
-    //   .withMods(KeyModifier.Shift).flatMap(b => for {
-    //     pt <- getBoxPortType(b)
-    //     p <- a.add(b,pt,PropMap())
-    //     _ <- a.dragEdge(Wire,Src,Tgt)(p)
-    //   } yield ()),
-    // clickOn(MouseButton.Left)
-    //   .withMods(KeyModifier.Shift)
-    //   .flatMap(
-    //     ent => ent match
-    //       case Background() => for {
-    //         pt <- getBgPortType()
-    //         p <- a.add(ROOT,pt,PropMap())
-    //         _ <- a.dragEdge(Wire,Src,Tgt)(p)
-    //       } yield ()
-    //   ),
-    // clickOn(MouseButton.Left)
-    //   .flatMap(_ => getBgPortInfo)
-    //   .flatMap(info => IO(println(info))),
-    // clickOnPart(MouseButton.Left,PartType(Seq(Box)))
-    //   .flatMap(b => getBoxSize(b))
-          
 }
 
 
@@ -351,7 +211,6 @@ def layoutPorts(dims: Complex, init: ACSet): ACSet = {
 
 
 
-import semagrams.sprites.{AltDPBox,BasicPort}
 
 
 
@@ -402,7 +261,7 @@ object Main {
   object App extends Semagram {
 
     def run(es: EditorState, init: Option[String]): IO[Unit] = {
-      val initg = proc
+      val initg = DWD()
       for {
         g <- IO(UndoableVar(initg))
         lg <- IO(

@@ -1,3 +1,4 @@
 target/
 .metals
 .bsp
+apps/dwd/src/Proc.scala
