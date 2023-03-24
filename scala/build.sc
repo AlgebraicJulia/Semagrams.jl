@@ -17,10 +17,11 @@ def defaultPomSettings(desc: String) = PomSettings(
 )
 
 trait Defaults extends ScalaJSModule with PublishModule with ScalafmtModule {
-  def scalaVersion = "3.2.0"
-  def scalaJSVersion = "1.11.0"
+  def scalaVersion = "3.2.1"
+  def scalaJSVersion = "1.12.0"
+  def ammoniteVersion = "2.5.6"
 
-  def scalacOptions = Seq("-Ykind-projector:underscores", "-deprecation", "-feature")
+  def scalacOptions = Seq("-deprecation", "-feature")
 
   def moduleKind = T { ModuleKind.ESModule }
 
@@ -56,6 +57,8 @@ object core extends Defaults {
   def artifactName = "semagrams"
 
   object test extends Tests with TestModule.Utest {
+    def jsEnvConfig = T(JsEnvConfig.JsDom())
+
     def ivyDeps = Agg(ivy"com.lihaoyi::utest::0.8.0")
   }
 }
@@ -65,15 +68,30 @@ trait SemagramsApp extends Defaults {
 }
 
 object apps extends Module {
-  object petri extends SemagramsApp {
-    def desc = "A petri net editor implemented with semagrams"
+  // object graph extends SemagramsApp {
+  //   def desc = "simple graph editor"
 
-    def artifactName = "semagrams-petri"
+  //   def artifactName = "semagrams-graph"
+  // }
+
+  object wiringdiagrams extends SemagramsApp {
+    def desc = "simple wiring diagram editor"
+
+    def artifactName = "semagrams-wiringdiagrams"
   }
 
-  object elements extends SemagramsApp {
-    def desc = "A viewer for the category of elements of an acset"
+  object simplepetri extends SemagramsApp {
+    def desc = "simple petri editor"
 
-    def artifactName = "semagrams-elements"
+    def artifactName = "semagrams-simplepetri"
   }
+  
+  object dwd extends SemagramsApp {
+    def desc = "A string diagram editor"
+
+    def artifactName = "semagrams-dwd"
+  }
+
+
+
 }

@@ -1,0 +1,90 @@
+/*-- scss:defaults --*/
+
+$code-block-font-size: 0.75em;
+
+/*-- scss:rules --*/
+
+h1 {
+    font-size: 1.5em;
+}
+
+h2 {
+  margin-top: 0em !important;
+  margin-bottom: 1em !important;
+}
+
+h3 {
+    font-size: 1.1em;
+}
+
+p.subtitle {
+    font-size: 1.1em;
+}
+
+.rmenv,
+.itenv {
+  padding: 0.5em;
+  margin-bottom: 1.2em;
+  border: 1px solid #007481;
+}
+
+.itenv {
+  font-style: italic;
+}
+.itenv em {
+  font-style: normal !important;
+}
+
+.itenv:before,
+.rmenv:before {
+  content: attr(title)".";
+  font-weight: 600;
+  padding-right: 0.5em;
+  display: inline;
+}
+
+.itenv > p:first-of-type,
+.rmenv > p:first-of-type {
+  margin-top: 0 !important;
+  display: inline;
+}
+
+.itenv > :last-child,
+.rmenv > :last-child {
+  margin-bottom: 0 !important;
+}
+
+th, td {
+  border: 3pt solid #ddd;
+}
+
+th {
+  background-color: #e7e7e7;
+}
+
+tr:nth-child(even) {
+  background-color: #EEEEEE;
+}
+
+iframe {
+  margin: 0 auto;
+  display: block;
+}
+
+.quarto-figure-center {
+  text-align: center
+}
+
+.headshot {
+  border-radius: 50%;
+  height: 100px !important;
+  width: 100px !important;
+}
+
+#collaborator-semagram {
+  height: 800px;
+}
+
+.footer > p {
+  font-size: 1.2em;
+}

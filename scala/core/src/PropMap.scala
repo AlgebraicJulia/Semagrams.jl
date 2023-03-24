@@ -1,29 +1,34 @@
 package semagrams
 
-import semagrams.util._
+import semagrams.util.Complex
+import upickle.default.ReadWriter
 
-import upickle.default._
-
-enum GenericProperty[T: ReadWriter] extends Property:
+enum GenericProperty[T: ReadWriter] extends Property {
   case Fill extends GenericProperty[String]
   case Stroke extends GenericProperty[String]
   case StrokeDasharray extends GenericProperty[String]
   case InnerSep extends GenericProperty[Double]
+  case OuterSep extends GenericProperty[Double]
   case MinimumSize extends GenericProperty[Double]
   case MinimumWidth extends GenericProperty[Double]
   case MinimumHeight extends GenericProperty[Double]
   case FontSize extends GenericProperty[Double]
   case Content extends GenericProperty[String]
+  case ImageURL extends GenericProperty[String]
+  case Label extends GenericProperty[String]
   case Center extends GenericProperty[Complex]
   case Start extends GenericProperty[Complex]
   case End extends GenericProperty[Complex]
   case Bend extends GenericProperty[Double]
+  case RelPos extends GenericProperty[Double]
   case Style extends GenericProperty[String]
+  case Interactable extends GenericProperty[Boolean]
+  case Hovered extends GenericProperty[Unit]
 
   type Value = T
 
   val rw = summon[ReadWriter[T]]
-end GenericProperty
+}
 
 export GenericProperty._
 
@@ -43,8 +48,10 @@ case class PropMap(map: Map[Property, Any]) {
     this.copy(map = map + (k -> v.asInstanceOf[Any]))
   }
 
-  def +[T](kv: (GenericProperty[T], T)) =
-    this.copy(map = map + (kv._1 -> kv._2.asInstanceOf[Any]))
+  def +[T](kv: (GenericProperty[T], T)) = {
+    val (k, v) = kv
+    this.copy(map = map + (k.asInstanceOf[Property] -> v.asInstanceOf[Any]))
+  }
 
   def ++(other: PropMap): PropMap = {
     this.copy(map = map ++ other.map)

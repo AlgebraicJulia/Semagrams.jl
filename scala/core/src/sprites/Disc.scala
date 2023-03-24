@@ -3,10 +3,10 @@ package semagrams.sprites
 import com.raquo.laminar.api.L.svg._
 import com.raquo.laminar.api._
 import semagrams._
-import semagrams.text._
 import semagrams.util._
+import semagrams.acsets._
 
-case class Disc() extends Sprite {
+case class Disc(props: PropMap) extends Sprite {
   def radius(data: PropMap): Double = {
     val textBox = boxSize(data(Content), data(FontSize))
     val center = data(Center)
@@ -17,16 +17,16 @@ case class Disc() extends Sprite {
     r
   }
 
-  def geomUpdater(updates: L.Signal[PropMap]) = {
+  def geomUpdater(data: L.Signal[PropMap]) = {
     List(
-      cxy <-- updates.map(_(Center)),
-      r <-- updates.map(radius(_).toString)
+      cxy <-- data.map(_(Center)),
+      r <-- data.map(radius(_).toString)
     )
   }
 
   def styleUpdater(data: L.Signal[PropMap]) = {
     List(
-      fill <-- data.map(_(Fill)),
+      fill <-- data.map(d => if d.get(Hovered).isDefined then "lightgrey" else d(Fill)),
       stroke <-- data.map(_(Stroke)),
       style <-- data.map(_.get(Style).getOrElse(""))
     )
@@ -34,34 +34,74 @@ case class Disc() extends Sprite {
 
   def present(
       ent: Entity,
-      init: PropMap,
-      updates: L.Signal[PropMap]
-  ): RenderedSprite = {
+      init: ACSet,
+      updates: L.Signal[ACSet],
+      attachHandlers: HandlerAttacher
+  ): L.SvgElement = {
+    val data = updates.map(props ++ _.props)
     val box = circle(
-      geomUpdater(updates),
-      styleUpdater(updates)
+      geomUpdater(data),
+      styleUpdater(data)
     )
     val text = L.svg.text(
-      xy <-- updates.map(_(Center)),
+      xy <-- data.map(_(Center)),
       L.svg.tspan(
-        L.child <-- updates.map(p => L.textToNode(p(Content))),
+        L.child <-- data.map(p => L.textToNode(p(Content))),
         textAnchor := "middle",
         dominantBaseline := "central",
         style := "user-select: none"
       ),
-      fontSize <-- updates.map(_(FontSize).toString)
+      fontSize <-- data.map(_(FontSize).toString)
+    )
+
+    val bg = image(
+      href <-- data.map(_(ImageURL)),
+      clipPathAttr := "inset(0% round 50%)",
+      pointerEvents := "none",
+      Rect.geomUpdater(data),
     )
 
     val root = g(
       box,
+      bg,
       text
     )
 
-    RenderedSprite(root, Map(MainHandle -> root))
+    attachHandlers(ent, root)
+
+    root
   }
 
-  def boundaryPt(data: PropMap, dir: Complex) = {
-    val rad = radius(data)
-    dir.normalize * rad + data(Center)
+  override def boundaryPt(subent: Entity, orig: ACSet, dir: Complex) = {
+    val data = props ++ orig.props
+    val rad = radius(data) + data(OuterSep)
+    Some(dir.normalize * rad + data(Center))
   }
+
+  override def bbox(subent: Entity, data: ACSet) = Rect(props).bbox(subent, data)
+
+  override def center(_subent: Entity, data: ACSet) = Some(data.props(Center))
+
+
+}
+
+object Disc {
+  val defaults = PropMap()
+    + (Content, "")
+    + (ImageURL, "")
+    + (FontSize, 14)
+    + (Fill, "white")
+    + (Stroke, "black")
+    + (InnerSep, 10)
+    + (OuterSep, 5)
+    + (MinimumWidth, 40)
+    + (MinimumHeight, 40)
+
+  def apply() = new Disc(defaults)
+
+  def apply(pm: PropMap) = new Disc(defaults ++ pm)
+
+  def boundaryNormal(data: PropMap, dir: Complex) = dir.normalize
+
+
 }

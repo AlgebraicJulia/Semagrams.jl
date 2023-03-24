@@ -17,8 +17,15 @@ jobs:
         with:
           mill-version: '0.10.5'
 
-      - run: |
+      - name: Set up NPM
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+
+      - name: Run Core Tests
+        run: |
           cd scala
+          npm install
           mill core.test
 
   checkFormat:
@@ -32,7 +39,8 @@ jobs:
         with:
           mill-version: '0.10.5'
 
-      - run: |
+      - name: Check formatting
+        run: |
           cd scala
           mill core.checkFormat
           for app in $(mill resolve apps._)

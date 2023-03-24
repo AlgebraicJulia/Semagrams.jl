@@ -3,33 +3,40 @@ package semagrams.widgets
 import com.raquo.laminar.api.L._
 import semagrams.util._
 
-def TextInput(
-    listener: Observer[String],
-    init: String,
-    finished: Observer[Unit],
-    dims: Complex,
-    center: Complex
-) = {
-  val pos = center - (dims / 2)
-
-  wrappedHtml(
-    input(
-      typ := "text",
-      onInput.mapToValue --> listener,
-      onKeyDown.stopPropagation
-        .filter(Set("Enter", "Escape") contains _.key)
-        .mapTo(())
-        --> finished,
-      onBlur.mapTo(()) --> finished,
-      defaultValue := init,
+def TextInput[A](v: LensedVar[A,String], multiline: Boolean)(finished: Observer[Unit]) = {
+  val common = Seq(
+    value <-- v.signal,
+    onInput.mapToValue --> v.writer,
+    onKeyDown.stopPropagation
+      .filter(k => k.key=="Escape")
+      .mapTo(())
+      --> finished,
+    onBlur.mapTo(()) --> finished,
+  )
+  if (multiline) {
+    textArea(
+      height := "100px",
+      width := "150px",
+      resize := "none",
+      common,
       onMountCallback(el => {
         val ref = el.thisNode.ref
         ref.focus()
-        val length = ref.value.length()
-        ref.setSelectionRange(0, length)
-      })
-    ),
-    pos,
-    dims
-  )
+        // val length = ref.value.length()
+        // ref.setSelectionRange(0, length)
+      }),
+      // visibility := "hidden"
+    )
+  } else {
+    input(
+      typ := "text",
+      common,
+      onMountCallback(el => {
+                        val ref = el.thisNode.ref
+                        ref.focus()
+                        val length = ref.value.length()
+                        ref.setSelectionRange(0, length)
+                      })
+    )
+  }
 }

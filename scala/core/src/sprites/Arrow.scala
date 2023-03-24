@@ -1,11 +1,12 @@
 package semagrams.sprites
 
+import semagrams.acsets._
 import com.raquo.laminar.api.L.svg._
 import com.raquo.laminar.api._
-import semagrams.util._
 import semagrams._
+import semagrams.util._
 
-case class Arrow() extends Sprite {
+case class Arrow(defaults: PropMap) extends Sprite {
   def blockPath(
       s: Complex,
       e: Complex,
@@ -30,25 +31,39 @@ case class Arrow() extends Sprite {
 
   def present(
       ent: Entity,
-      p: PropMap,
-      $p: L.Signal[PropMap]
-  ): RenderedSprite = {
+      init: ACSet,
+      updates: L.Signal[ACSet],
+      attachHandlers: HandlerAttacher
+  ): L.SvgElement = {
+    val data = updates.map(defaults ++ _.props)
+    val $p = updates.map(defaults ++ _.props)
     val arrow = path(
-      pathElts <-- $p.map(p => curvedPath(p(Start), p(End), p(Bend))),
-      stroke <-- $p.map(_(Stroke)),
-      strokeDashArray <-- $p.map(_.get(StrokeDasharray).getOrElse("none")),
+      pathElts <-- data.map(p => curvedPath(p(Start), p(End), p(Bend))),
+      stroke <-- $p.map(p => if p.get(Hovered).isDefined then "lightgrey" else p(Stroke)),
+      strokeDashArray <-- data.map(_(StrokeDasharray)),
       fill := "none",
-      markerEnd := "url(#arrowhead)"
+      markerEnd := "url(#arrowhead)",
+      pointerEvents := "none"
     )
     val handle = path(
       fill := "white",
       opacity := "0",
-      pathElts <-- $p.map(p => blockPath(p(Start), p(End), 5, p(Bend)))
+      pathElts <-- data.map(p => blockPath(p(Start), p(End), 5, p(Bend))),
+      pointerEvents <-- data.map(p =>
+        if p(Interactable) then "auto" else "none"
+      )
     )
-    val root = g(arrow, handle)
-    RenderedSprite(root, Map(MainHandle -> handle))
+    attachHandlers(ent, handle)
+    g(arrow, handle)
   }
+}
 
-  def boundaryPt(data: PropMap, dir: Complex): Complex =
-    Complex(0, 0)
+object Arrow {
+  val defaults = PropMap()
+    + (Stroke, "black")
+    + (Bend, 0)
+    + (StrokeDasharray, "none")
+    + (Interactable, true)
+
+  def apply() = new Arrow(defaults)
 }

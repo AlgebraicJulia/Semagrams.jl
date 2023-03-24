@@ -45,3 +45,17 @@ class DAttr extends CustomSvgAttr[Seq[Path.Element]] {
 }
 
 val pathElts = new DAttr()
+
+val z1 = new CustomSvgAttr[Complex] {
+  def applyAttrs(binder: SvgBinder[Complex]): Unit = {
+    binder(x1, _.x.toString)
+    binder(y1, _.y.toString)
+  }
+}
+
+val z2 = new CustomSvgAttr[Complex] {
+  def applyAttrs(binder: SvgBinder[Complex]): Unit = {
+    binder(x2, _.x.toString)
+    binder(y2, _.y.toString)
+  }
+}

@@ -1,0 +1,67 @@
+---
+title: "Tour of Semagrams"
+subtitle: "A Flexible and Scalable Non-linear UI Paradigm"
+author: "Owen Lynch"
+width: 1500
+height: 1200
+format:
+  revealjs:
+    theme: [simple, custom.scss]
+    slide-number: true
+    footer: "Tour of Semagrams"
+    logo: algjulia_logo.png
+execute:
+  echo: true
+  output: false
+---
+
+# Motivation
+
+The unreasonable effectiveness of graphical languages in science communication
+
+(pull some figures from JMM talk)
+
+# Why do we need a new UI paradigm?
+
+Existing UI paradigms (React, Angular, etc.) are based on *tree* structure, shadowing the DOM. However, graphical languages in science are based on graphs... which may have cycles! Thus, we need a "relational" paradigm; entities are not only nested, but might also have relations to entities outside of the parent/child relation. We still use the DOM, but mostly SVG, and we have to build abstractions on top of it non-hierarchical layout.
+
+This is partly inspired by the model of TikZ, which is a graphics language that scientists often use for constructing figures. However, TikZ is only for static figures.
+
+# Key features of the semagrams paradigm
+
+- Built on top of laminar: diff your data, not the dom!
+- Promise-based interactivity
+- Nested ACSets
+- Immutable state
+- Plug and play graphical objects
+
+# Laminar in a nutshell
+
+# Promise-based interactivity
+
+- In the beginning there was the event loop.
+- Event loops are conceptually very simple. You run the loop 60 times a second or whatever, and in each loop you check if things have been pressed or clicked.
+- When you are the only program running, this is fine. But in the modern multitasking environment, instead we have "event-driven" programming; you don't control the mainloop, but you can register callbacks for events.
+- But now if you want to update state in your callbacks, you need global mutable state, which messes a lot of things up. Also, nested callbacks are hell.
+- We want to write synchronous code that looks like we're "waiting for events", but in fact it is executed *asynchronously* under the hood.
+- Benefits of synchronous event-waiting: conceptually simple, flat. Problems: inefficient, in javascript you can't have multiple threads.
+- Benefits of callbacks for events: efficient, allows concurrency. Problems: nested, and difficult to use.
+- So what if we could have code that *looked* like it was synchronous, but actually executed asynchronously? That's what the cats-effects library allows us to do, by essentially providing a nice way of composing futures.
+
+# Nested ACSets
+
+- In a typical tree-shaped UI, stuff like edges are hard to deal with, because they aren't contained in either their source or target, but need to know where the edges of their source or target are.
+- ACSets as a backend solve this problem by allowing relational structure to be encoded and used.
+- Traditionally, ACSets have struggled with recursive structure
+- Nested ACSets, which is new math discovered and implemented over the last five days, solve this problem by unifying relational and recursive structure. Essentially, to every row in a table in a database is associated an entire other database. But most importantly, foreign keys can point between different nesting levels.
+
+# Immutable state
+
+- This enables the "diff your data, not your UI" paradigm
+- It also makes it trivial to do undo and redo, with a "zipper" structure.
+
+# Plug and play graphical objects
+
+- Because we are using SVG, we don't get the nice HTML layout features with CSS, like flexbox, etc. This means that we have to calculate our own layout. Thus, it is helpful to work with objects that know something about their geometry, so that we can query their bounding box, boundary points, center, etc.
+- We call these "sprites", and one sprite can be reused for many things; the boxes in wiring diagrams, the transitions in Petri nets, etc.
+- There is also a lot of fiddly details in getting things right: how to curve arrows so that you can show multiple arrows between two things, how to attach arrows to the boundary of shapes, etc.; writing code for this once that gets reused is a big time saver.

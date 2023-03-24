@@ -1,42 +1,39 @@
 package semagrams.sprites
 
 import semagrams._
-import com.raquo.laminar.api.L.{*, given}
-import semagrams.util.Complex
-
-/** The purpose of sprite middleware is to make a variety of components that can
-  * be flexibly combined in order to give features to sprites.
-  *
-  * It does this by inserting extra properties before the sprite is rendered,
-  * and then modifying the rendered sprite.
-  */
+import semagrams.acsets._
+import semagrams.util._
+import com.raquo.laminar.api.L._
 
 trait Middleware {
-  def updateProps(ent: Entity, p: PropMap): PropMap = p
-
-  /** This should only be overridden to add extra properties to the sprite that
-    * are for the purpose of interaction, because any properties added here will
-    * not be in TikZ output, and will not be used to compute boundaries.
-    *
-    * Both updateProps and updatePropsS are called: first updateProps and then
-    * updatePropsS
-    */
-  def updatePropsS(ent: Entity, $p: Signal[PropMap]): Signal[PropMap] = $p
-
-  def modifyRendered(ent: Entity, s: RenderedSprite): RenderedSprite = s
+  def modifySignal(ent: Entity, updates: Signal[ACSet]): Signal[ACSet] =
+    updates
+  def wrapHandler(f: HandlerAttacher): HandlerAttacher
 }
 
-case class Stack(ms: List[Middleware]) extends Middleware {
-  override def updateProps(ent: Entity, p: PropMap): PropMap =
-    ms.foldLeft(p)((q, m) => m.updateProps(ent, q))
+case class WithMiddleware(
+    s: Sprite,
+    middleware: Seq[Middleware]
+) extends Sprite {
+  def present(ent: Entity, init: ACSet, updates: Signal[ACSet], attachHandlers: HandlerAttacher) = {
+    val modified =
+      middleware.foldLeft(updates)((s, m) => m.modifySignal(ent, s))
 
-  override def updatePropsS(ent: Entity, $p: Signal[PropMap]): Signal[PropMap] =
-    ms.foldLeft($p)(($q, m) => m.updatePropsS(ent, $q))
+    s.present(
+      ent,
+      init,
+      modified,
+      middleware.foldLeft(attachHandlers)((f, m) => m.wrapHandler(f))
+    )
+  }
 
-  override def modifyRendered(ent: Entity, s: RenderedSprite): RenderedSprite =
-    ms.foldRight(s)((m, r) => m.modifyRendered(ent, r))
-}
+  override def boundaryPt(subent: Entity, acs: ACSet, dir: Complex) = {
+    s.boundaryPt(subent, acs, dir)
+  }
 
-object Stack {
-  def apply(ms: Middleware*) = new Stack(List(ms*))
+  override def center(subent: Entity, acs: ACSet) = {
+    s.center(subent, acs)
+  }
+
+  override def bbox(subent: Entity, acs: ACSet) = s.bbox(subent, acs)
 }
