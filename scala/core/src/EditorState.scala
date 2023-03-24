@@ -23,20 +23,19 @@ class EditorState(val elt: SvgElement) {
 
   val entities = Var(EntityCollection())
 
-  dom.ResizeObserver(
-    (newsize,_) => {
+  dom
+    .ResizeObserver((newsize, _) => {
       size.set(Complex(elt.ref.clientWidth, elt.ref.clientHeight))
-    }
-  ).observe(elt.ref)
+    })
+    .observe(elt.ref)
 
   elt.amend(
-    children <-- viewports.signal.map(_.map(_.elt).toSeq),
+    children <-- viewports.signal.map(_.map(_.elt).toSeq)
   )
 
   // es.elt.amend(
-  //   vp.entities --> x.writer   
+  //   vp.entities --> x.writer
   // )
-
 
   for (c <- controllers) {
     c(this, elt)
@@ -55,7 +54,7 @@ class EditorState(val elt: SvgElement) {
   def register(v: Viewport) = {
     viewports.update(_ + v)
     elt.amend(
-      viewports.now().toSeq(0).entities --> entities.writer  
+      viewports.now().toSeq(0).entities --> entities.writer
     )
   }
 
@@ -73,13 +72,13 @@ class EditorState(val elt: SvgElement) {
     (element: SvgElement) =>
       ReactiveElement.bindSubscription(element) { ctx =>
         val s = es.recoverToTry.foreach { e =>
-          import scala.util.{Failure, Success}          
+          import scala.util.{Failure, Success}
           e match {
-            case Success(evt)   => 
+            case Success(evt) =>
               // if evt.isInstanceOf[DoubleClick]
-              // then 
+              // then
               cb(Right(evt))
-            case Failure(error) => 
+            case Failure(error) =>
               cb(Left(error))
           }
           sub.foreach(_.kill())
@@ -91,9 +90,7 @@ class EditorState(val elt: SvgElement) {
   }
 
   def nextEvent[A](stream: EventStream[A]): IO[A] =
-    IO.async_(cb => 
-      elt.amend(attachEventStream(stream, cb))
-    )
+    IO.async_(cb => elt.amend(attachEventStream(stream, cb)))
 
   def bindNoCatch[A](bindings: Seq[Binding[A]]): IO[A] =
     nextEvent(events.events.collect(((ev: Event) => {
@@ -114,18 +111,16 @@ class EditorState(val elt: SvgElement) {
       )
     }).unlift)).flatten
 
-
-  
-  def bindHelper[A](ev:Event) = ((bnd:Binding[A]) => 
-    bnd.modifiers match
-      case Some(mods) =>
-        if (keyboard.keyState.now().modifiers == mods)
-        then bnd.selector.lift(ev)
-        else None
-      case None => bnd.selector.lift(ev)
+  def bindHelper[A](ev: Event) = (
+      (bnd: Binding[A]) =>
+        bnd.modifiers match
+          case Some(mods) =>
+            if (keyboard.keyState.now().modifiers == mods)
+            then bnd.selector.lift(ev)
+            else None
+          case None => bnd.selector.lift(ev)
   ).unlift
-    
-  
+
   def bindNoCatchFirst[A](bindings: Seq[Binding[A]]): IO[A] =
     nextEvent(
       events.events.collect(
@@ -137,24 +132,22 @@ class EditorState(val elt: SvgElement) {
           // ev match
           //   case e @ (_:DoubleClick | _:MouseDown) => println(s"bncf: $b, $bs")
           //   case _ => ()
-          
-          bs match
-            case Seq() => None
-            case Seq(b,rest@_*) => Some(doAll(b,rest))
-          
 
+          bs match
+            case Seq()             => None
+            case Seq(b, rest @ _*) => Some(doAll(b, rest))
         ).unlift
       )
     ).flatten
 
-  def doAll[A](a1: IO[A],as:Seq[IO[A]]): IO[A] = as match
+  def doAll[A](a1: IO[A], as: Seq[IO[A]]): IO[A] = as match
     case Seq() => a1
-    case Seq(a2,rest @_*) => for { 
-      first <- a1
-      // _ = println(first)
-      last <- doAll(a2,rest)
-    } yield last
-
+    case Seq(a2, rest @ _*) =>
+      for {
+        first <- a1
+        // _ = println(first)
+        last <- doAll(a2, rest)
+      } yield last
 
   def bind[A](bindings: Seq[Binding[A]]): IO[Option[A]] =
     bindNoCatchFirst[A](bindings).map(Some(_)).handleError(_ => None)
@@ -171,12 +164,13 @@ class EditorState(val elt: SvgElement) {
   def hovered: IO[Option[Entity]] =
     IO(hover.$state.now().state)
 
-  def hoveredPart: IO[Option[Part]] = hovered.map(
-    h => h match
-      case Some(e) => e match
-        case Background() => Some(ROOT)
-        case p:Part => Some(p)
-        case _ => None
+  def hoveredPart: IO[Option[Part]] = hovered.map(h =>
+    h match
+      case Some(e) =>
+        e match
+          case Background() => Some(ROOT)
+          case p: Part      => Some(p)
+          case _            => None
       case None => Some(ROOT)
   )
 
@@ -192,7 +186,7 @@ class EditorState(val elt: SvgElement) {
     hovered.map(e =>
       e match {
         case Some(p: Part) if tys contains p.ty => Some(p)
-        case _                           => None
+        case _                                  => None
       }
     )
 
@@ -204,21 +198,18 @@ class EditorState(val elt: SvgElement) {
       }
     )
 
+  import semagrams.widgets.{Menu, PositionWrapper, Position}
 
-
-  import semagrams.widgets.{Menu,PositionWrapper,Position}
-
-  def makeMenu(ui:UIState,entries:Seq[(String,Part => IO[Unit])])(i:Part) = for {
-    pos <- mousePos
-    choice <- ui.dialogue[Part => IO[Matchable]](
-      cb => PositionWrapper(
-        Position.atPos(pos), 
-        Menu(entries)(cb)
+  def makeMenu(ui: UIState, entries: Seq[(String, Part => IO[Unit])])(i: Part) =
+    for {
+      pos <- mousePos
+      choice <- ui.dialogue[Part => IO[Matchable]](cb =>
+        PositionWrapper(
+          Position.atPos(pos),
+          Menu(entries)(cb)
+        )
       )
-    )
-    _ <- choice(i)
-  } yield ()
-
-
+      _ <- choice(i)
+    } yield ()
 
 }

@@ -23,7 +23,7 @@ class HoverController() extends Controller {
     */
   def hoverable(ent: Entity) = List(
     onMouseEnter --> $state.updater((state, _) => state.hover(ent)),
-    onMouseLeave --> $state.updater((state, _) => state.leave(ent)),
+    onMouseLeave --> $state.updater((state, _) => state.leave(ent))
   )
 
   /** This most commonly would be used to style a certain entity based on

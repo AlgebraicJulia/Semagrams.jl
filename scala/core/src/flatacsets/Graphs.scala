@@ -49,7 +49,8 @@ object Graphs {
       addEdge(s, t, PropMap())
   }
 
-  implicit val graphOps: GraphOps[SchGraph.type] = new GraphOps[SchGraph.type] {}
+  implicit val graphOps: GraphOps[SchGraph.type] =
+    new GraphOps[SchGraph.type] {}
 
   object Graph {
     def apply() = ACSet[SchGraph.type]()

@@ -68,13 +68,13 @@ class MouseController() extends Controller {
       // println("mc click")
       MouseDown(Some(ent), MouseButton.fromJS(evt.button))
     ) --> mouseEvents,
-    onMouseUp.stopPropagation.map(evt => 
+    onMouseUp.stopPropagation.map(evt =>
       MouseUp(Some(ent), MouseButton.fromJS(evt.button))
     ) --> mouseEvents,
     onDblClick.stopPropagation.map(evt =>
       // println("mc doubleclick")
       DoubleClick(Some(ent), MouseButton.fromJS(evt.button))
-    ) --> mouseEvents,
+    ) --> mouseEvents
   )
 }
 

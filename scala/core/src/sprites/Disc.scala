@@ -26,7 +26,9 @@ case class Disc(props: PropMap) extends Sprite {
 
   def styleUpdater(data: L.Signal[PropMap]) = {
     List(
-      fill <-- data.map(d => if d.get(Hovered).isDefined then "lightgrey" else d(Fill)),
+      fill <-- data.map(d =>
+        if d.get(Hovered).isDefined then "lightgrey" else d(Fill)
+      ),
       stroke <-- data.map(_(Stroke)),
       style <-- data.map(_.get(Style).getOrElse(""))
     )
@@ -58,7 +60,7 @@ case class Disc(props: PropMap) extends Sprite {
       href <-- data.map(_(ImageURL)),
       clipPathAttr := "inset(0% round 50%)",
       pointerEvents := "none",
-      Rect.geomUpdater(data),
+      Rect.geomUpdater(data)
     )
 
     val root = g(
@@ -78,10 +80,10 @@ case class Disc(props: PropMap) extends Sprite {
     Some(dir.normalize * rad + data(Center))
   }
 
-  override def bbox(subent: Entity, data: ACSet) = Rect(props).bbox(subent, data)
+  override def bbox(subent: Entity, data: ACSet) =
+    Rect(props).bbox(subent, data)
 
   override def center(_subent: Entity, data: ACSet) = Some(data.props(Center))
-
 
 }
 
@@ -102,6 +104,5 @@ object Disc {
   def apply(pm: PropMap) = new Disc(defaults ++ pm)
 
   def boundaryNormal(data: PropMap, dir: Complex) = dir.normalize
-
 
 }

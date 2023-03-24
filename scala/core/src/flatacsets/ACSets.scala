@@ -188,17 +188,17 @@ trait ACSetOps[S: IsSchema] {
     Lens[ACSet[S], f.Value](_.subpart(f, x))(y => s => s.setSubpart(f, x, y))
 
   val serializedLens =
-    Lens[ACSet[S], String]
-      (acs => write(acs)(ACSet.rw[S]))
-      (s => acs => {
-         var res = acs
-         try {
-           res = read[ACSet[S]](s)(ACSet.rw[S])
-         } catch  {
-           case _ => ()
-         }
-         res
-       })
+    Lens[ACSet[S], String](acs => write(acs)(ACSet.rw[S]))(s =>
+      acs => {
+        var res = acs
+        try {
+          res = read[ACSet[S]](s)(ACSet.rw[S])
+        } catch {
+          case _ => ()
+        }
+        res
+      }
+    )
 }
 
 given [S: IsSchema]: ACSetOps[S] = new ACSetOps[S] {}

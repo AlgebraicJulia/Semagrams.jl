@@ -18,16 +18,16 @@ case class WireStub(defaults: PropMap, dir: Complex) extends Sprite {
     val stub = line(
       z1 <-- data.map(_(Center)),
       z2 <-- data.map(_(Center) + dir),
-      stroke <-- data.map(d => if d.get(Hovered).isDefined then "lightgrey" else d(Stroke))
+      stroke <-- data.map(d =>
+        if d.get(Hovered).isDefined then "lightgrey" else d(Stroke)
+      )
     )
-    val offset = (dir * Complex(0,1)).normalize * 5
+    val offset = (dir * Complex(0, 1)).normalize * 5
     val handle = polygon(
-      pointsC <-- data.map(
-        p => {
-          val c = p(Center)
-          Seq(c + offset, c + dir + offset, c + dir - offset, c - offset)
-        }
-      ),
+      pointsC <-- data.map(p => {
+        val c = p(Center)
+        Seq(c + offset, c + dir + offset, c + dir - offset, c - offset)
+      }),
       fill := "white",
       opacity := "0"
     )

@@ -33,10 +33,7 @@ export controllers.{
   MouseController,
   KeyboardController
 }
-export layout.{
-  assignBends,
-  FixedRangeExceptEnds
-}
+export layout.{assignBends, FixedRangeExceptEnds}
 export sprites.{
   Arrow,
   Disc,
@@ -57,9 +54,7 @@ export sprites.{
   WireProp,
   findCenter
 }
-export ui.{
-  UIState
-}
+export ui.{UIState}
 export util.{
   Complex,
   UndoableVar,
@@ -70,9 +65,4 @@ export util.{
   onCancelOrError,
   realToComplex
 }
-export widgets.{
-  Select,
-  Position,
-  PositionWrapper,
-  Menu
-}
+export widgets.{Select, Position, PositionWrapper, Menu}

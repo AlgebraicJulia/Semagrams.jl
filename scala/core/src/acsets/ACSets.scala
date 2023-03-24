@@ -9,21 +9,22 @@ import monocle.Lens
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 
-/**
- * In this file, we define nested ACSets.
- *
- * In a nested acset, each part of an acset has an associated acset.
- * The schema for a nested acset has an acset schema associated with each object,
- * which defines the schema for the acsets associated to the parts assigned to that object.
- *
- * A nested part of a nested acset is a list of (ob, id) pairs, which at each step tell you how to get
- * to the next nested acset.
- *
- * Morphisms in a nested acset schema go from nested parts to nested parts. The acset schema
- * that contains the morphism is the "highest point" that the morphism can go, i.e. the only way to
- * get from a nested part to another nested part via a morphism is to go all the way up to where the
- * morphism is defined, and then go back down to the target of the morphism.
- */
+/** In this file, we define nested ACSets.
+  *
+  * In a nested acset, each part of an acset has an associated acset. The schema
+  * for a nested acset has an acset schema associated with each object, which
+  * defines the schema for the acsets associated to the parts assigned to that
+  * object.
+  *
+  * A nested part of a nested acset is a list of (ob, id) pairs, which at each
+  * step tell you how to get to the next nested acset.
+  *
+  * Morphisms in a nested acset schema go from nested parts to nested parts. The
+  * acset schema that contains the morphism is the "highest point" that the
+  * morphism can go, i.e. the only way to get from a nested part to another
+  * nested part via a morphism is to go all the way up to where the morphism is
+  * defined, and then go back down to the target of the morphism.
+  */
 
 trait Ob {
   val schema: Schema = SchEmpty
@@ -53,25 +54,23 @@ trait Attr extends Property {
 case class PartType(path: Seq[Ob]) extends EntityType {
   def extend(x: Ob) = PartType(path :+ x)
 
-  def head = PartType(path.slice(0,1))
+  def head = PartType(path.slice(0, 1))
   def tail = PartType(path.tail)
 
   def headOb = path.headOption
-  def lastOb = path.lastOption 
+  def lastOb = path.lastOption
 
-  def <(that:PartType): Boolean = that.path match
+  def <(that: PartType): Boolean = that.path match
     case Seq() => true
-    case Seq(thathead,thattail @_*) =>
+    case Seq(thathead, thattail @ _*) =>
       head == thathead && tail < PartType(thattail)
-  
+
 }
 
 object PartType {
-  given obIsPartType: Conversion[Ob,PartType] = (ob:Ob) => PartType(Seq(ob))
-  given seqIsPartType: Conversion[Seq[Ob],PartType] = PartType(_)
+  given obIsPartType: Conversion[Ob, PartType] = (ob: Ob) => PartType(Seq(ob))
+  given seqIsPartType: Conversion[Seq[Ob], PartType] = PartType(_)
 }
-
-
 
 // The empty list refers to the acset itself
 case class Part(path: Seq[(Ob, Id)]) extends Entity {
@@ -81,19 +80,18 @@ case class Part(path: Seq[(Ob, Id)]) extends Entity {
 
   override def extend(e: Entity) = e match {
     case (p: Part) => Part(path ++ p.path)
-    case _ => SubEntity(this, e)
+    case _         => SubEntity(this, e)
   }
 
-  def head: Part = Part(path.slice(0,1))
+  def head: Part = Part(path.slice(0, 1))
   def tail: Part = Part(path.tail)
-
 
   def <(that: Part): Boolean = that.path match
     case Seq() => true
-    case Seq(thathead,thattail @_*) => 
+    case Seq(thathead, thattail @ _*) =>
       head == thathead && tail < Part(thattail)
-  
-  def in(ptype:PartType) = ty < ptype
+
+  def in(ptype: PartType) = ty < ptype
 }
 
 trait Schema {
@@ -113,14 +111,14 @@ trait Schema {
   // Each hom is prefixed by a path of objects needed to get to that hom
   def homsInto(ty: PartType): Seq[(Seq[Ob], Hom)] = ty.path match {
     case Nil => Seq()
-    case ob::rest =>
+    case ob :: rest =>
       homs.filter(_.codoms contains ty).map((Seq(), _))
-        ++ ob.schema.homsInto(PartType(rest)).map({ case (obs, f) => (ob +: obs, f) })
+        ++ ob.schema
+          .homsInto(PartType(rest))
+          .map({ case (obs, f) => (ob +: obs, f) })
   }
 
-
 }
-
 
 // case class CaseObject(name:String) extends Ob derives ReadWriter
 // object CaseObject {
@@ -128,25 +126,19 @@ trait Schema {
 //   implicit def obSeqIsPartType(obs:Seq[CaseObject]): PartType = PartType(obs)
 // }
 
-
 // case class CaseHom(name:String,doms:Seq[CaseObject],codoms:Seq[CaseObject]) extends Hom derives ReadWriter
-
 
 // import scala.quoted.*
 // case class CaseAttr[T:ReadWriter](name:String,doms:Seq[CaseObject],tt:Type[T]) extends Attr with PValue[T]
 
-
-
-  // implicit def 
+// implicit def
 
 // }
 // object CaseAttr {
-//   implicit attrRW: ReadWriter[CaseAttr] = 
+//   implicit attrRW: ReadWriter[CaseAttr] =
 // }
 
-
 // case class CaseSchema(obs: Set[CaseObject])
-
 
 object Schema {
   // implicit val rw: ReadWriter[Schema] = readwriter[(Seq[Ob],Seq[Hom],Seq[Attr])].bimap(
@@ -154,14 +146,12 @@ object Schema {
   // )
 }
 
-
-
 case class Id(id: Int)
 
 case class Parts(
-  nextId: Int,
-  ids: Seq[Id],
-  acsets: Map[Id, ACSet]
+    nextId: Int,
+    ids: Seq[Id],
+    acsets: Map[Id, ACSet]
 ) {
   def addParts(partacsets: Seq[ACSet]): (Parts, Seq[Id]) = {
     val newIds = nextId.to(nextId + partacsets.length - 1).map(Id.apply)
@@ -198,7 +188,6 @@ case class Parts(
   }
 }
 
-
 val ROOT = Part(Seq())
 
 case object SchEmpty extends Schema {
@@ -208,40 +197,40 @@ case object SchEmpty extends Schema {
 }
 
 case class ACSet(
-  schema: Schema,
-  props: PropMap,
-  partsMap: Map[Ob, Parts],
+    schema: Schema,
+    props: PropMap,
+    partsMap: Map[Ob, Parts]
 ) {
-
-
-  
-
-
 
   def subacset(p: Part): ACSet = trySubacset(p).get
 
   def trySubacset(p: Part): Option[ACSet] = p.path match {
     case Nil => Some(this)
-    case (x,i)::rest => partsMap.get(x).flatMap(_.acsets.get(i).flatMap(_.trySubacset(Part(rest))))
+    case (x, i) :: rest =>
+      partsMap
+        .get(x)
+        .flatMap(_.acsets.get(i).flatMap(_.trySubacset(Part(rest))))
   }
 
   def hasPart(p: Part): Boolean = p.path match {
     case Nil => true
-    case (x,i)::rest => (for {
-      parts <- partsMap.get(x)
-      sub <- parts.acsets.get(i)
-      res <- Some(sub.hasPart(Part(rest)))
-    } yield res).getOrElse(false)
+    case (x, i) :: rest =>
+      (for {
+        parts <- partsMap.get(x)
+        sub <- parts.acsets.get(i)
+        res <- Some(sub.hasPart(Part(rest)))
+      } yield res).getOrElse(false)
   }
 
   def setSubacset(p: Part, acs: ACSet): ACSet = p.path match {
     case Nil => {
       acs
     }
-    case (x, i)::rest => {
+    case (x, i) :: rest => {
       val parts = partsMap(x)
       this.copy(
-        partsMap = partsMap + (x -> (parts.setAcset(i, parts.acsets(i).setSubacset(Part(rest), acs))))
+        partsMap = partsMap + (x -> (parts
+          .setAcset(i, parts.acsets(i).setSubacset(Part(rest), acs))))
       )
     }
   }
@@ -258,12 +247,12 @@ case class ACSet(
 
   def subpart(f: Property, i: Part): f.Value = subacset(i).props(f)
 
-  def trySubpart(f: Property, i: Part): Option[f.Value] = trySubacset(i).flatMap(_.props.get(f))
-  
-  def hasSubpart(f:Property,i: Part) = trySubpart(f,i) match
+  def trySubpart(f: Property, i: Part): Option[f.Value] =
+    trySubacset(i).flatMap(_.props.get(f))
+
+  def hasSubpart(f: Property, i: Part) = trySubpart(f, i) match
     case Some(j) => true
-    case None => false
-  
+    case None    => false
 
   def addPart(p: Part, x: Ob, init: ACSet): (ACSet, Part) = {
     val sub = subacset(p)
@@ -272,7 +261,7 @@ case class ACSet(
     val newSub = sub.copy(
       partsMap = sub.partsMap + (x -> newparts)
     )
-    (setSubacset(p, newSub), p.extend(x,i))
+    (setSubacset(p, newSub), p.extend(x, i))
   }
 
   def addParts(p: Part, x: Ob, inits: Seq[ACSet]): (ACSet, Seq[Part]) = {
@@ -282,7 +271,7 @@ case class ACSet(
     val newSub = sub.copy(
       partsMap = sub.partsMap + (x -> newparts)
     )
-    (setSubacset(p, newSub), ids.map(i => p.extend(x,i)))
+    (setSubacset(p, newSub), ids.map(i => p.extend(x, i)))
   }
 
   def addPartsProps(p: Part, x: Ob, props: Seq[PropMap]): (ACSet, Seq[Part]) = {
@@ -330,17 +319,24 @@ case class ACSet(
   }
 
   def incident(p: Part, f: Hom): Seq[Part] = {
-    val codom = f.codoms.find(c => p.ty.path.drop(p.ty.path.length - c.path.length) == c.path).get
+    val codom = f.codoms
+      .find(c => p.ty.path.drop(p.ty.path.length - c.path.length) == c.path)
+      .get
     val prefix = Part(p.path.dropRight(codom.path.length))
-    /**
-     * Essentially, we look at all parts with part type f.dom, and filter which ones
-     * have a property f set to p
-     */
-    def helper(acs: ACSet, part: Part, remaining: Seq[Ob]): Seq[Part] = remaining match {
-      case Nil => if acs.props.get(f) == Some(p) then Seq(part) else Seq()
-      case ob::rest =>
-        acs.partsMap(ob).acsets.toSeq.flatMap((i, acs) => helper(acs, part.extend(ob, i), rest))
-    }
+
+    /** Essentially, we look at all parts with part type f.dom, and filter which
+      * ones have a property f set to p
+      */
+    def helper(acs: ACSet, part: Part, remaining: Seq[Ob]): Seq[Part] =
+      remaining match {
+        case Nil => if acs.props.get(f) == Some(p) then Seq(part) else Seq()
+        case ob :: rest =>
+          acs
+            .partsMap(ob)
+            .acsets
+            .toSeq
+            .flatMap((i, acs) => helper(acs, part.extend(ob, i), rest))
+      }
 
     f.doms.flatMap(dom => helper(subacset(prefix), prefix, dom.path))
   }
@@ -381,10 +377,8 @@ case class ACSet(
   }
 
   def remParts(ps: Seq[Part]): ACSet = ps match
-    case Seq() => this
-    case Seq(p,rest @_*) => this.remPart(p).remParts(rest)
-
-  
+    case Seq()             => this
+    case Seq(p, rest @ _*) => this.remPart(p).remParts(rest)
 
   def addProps(newProps: PropMap): ACSet = {
     this.copy(props = props ++ newProps)
@@ -406,9 +400,13 @@ object ACSet {
   def addPart(p: Part, x: Ob): State[ACSet, Part] =
     State(_.addPart(p, x))
 
-  def addPart(x: Ob, props: PropMap): State[ACSet, Part] = State(_.addPart(x, props))
+  def addPart(x: Ob, props: PropMap): State[ACSet, Part] = State(
+    _.addPart(x, props)
+  )
 
-  def addPart(x: Ob, init: ACSet): State[ACSet, Part] = State(_.addPart(x, init))
+  def addPart(x: Ob, init: ACSet): State[ACSet, Part] = State(
+    _.addPart(x, init)
+  )
 
   def addPart(x: Ob): State[ACSet, Part] = State(_.addPart(x, PropMap()))
 
@@ -420,13 +418,11 @@ object ACSet {
 
   def remPart(p: Part): State[ACSet, Unit] = State.modify(_.remPart(p))
 
-  def remParts(ps: Seq[Part]): State[ACSet,Unit] = State.modify(_.remParts(ps))
-  
+  def remParts(ps: Seq[Part]): State[ACSet, Unit] = State.modify(_.remParts(ps))
 
   def moveFront(p: Part): State[ACSet, Unit] = State.modify(_.moveFront(p))
 
   def subpartLens(f: Property, x: Part) =
     Lens[ACSet, f.Value](_.subpart(f, x))(y => s => s.setSubpart(x, f, y))
-
 
 }

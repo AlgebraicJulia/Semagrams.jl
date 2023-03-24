@@ -17,7 +17,7 @@ case class Complex(x: Double, y: Double) {
     Complex(z.x / d, z.y / d)
   }
 
-  def dot(other:Complex) = x*other.x + y*other.y
+  def dot(other: Complex) = x * other.x + y * other.y
 
   def unary_- = Complex(-x, -y)
 
@@ -26,7 +26,7 @@ case class Complex(x: Double, y: Double) {
     Complex(r * cos(y), r * sin(y))
   }
 
-  def log = Math.log(abs) + Math.atan2(x,y)
+  def log = Math.log(abs) + Math.atan2(x, y)
 
   def cong = Complex(x, -y)
 
@@ -35,8 +35,8 @@ case class Complex(x: Double, y: Double) {
   def abs = sqrt(abssq)
 
   def normalize = this.abs match
-    case 0.0 => Complex(1,0)
-    case _ => this/this.abs
+    case 0.0 => Complex(1, 0)
+    case _   => this / this.abs
 
   def toSvg = s"$x $y"
 }
@@ -51,5 +51,5 @@ object Complex {
 
   def apply(x: Double, y: Double) = if x.isNaN || y.isNaN then
     throw new InputMismatchException
-  else new Complex(x,y)
+  else new Complex(x, y)
 }

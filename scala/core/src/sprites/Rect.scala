@@ -22,42 +22,40 @@ case class Rect(props: PropMap) extends Sprite {
   ): L.SvgElement = {
     val data = updates.map(props ++ _.props)
 
-    
-
     val text = L.svg.text(
       xy <-- data.map(_(Center)),
-      L.children <-- data.map(p => 
+      L.children <-- data.map(p =>
         val splits = p(Content).split('\n').zipWithIndex
         val l = splits.length
-        splits.toIndexedSeq.map({case (t,i) => 
+        splits.toIndexedSeq.map({ case (t, i) =>
           L.svg.tspan(
             L.textToNode(t),
             textAnchor := "middle",
             // dominantBaseline := "central",
             x <-- data.map(p => p(Center).x.toString()),
-            y <-- data.map(
-              p => (p(Center).y + p(FontSize)*(i + 1 - l/2.0)).toString()
+            y <-- data.map(p =>
+              (p(Center).y + p(FontSize) * (i + 1 - l / 2.0)).toString()
             ),
             style := "user-select: none"
           )
         })
       ),
-      fontSize <-- data.map(_(FontSize).toString),
+      fontSize <-- data.map(_(FontSize).toString)
     )
-       // textAnchor := "middle",
-        // dominantBaseline := "central",
-        // style := "user-select: none"
-      // )),
-      // L.svg.tspan(
-      //   L.child <-- data.map(p => L.textToNode(p(Content))),
-      //   textAnchor := "middle",
-      //   dominantBaseline := "central",
-      //   style := "user-select: none"
-      // ),
- 
+    // textAnchor := "middle",
+    // dominantBaseline := "central",
+    // style := "user-select: none"
+    // )),
+    // L.svg.tspan(
+    //   L.child <-- data.map(p => L.textToNode(p(Content))),
+    //   textAnchor := "middle",
+    //   dominantBaseline := "central",
+    //   style := "user-select: none"
+    // ),
+
     val box = rect(
       geomUpdater(data),
-      styleUpdater(data),
+      styleUpdater(data)
     )
 
     val root = g(
@@ -74,7 +72,7 @@ case class Rect(props: PropMap) extends Sprite {
     // Normalize to first quadrant
     val (_, boxdims) = geom(props ++ data.props)
     val os = (props ++ data.props)(OuterSep)
-    val dims = Complex(boxdims.x + 2*os, boxdims.y + 2*os)
+    val dims = Complex(boxdims.x + 2 * os, boxdims.y + 2 * os)
     val q1dir = Complex(dir.x.abs, dir.y.abs)
     val q1pt = if (q1dir.x == 0) {
       Complex(0, dims.y / 2)
@@ -121,7 +119,9 @@ object Rect {
 
   def styleUpdater(data: L.Signal[PropMap]) = {
     List(
-      fill <-- data.map(d => if d.get(Hovered).isDefined then "lightgrey" else d(Fill)),
+      fill <-- data.map(d =>
+        if d.get(Hovered).isDefined then "lightgrey" else d(Fill)
+      ),
       stroke <-- data.map(_(Stroke)),
       style <-- data.map(_.get(Style).getOrElse(""))
     )

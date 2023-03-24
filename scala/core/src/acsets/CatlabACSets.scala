@@ -4,10 +4,10 @@ import upickle.default._
 
 object catlab {
   case class Version(
-    @upickle.implicits.key("ACSetSchema")
-    acsetSchema: String,
-    @upickle.implicits.key("Catlab")
-    catlab: String
+      @upickle.implicits.key("ACSetSchema")
+      acsetSchema: String,
+      @upickle.implicits.key("Catlab")
+      catlab: String
   )
 
   given ReadWriter[Version] = macroRW
@@ -22,15 +22,15 @@ object catlab {
   given ReadWriter[Attr] = macroRW
 
   case class Schema(
-    version: Version,
-    @upickle.implicits.key("Ob")
-    obs: Seq[Ob],
-    @upickle.implicits.key("Hom")
-    homs: Seq[Hom],
-    @upickle.implicits.key("AttrType")
-    attrtypes: Seq[AttrType],
-    @upickle.implicits.key("Attr")
-    attrs: Seq[Attr]
+      version: Version,
+      @upickle.implicits.key("Ob")
+      obs: Seq[Ob],
+      @upickle.implicits.key("Hom")
+      homs: Seq[Hom],
+      @upickle.implicits.key("AttrType")
+      attrtypes: Seq[AttrType],
+      @upickle.implicits.key("Attr")
+      attrs: Seq[Attr]
   )
   given ReadWriter[Schema] = macroRW
 

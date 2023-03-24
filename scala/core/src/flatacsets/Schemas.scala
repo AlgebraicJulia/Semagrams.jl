@@ -81,8 +81,8 @@ case class BasicSchema(
       )
     val newGlobals = gens
       .collect(
-        {
-          case (g: Global) => g
+        { case (g: Global) =>
+          g
         }
       )
     val newAttrsByOb = newAttrs.groupMap(_._1)(_._2)
@@ -102,7 +102,9 @@ case class BasicSchema(
 }
 
 object BasicSchema {
-  def apply(gens: (Ob | (Ob, Hom) | (Ob, Attr) | HomWithDom | AttrWithDom | Global)*) =
+  def apply(
+      gens: (Ob | (Ob, Hom) | (Ob, Attr) | HomWithDom | AttrWithDom | Global)*
+  ) =
     new BasicSchema(
       Map[String, Ob](),
       Map[String, Hom](),
