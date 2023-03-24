@@ -69,8 +69,11 @@ object WiringDiagrams {
 
   case object SchWiringDiagram extends StaticSchema {
     val schema = BasicSchema(
-      Box, boxTy,
-      Wire, Src, Tgt,
+      Box,
+      boxTy,
+      Wire,
+      Src,
+      Tgt,
       diagTy[Unit]()
     )
   }

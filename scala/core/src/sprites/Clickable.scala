@@ -5,7 +5,7 @@ import semagrams._
 import semagrams.controllers._
 
 case class Clickable(
-    mouse: MouseController,
+    mouse: MouseController
 ) extends Middleware {
   override def wrapHandler(f: HandlerAttacher) = (ent, elt) => {
     elt.amend(

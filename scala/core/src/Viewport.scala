@@ -4,7 +4,7 @@ import com.raquo.laminar.api.L._
 import semagrams.util._
 
 case class TransformState(
-  m: Var[Transform]
+    m: Var[Transform]
 )
 
 object TransformState {
@@ -17,7 +17,6 @@ trait Viewport {
   val entities: Signal[EntityCollection]
 
   val elt: SvgElement
-
 
 }
 

@@ -39,7 +39,9 @@ case class Arrow(defaults: PropMap) extends Sprite {
     val $p = updates.map(defaults ++ _.props)
     val arrow = path(
       pathElts <-- data.map(p => curvedPath(p(Start), p(End), p(Bend))),
-      stroke <-- $p.map(p => if p.get(Hovered).isDefined then "lightgrey" else p(Stroke)),
+      stroke <-- $p.map(p =>
+        if p.get(Hovered).isDefined then "lightgrey" else p(Stroke)
+      ),
       strokeDashArray <-- data.map(_(StrokeDasharray)),
       fill := "none",
       markerEnd := "url(#arrowhead)",

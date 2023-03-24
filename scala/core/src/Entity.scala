@@ -36,7 +36,8 @@ case class SubEntity(parent: Entity, child: Entity) extends Entity {
   val ty = SubEntityType(parent.ty, child.ty)
 }
 
-case class SubEntityType(parentTy: EntityType, childTy: EntityType) extends EntityType
+case class SubEntityType(parentTy: EntityType, childTy: EntityType)
+    extends EntityType
 
 type EntityMap = Map[Entity, (Sprite, ACSet)]
 
@@ -62,7 +63,7 @@ case class EntitySource[A](
 
   def updateEntities(f: (Entity, ACSet) => (Entity, ACSet)) = {
     EntitySource[A]((g, m) =>
-      entities(g, m).map((e, s, a) => { val (e1, a1) = f(e,a); (e1, s, a1) })
+      entities(g, m).map((e, s, a) => { val (e1, a1) = f(e, a); (e1, s, a1) })
     )
   }
 }

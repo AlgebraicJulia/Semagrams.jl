@@ -7,13 +7,14 @@ import semagrams.controllers._
 import semagrams.acsets._
 
 case class Hoverable(
-    hover: HoverController,
+    hover: HoverController
 ) extends Middleware {
   override def modifySignal(ent: Entity, $acs: Signal[ACSet]) = {
     Signal
       .combine(
         $acs,
-        hover.switchState(ent, PropMap() + (Hovered, ()), PropMap()))
+        hover.switchState(ent, PropMap() + (Hovered, ()), PropMap())
+      )
       .map(_.addProps(_))
   }
 

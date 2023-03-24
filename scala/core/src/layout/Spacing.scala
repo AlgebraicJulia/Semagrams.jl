@@ -31,7 +31,7 @@ case class FixedRange(from: Double, to: Double) extends Spacer {
 }
 
 case class FixedRangeExceptEnds(from: Double, to: Double) extends Spacer {
-  def assignPos(i: Int, n: Int) = FixedRange(from, to).assignPos(i+1, n+2)
+  def assignPos(i: Int, n: Int) = FixedRange(from, to).assignPos(i + 1, n + 2)
 
 }
 
@@ -60,16 +60,17 @@ def assignBends(edges: Map[Ob, (Hom, Hom)], spacing: Double)(
   def sortedEnds(i: Part) =
     ends(i).map({
       case (s, t) if s.hashCode() <= t.hashCode() => (s, t)
-      case (s, t)                 => (t, s)
+      case (s, t)                                 => (t, s)
     })
 
-  val parts = edges.keys.map(a.parts(ROOT, _).map(_._1)).foldLeft(Seq[Part]())(_ ++ _)
+  val parts =
+    edges.keys.map(a.parts(ROOT, _).map(_._1)).foldLeft(Seq[Part]())(_ ++ _)
   val bends = FixedSpacing(spacing, true)
     .spaceBy(sortedEnds)(parts)
     .map((i, bend) =>
       ends(i) match {
         case Some((s, t)) if s.hashCode() > t.hashCode() => (i, -bend)
-        case _                           => (i, bend)
+        case _                                           => (i, bend)
       }
     )
 

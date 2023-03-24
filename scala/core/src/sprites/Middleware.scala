@@ -15,7 +15,12 @@ case class WithMiddleware(
     s: Sprite,
     middleware: Seq[Middleware]
 ) extends Sprite {
-  def present(ent: Entity, init: ACSet, updates: Signal[ACSet], attachHandlers: HandlerAttacher) = {
+  def present(
+      ent: Entity,
+      init: ACSet,
+      updates: Signal[ACSet],
+      attachHandlers: HandlerAttacher
+  ) = {
     val modified =
       middleware.foldLeft(updates)((s, m) => m.modifySignal(ent, s))
 

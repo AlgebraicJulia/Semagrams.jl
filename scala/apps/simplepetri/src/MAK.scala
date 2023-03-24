@@ -12,8 +12,8 @@ import js.annotation._
 case class Variable(name: String)
 
 case class MassActionEquation(
-  lhs: Variable,
-  rhs: Seq[(Int, Variable, Seq[(Variable, Int)])]
+    lhs: Variable,
+    rhs: Seq[(Int, Variable, Seq[(Variable, Int)])]
 ) {
   def toLatex() = {
     val rhsexpr = rhs.zipWithIndex.foldLeft("")(
@@ -23,12 +23,13 @@ case class MassActionEquation(
             .map({
               case (pop, 1) => s"${pop.name}"
               case (pop, 0) => ""
-              case (pop, i) =>  s"${pop.name}^{${i}}"
-            }).mkString("")
+              case (pop, i) => s"${pop.name}^{${i}}"
+            })
+            .mkString("")
           val prefix = coeff match {
-            case 1 => if (idx == 0) "" else " + "
-            case -1 => " - "
-            case i if i > 1 => s" + ${i}"
+            case 1           => if (idx == 0) "" else " + "
+            case -1          => " - "
+            case i if i > 1  => s" + ${i}"
             case i if i < -1 => s" - ${i.abs}"
           }
           s"${expr} ${prefix} ${rate.name} \\; ${factorsexpr}"
@@ -39,12 +40,13 @@ case class MassActionEquation(
   }
 }
 
-def escapeUnderscores(s: String) = s.replaceAll("_","\\\\_")
+def escapeUnderscores(s: String) = s.replaceAll("_", "\\\\_")
 
 def variable(petri: ACSet, s: Part, default: String): Variable = {
   petri.trySubpart(Content, s) match {
     case Some("") | None => Variable(s"${default}_{${s.path(0)._2.id + 1}}")
-    case Some(name) if name.length > 1 => Variable(s"\\mathrm{${escapeUnderscores(name)}}")
+    case Some(name) if name.length > 1 =>
+      Variable(s"\\mathrm{${escapeUnderscores(name)}}")
     case Some(name) => Variable(escapeUnderscores(name))
   }
 }
@@ -52,21 +54,35 @@ def variable(petri: ACSet, s: Part, default: String): Variable = {
 def massActionEquations(petri: ACSet): String = {
   val ts = petri.partsOnly(ROOT, T).sortBy(_.path(0)._2.id)
   val ss = petri.partsOnly(ROOT, S).sortBy(_.path(0)._2.id)
-  val inputMatrix = ts.map(
-    t => (t -> ss.map(
-      s => (s -> petri.incident(s, IS).filter(petri.trySubpart(IT,_) == Some(t)).length)
-    ).toMap)
-  ).toMap
-  val outputMatrix = ts.map(
-    t => (t -> ss.map(
-      s => (s -> petri.incident(s, OS).filter(petri.trySubpart(OT,_) == Some(t)).length)
-    ).toMap)
-  ).toMap
-  val eqs = ss.map(
-    s => MassActionEquation(
+  val inputMatrix = ts
+    .map(t =>
+      (t -> ss
+        .map(s =>
+          (s -> petri
+            .incident(s, IS)
+            .filter(petri.trySubpart(IT, _) == Some(t))
+            .length)
+        )
+        .toMap)
+    )
+    .toMap
+  val outputMatrix = ts
+    .map(t =>
+      (t -> ss
+        .map(s =>
+          (s -> petri
+            .incident(s, OS)
+            .filter(petri.trySubpart(OT, _) == Some(t))
+            .length)
+        )
+        .toMap)
+    )
+    .toMap
+  val eqs = ss.map(s =>
+    MassActionEquation(
       variable(petri, s, "C"),
       ts.map(t => {
-        val (i,o) = (inputMatrix(t)(s), outputMatrix(t)(s))
+        val (i, o) = (inputMatrix(t)(s), outputMatrix(t)(s))
         (
           o - i,
           variable(petri, t, "r"),
@@ -83,7 +99,8 @@ def massActionEquations(petri: ACSet): String = {
 @js.native
 @JSImport("katex", JSImport.Default)
 object katex extends js.Object {
-  def render(eq: String, elt: dom.Element, options: js.Dictionary[Any]): Unit = js.native
+  def render(eq: String, elt: dom.Element, options: js.Dictionary[Any]): Unit =
+    js.native
 }
 
 def massActionTypeset($petri: Signal[ACSet]): Element = {

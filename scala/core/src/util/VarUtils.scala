@@ -21,13 +21,13 @@ extension [A](v: UndoableVar[A]) {
     })
   )
 
-  def zoomL[B](l: Lens[A,B]) = new LensedVar(v, l)
+  def zoomL[B](l: Lens[A, B]) = new LensedVar(v, l)
 }
 
-class LensedVar[A,B](val v: UndoableVar[A], val l: Lens[A,B]) {
-  val writer = v.updater[B]((a,b) => l.replace(b)(a))
+class LensedVar[A, B](val v: UndoableVar[A], val l: Lens[A, B]) {
+  val writer = v.updater[B]((a, b) => l.replace(b)(a))
 
   val signal = v.signal.map(l.get)
 
-  def zoomL[C](m: Lens[B,C]) = new LensedVar(v, l.andThen(m))
+  def zoomL[C](m: Lens[B, C]) = new LensedVar(v, l.andThen(m))
 }

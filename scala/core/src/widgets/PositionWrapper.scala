@@ -8,7 +8,7 @@ enum Margin {
   case Fixed(pixels: Int)
 
   def toCSS = this match {
-    case Auto => "auto"
+    case Auto          => "auto"
     case Fixed(pixels) => s"${pixels}px"
   }
 }
@@ -20,11 +20,11 @@ enum Direction {
   case Right
 
   def tangent() = this match
-    case Top => Complex(0,1)
-    case Bottom => Complex(0,-1)
-    case Left => Complex(-1,0)
-    case Right => Complex(1,0)
-  
+    case Top    => Complex(0, 1)
+    case Bottom => Complex(0, -1)
+    case Left   => Complex(-1, 0)
+    case Right  => Complex(1, 0)
+
 }
 
 type Position = Map[Direction, Margin]
@@ -36,9 +36,11 @@ object Position {
   val midMid = Map(Top -> Auto, Bottom -> Auto, Left -> Auto, Right -> Auto)
 
   def botMid(margin: Int) = midMid + (Bottom -> Fixed(margin))
-  def topToBotMid(margin: Int) = midMid + (Bottom -> Fixed(margin)) + (Top -> Fixed(margin))
+  def topToBotMid(margin: Int) =
+    midMid + (Bottom -> Fixed(margin)) + (Top -> Fixed(margin))
 
-  def atPos(z:Complex) = midMid + (Top -> Fixed(z.y.toInt)) + (Left -> Fixed(z.x.toInt))
+  def atPos(z: Complex) =
+    midMid + (Top -> Fixed(z.y.toInt)) + (Left -> Fixed(z.x.toInt))
 }
 
 extension (p: Position) {

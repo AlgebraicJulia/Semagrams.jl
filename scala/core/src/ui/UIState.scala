@@ -19,38 +19,38 @@ val newEntity: IO[Entity] = for {
 } yield AnonEntity(t)
 
 case class UIState(
-  sprites: Var[Vector[(Entity, Sprite, ACSet)]],
-  focus: () => Unit,
-  globalSize: Signal[Complex]
+    sprites: Var[Vector[(Entity, Sprite, ACSet)]],
+    focus: () => Unit,
+    globalSize: Signal[Complex]
 ) {
   def addEntity(e: Entity, s: Sprite, p: ACSet) =
-    IO(sprites.update(
-      entities => {
-        val i = entities.indexWhere(_._1 == e)
-        if ( i != -1 ) {
-          entities.updated(i, (e, s, p))
-        } else {
-          entities :+ (e, s, p)
-        }
+    IO(sprites.update(entities => {
+      val i = entities.indexWhere(_._1 == e)
+      if (i != -1) {
+        entities.updated(i, (e, s, p))
+      } else {
+        entities :+ (e, s, p)
       }
-    ))
+    }))
 
   def addHtmlEntity(e: Entity, build: () => HtmlElement) =
     addEntity(e, GenericHTMLSprite(build, globalSize), ACSet(SchEmpty))
 
-
-  def addKillableHtmlEntity(e: Entity, build: Observer[Unit] => HtmlElement): IO[Unit] =
+  def addKillableHtmlEntity(
+      e: Entity,
+      build: Observer[Unit] => HtmlElement
+  ): IO[Unit] =
     addEntity(
       e,
       GenericHTMLSprite(() => build(Observer(_ => remEntity(e))), globalSize),
       ACSet(SchEmpty)
     )
 
-
-  def addKillableHtmlEntity(build: Observer[Unit] => HtmlElement): IO[Unit] = for {
-    e <- newEntity
-    _ <- addKillableHtmlEntity(e, build)
-  } yield ()
+  def addKillableHtmlEntity(build: Observer[Unit] => HtmlElement): IO[Unit] =
+    for {
+      e <- newEntity
+      _ <- addKillableHtmlEntity(e, build)
+    } yield ()
 
   def dialogue[A](build: Observer[A] => HtmlElement): IO[A] = for {
     e <- newEntity
@@ -60,13 +60,14 @@ case class UIState(
       addEntity(
         e,
         GenericHTMLSprite(
-          () => build(
-            Observer(
-              a => {
-                cb(Right(a))
-                remEntity(e)
-                focus()
-              })), globalSize),
+          () =>
+            build(Observer(a => {
+              cb(Right(a))
+              remEntity(e)
+              focus()
+            })),
+          globalSize
+        ),
         ACSet(SchEmpty)
       ).flatMap(_ => IO(None))
     )
@@ -78,6 +79,6 @@ case class UIState(
 
   val viewport = EntitySourceViewport(
     sprites.signal,
-    Seq(EntitySource((entities,_) => entities))
+    Seq(EntitySource((entities, _) => entities))
   )
 }

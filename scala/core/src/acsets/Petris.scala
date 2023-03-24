@@ -34,8 +34,8 @@ object Petris {
   }
 
   case object SchPetri extends Schema {
-    val obs = Seq(S,T,I,O)
-    val homs = Seq(IT,IS,OT,OS)
+    val obs = Seq(S, T, I, O)
+    val homs = Seq(IT, IS, OT, OS)
     val attrs = Seq()
   }
 

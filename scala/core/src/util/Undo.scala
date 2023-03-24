@@ -3,26 +3,26 @@ package semagrams.util
 import com.raquo.laminar.api.L._
 
 case class UndoState[A](
-  recording: Boolean,
-  past: List[A],
-  present: A,
-  future: List[A]
+    recording: Boolean,
+    past: List[A],
+    present: A,
+    future: List[A]
 ) {
   def undo() = past match {
-    case x::xs => UndoState[A](recording, xs, x, present::future)
-    case Nil => this
+    case x :: xs => UndoState[A](recording, xs, x, present :: future)
+    case Nil     => this
   }
 
   def redo() = future match {
-    case x::xs => UndoState[A](recording, present::past, x, xs)
-    case Nil => this
+    case x :: xs => UndoState[A](recording, present :: past, x, xs)
+    case Nil     => this
   }
 
-  def save() = this.copy(past = present::past)
+  def save() = this.copy(past = present :: past)
 
   def update(a: A) = if recording
-    then UndoState[A](recording, present::past, a, Nil)
-    else this.copy(present=a, future=Nil)
+  then UndoState[A](recording, present :: past, a, Nil)
+  else this.copy(present = a, future = Nil)
 }
 
 class UndoableVar[A](init: A) extends SignalSource[A] with Sink[A] {
@@ -42,7 +42,8 @@ class UndoableVar[A](init: A) extends SignalSource[A] with Sink[A] {
 
   def save() = state.update(_.save())
 
-  def updater[B](f: (A, B) => A) = state.updater[B]((s,b) => s.update(f(s.present, b)))
+  def updater[B](f: (A, B) => A) =
+    state.updater[B]((s, b) => s.update(f(s.present, b)))
 
   def update(f: A => A) = state.update(s => s.update(f(s.present)))
 
