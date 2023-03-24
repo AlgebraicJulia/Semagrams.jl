@@ -113,15 +113,17 @@ node6 -> node2;
 }
 </script></div></dd><dt class="body-small">Supertypes</dt><dd class="body-medium"><div class="mono-small-inline supertypes"><span class="icon-button show-content"></span><div>trait <span data-unresolved-link="" t="n">Serializable</span></div><div>trait <span data-unresolved-link="" t="n">Product</span></div><div>trait <span data-unresolved-link="" t="n">Equals</span></div><div>class <span data-unresolved-link="" t="n">Object</span></div><div>trait <span data-unresolved-link="" t="n">Matchable</span></div><div>class <span data-unresolved-link="" t="n">Any</span></div></div></dd></dl></div></div></div></div></div><div class="documentableElement"><button class="icon-button show-content"></button><div class="header monospace"><div class="signature mono-small-inline"><span class="modifiers"></span><span class="kind"><span t="k">trait </span></span><a href="acsets/Ob.html" t="n"class="documentableName ">Ob</a><span></span></div></div><div class="docs"><span class="modifiers"></span><div><div class="originInfo"></div><div class="memberDocumentation"><div class="documentableBrief doc"><p>In this file, we define nested ACSets.</p>
 </div><div class="cover"><div class="doc"><p>In this file, we define nested ACSets.</p>
-<p>In a nested acset, each part of an acset has an associated acset.
-The schema for a nested acset has an acset schema associated with each object,
-which defines the schema for the acsets associated to the parts assigned to that object.</p>
-<p>A nested part of a nested acset is a list of (ob, id) pairs, which at each step tell you how to get
-to the next nested acset.</p>
-<p>Morphisms in a nested acset schema go from nested parts to nested parts. The acset schema
-that contains the morphism is the &quot;highest point&quot; that the morphism can go, i.e. the only way to
-get from a nested part to another nested part via a morphism is to go all the way up to where the
-morphism is defined, and then go back down to the target of the morphism.</p>
+<p>In a nested acset, each part of an acset has an associated acset. The schema
+for a nested acset has an acset schema associated with each object, which
+defines the schema for the acsets associated to the parts assigned to that
+object.</p>
+<p>A nested part of a nested acset is a list of (ob, id) pairs, which at each
+step tell you how to get to the next nested acset.</p>
+<p>Morphisms in a nested acset schema go from nested parts to nested parts. The
+acset schema that contains the morphism is the &quot;highest point&quot; that the
+morphism can go, i.e. the only way to get from a nested part to another
+nested part via a morphism is to go all the way up to where the morphism is
+defined, and then go back down to the target of the morphism.</p>
 </div><h2 class="h500">Attributes</h2><dl class="attributes"><dt class="body-small">Graph</dt><dd class="body-medium"><div id="inheritance-diagram" class="diagram-class showGraph"><button type="button" class="label-only-button" onclick="zoomOut()">Reset zoom</button><button type="button" class="label-only-button" onclick="hideGraph()">Hide graph</button><button type="button" class="label-only-button" onclick="showGraph()">Show graph</button><svg id="graph"></svg><script type="text/dot" id="dot"> digraph g {
  node0 [id=node0, label="<span style=\"color: #FFFFFF;\">trait <a href=\"acsets/Ob.html\" t=\"n\">Ob</a></span>", class="trait vertex"];
 node1 [id=node1, label="<span style=\"color: #FFFFFF;\">class <span data-unresolved-link=\"\" t=\"n\">Object</span></span>", class="class vertex"];
