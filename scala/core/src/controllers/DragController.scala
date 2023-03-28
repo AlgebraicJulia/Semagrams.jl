@@ -7,30 +7,26 @@ import cats.effect._
 
 import com.raquo.laminar.api.L._
 
-/** This is meant to be a bit of global state that keeps track of the current
-  * object being dragged. The drag handler has to go on the main window, because
-  * it is easy for something that is being dragged to not be under the mouse.
+/** A wrapper around a `Var` containing state that keeps track of the current
+  * object being dragged. This has to be global because it is easy for something
+  * that is being dragged to not be under the mouse, so the mouse-move events
+  * have to come from the global window.
   *
-  * The state of the drag controller is an option of observer of positions. When
-  * this state is non-None, mouse move events get their position sent to the
-  * observer. On mouse-up or when the mouse leaves the parent svg, the observer
-  * is reset to be nothing.
-  *
-  * NOTE: there maybe should be some sort of "drag end" event, so that things
-  * can trigger when the drag is released.
-  *
-  * When something needs to be dragged, the state of the DragController is set
-  * to be an observer for updates to the state of the thing being dragged.
-  *
-  * This depends on a MouseController.
+  * When the state is non-None, mouse move events get their position sent to the
+  * observer. On mouse-up or when the mouse leaves the parent svg, the drag-end
+  * handler is called and the state is reset to be None.
   */
-
 class DragController() extends Controller {
   import DragController.State
 
   val $state = Var[Option[State]](None)
 
-  /** This is a helper method that is used to process mouse events.
+  /** Processes mouse events by updating state.
+    *
+    * @param state
+    *   the current state
+    * @param evt
+    *   the event to process
     */
   def processEvent(
       state: Option[State],
@@ -57,15 +53,30 @@ class DragController() extends Controller {
     )
   }
 
-  def drag[Model](updates: Observer[Complex]): IO[Unit] =
+  /** Returns an IO action that completes when the drag is over
+    *
+    * @param observer
+    *   the observer that gets updated mouse positions during the drag
+    */
+  def drag[Model](observer: Observer[Complex]): IO[Unit] =
     IO.async_(cb => {
-      $state.set(Some(State(updates, _ => cb(Right(())))))
+      $state.set(Some(State(observer, _ => cb(Right(())))))
     })
 
-  def dragStart[Model](updates: Observer[Complex]): IO[Unit] =
-    IO.delay($state.set(Some(State(updates, _ => ()))))
+  /** Returns an IO action that starts a drag, and completes immediately
+    *
+    * @param observer
+    *   the observer that gets updated mouse positions during the drag
+    */
+  def dragStart[Model](observer: Observer[Complex]): IO[Unit] =
+    IO.delay($state.set(Some(State(observer, _ => ()))))
 
-  /** This is used to attach the mouse move event handlers to the top-level SVG.
+  /** Hooks up the event stream from editor state to update the drags
+    *
+    * @param es
+    *   the EditorState that the events come from
+    * @param elt
+    *   the element that the binding is attached to
     */
   def apply(es: EditorState, elt: SvgElement) = elt.amend(
     es.events --> $state.updater(processEvent)
@@ -73,11 +84,22 @@ class DragController() extends Controller {
 }
 
 object DragController {
+
+  /** The state of the DragController, typically contained in a Var
+    *
+    * @param observer
+    *   a function that is called with the new mouse position when the mouse
+    *   moves
+    * @param callback
+    *   a function that is called once when the drag finishes
+    */
   case class State(
       observer: Observer[Complex],
       callback: Unit => Unit
   )
 
+  /** Creates a new DragController
+    */
   def apply() = {
     new DragController()
   }
