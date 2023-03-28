@@ -24,3 +24,4 @@
 /assets/askem-hackathon-pres/pres_files/
 scala/project/build.properties
 scala/.vscode/settings.json
+/scala/build/
