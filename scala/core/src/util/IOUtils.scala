@@ -22,5 +22,8 @@ extension [A](action: IO[A]) {
     action.map(Some(_)).handleError(_ => None)
 
   def onCancelOrError(fin: IO[A]) =
-    action.onCancel(fin.map(_ => ())).handleErrorWith(_ => fin)
+    action.onCancel(fin.map(_ => ())).handleErrorWith(er => 
+      println(er)  
+      fin
+    )
 }

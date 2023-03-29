@@ -16,6 +16,7 @@ import semagrams.sprites.Middleware
 import semagrams.sprites.WithMiddleware
 import semagrams.sprites.DPBox
 import semagrams.sprites.Rect
+import cats.data.State
 
 case class Actions(
   es: EditorState,
@@ -42,18 +43,30 @@ case class Actions(
     // bw.close()
 
     
+  def bgACSet() = m.now().subacset(es.bgPart())
 
 
 
-  def addAtMouse(ob: Ob, init: ACSet) = for {
+  def addAtMouse(ob: Ob, init: ACSet): IO[Part] = for {
     pos <- es.mousePos
-    x <- m.updateS(addPart(ob, init.setSubpart(ROOT, Center, pos)))
+    x <- m.updateS(State(_.subacset(es.bgPart())
+      .addPart(
+        es.bgPart(),
+        ob,
+        init.setSubpart(ROOT,Center,pos)
+      )
+    ))
   } yield x
 
-  def addAtMouse(ob: Ob) = for {
+  def addAtMouse(ob: Ob): IO[Part] = for {
     pos <- es.mousePos
-    x <- m.updateS(addPart(ob, PropMap() + (Center, pos)))
-    // _ = println(x)
+    x <- m.updateS(State(
+      _.addPart(
+        es.bgPart(),
+        ob,
+        PropMap() + (Center, pos)
+      )
+    ))
   } yield x
 
   def addAtMouse_(ob: Ob, init: ACSet) = addAtMouse(ob,init).map(_ => ())
@@ -90,32 +103,58 @@ case class Actions(
   } yield ()
 
 
-  def getBBox(b:Part): IO[BoundingBox] = b.path match 
-    case Seq() => 
-      val sz = es.size.now()
-      IO(BoundingBox(sz/2.0,sz))
-    case Seq(head) => for {
-      sprtry <- IO(es.entities.now().em.get(b))
-      sprdata <- sprtry match
-        case Some(pair) => fromMaybe(IO(sprtry))
-        case None => 
-          println(s"bad $b")
-          die
-      (spr,acset) = sprdata
-      bbtry = spr.bbox(Part(Nil),acset)
-      bb <- {bbtry match
-        case Some(bb) => IO(bb)
-        case None =>
-          println(s"bad bb: $b")
-          die
-      }
-    } yield bb
-    case Seq(head,rest @_*) => for {
-      bdata <- fromMaybe(IO(es.entities.now().em.get(b.head)))
-      (spr,acset) = bdata
-      _ = println(spr.bbox(Part(rest),acset))
-      bb <- getBBox(ROOT)
-    } yield bb
+  def getBBox(b:Part): BoundingBox =
+    val b_ent = es.bgPart() match
+      case ROOT => b
+      case bg => bg.last
+    b match 
+      case b if b == es.bgPart() =>
+        // println("case 1")
+        val sz = es.size.now()
+        BoundingBox(sz/2.0,sz)
+      case b if es.bgPlus(b.last) == b => 
+        println("case 2")
+        
+        val (spr,acset) = es.entities.now().em.get(b_ent)
+          .getOrElse({
+            println(s"getBBox: missing entity $b")
+            throw new RuntimeException(s"getBBox: missing entity $b")
+          })
+
+        // println("got here")
+        // println(acset.partsMap(b.ty.path(0)).acsets.keys)
+        val sub = es.bgPart() match
+          case ROOT => acset
+          case _ => acset.subacset(b.last)
+        // println(s"sub = $sub")
+        val bb = spr.bbox(Part(Nil),sub).getOrElse({
+          println(s"getBBox: missing entity $b")
+          throw new RuntimeException(s"getBBox: missing bbox $b")
+        })
+        // println("and here")
+        // println(s"bb = $bb")
+        bb
+      case b if es.bgPart() < b => 
+        println("case 3")
+        // println(es.entities.now().em.keys)
+        val (spr,acset) = es.entities.now().em.get(b_ent)
+          .getOrElse({
+            println(s"getBBox: missing entity $b")
+            throw new RuntimeException(s"getBBox: missing entity $b")
+          })
+        val bb = spr.bbox(ROOT,acset.subacset(b.tail)).getOrElse({
+          println(s"getBBox: missing bbox $b")
+          throw new RuntimeException(s"getBBox: missing bbox $b")
+        })
+        bb
+      case _ => 
+        println(s"case 4: $b, ${es.bgPart()}, ${es.bgPart() > b}, ${es.bgPart() < b}")
+        throw new RuntimeException(s"bad getBBox: $b, ${es.bgPart()}")
+        
+  
+  def getCenter(p:Part) = getBBox(p).pos
+  def getSize(p:Part) = getBBox(p).dims
+    
     
   //   fromMaybe(IO(
   //   es.entities.now().em.get(b).map(pr => pr._1 match
@@ -167,19 +206,22 @@ case class Actions(
 
 
   // Memo = Offset, Return = Unit
-  def dragMove(i: Part) = 
+  def dragMove(i: Part) =
+
+    val pt = es.currentView.now().extend(i).asInstanceOf[Part]
+
     def start = (z:Complex) => for 
-      _ <- m.updateS_(moveFront(i))
-      c <- IO(m.now().subpart(Center, i))
+      _ <- m.updateS_(moveFront(pt))
+      c <- IO(m.now().subpart(Center, pt))
     yield c - z
 
     def during = (offset:Complex,p:Complex) => m.update(
-      _.setSubpart(i, Center, p + offset)
+      _.setSubpart(pt, Center, p + offset)
     )
 
     def end = (offset:Complex) => IO(())
 
-    drag(start,during,end)(i)
+    drag(start,during,end)(pt)
 
 
 
@@ -195,85 +237,95 @@ case class Actions(
   //   yield 
   // }
 
-  def liftTo(p:Part,tp:PartType): IO[Part] = 
-    // println(s"liftTo: $p, $tp")
-    tp.path match
-    case Seq() => 
-      // println(s"lifted to $p")
-      IO(p)
-    case Seq(next,rest @_*) => {for
-      ext <- add(p,next,PropMap())
-      // _ = println(s"added $ext")
-      last <- liftTo(ext,PartType(rest))
-    yield last}
-        
-
-  // def liftTo(p:Part,tps: Seq[PartType]): IO[Part] = 
-  //   println(s"liftTos: $p, $tps")
-  //   tps match
-  //   case Seq() => 
-  //     println(s"die $p, $tps")
-  //     die
-  //   case Seq(tp,rest @_*) => 
-  //     println(s"trying lift $p to $tp")
-  //     liftTo(p,tp).onCancelOrError(liftTo(p,rest))
-
-  def noLift(p:Part,pos:Complex): PartType = ROOT.ty
-
-
-
+  def liftTo(p:Part,ob:Ob,idx:Int): IO[Part] = for
+    pt <- add(p,ob,PropMap())
+    _ = m.update(acset => acset.moveToIndex(pt,idx))
+  yield pt
+         
+    
+  //   tp.path match
+  //   case Seq() => IO(p)
+  //   case Seq(next,rest @_*) => {for 
+      
+  //     // _ = println(s"added $first")      
+  //     last <- liftTo(first,PartType(rest),idx)
+  //     // _ = println(s"finished $last")
+  //   yield last}
   
+    
+
   // Memo = Part, Return = Part
   def dragEdge(
     ob:Ob,
     src:Hom,
     tgt:Hom,
-    liftSeq: (Part,Complex) => PartType = noLift
+    lift: (Part,Complex) => Option[(Ob,Int)] = (_,_) => None
   )(s: Part): IO[Part] =
-
+    // println(s"dragEdge $s")
       
-
-    def start = (z:Complex) => 
-      val ptype = liftSeq(s,z)
-      // println(s"ptype: $ptype")
+    // val s = bgPlus(s_ext)
+    def start = (z:Complex) =>
+      // println(s"start: s = $s")
+      // println(s"ptype = $ptype")
+      
       for
-        p <- liftTo(s,ptype)
+        p <- {lift(s,z) match
+          case Some((ptype,idx)) => liftTo(s,ptype,idx)
+          case None => IO(s)
+        }
         // _ = println(s"p = $p")
+        // _ = println(p - es.bgPart())
+
         w <- add(
-          ROOT,
+          es.bgPart(),
           ob,
-          p.ty match
-            case tp if src.codoms.contains(tp) =>
-              PropMap().set(src,p)
+          p - es.bgPart() match
+            case pt if src.codoms.contains(pt.ty) =>
+              // println(s"if1 $pt")
+              PropMap().set(src,pt)
                 .set(End, z).set(Interactable, false)
-            case tp if tgt.codoms.contains(tp) => 
-              PropMap().set(tgt,p)
+            case pt if tgt.codoms.contains(pt.ty) => 
+              // println(s"if2 $pt")
+              PropMap().set(tgt,pt)
                 .set(Start, z).set(Interactable, false)
+            case tp => 
+              // println(s"unmatched $tp")
+              // println(src.codoms)
+              PropMap().set(Start,z).set(End,z).set(Interactable,false)
         )
+        // _ = println(w)
       yield w
 
-    def during = (e:Part,p:Complex) => if m.now().hasSubpart(src,e)
-    then m.update(_.setSubpart(e, End, p))
-    else m.update(_.setSubpart(e, Start, p))
+    def during = (e:Part,p:Complex) => 
+      // println(s"during $e")
+      if m.now().hasSubpart(src,e)
+      then m.update(_.setSubpart(e, End, p))
+      else m.update(_.setSubpart(e, Start, p))
 
     def end = (e:Part) => for
       t <- fromMaybe(es.hoveredPart)
       // _ = println(s"end: $t")
       z <- es.mousePos
-      qtype = liftSeq(t,z)
-      q <- liftTo(t,qtype)
+      q <- lift(t,z) match
+        case Some((qtype,idx)) => liftTo(t,qtype,idx)
+        case None => IO(t)
+      // _ = println(s"q = $q, e = $e")
       _ <- m.now() match
         case mnow if mnow.hasSubpart(src,e) => for {
-          _ <- set(e, tgt, q)
+          _ <- set(e, tgt, q - es.bgPart())
+          // _ = println("end1")
           _ <- remove(e, End)
           _ <- remove(e, Interactable)
         } yield ()
         case mnow if mnow.hasSubpart(tgt,e) => for {
-          _ <- set(e,src,q)
+          _ <- set(e,src,q - es.bgPart())
+          // _ = println("end2")
           _ <- remove(e,Start)
           _ <- remove(e,Interactable)
         } yield ()
-        case _ => die
+        case _ => 
+          // println(s"end3 $e")         
+          die
     yield e
 
     drag(start,during,end)(s)

@@ -53,16 +53,35 @@ trait Attr extends Property {
 case class PartType(path: Seq[Ob]) extends EntityType {
   def extend(x: Ob) = PartType(path :+ x)
 
-  def head = PartType(path.slice(0,1))
+  def head = PartType(Seq(path.head))
   def tail = PartType(path.tail)
+  def init = PartType(path.init)
+  def last = PartType(Seq(path.last))
 
   def headOb = path.headOption
-  def lastOb = path.lastOption 
+  def lastOb = path.lastOption
 
-  def <(that:PartType): Boolean = that.path match
+  def length = path.length
+
+  def >(that:PartType): Boolean = 
+    // println(s"$this > $that")
+    that.path match
     case Seq() => true
     case Seq(thathead,thattail @_*) =>
-      head == thathead && tail < PartType(thattail)
+      head == thathead && tail > PartType(thattail)
+
+  def <(that:PartType) = this > that
+
+  def take(n:Int) = PartType(path.take(n))
+  def takeRight(n:Int) = PartType(path.takeRight(n))
+
+  def diff(that:PartType): PartType = if that==ROOT.ty
+  then this
+  else if this.head == that.head
+  then this.tail.diff(that.tail)
+  else ROOT.ty
+
+  def -(that:PartType) = diff(that)
   
 }
 
@@ -79,22 +98,49 @@ case class Part(path: Seq[(Ob, Id)]) extends Entity {
 
   def extend(x: Ob, i: Id) = Part(path :+ (x, i))
 
-  override def extend(e: Entity) = e match {
+
+
+  override def extend(p: Entity): Part = p match {
     case (p: Part) => Part(path ++ p.path)
-    case _ => SubEntity(this, e)
+    case _ => 
+      // println(s"Extended part by entity $p")
+      this
   }
 
-  def head: Part = Part(path.slice(0,1))
+  def head: Part = Part(Seq(path.head))
   def tail: Part = Part(path.tail)
+  def init: Part = Part(path.init)
+  def last: Part = Part(Seq(path.last))
 
+  def length = path.length
+  def take(n:Int) = Part(path.take(n))
+  def takeRight(n:Int) = Part(path.takeRight(n))
 
-  def <(that: Part): Boolean = that.path match
-    case Seq() => true
-    case Seq(thathead,thattail @_*) => 
-      head == thathead && tail < Part(thattail)
+  def diff(that:Part): Part = that.path match
+    case Seq() => this
+    case _ if this.head == that.head => this.tail.diff(that.tail)
+    case _ => ROOT
+
+  def -(that:Part) = diff(that)
   
+
+
+  def >(that: Part): Boolean = 
+    // println(s"$this > $that")
+    that.path match
+    case Seq() => 
+      // println("true!")
+      true
+    case _ => 
+      // println(s"seq case: $thathead, $thattail")
+      // println(head==that.head)
+      head == that.head && tail > that.tail
+
+  def <(that:Part) = that > this
+
   def in(ptype:PartType) = ty < ptype
 }
+
 
 trait Schema {
   val obs: Seq[Ob]
@@ -196,6 +242,13 @@ case class Parts(
       ids = ids.filterNot(_ == i) :+ i
     )
   }
+
+  def moveIndex(i: Id, j: Id) = {
+    val (front,back) = ids.filter(_ != i).splitAt(j.id)
+    this.copy(
+      ids = (front :+ i) ++ back
+    )
+  }
 }
 
 
@@ -218,11 +271,17 @@ case class ACSet(
 
 
 
-  def subacset(p: Part): ACSet = trySubacset(p).get
+  def subacset(p: Part): ACSet = trySubacset(p).getOrElse({
+    println(this)
+    println(s"missing subacset $p")
+    // println(this.partsMap(p.ty.path(0)).acsets.keys)
+    throw new RuntimeException(s"missing subacset $p")
+})
 
   def trySubacset(p: Part): Option[ACSet] = p.path match {
     case Nil => Some(this)
-    case (x,i)::rest => partsMap.get(x).flatMap(_.acsets.get(i).flatMap(_.trySubacset(Part(rest))))
+    case (x,i)::rest => partsMap.get(x).flatMap(pts =>
+      pts.acsets.get(i).flatMap(_.trySubacset(Part(rest))))
   }
 
   def hasPart(p: Part): Boolean = p.path match {
@@ -312,6 +371,19 @@ case class ACSet(
     )
     setSubacset(prefix, newsub)
   }
+
+  def moveToIndex(p: Part,j:Int): ACSet = p match
+    case ROOT =>
+      println("Tried to move ROOT")
+      this
+    case _ =>
+      val (ptype,i) = p.path.last
+      val sub = subacset(p.init)
+      val newsub = sub.copy(
+        partsMap = sub.partsMap + (ptype -> sub.partsMap(ptype).moveIndex(i,Id(j)))
+      )
+      setSubacset(p.init,newsub)
+  
 
   def setSubpart(p: Part, f: Property, v: f.Value): ACSet = {
     val sub = subacset(p)

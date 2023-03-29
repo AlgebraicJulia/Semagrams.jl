@@ -12,6 +12,13 @@ case class Binding[A](
   def flatMap[B](g: A => IO[B]): Binding[B] =
     Binding(selector.andThen(_.flatMap(g)), modifiers)
 
+
+  def collect[B](pf: PartialFunction[A,B]): Binding[B] =
+    Binding(selector(_).map(pf),modifiers)
+
+  def flatCollect[B](pf: PartialFunction[A,IO[B]]): Binding[B] = 
+    Binding(selector(_).flatMap(pf),modifiers)
+
   def map[B](g: A => B): Binding[B] =
     Binding(selector.andThen(_.map(g)), modifiers)
 

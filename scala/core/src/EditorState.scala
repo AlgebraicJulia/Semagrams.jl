@@ -23,6 +23,9 @@ class EditorState(val elt: SvgElement) {
 
   val entities = Var(EntityCollection())
 
+  val currentView: Var[Part] = Var(ROOT)
+
+
   dom.ResizeObserver(
     (newsize,_) => {
       size.set(Complex(elt.ref.clientWidth, elt.ref.clientHeight))
@@ -32,10 +35,6 @@ class EditorState(val elt: SvgElement) {
   elt.amend(
     children <-- viewports.signal.map(_.map(_.elt).toSeq),
   )
-
-  // es.elt.amend(
-  //   vp.entities --> x.writer   
-  // )
 
 
   for (c <- controllers) {
@@ -53,9 +52,10 @@ class EditorState(val elt: SvgElement) {
   } yield ui
 
   def register(v: Viewport) = {
+    // println(s"register ${viewports.now()}")
     viewports.update(_ + v)
     elt.amend(
-      viewports.now().toSeq(0).entities --> entities.writer  
+      viewports.now().toSeq(0).entities --> entities.writer,
     )
   }
 
@@ -168,32 +168,34 @@ class EditorState(val elt: SvgElement) {
   def mousePos: IO[Complex] =
     IO(mouse.$state.now().pos)
 
-  def hovered: IO[Option[Entity]] =
-    IO(hover.$state.now().state)
 
-  def hoveredPart: IO[Option[Part]] = hovered.map(
-    h => h match
-      case Some(e) => e match
-        case Background() => Some(ROOT)
-        case p:Part => Some(p)
-        case _ => None
-      case None => Some(ROOT)
+  def bgPart() = currentView.now()
+  def bgPlus(p:Part) = bgPart().extend(p)
+
+
+  def hovered: IO[Option[Entity]] = IO({
+    hover.$state.now().state.map(_ match
+        case p:Part => bgPlus(p)
+        case e => e
+    )
+  })
+
+  def hoveredPart: IO[Option[Part]] = hovered.map(_ match
+      case None => Some(bgPart())
+      case Some(p:Part) => Some(p)
+      case _ => None
   )
 
   def hoveredPart(ty: PartType): IO[Option[Part]] =
-    hovered.map(e =>
-      e match {
-        case Some(p: Part) if p.ty == ty => Some(p)
-        case _                           => None
-      }
+    hoveredPart.map(_ match
+      case Some(p: Part) if p.ty == ty => Some(p)
+      case _                           => None
     )
 
   def hoveredPart(tys: Seq[PartType]): IO[Option[Part]] =
-    hovered.map(e =>
-      e match {
-        case Some(p: Part) if tys contains p.ty => Some(p)
-        case _                           => None
-      }
+    hoveredPart.map(_ match
+      case Some(p: Part) if tys contains p.ty => Some(p)
+      case _ => None
     )
 
   def hoveredEntity(ty: EntityType): IO[Option[Entity]] =

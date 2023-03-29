@@ -81,17 +81,42 @@ case class DPBox(
   }
 
   override def boundaryPt(subent: Entity, data: ACSet, dir: Complex): Option[Complex] = subent match {
-    case Part(Nil) => boxSprite.boundaryPt(subent, data, dir)
+    case ROOT => boxSprite.boundaryPt(subent, data, dir)
     case _ => None
   }
 
   override def center(subent: Entity, data: ACSet): Option[Complex] = subent match {
-    case Part(Nil) => data.props.get(Center)
+    case ROOT => data.props.get(Center)
     case Part((ob, i)::Nil) if ob == inPort || ob == outPort => {
       computePortCenters(data).trySubpart(Center, subent.asInstanceOf[Part])
     }
     case _ => None
   }
 
-  override def bbox(subent: Entity,data:ACSet) = boxSprite.bbox(subent,data)
+  override def bbox(subent: Entity,data:ACSet) = subent.ty match
+    case ROOT.ty =>
+      // println(s"data1 = $data")
+      boxSprite.bbox(subent,data)
+    case PartType(Seq(ob)) if ob == inPort => center(subent,data) match
+      case Some(c) => inPortSprite.bbox(subent,data) match
+        case Some(bb) => Some(BoundingBox(c,bb.dims))
+        case None => None
+      case None => None
+    case PartType(Seq(ob)) if ob == outPort => center(subent,data) match
+      case Some(c) => outPortSprite.bbox(subent,data) match
+        case Some(bb) => Some(BoundingBox(c,bb.dims))
+        case None => None
+      case None => None
+    
+//     case p @ Part(Seq((inPort,_))) => BoundingBox(
+//     )
+      
+//       inPortSprite.bbox(p,data).map(
+//         bb => BoundingBox(bb.pos + center(ROOT,data),bb.dims)
+//       )
+//     case p @ Part(Seq((outPort,_))) => 
+//       outPortSprite.bbox(ROOT,data.subacset(p)).map(
+//         bb => BoundingBox(bb.pos + center(ROOT,data),bb.dims)
+//       )
+// outPortSprite.bbox(ROOT,data.subacset(p))
 }

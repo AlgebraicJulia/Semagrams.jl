@@ -9,7 +9,7 @@ import semagrams.acsets._
 case class Disc(props: PropMap) extends Sprite {
   def radius(data: PropMap): Double = {
     val textBox = boxSize(data(Content), data(FontSize))
-    val center = data(Center)
+    val center = data.get(Center).getOrElse(Complex(100,100))
     val innerSep = data(InnerSep)
     val d =
       data(MinimumWidth).max(textBox.x + innerSep).max(textBox.y + innerSep)
@@ -19,7 +19,7 @@ case class Disc(props: PropMap) extends Sprite {
 
   def geomUpdater(data: L.Signal[PropMap]) = {
     List(
-      cxy <-- data.map(_(Center)),
+      cxy <-- data.map(_.get(Center).getOrElse(Complex(100,100))),
       r <-- data.map(radius(_).toString)
     )
   }
@@ -44,7 +44,7 @@ case class Disc(props: PropMap) extends Sprite {
       styleUpdater(data)
     )
     val text = L.svg.text(
-      xy <-- data.map(_(Center)),
+      xy <-- data.map(_.get(Center).getOrElse(Complex(100,100))),
       L.svg.tspan(
         L.child <-- data.map(p => L.textToNode(p(Content))),
         textAnchor := "middle",
@@ -75,12 +75,12 @@ case class Disc(props: PropMap) extends Sprite {
   override def boundaryPt(subent: Entity, orig: ACSet, dir: Complex) = {
     val data = props ++ orig.props
     val rad = radius(data) + data(OuterSep)
-    Some(dir.normalize * rad + data(Center))
+    Some(dir.normalize * rad + data.get(Center).getOrElse(Complex(100,100)))
   }
 
   override def bbox(subent: Entity, data: ACSet) = Rect(props).bbox(subent, data)
 
-  override def center(_subent: Entity, data: ACSet) = Some(data.props(Center))
+  override def center(_subent: Entity, data: ACSet) = Some(data.props.get(Center).getOrElse(Complex(100,100)))
 
 
 }
