@@ -108,9 +108,11 @@ case class Part(path: Seq[(Ob, Id)]) extends Entity {
   }
 
   def head: Part = Part(Seq(path.head))
+  def headOb: Ob = ty.path.head
   def tail: Part = Part(path.tail)
   def init: Part = Part(path.init)
   def last: Part = Part(Seq(path.last))
+  def lastOb: Ob = ty.path.last
 
   def length = path.length
   def take(n:Int) = Part(path.take(n))

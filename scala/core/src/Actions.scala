@@ -115,11 +115,12 @@ case class Actions(
       case b if es.bgPlus(b.last) == b => 
         println("case 2")
         
-        val (spr,acset) = es.entities.now().em.get(b_ent)
-          .getOrElse({
-            println(s"getBBox: missing entity $b")
-            throw new RuntimeException(s"getBBox: missing entity $b")
-          })
+        val (spr,acset) = es.entities.now().em.values.head // get(b_ent)
+          // .getOrElse({
+          //   println(s"getBBox: missing entity $b_ent")
+          //   println(es.entities.now().em)
+          //   throw new RuntimeException(s"getBBox: missing entity $b")
+          // })
 
         // println("got here")
         // println(acset.partsMap(b.ty.path(0)).acsets.keys)
@@ -151,9 +152,58 @@ case class Actions(
         println(s"case 4: $b, ${es.bgPart()}, ${es.bgPart() > b}, ${es.bgPart() < b}")
         throw new RuntimeException(s"bad getBBox: $b, ${es.bgPart()}")
         
+  // def getBBox(b:Part): BoundingBox =
+  //   val b_ent = es.bgPart() match
+  //     case ROOT => b
+  //     case bg => bg.last
+  //   b match 
+  //     case b if b == es.bgPart() =>
+  //       // println("case 1")
+  //       val sz = es.size.now()
+  //       BoundingBox(sz/2.0,sz)
+  //     case b if es.bgPlus(b.last) == b => 
+  //       println("case 2")
+        
+  //       val (spr,acset) = es.entities.now().em.values.head // get(b_ent)
+  //         // .getOrElse({
+  //         //   println(s"getBBox: missing entity $b_ent")
+  //         //   println(es.entities.now().em)
+  //         //   throw new RuntimeException(s"getBBox: missing entity $b")
+  //         // })
+
+  //       // println("got here")
+  //       // println(acset.partsMap(b.ty.path(0)).acsets.keys)
+  //       val sub = es.bgPart() match
+  //         case ROOT => acset
+  //         case _ => acset.subacset(b.last)
+  //       // println(s"sub = $sub")
+  //       val bb = spr.bbox(Part(Nil),sub).getOrElse({
+  //         println(s"getBBox: missing entity $b")
+  //         throw new RuntimeException(s"getBBox: missing bbox $b")
+  //       })
+  //       // println("and here")
+  //       // println(s"bb = $bb")
+  //       bb
+  //     case b if es.bgPart() < b => 
+  //       println("case 3")
+  //       // println(es.entities.now().em.keys)
+  //       val (spr,acset) = es.entities.now().em.get(b_ent)
+  //         .getOrElse({
+  //           println(s"getBBox: missing entity $b")
+  //           throw new RuntimeException(s"getBBox: missing entity $b")
+  //         })
+  //       val bb = spr.bbox(ROOT,acset.subacset(b.tail)).getOrElse({
+  //         println(s"getBBox: missing bbox $b")
+  //         throw new RuntimeException(s"getBBox: missing bbox $b")
+  //       })
+  //       bb
+  //     case _ => 
+  //       println(s"case 4: $b, ${es.bgPart()}, ${es.bgPart() > b}, ${es.bgPart() < b}")
+  //       throw new RuntimeException(s"bad getBBox: $b, ${es.bgPart()}")
+        
   
-  def getCenter(p:Part) = getBBox(p).pos
-  def getSize(p:Part) = getBBox(p).dims
+  // def getCenter(p:Part) = getBBox(p).pos
+  // def getSize(p:Part) = getBBox(p).dims
     
     
   //   fromMaybe(IO(
@@ -336,17 +386,23 @@ case class Actions(
   // def killDrag(m0:ACSet) = for
   // yield ()
 
-  def edit(p: Property { type Value = String; }, multiline: Boolean)(i: Part): IO[Unit] = for {
+  def edit(p: Property { type Value = String; }, multiline: Boolean)(i: Part): IO[Unit] = 
+    println(s"edit $p")
+    for {
     _ <- IO(m.update(acs => if (acs.trySubpart(p, i).isEmpty) {
                        acs.setSubpart(i, p, "")
                      } else {
                        acs
                      }
             ))
+    _ = println("stop 1")
     _ <- ui.addKillableHtmlEntity(
       kill => {
+        println(s"start build")
         val v = m.zoomL(subpartLens(p, i))
+        println("made v")
         val t = TextInput(v, multiline)(kill)
+        println("made t")
         if (multiline) {
           PositionWrapper(Position.topToBotMid(10), t)
         } else {
@@ -354,6 +410,7 @@ case class Actions(
         }
       }
     )
+    _ = println("stop 2")
   } yield ()
 
 

@@ -41,10 +41,17 @@ class EditorState(val elt: SvgElement) {
     c(this, elt)
   }
 
-  def makeViewport[A](state: Signal[A], sources: Seq[EntitySource[A]]) = for {
+  def makeViewport[A](state: Signal[A], sources: Seq[EntitySource[A]]) = 
+    println("begin mv")
+    for {
     v <- IO(new EntitySourceViewport(state, sources))
+    _ = println("created esv")
     _ <- IO(register(v))
-  } yield v
+    _ = println("registered")
+  } yield {
+    println("end mv")
+    v
+  }
 
   def makeUI() = for {
     ui <- IO(new UIState(Var(Vector()), () => (), size.signal))
@@ -52,11 +59,13 @@ class EditorState(val elt: SvgElement) {
   } yield ui
 
   def register(v: Viewport) = {
-    // println(s"register ${viewports.now()}")
+    println("begin register")
     viewports.update(_ + v)
+    println("finished update")
     elt.amend(
       viewports.now().toSeq(0).entities --> entities.writer,
     )
+    println("finished amend")
   }
 
   def deregister(v: Viewport) = {

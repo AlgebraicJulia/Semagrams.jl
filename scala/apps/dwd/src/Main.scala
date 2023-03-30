@@ -121,19 +121,20 @@ def bindings(
         else OutPort
       val nports = g.now().subacset(b).partsMap(ptype).ids.length
       Some((ptype,portNumber(pos,sz,nports)))
+    case p if Seq(InPort,OutPort).contains(p.ty.path.last) => None 
     case b if b.init == es.bgPart() =>
-      // println(s"portByPos box $b")
+      println(s"portByPos box $b")
       val ctr = g.now().subacset(es.bgPart()).trySubpart(Center,p-es.bgPart()).getOrElse({
         println("missing center")
         throw new RuntimeException("broke")
       })
       val ptype = if pos.x < ctr.x then InPort else OutPort
       val nports = g.now().subacset(b).partsMap(ptype).ids.length
-      val sz = a.getSize(b)
+      // val sz = a.getSize(b)
       // println(s"sz = $sz")
       // println(s"x: ${ctr.x > pos.x}")
       // println(s"y: ${ctr.y > pos.y}")
-      Some((ptype,portNumber(pos - ctr + sz/2.0,sz,nports)))
+      Some((ptype,nports))
     case _ => 
       // println(s"unknown portByPos $p")
       None
@@ -148,7 +149,7 @@ def bindings(
     es.hover.$state.set(HoverController.State(None))
     es.currentView.set(b)
     val vpold = es.viewports.now().toSeq(0)
-    
+    es.deregister(vpold)
     for 
       // bb <- a.getBBox(b)
       // _ = println(bb)
@@ -159,7 +160,6 @@ def bindings(
       ).map(vp => 
         es.viewports.set(Set(vp))
       )
-      _ <- IO(es.deregister(vpold))
     yield vp
 
   def zoomOut = 
@@ -185,8 +185,8 @@ def bindings(
     dblClickOnPart(Left,ROOT.ty).withMods().flatMap(
       _ => for
         b <- a.addAtMouse(Box)
-        _ <- a.set(b,Content,s"${util.Random.alphanumeric.take(3).mkString}")
-        // _ <- a.edit(Content,true)(b)
+        // _ <- a.set(b,Content,s"${util.Random.alphanumeric.take(3).mkString}")
+        _ <- a.edit(Content,true)(b)
       yield ()
     ),
     dblClickOnPart(Left,PartType(Seq(Box)))
@@ -208,8 +208,15 @@ def bindings(
       .flatMap(p => 
         a.dragEdge(Wire,Src,Tgt,portByPos)(p)
       ),
-    menuOnPart(PartType(Seq(Box))).flatMap(es.makeMenu(ui,boxMenu)),
-    menuOnPart(PartType(Seq(Wire))).flatMap(es.makeMenu(ui,wireMenu)),
+    menuOnPart().flatMap(p => 
+      println(s"menuOnPart $p")
+      p match
+      case w if w.lastOb == Wire => 
+        es.makeMenu(ui,wireMenu)(p)
+      case b if b.lastOb == Box =>
+        es.makeMenu(ui,boxMenu)(p)
+      case _ => a.die
+    ),
     keyDown("d").andThen(a.del),
     keyDown("z")
       .withMods(KeyModifier.Ctrl)
@@ -333,8 +340,8 @@ object Main {
   object App extends Semagram {
 
     def run(es: EditorState, init: Option[String]): IO[Unit] = {
-      val initg = DWD()
-      // val initg = DWD(proc)
+      // val initg = DWD()
+      val initg = proc
       for {
         g <- IO(UndoableVar(initg))
         lg <- IO(

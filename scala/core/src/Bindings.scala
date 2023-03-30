@@ -134,3 +134,11 @@ def menuOnPart(ty: PartType) = Binding(
       IO(i)
   }
 )
+
+def menuOnPart() = Binding(
+  {
+    case ContextMenu(Some(i: Part)) => 
+      IO(i)
+    case ContextMenu(Some(Background())) => IO(ROOT)
+  }
+)

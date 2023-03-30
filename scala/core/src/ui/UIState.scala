@@ -48,8 +48,12 @@ case class UIState(
 
 
   def addKillableHtmlEntity(build: Observer[Unit] => HtmlElement): IO[Unit] = for {
+    _ <- IO(())
+    _ = println("addKillable")
     e <- newEntity
+    _ = println(s"newentity $e")
     _ <- addKillableHtmlEntity(e, build)
+    _ = println("added")
   } yield ()
 
   def dialogue[A](build: Observer[A] => HtmlElement): IO[A] = for {
