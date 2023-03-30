@@ -38,12 +38,12 @@ def findCenter(p: Part, m: EntityMap): Option[Complex] = for {
   c <- sprite.center(subp, acs)
 } yield c
 
-/** Compute the properties (i.e. Start and End) for an edge, using
-  * the top-level properties in `acs` and the other sprites in `m`.
+/** Compute the properties (i.e. Start and End) for an edge, using the top-level
+  * properties in `acs` and the other sprites in `m`.
   *
-  * If `Start`/`End` are already set, it uses those, otherwise it
-  * looks up a point on the boundary of the sprite corresponding to the
-  * `src`/`tgt` of the edge.
+  * If `Start`/`End` are already set, it uses those, otherwise it looks up a
+  * point on the boundary of the sprite corresponding to the `src`/`tgt` of the
+  * edge.
   *
   * Need to update this to look up the sprite for just the first part of
   * src/tgt, and then pass the rest of the path of the part into a method on

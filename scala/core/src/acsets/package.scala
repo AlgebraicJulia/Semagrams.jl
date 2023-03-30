@@ -20,9 +20,9 @@ package semagrams
   * Nested acsets are still not fully understood mathematically.
   *
   * @todo
-  *   We have a confusion of terminology in that we use "part" to refer to
-  *   both an element of the category of elements of a single acset, and also
-  *   an element of the category of elements of the entire nested acset. We should
+  *   We have a confusion of terminology in that we use "part" to refer to both
+  *   an element of the category of elements of a single acset, and also an
+  *   element of the category of elements of the entire nested acset. We should
   *   fix this.
   */
 package object acsets {}

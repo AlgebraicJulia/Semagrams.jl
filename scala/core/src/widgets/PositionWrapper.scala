@@ -29,8 +29,7 @@ enum Direction {
 
 }
 
-/** The position of an expandable box, given by a margin in
-  * each direction.
+/** The position of an expandable box, given by a margin in each direction.
   *
   * For instance, a left and right margin of `auto` centers the box.
   */

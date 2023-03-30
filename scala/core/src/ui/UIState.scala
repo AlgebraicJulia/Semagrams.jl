@@ -8,8 +8,8 @@ import com.raquo.laminar.api.L._
 
 import cats.effect._
 
-/** An entity that is created in an ad-hoc manner to track some arbitrary
-  * bit of UI state
+/** An entity that is created in an ad-hoc manner to track some arbitrary bit of
+  * UI state
   */
 case class AnonEntity(token: Unique.Token) extends Entity {
   val ty = AnonEntity

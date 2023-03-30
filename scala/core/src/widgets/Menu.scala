@@ -5,12 +5,12 @@ import semagrams.util._
 import cats.effect.IO
 import semagrams.acsets.Part
 
-/** A small menu. To be used with [[UIState.dialogue]], this
-  * returns an IO action for the choice made.
+/** A small menu. To be used with [[UIState.dialogue]], this returns an IO
+  * action for the choice made.
   *
   * @todo
-  *   It might be simpler to just return an integer for the choice made,
-  *   and then have an array of IO actions on the other side.
+  *   It might be simpler to just return an integer for the choice made, and
+  *   then have an array of IO actions on the other side.
   */
 def Menu[A](
     choices: Seq[(String, Part => IO[A])]

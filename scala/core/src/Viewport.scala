@@ -16,6 +16,7 @@ import semagrams.util._
 case class TransformState(m: Var[Transform])
 
 object TransformState {
+
   /** Construct a new TransformState with the identity transform */
   def apply() = new TransformState(Var(Transform.identity))
 }
@@ -31,6 +32,7 @@ object TransformState {
   * an incomplete refactor, and it should be straightforward to add them back.
   */
 trait Viewport {
+
   /** The transform of the viewport; this will be able to be modified in order
     * to zoom/pan
     */
@@ -72,6 +74,7 @@ case class EntityCollection(
 }
 
 object EntityCollection {
+
   /** Construct a new empty [[EntityCollection]] */
   def apply() = new EntityCollection(EntityMap(), Seq())
 }
@@ -101,13 +104,15 @@ class EntitySourceViewport[A](
 
 /** Utility methods associated with Viewports */
 object Viewport {
+
   /** Build a signal of a sequence of SvgElements from an EntityCollection.
     *
     * This behaves similarly to `split` from Laminar in that it caches the
     * rendered `SvgElement` for an [[Entity]], but passes into the rendering
     * method a `Signal` of updated ACSet data associated to that `Entity`.
     *
-    * @todo remove dollar signs
+    * @todo
+    *   remove dollar signs
     */
   def render($m: Signal[EntityCollection]): Signal[Seq[SvgElement]] = {
     val $em = $m.map(_.em)

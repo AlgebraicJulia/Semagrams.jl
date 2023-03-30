@@ -10,6 +10,7 @@ import scala.language.implicitConversions
 
 /** A trait marking objects in a [[Schema]] */
 trait Ob {
+
   /** The subschema for the subacsets on parts of this type */
   val schema: Schema = SchEmpty
 
@@ -41,7 +42,8 @@ trait Hom extends Property {
     *
     * This is a temporary hack that works in a specific case.
     *
-    * @todo figure out nested acset serialization
+    * @todo
+    *   figure out nested acset serialization
     */
   val rw = summon[ReadWriter[Int]].bimap(
     _.path(0)._2.id,
@@ -56,6 +58,7 @@ trait Hom extends Property {
   * their associated scala type given by Property.Value.
   */
 trait Attr extends Property {
+
   /** Like [[Hom]], this can have multiple domains; we interpret this
     * mathematically as a separate attribute for each domain, but this makes it
     * easier to write down.
@@ -63,13 +66,14 @@ trait Attr extends Property {
   val dom: Seq[PartType]
 }
 
-/** The type of a part in a nested acset is a sequence of objects,
-  * going down through the nested schemas.
+/** The type of a part in a nested acset is a sequence of objects, going down
+  * through the nested schemas.
   *
   * So `PartType(Seq())` is the type of the root acset part, and
   * `PartType(Seq(Box,IPort))` refers to the type of input ports on boxes.
   */
 case class PartType(path: Seq[Ob]) extends EntityType {
+
   /** Add an object to the end of the PartType */
   def extend(x: Ob): PartType = PartType(path :+ x)
 
@@ -91,9 +95,9 @@ object PartType {
   given seqIsPartType: Conversion[Seq[Ob], PartType] = PartType(_)
 }
 
-/** A part is a path through a nested acset. If you visualize a nested
-  * acset as a tree, where each node is an acset and its children are all of
-  * its subacsets, then a part tells at each level which subacset to choose.
+/** A part is a path through a nested acset. If you visualize a nested acset as
+  * a tree, where each node is an acset and its children are all of its
+  * subacsets, then a part tells at each level which subacset to choose.
   *
   * The empty path refers to the root acset.
   *
@@ -151,8 +155,8 @@ trait Schema {
     }
   }
 
-  /** Returns all of the homs that go into the given part type
-    * Each hom is prefixed by a path of objects needed to get to that hom
+  /** Returns all of the homs that go into the given part type Each hom is
+    * prefixed by a path of objects needed to get to that hom
     */
   def homsInto(ty: PartType): Seq[(Seq[Ob], Hom)] = ty.path match {
     case Nil => Seq()
@@ -188,6 +192,7 @@ case class Parts(
     ids: Seq[Id],
     acsets: Map[Id, ACSet]
 ) {
+
   /** Add multiple new parts, with subacsets given in `partacsets`.
     *
     * Returns a sequence of the ids of the added parts.
@@ -252,7 +257,7 @@ case object SchEmpty extends Schema {
   *
   * @param props
   *   the top-level properties. The values of morphisms, attributes, and generic
-  *   [[Property]]s are stored here.  We don't need what in Catlab we call
+  *   [[Property]]s are stored here. We don't need what in Catlab we call
   *   "subparts"; it's folded into this. For instance, if this is the subacset
   *   for an edge, then the source and target are stored here.
   *
@@ -312,7 +317,8 @@ case class ACSet(
   }
 
   /** Return all of the parts of the subacset at `i` with type `x`, without
-    * subacsets */
+    * subacsets
+    */
   def partsOnly(i: Part, x: Ob): Seq[Part] = {
     val ps = subacset(i).partsMap(x)
     ps.ids.map(id => i.extend(x, id))
@@ -331,7 +337,8 @@ case class ACSet(
     case None    => false
 
   /** Adds a part of type `x` to the subacset at `p` with initial subacset
-    * `init` */
+    * `init`
+    */
   def addPart(p: Part, x: Ob, init: ACSet): (ACSet, Part) = {
     val sub = subacset(p)
     val subschema = schema.subschema(p.ty.asInstanceOf[PartType].extend(x))
@@ -343,7 +350,8 @@ case class ACSet(
   }
 
   /** Add several parts of type `x` to the subacset at `p` with initial
-    * subacsets given by inits. */
+    * subacsets given by inits.
+    */
   def addParts(p: Part, x: Ob, inits: Seq[ACSet]): (ACSet, Seq[Part]) = {
     val sub = subacset(p)
     val subschema = schema.subschema(p.ty.asInstanceOf[PartType].extend(x))
@@ -378,7 +386,9 @@ case class ACSet(
   /** Convenience overload of [[addPart]] */
   def addPart(x: Ob): (ACSet, Part) = addPart(ROOT, x, PropMap())
 
-  /** Move the part `p` to the front of its parent `Parts`. See [[Parts.moveFront]]. */
+  /** Move the part `p` to the front of its parent `Parts`. See
+    * [[Parts.moveFront]].
+    */
   def moveFront(p: Part): ACSet = {
     assert(p.path.length > 0)
     val (prefix, (x, i)) = (Part(p.path.dropRight(1)), p.path.last)
@@ -484,6 +494,7 @@ case class ACSet(
   * quasi-imperative API for modifying ACSets purely.
   */
 object ACSet {
+
   /** Construct a new ACSet with schema `s` */
   def apply(s: Schema): ACSet = ACSet(s, PropMap())
 
