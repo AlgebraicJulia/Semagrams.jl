@@ -15,7 +15,6 @@ import semagrams.Background
 import semagrams.EntityCollection
 
 import scala.language.implicitConversions
-import scala.reflect.ClassTag
 import semagrams.sprites.{AltDPBox, BasicPort}
 
 case object Box extends Ob {

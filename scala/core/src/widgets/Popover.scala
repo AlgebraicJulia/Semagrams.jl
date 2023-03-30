@@ -3,6 +3,7 @@ package semagrams.widgets
 import com.raquo.laminar.api.L._
 import semagrams.util._
 
+/** A text box that displays over the window. */
 def Popover(
     $lines: Signal[Seq[String]],
     width: Double,

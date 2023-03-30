@@ -5,15 +5,22 @@ import semagrams.util._
 import com.raquo.laminar.api.L._
 import org.scalajs.dom.KeyboardEvent
 import org.scalajs.dom.console
+import java.lang.reflect.Constructor
 
-/** Like the MouseController, this both provides a subscription to keyboard
-  * events and also keeps track of the current state of the keyboard itself.
+/** A bit of global state that keeps track of the keyboard.
+  *
+  * The main functions are:
+  *   - Keeping track of what keys and modifiers are currently held down
+  *   - Adding keyboard events to EditorState
   */
 class KeyboardController() extends Controller {
   import KeyboardController.State
 
   val keyState = Var(State())
 
+  /** Get the keypress events from `el` and hook them into updating the
+    * KeyboardController state and additionally send them into `es.events`
+    */
   def apply(es: EditorState, el: SvgElement) = {
     val keydowns = EventBus[KeyboardEvent]()
     val keyups = EventBus[KeyboardEvent]()
@@ -35,24 +42,33 @@ class KeyboardController() extends Controller {
 object KeyboardController {
   def apply() = new KeyboardController()
 
-  /** This is a data structure representing the current state of the keyboard.
+  /** The current state of the keyboard.
+    *
+    * @param keys
+    *   the keys that are currently held down
+    * @param modifiers
+    *   the modifiers (i.e. shift, ctrl, etc.) that are currently held down
     */
   case class State(
       keys: Set[String],
       modifiers: Set[KeyModifier]
   ) {
+
+    /** Update the state of the modifiers based on the keyboard event */
     def updateModifiers(evt: KeyboardEvent) = {
       this.copy(
         modifiers = KeyModifier.all.filter(_.isSet(evt))
       )
     }
 
+    /** Update the state based on a keydown event */
     def keydown(evt: KeyboardEvent) = {
       updateModifiers(evt).copy(
         keys = keys + evt.key
       )
     }
 
+    /** Update the state based on a keyup event */
     def keyup(evt: KeyboardEvent) = {
       updateModifiers(evt).copy(
         keys = keys - evt.key
@@ -61,6 +77,10 @@ object KeyboardController {
   }
 
   object State {
+
+    /** Construct a new [[State]] object that starts with no keys or modifiers
+      * pressed
+      */
     def apply() = {
       new State(Set[String](), Set[KeyModifier]())
     }

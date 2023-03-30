@@ -25,6 +25,10 @@ enum WireProp[T: ReadWriter] extends Property {
 
 export WireProp._
 
+/** A sprite used for wires. Similar to [[Arrow]], except this one is a spline
+  * where the beginning and the end are both horizontal, and it has no
+  * arrowhead.
+  */
 case class Wire() extends Sprite {
   def exAt(p: Complex, d: Double = 5.0) = {
     import Path.Element._

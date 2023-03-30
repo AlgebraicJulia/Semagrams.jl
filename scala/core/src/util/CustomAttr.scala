@@ -27,16 +27,20 @@ object CustomAttr {
     }
   }
 
+  /** Implement this trait to be able to modify laminar elements with either
+    * `:=` or `<--` without code duplication. See [[complexattrs]] for example
+    * use.
+    */
   trait CustomSvgAttr[Data] {
     def applyAttrs(binder: SvgBinder[Data]): Unit
 
-    def :=(v: Data) = {
-      CustomModifier[SvgElement](el => applyAttrs(StaticSvgBinder(el, v)))
+    def :=(v: Data) = new Modifier[SvgElement] {
+      override def apply(el: SvgElement) = applyAttrs(StaticSvgBinder(el, v))
     }
 
-    def <--($value: Source[Data]) = {
-      CustomModifier[SvgElement](el =>
-        applyAttrs(ReactiveSvgBinder(el, $value))
+    def <--($value: Source[Data]) = new Modifier[SvgElement] {
+      override def apply(el: SvgElement) = applyAttrs(
+        ReactiveSvgBinder(el, $value)
       )
     }
   }

@@ -3,6 +3,17 @@ package semagrams.widgets
 import com.raquo.laminar.api.L._
 import semagrams.util._
 
+/** Returns a text input box that is tied to `v`.
+  *
+  * @param v
+  *   A [[LensedVar]] to keep in sync with the textbox
+  *
+  * @param multiline
+  *   Whether or not the textbox should be multiple lines
+  *
+  * @param finished
+  *   This is used for the textbox to signal that it is done
+  */
 def TextInput[A](v: LensedVar[A, String], multiline: Boolean)(
     finished: Observer[Unit]
 ) = {

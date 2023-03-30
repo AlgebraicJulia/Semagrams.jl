@@ -2,6 +2,11 @@ package semagrams.acsets
 
 import upickle.default._
 
+/** A catlab-compatible implementation of `Schema`.
+  *
+  * Used for apps like category of elements display, where we have to accept an
+  * arbitrary acset from Catlab.
+  */
 object catlab {
   case class Version(
       @upickle.implicits.key("ACSetSchema")

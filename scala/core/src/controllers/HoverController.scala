@@ -4,53 +4,85 @@ import semagrams._
 import semagrams.acsets._
 import semagrams.util._
 import com.raquo.laminar.api.L._
-import semagrams.util.CustomModifier
 
-/** The hover controller keeps track of what entity is currently hovered by the
-  * mouse. Commands might use the currently hovered entity for certain things.
+/** A bit of global state that keeps track of the entity that is currently
+  * hovered.
   */
-
-/** The state of the HoverController: either hovering over an entity, or nothing
-  * is hovered.
-  */
-
 class HoverController() extends Controller {
   import HoverController.State
 
   val $state = Var(State(None))
 
-  /** This makes a certain SVG record hovering
+  /** Returns a list of binders that can be applied to an svg element in order
+    * to make that svg element update the HoverController on mouseenter and
+    * mouseleave events.
+    *
+    * Example use:
+    *
+    * {{{
+    * svg.rect(
+    *   hover.hoverable(ent)
+    * )
+    * }}}
+    *
+    * @param ent
+    *   the Entity which should be recorded as being hovered
     */
   def hoverable(ent: Entity) = List(
     onMouseEnter --> $state.updater((state, _) => state.hover(ent)),
     onMouseLeave --> $state.updater((state, _) => state.leave(ent))
   )
 
-  /** This most commonly would be used to style a certain entity based on
-    * whether or not it was hovered.
+  /** Returns a [[laminar.Signal]] that either has the state `caseHovered` or
+    * `caseUnhovered` depending on whether `ent` is hovered or not.
+    *
+    * @param ent
+    *   the entity we care about
+    * @param caseHovered
+    *   the value the signal should have when `ent` is hovered
+    * @param caseUnhovered
+    *   the value the signal should have when `ent` is not hovered
     */
-  def switchState[A](ent: Entity, hovered: A, unhovered: A): Signal[A] =
+  def switchState[A](ent: Entity, caseHovered: A, caseUnhovered: A): Signal[A] =
     $state.signal.map(state =>
-      if state.isHovered(ent) then hovered else unhovered
+      if state.isHovered(ent) then caseHovered else caseUnhovered
     )
 
+  /** Does nothing
+    *
+    * Required because [[HoverController]] is a [[Controller]], but we don't
+    * actually need to hook up any part of the EditorState.
+    */
   def apply(_es: EditorState, _elt: SvgElement) = {}
 }
 
 object HoverController {
-  // By default, we start with nothing hovered.
+
+  /** Constructs a new HoverController
+    */
   def apply() = new HoverController()
 
+  /** The state of the HoverController, which is contained in a Var in
+    * [[HoverController]].
+    *
+    * @param state
+    *   this is `Some(ent)` if `ent` is hovered, `None` otherwise
+    */
   case class State(state: Option[Entity]) {
+
+    /** Update the state to reflect that `ent` is hovered */
     def hover(ent: Entity) = State(Some(ent))
+
+    /** Update the state to reflect that `ent` is no longer hovered */
     def leave(ent: Entity) = State(
-      // Only unhover if we are actually leaving the entity
-      // that we were hovering over in the first place.
+      // Only unhover if we are actually leaving the entity that we were
+      // hovering over in the first place.
       if Some(ent) == state
       then None
       else state
     )
 
+    /** Returns whether `ent` is hovered */
     def isHovered(ent: Entity) = state == Some(ent)
   }
 }

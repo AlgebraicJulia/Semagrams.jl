@@ -11,6 +11,10 @@ import semagrams.acsets._
 extension [A, B](s: L.Signal[Tuple2[A, B]])
   def splitTuple: Tuple2[L.Signal[A], L.Signal[B]] = (s.map(_._1), s.map(_._2))
 
+/** A sprite for geometric rectangles
+  *
+  * Resizes automatically corresponding to its content.
+  */
 case class Rect(props: PropMap) extends Sprite {
   import Rect._
 

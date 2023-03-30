@@ -6,6 +6,10 @@ import semagrams._
 import semagrams.util._
 import semagrams.acsets._
 
+/** A Sprite for a geometric Disc shape.
+  *
+  * Auto-resizes based on the content inside.
+  */
 case class Disc(props: PropMap) extends Sprite {
   def radius(data: PropMap): Double = {
     val textBox = boxSize(data(Content), data(FontSize))

@@ -3,6 +3,9 @@ package semagrams.widgets
 import com.raquo.laminar.api.L._
 import semagrams.util._
 
+/** Returns a menu where choices are associated with values passed back,
+  * typically via [[UIState.dialogue]]
+  */
 def Select[A](choices: Seq[(String, A)])(finished: Observer[A]) = {
   div(
     styleAttr := "display: flex; flex-direction: column; padding: 10px; border: solid",

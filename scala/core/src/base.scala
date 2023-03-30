@@ -7,6 +7,13 @@ import scala.scalajs.js.annotation._
 import scala.scalajs.js
 import com.raquo.domtypes.generic.codecs.StringAsIsCodec
 
+/** This creates the svg element that will all of the Semagrams activity
+  *
+  * @todo:
+  *   there should be more customization here
+  * @todo:
+  *   markers should come from elsewhere
+  */
 def baseSvg() = {
   svg.svg(
     svg.height := "100%",
@@ -29,9 +36,28 @@ def baseSvg() = {
   )
 }
 
+/** The abstract class that you create an instance of to create a Semagram */
 abstract class Semagram {
+
+  /** This is the entrypoint to your app that you should override.
+    *
+    * @param es
+    *   An initialized EditorState to work with
+    *
+    * @param init
+    *   An option of a string to deserialize your state from
+    */
   def run(es: EditorState, init: Option[String]): IO[Unit]
 
+  /** Constructs an SVG in `div` and runs your Semagram in there.
+    *
+    * @param div
+    *   The parent div of the root SVG for Semagrams
+    *
+    * @param init
+    *   An optional string representing serialized data to initialize your app
+    *   with
+    */
   @JSExport
   def main(div: dom.Element, init: js.UndefOr[String]) = {
     val base = baseSvg()

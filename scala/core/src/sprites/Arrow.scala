@@ -6,6 +6,14 @@ import com.raquo.laminar.api._
 import semagrams._
 import semagrams.util._
 
+/** A basic sprite used for edges, which looks up the `Start` and `End`
+  * properties to see where to start and end, has an arrow head pointing towards
+  * the end, and curves according to `Bend`.
+  *
+  * It also has an invisible "handle", which is thicker than the arrow and used
+  * for mouse events, because otherwise it would be very annoying to mouse over
+  * the arrow.
+  */
 case class Arrow(defaults: PropMap) extends Sprite {
   def blockPath(
       s: Complex,

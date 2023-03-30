@@ -7,6 +7,7 @@ import semagrams.acsets._
 import com.raquo.laminar.api.L
 import com.raquo.laminar.api.L.svg._
 
+/** A sprite for ports which shows the port as a stub of a wire. */
 case class WireStub(defaults: PropMap, dir: Complex) extends Sprite {
   def present(
       ent: Entity,

@@ -1,0 +1,163 @@
+---
+title: "Documentation"
+---
+
+This is my attempt at writing "narrative" documentation for Semagrams. There is also the API docs, which is helpful for reference, but if you are just learning, you should start here.
+
+This documentation is primarily focused on new developers of Semagrams itself, not users of Semagrams, but hopefully should be interesting to anyone.
+
+## Setting up Semagrams
+
+(this has finally provided me with the impetus to have per-app vite projects)
+
+## Fundamental Concepts
+
+There is a fundamental difference between interactive programs and programs which are only meant to compute things. In a program meant simply to compute things, the author of the program decides how the state of the program changes over time. In an interactive program, the state changes in response to user input.
+
+Semagrams integrates cats-effect and Laminar to tame the complexities of interactivity. In brief, Laminar is used to draw the display and to source events, and cats-effect is used to process events.
+
+In the next two sections, I explain why and how each of these work.
+
+### Reactive Programming (Laminar)
+
+The conceptually easiest way of dealing with drawing state is the way that video games work. Namely, you have some state. You can mutate that state at will, and then the state is drawn from scratch every frame.
+
+However, in the browser this doesn't work so well. This is because reconstructing the html of the UI sixty times a second would be far too slow. We could do a render loop if we worked in a `<canvas>` or used webGL, but there are actually a lot of very non-trivial features that browsers have for stuff like event handling and text-rendering that would require a lot of work to duplicate. The browser is an extremely advanced rendering engine that *does* work on the principles above, but interfacing with the browser rendering engine takes a different shape than simply redrawing every frame.
+
+Namely, interfacing with the browser rendering engine takes the form of *mutating the DOM*, which is the data structure that HTML is parsed into. But the state of your application is not the state of the DOM. So somehow, you have to keep the state of your application in sync with the state of the DOM, in a way that is not "recreate the DOM from scratch 60 times a second".
+
+There are several ways of doing this. The first way, popular in the late 2000s and early 2010s, was to manually write functions that would update the DOM. This had the advantage of being fast, but was extremely hard to architect at a large scale.
+
+This gave way in the early 2010s to another approach, pioneered by frameworks like React, which was to render your entire application state into what was called *virtual DOM*, which was supposed to be a lightweight data structure, figure out the difference between your virtual DOM and the actual DOM, and then apply the smallest mutation to get them back in sync. Although this sounds kind of silly, it actually works quite well.
+
+However, there are still some drawbacks. First of all, unlike when you were manually updating the DOM, you have no guarantee that elements would be reused by the syncing. This is a problem because DOM elements have state, for instance whatever you have typed into a textbox. So if you redraw your app and your diffing algorithm isn't smart enough to know that it should just mutate your textbox instead of replacing it, you can get bugs. Secondly, even though virtual DOM is *pretty* fast, it never is as fast as simply applying the mutations directly.
+
+So recently, a third approach has started to gain traction: reactive programming. The history of reactive programming is actually quite long; there have been FRP libraries in the Haskell world for quite a while. But for reasons I'm not so familiar with, it took a while to catch on for web development.
+
+The idea behind reactive programming is that values should know what depends on them. So for instance, if you have a variable that stores a color, you use that color in various parts of your application, and then you update that color, the variable knows what downstream things to update. You can think of this like a "publish/subscribe" system; your UI elements "subscribe" to changes in your application state, and when you make a change, that change is "published" to all of its subscribers.
+
+But the neat thing is that you can have as many levels of publishers/subscribers. I.e., you can have one big variable, which is the state of your whole application, and then have values which are derived from that variable, and have values which are derived from those values, etc. This serves to "filter out" updates, so that only the part of your state that has changed ends up actually notifying a UI element. The upshot of this is that instead of diffing your "virtual DOM", you diff your application state!
+
+Additionally, you have much finer control over when UI elements are created/destroyed, so you don't have to worry about DOM state being forgotten when you update your state. When you drag something in Semagrams, you want to be sure that the element is just having its position updated and not being fully recreated.
+
+In Semagrams, we use a reactive programming library called [Laminar](https://laminar.dev) that has had a lot of work and thought put into it. It also has excellent documentation, and some great video presentations that I encourage the reader to check out.
+
+### Asynchronous Programming (cats-effect)
+
+Although Laminar does a very good job of keeping UI in sync with state, there is one thing that it does not help very much with. This is *state machines*.
+
+Consider which of the following code you would prefer to write (note this is pseudocode that happens to have Scala syntax).
+
+```scala
+enum State {
+  case Default
+  case Receiving
+  case Sending
+}
+
+import State._
+
+def mainLoop() = {
+  var state = Default
+  while true {
+    evt = nextEvent()
+    state = handleEvent(evt, state)
+  }
+}
+
+def handleEvent(evt: Event, state: State) = state match {
+  case Default => {
+    if evt.isInitiation {
+      // do something to initiate a connection
+      Receiving
+    } else {
+      state
+    }
+  }
+  case Receiving => {
+    if evt.isPacket {
+      // process packet
+      Receiving
+    } else if evt.isFinished {
+      Sending
+    } else {
+      state
+    }
+  }
+  case Sending => {
+    if evt.isRequest {
+      // send something to the requester
+      Default
+    } else {
+      state
+    }
+  }
+}
+```
+
+```scala
+def mainLoop() = {
+  while true {
+    waitForInitialization()
+    var done = false
+    while (!done) {
+      evt = nextEvent()
+      if evt.isPacket {
+        // process packet
+      } else if evt.isFinished {
+        done = true
+      } 
+    }
+    done = false
+    while (!done) {
+      evt = nextEvent()
+      if evt.isRequest {
+        // send something to the requester
+        done = true
+      }
+    }
+  }
+}
+```
+
+In the first example, the state machine is *explicit*. That is, each state we can be is represented by concrete date. In contrast, in the second example, the state machine is implicit in the control flow.
+
+Explicit state machines are a huge pain to maintain. You have to write out every possible state that your program could be in. It makes much more sense to use the control flow tools that we are familiar with as programmers to structure our code.
+
+The trouble is that Javascript is single-threaded. So if the `nextEvent` call blocks the program, nothing else can happen until the new event comes in. In fact, as written, nothing else could *ever* happen while `mainLoop` was running, including drawing our program!
+
+In classical Javascript, the solution to this was that instead of having `nextEvent` event return something, you'd pass in a *callback* to `nextEvent` describing what to do with the event. Then you'd return from your function and allow other functions to run. When there was an event, your callback would be called, and that would continue on.
+
+The problem with this is that you get code that runs off the side of the screen:
+
+```scala
+nextEvent(
+  evt => {
+    // do something
+    nextEvent(
+      evt => {
+        // do something
+        nextEvent(
+          evt => {
+            // do something
+            // ...
+          }
+        )
+      }
+    )
+  })
+```
+
+This is the well-known "callback hell". The modern solution to this is *asynchronous programming*. Conceptually, all asynchronous programming does is turn something that looks like
+
+```scala
+evt <- nextEvent()
+// do something
+evt <- nextEvent()
+// do something
+evt <- nextEvent()
+// do something
+// ...
+```
+
+into callback-passing code. And now we can write clean-looking state machines that don't block the entire thread! Scala has an awesome library for asynchronous programming called [cats-effect](https://typelevel.org/cats-effect/). Fun fact: this library is used to write the servers that stream videos for Disney Plus; that's how efficient it is.

@@ -5,6 +5,17 @@ import semagrams._
 import semagrams.util._
 import semagrams.acsets._
 
+/** A sprite that wraps an HTML element for use inside the SVG.
+  *
+  * We wrap inside an invisible div that takes up the whole window, so that we
+  * can use CSS logic for the actual positioning.
+  *
+  * @param build
+  *   Constructor for a new HtmlElement
+  *
+  * @param globalSize
+  *   A reference to the size of the overall window
+  */
 case class GenericHTMLSprite(
     build: () => HtmlElement,
     globalSize: Signal[Complex]

@@ -8,10 +8,8 @@ import scala.collection.immutable.BitSet
 import com.raquo.domtypes.jsdom.defs.events.TypedTargetMouseEvent
 import org.scalajs.dom
 
-/** The state of the mouse is simply its positions and what buttons are
-  * currently pressed.
-  *
-  * It processes mouse events to keep this updated.
+/** A bit of global state to keep track of the mouse, along with the code that
+  * subscribes EditorState to mouse events.
   */
 
 class MouseController() extends Controller {
@@ -40,7 +38,7 @@ class MouseController() extends Controller {
   ) =
     MouseMove(svgCoords(el, ev))
 
-  /** This attaches the necessary event listeners to the main window
+  /** Attaches the necessary event listeners to the main window
     */
   def apply(es: EditorState, el: SvgElement) = {
     val svgEl = el.ref.asInstanceOf[dom.SVGSVGElement]
@@ -48,9 +46,6 @@ class MouseController() extends Controller {
       onMouseLeave.map(mouseLeave(svgEl)) --> mouseEvents,
       onMouseMove.map(mouseMove(svgEl)) --> mouseEvents,
       mouseEvents --> $state.updater[Event]((state, evt) =>
-        // evt match
-        //   case e:DoubleClick => println(s"dc: $evt")
-        //   case _ => ()
         state.processEvent(evt)
       ),
       mouseEvents --> es.events,
@@ -58,21 +53,22 @@ class MouseController() extends Controller {
     )
   }
 
-  /** This makes a certain SVG element record clicking
+  /** Makes a certain SVG element record clicking
+    *
+    * @param ent
+    *   the entity to attribute the clicks to
     */
   def clickable(ent: Entity) = List(
     onContextMenu.stopPropagation.preventDefault.map(evt =>
       ContextMenu(Some(ent))
     ) --> mouseEvents,
     onMouseDown.stopPropagation.map(evt =>
-      // println("mc click")
       MouseDown(Some(ent), MouseButton.fromJS(evt.button))
     ) --> mouseEvents,
     onMouseUp.stopPropagation.map(evt =>
       MouseUp(Some(ent), MouseButton.fromJS(evt.button))
     ) --> mouseEvents,
     onDblClick.stopPropagation.map(evt =>
-      // println("mc doubleclick")
       DoubleClick(Some(ent), MouseButton.fromJS(evt.button))
     ) --> mouseEvents
   )
@@ -83,10 +79,19 @@ object MouseController {
     new MouseController()
   }
 
+  /** The state of the MouseController as a value
+    *
+    * @param pos
+    *   the current position of the mouse
+    * @param pressed
+    *   the current buttons pressed
+    */
   case class State(
       pos: Complex,
       pressed: BitSet
   ) {
+
+    /** Update the state based on a mouse event */
     def processEvent(evt: Event): State = {
       val p = evt match {
         case MouseDown(_, button) =>
@@ -97,9 +102,6 @@ object MouseController {
         case MouseMove(pos)  => this.copy(pos = pos)
         case e               => this
       }
-      // if evt.isInstanceOf[DoubleClick]
-      // then println(s"pe: $p")
-
       p
     }
   }

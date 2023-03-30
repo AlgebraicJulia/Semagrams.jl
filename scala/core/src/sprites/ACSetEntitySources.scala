@@ -5,6 +5,9 @@ import semagrams.acsets._
 import semagrams.util._
 import com.raquo.laminar.api.L._
 
+/** An [[EntitySource]] that extracts all parts of type `ob` from an ACSet and
+  * pairs them with `sprite` along with their subacset
+  */
 def ACSetEntitySource(
     ob: Ob,
     sprite: Sprite
@@ -13,6 +16,9 @@ def ACSetEntitySource(
     acs.parts(ROOT, ob).map({ case (i, acs) => (i, sprite, acs) })
   )
 
+/** Find the point on the boundary in direction `dir` of the sprite
+  * corresponding to `p`, by looking up the sprite/data in `m`
+  */
 def findBoundary(p: Part, m: EntityMap, dir: Complex): Option[Complex] = for {
   ((sprite, acs), subp) <- p.path match {
     case Nil             => None
@@ -21,6 +27,9 @@ def findBoundary(p: Part, m: EntityMap, dir: Complex): Option[Complex] = for {
   bp <- sprite.boundaryPt(subp, acs, dir)
 } yield bp
 
+/** Find the center of the sprite corresponding to `p`, by looking up the
+  * sprite/data in `m`
+  */
 def findCenter(p: Part, m: EntityMap): Option[Complex] = for {
   ((sprite, acs), subp) <- p.path match {
     case Nil             => None
@@ -29,7 +38,14 @@ def findCenter(p: Part, m: EntityMap): Option[Complex] = for {
   c <- sprite.center(subp, acs)
 } yield c
 
-/** Need to update this to look up the sprite for just the first part of
+/** Compute the properties (i.e. Start and End) for an edge, using the top-level
+  * properties in `acs` and the other sprites in `m`.
+  *
+  * If `Start`/`End` are already set, it uses those, otherwise it looks up a
+  * point on the boundary of the sprite corresponding to the `src`/`tgt` of the
+  * edge.
+  *
+  * Need to update this to look up the sprite for just the first part of
   * src/tgt, and then pass the rest of the path of the part into a method on
   * that sprite.
   */
@@ -54,6 +70,9 @@ def edgeProps(
   PropMap() + (Start, spos) + (End, tpos)
 }
 
+/** Like [[ACSetEntitySource]], but then also computes the edge properties using
+  * [[edgeProps]]
+  */
 def ACSetEdgeSource(
     ob: Ob,
     src: Hom,

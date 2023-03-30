@@ -8,9 +8,9 @@ website:
     left:
       - href: index.qmd
         text: Home
-      - roadmap.qmd
+      - docs.qmd
       - href: /scaladoc/
-        text: Scaladoc
+        text: API
 
 format:
   html:
