@@ -3,6 +3,7 @@ package semagrams.widgets
 import com.raquo.laminar.api.L._
 import semagrams.util.Complex
 
+/** A typed wrapper around a margin specification */
 enum Margin {
   case Auto
   case Fixed(pixels: Int)
@@ -13,6 +14,7 @@ enum Margin {
   }
 }
 
+/** Directions on a computer screen */
 enum Direction {
   case Top
   case Bottom
@@ -27,8 +29,14 @@ enum Direction {
 
 }
 
+/** The position of an expandable box, given by a margin in
+  * each direction.
+  *
+  * For instance, a left and right margin of `auto` centers the box.
+  */
 type Position = Map[Direction, Margin]
 
+/** Some common positions */
 object Position {
   import Direction._
   import Margin._
@@ -56,6 +64,7 @@ extension (p: Position) {
   }
 }
 
+/** Wrap `el` in a div to position it automatically using CSS */
 def PositionWrapper(p: Position, el: Element) =
   div(
     styleAttr := p.toCSS,

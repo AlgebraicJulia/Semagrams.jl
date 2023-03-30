@@ -3,6 +3,10 @@ package semagrams.widgets
 import com.raquo.laminar.api.L._
 import semagrams.util._
 
+/** Returns a multiline text element that updates according to a signal.
+  *
+  * Useful for prompts and tutorials.
+  */
 def Tip(
     $tipText: Signal[Seq[String]],
     fontSize: String,

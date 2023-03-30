@@ -18,7 +18,22 @@ extension [A](s: L.Signal[Seq[A]]) {
   }
 }
 
-/** Directed Port Box: a box with ports on both sides
+/** A Sprite that is a box with ports on both sides.
+  *
+  * @param `boxSprite`
+  *   the sprite to use for the box
+  *
+  * @param `inPortSprite`
+  *   the sprite to use for the left hand ports
+  *
+  * @param `outPortSprite`
+  *   the sprite to use for the right hand ports
+  *
+  * @param inPort
+  *   the object in the subschema to query for the list of in ports
+  *
+  * @param outPort
+  *   the object in the subschema to query for the list of out ports
   */
 case class DPBox(
     boxSprite: Sprite,

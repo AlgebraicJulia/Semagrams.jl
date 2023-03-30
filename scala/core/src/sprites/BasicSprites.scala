@@ -6,6 +6,7 @@ import semagrams.acsets._
 
 import com.raquo.laminar.api.L._
 
+/** Adds hover and click handlers to a sprite */
 def BasicWrapper(sprite: Sprite)(es: EditorState) = WithMiddleware(
   sprite,
   Seq(

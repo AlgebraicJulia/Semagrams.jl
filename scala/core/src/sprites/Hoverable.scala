@@ -6,6 +6,9 @@ import semagrams.util._
 import semagrams.controllers._
 import semagrams.acsets._
 
+/** Middleware that attaches mouseover and mouseout handlers that update a
+  * global hover state
+  */
 case class Hoverable(
     hover: HoverController
 ) extends Middleware {

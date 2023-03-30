@@ -5,12 +5,19 @@ import semagrams.acsets._
 import semagrams.util._
 import com.raquo.laminar.api.L._
 
+/** Mixins that can be used to modify Sprites, by updating the data passed in
+  * and by updating the function passed in that attaches handlers.
+  *
+  * We pass a function that attaches handlers so that the underlying Sprite can
+  * decide where those handlers are attached.
+  */
 trait Middleware {
   def modifySignal(ent: Entity, updates: Signal[ACSet]): Signal[ACSet] =
     updates
   def wrapHandler(f: HandlerAttacher): HandlerAttacher
 }
 
+/** A wrapper around a Sprite that adds middleware. */
 case class WithMiddleware(
     s: Sprite,
     middleware: Seq[Middleware]
