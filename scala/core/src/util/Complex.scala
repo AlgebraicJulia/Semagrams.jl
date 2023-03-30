@@ -6,6 +6,22 @@ import scala.language.implicitConversions
 import scala.math.{*}
 import java.util.InputMismatchException
 
+/** A class representing a complex number
+  *
+  * We use complex numbers for two-dimensional geometry because they can
+  * represent either:
+  *
+  *   - A point
+  *   - A vector
+  *   - A translation
+  *   - A rotation/scaling
+  *
+  * Instead of having to remember APIs for all of these, you can just use
+  * familiar arithmetic operations.
+  *
+  * The operations here are the standard mathematical ones for the complex
+  * numbers.
+  */
 case class Complex(x: Double, y: Double) {
   def +(other: Complex): Complex = Complex(x + other.x, y + other.y)
   def *(other: Complex): Complex =
@@ -30,14 +46,17 @@ case class Complex(x: Double, y: Double) {
 
   def cong = Complex(x, -y)
 
+  /** absolute value squared */
   def abssq = x * x + y * y
 
+  /** absolute value */
   def abs = sqrt(abssq)
 
   def normalize = this.abs match
     case 0.0 => Complex(1, 0)
-    case _   => this / this.abs
+    case r   => this / r
 
+  /** convert to an SVG string */
   def toSvg = s"$x $y"
 }
 

@@ -6,11 +6,12 @@ import semagrams._
   * elements of a finite set {0,...,n-1}.
   */
 trait Spacer {
+
   /** Positions the ith element of {0,...,n-1} */
   def assignPos(i: Int, n: Int): Double
 
-  /** Returns a map of element => position, where each element is assigned
-    * a position based on its index when `xs` is grouped by `f`.
+  /** Returns a map of element => position, where each element is assigned a
+    * position based on its index when `xs` is grouped by `f`.
     *
     * Elements for which `f` returns `None` are not included in the map.
     *
@@ -40,8 +41,8 @@ case class FixedRange(from: Double, to: Double) extends Spacer {
     from + (i.toFloat / (n.toFloat - 1)) * (to - from)
 }
 
-/** An implementation of [[Spacer]] that assigns `from` to `-1` and `to` to
-  * `n`, with the rest of the elements evenly space between them.
+/** An implementation of [[Spacer]] that assigns `from` to `-1` and `to` to `n`,
+  * with the rest of the elements evenly space between them.
   *
   * Useful when you want to, for instance, put ports evenly on a side of a box
   * but you don't want to put ports on the corners of the box.
@@ -51,9 +52,9 @@ case class FixedRangeExceptEnds(from: Double, to: Double) extends Spacer {
 
 }
 
-/** An implementation of [[Spacer]] that spaces the elements according to a fixed
-  * spacing. If `centered` is true, then the elements are spaced centered around 0,
-  * otherwise the elements are spaced starting from 0.
+/** An implementation of [[Spacer]] that spaces the elements according to a
+  * fixed spacing. If `centered` is true, then the elements are spaced centered
+  * around 0, otherwise the elements are spaced starting from 0.
   *
   * Useful for assigning bends to the edges going between two vertices.
   */
@@ -67,4 +68,3 @@ case class FixedSpacing(spacing: Double, centered: Boolean) extends Spacer {
     (i - offset) * spacing
   }
 }
-

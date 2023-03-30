@@ -14,15 +14,16 @@ import semagrams.acsets._
   *   If present, the event only matches if these [[KeyModifier]]s are down.
   *
   * @param docs
-  *   A description of the behavior of the binding, to be shown in a help screen.
+  *   A description of the behavior of the binding, to be shown in a help
+  *   screen.
   *
   * @tparam A
   *   The type that the binding eventually returns
   *
   * @todo
-  *   selector should be concrete data that implements a trait, and part
-  *   of that trait is a description of the binding, like "Ctrl-click on a box"
-  *   or "press a".
+  *   selector should be concrete data that implements a trait, and part of that
+  *   trait is a description of the binding, like "Ctrl-click on a box" or
+  *   "press a".
   *
   * @todo
   *   actually use docs
@@ -61,6 +62,7 @@ case class Binding[A](
 }
 
 object Binding {
+
   /** Construct a [[Binding]] with no modifiers and empty docs. */
   def apply[A](f: PartialFunction[Event, IO[A]]) =
     new Binding[A](f, None, "")
@@ -81,8 +83,7 @@ def keyDown(key: String) = bindEvent(KeyDown(key))
 /** Matches keyup events for `key` */
 def keyUp(key: String) = bindEvent(KeyUp(key))
 
-/** Matches clicks on entities with `button`, returns
-  * the entity clicked on.
+/** Matches clicks on entities with `button`, returns the entity clicked on.
   */
 def clickOn(button: MouseButton) = Binding(
   { case MouseDown(Some(ent), `button`) =>
@@ -90,8 +91,8 @@ def clickOn(button: MouseButton) = Binding(
   }
 )
 
-/** Matches clicks on entities of entity type `ty` with button `button`,
-  * returns the entity clicked on.
+/** Matches clicks on entities of entity type `ty` with button `button`, returns
+  * the entity clicked on.
   */
 def clickOn[E <: Entity](button: MouseButton, ty: EntityType) = Binding(
   {
@@ -103,8 +104,8 @@ def clickOn[E <: Entity](button: MouseButton, ty: EntityType) = Binding(
   }
 )
 
-/** Matches clicks on parts of part type `ty` with button `button`,
-  * returns the part clicked on.
+/** Matches clicks on parts of part type `ty` with button `button`, returns the
+  * part clicked on.
   */
 def clickOnPart(button: MouseButton, ty: PartType) = Binding(
   {
@@ -115,7 +116,8 @@ def clickOnPart(button: MouseButton, ty: PartType) = Binding(
   }
 )
 
-/** Matches clicks on parts with button `button`, returns the part clicked on. */
+/** Matches clicks on parts with button `button`, returns the part clicked on.
+  */
 def clickOnPart(button: MouseButton) =
   Binding({ case MouseDown(Some(ent), `button`) =>
     ent match
@@ -155,7 +157,8 @@ def releaseOn(button: MouseButton) = Binding(
 )
 
 /** Matches a mouseup event either on or off an entity, returns an option of an
-  * entity. */
+  * entity.
+  */
 def mouseUp(button: MouseButton) = Binding(
   { case MouseUp(e, `button`) =>
     IO(e)

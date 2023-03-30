@@ -6,14 +6,15 @@ import com.raquo.laminar.api.L._
 /** A runtime-introspectable type tag for an Entity. */
 trait EntityType
 
-/** A reference to an logically distinct part of the Semagram,
-  * for instance a vertex, an edge, a ui element, etc.
+/** A reference to an logically distinct part of the Semagram, for instance a
+  * vertex, an edge, a ui element, etc.
   */
 trait Entity {
-  /** We use a type tag so that we can compare the types of entities
-    * at runtime without having to mess with scala introspection. Additionally,
-    * different entities might have the same type, but different EntityTypes,
-    * a notable example of this is [[Part]]s.
+
+  /** We use a type tag so that we can compare the types of entities at runtime
+    * without having to mess with scala introspection. Additionally, different
+    * entities might have the same type, but different EntityTypes, a notable
+    * example of this is [[Part]]s.
     */
   val ty: EntityType
 
@@ -36,7 +37,7 @@ case class SubEntityType(parentTy: EntityType, childTy: EntityType)
     extends EntityType
 
 /** An entity for the background of the Semagrams app.
-  * 
+  *
   * Used as the source entity for click events on the background.
   */
 case class Background() extends Entity {
@@ -48,13 +49,14 @@ object Background extends EntityType
 
 /** A map associating a [[Sprite]] and an [[ACSet]] to the entities alive in the
   * Semagram.
-  * 
+  *
   * ACSets have properties associated to their roots, but also subparts, both of
   * which might be used by the [[Sprite]].
   */
 type EntityMap = Map[Entity, (Sprite, ACSet)]
 
 object EntityMap {
+
   /** Construct a new empty [[EntityMap]] */
   def apply(): EntityMap = Map[Entity, (Sprite, ACSet)]()
 }
@@ -70,7 +72,8 @@ case class EntitySource[A](
 ) {
 
   /** Use the EntitySource to add entities with their sprites/acsets to an
-    * EntityMap */
+    * EntityMap
+    */
   def addEntities(a: A, m: EntityMap) = {
     m ++ entities(a, m).map((e, s, p) => (e, (s, p))).toMap
   }
@@ -100,4 +103,3 @@ case class EntitySource[A](
     )
   }
 }
-

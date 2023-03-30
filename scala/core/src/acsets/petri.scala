@@ -2,6 +2,7 @@ package semagrams.acsets
 
 import semagrams._
 
+/** Implementation of the schema for Petri nets */
 object Petris {
   case object S extends Ob
   case object T extends Ob

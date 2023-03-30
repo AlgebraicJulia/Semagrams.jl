@@ -50,8 +50,8 @@ case class BoxPos(point: Complex, offset: Complex) {
     bd.pos + Complex(point.x * bd.dims.x, point.y * bd.dims.y) + offset
 }
 
-/** An implementation of [[BoxPosition]] that works by matching up the two points
-  * in the window and the box given by `windowPoint` and `boxPoint`
+/** An implementation of [[BoxPosition]] that works by matching up the two
+  * points in the window and the box given by `windowPoint` and `boxPoint`
   *
   * @param windowPoint
   *   the point relative to the window to align to
@@ -61,7 +61,8 @@ case class BoxPos(point: Complex, offset: Complex) {
 case class AlignPoints(windowPoint: BoxPos, boxPoint: BoxPos)
     extends BoxPosition {
 
-  /** @see [[BoxPosition.computePosition]]
+  /** @see
+    *   [[BoxPosition.computePosition]]
     */
   def computePosition(windowDims: Complex, boxDims: Complex): Complex =
     windowPoint.compute(BoxData(Complex(0, 0), windowDims)) -
@@ -70,6 +71,7 @@ case class AlignPoints(windowPoint: BoxPos, boxPoint: BoxPos)
 
 /** An object containing several basic instances of `BoxPosition` */
 object Align {
+
   /** Align `p` in the window with `p` in the box */
   def matchingAlign(p: BoxPos) = AlignPoints(p, p)
 

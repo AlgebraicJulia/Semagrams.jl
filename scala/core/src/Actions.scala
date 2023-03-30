@@ -17,6 +17,10 @@ import semagrams.sprites.WithMiddleware
 import semagrams.sprites.DPBox
 import semagrams.sprites.Rect
 
+/** This class bundles the common arguments to many actions one might want to do
+  * in a binding so that you don't have to pass them in every time, and then
+  * provides a bunch of commonly used actions as methods.
+  */
 case class Actions(
     es: EditorState,
     m: UndoableVar[ACSet],
@@ -26,60 +30,67 @@ case class Actions(
 ) {
   import ACSet._
 
-  // // PrintWriter
-  // import java.io._
-  // val pw = new PrintWriter(new File("hello.txt" ))
-  // pw.write("Hello, world")
-  // pw.close
-
-  // // FileWriter
-  // val file = new File(canonicalFilename)
-  // val bw = new BufferedWriter(new FileWriter(file))
-  // bw.write(text)
-  // bw.close()
-
-  def addAtMouse(ob: Ob, init: ACSet) = for {
+  /** Add and return a part to the model with type `Ob` and subacset given by
+    * `init`, and set the [[Center]] of that new part to be the current mouse
+    * position
+    */
+  def addAtMouse(ob: Ob, init: ACSet): IO[Part] = for {
     pos <- es.mousePos
     x <- m.updateS(addPart(ob, init.setSubpart(ROOT, Center, pos)))
   } yield x
 
-  def addAtMouse(ob: Ob) = for {
+  /** Add and return a part to the model with type `Ob` and [[Center]] the
+    * current mouse position.
+    */
+  def addAtMouse(ob: Ob): IO[Part] = for {
     pos <- es.mousePos
     x <- m.updateS(addPart(ob, PropMap() + (Center, pos)))
-    // _ = println(x)
   } yield x
 
-  def addAtMouse_(ob: Ob, init: ACSet) = addAtMouse(ob, init).map(_ => ())
+  /** [[addAtMouse]] without returning the part */
+  def addAtMouse_(ob: Ob, init: ACSet): IO[Unit] =
+    addAtMouse(ob, init).map(_ => ())
 
-  def addAtMouse_(ob: Ob) = addAtMouse(ob).map(_ => ())
+  /** [[addAtMouse]] without returning the part */
+  def addAtMouse_(ob: Ob): IO[Unit] = addAtMouse(ob).map(_ => ())
 
-  def add(p: Part, ob: Ob, props: PropMap) = m.updateS(
+  /** Add and return a part to the acset at `p` of type `ob` with properties
+    * `props`
+    */
+  def add(p: Part, ob: Ob, props: PropMap): IO[Part] = m.updateS(
     addPart(p, ob, props)
   )
 
-  def add_(p: Part, ob: Ob, props: PropMap) = add(p, ob, props).map(_ => ())
+  /** [[add]] without returning the part */
+  def add_(p: Part, ob: Ob, props: PropMap): IO[Unit] =
+    add(p, ob, props).map(_ => ())
 
-  def set(p: Part, f: Property, v: f.Value) = m.updateS(
+  /** Set the value of the property `f` at the part `p` to be `v` */
+  def set(p: Part, f: Property, v: f.Value): IO[Unit] = m.updateS(
     setSubpart(p, f, v)
   )
 
-  def remove(p: Part, f: Property) = m.updateS(
+  /** Unset the value of the property `f` of the part `p` */
+  def remove(p: Part, f: Property): IO[Unit] = m.updateS(
     remSubpart(p, f)
   )
 
-  def remove(p: Part) = m.updateS(
+  /** Remove the part `p` */
+  def remove(p: Part): IO[Unit] = m.updateS(
     remPart(p)
   )
 
+  /** Remove the part currently hovered */
   val del = for {
     ment <- es.hovered
     _ <- ment match {
-      case Some(ent: Part) => m.updateS_(remPart(ent))
-      case _               => IO(())
+      case Some(p: Part) => remove(p)
+      case _             => IO(())
     }
     _ = es.hover.$state.set(HoverController.State(None))
   } yield ()
 
+  /** Get the bounding box of `b` as it is currently displayed on the screen */
   def getBBox(b: Part): IO[BoundingBox] = b.path match
     case Seq() =>
       val sz = es.size.now()
@@ -110,50 +121,42 @@ case class Actions(
         bb <- getBBox(ROOT)
       } yield bb
 
-  //   fromMaybe(IO(
-  //   es.entities.now().em.get(b).map(pr => pr._1 match
-  //     case dp:DPBox => dp.boxSprite match
-  //       case mw:WithMiddleware => mw.s.bbox(Part(Nil),pr._2)
-  //       case s => println(s"!: $s")
-  //     case t => println(s"?: $t")
-  // )))
-
-  // def subspriteInfo(b:Part): Option[ACSet] = es.entities.now().em.get(b).map(_._2)
-
-  // def drag(i: Part) = for {
-  //   _ <- IO(m.save())
-  //   _ <- IO(m.unrecord())
-  //   _ <- m.updateS_(moveFront(i))
-  //   c <- IO(m.now().subpart(Center, i))
-  //   init <- es.mousePos
-  //   offset <- IO(c - init)
-  //   _ <- es.drag.drag(
-  //     Observer(p => { m.update(_.setSubpart(i, Center, p + offset)) })
-  //   )
-  //   _ <- IO(m.record())
-  // } yield ()
-
+  /** A generalized drag action
+    *
+    * At the beginning, compute a value `memo` of type `Memo` from the mouse
+    * position.
+    *
+    * While the drag is happening, execute `during` with `memo` and the mouse
+    * position of the drag.
+    *
+    * Finally, call `after` with `memo` to get the return value.
+    *
+    * If the drag is canceled, this resets the state.
+    *
+    * @todo
+    *   - It seems like we do not use the parameter `s` anywhere; we may want to
+    *     remove it
+    *   - `during` executes for side-effects, which could be anything! But we
+    *     are assuming that all it does is change `m`. We should express this
+    *     explicitly by having `during` return a function `ACSet => ACset`, and
+    *     then hook that into modifying `m`.
+    *   - Is `drag` the best name for this?
+    */
   def drag[Memo, Return](
       start: (z: Complex) => IO[Memo],
       during: (Memo, Complex) => Unit,
-      end: Memo => IO[Return]
-  ): Part => IO[Return] = (s: Part) =>
-    for {
-      _ <- IO(m.save())
-      _ <- IO(m.unrecord())
-      m0 = m.now()
-      memo <- es.mousePos.flatMap(start)
-      ret <- (for {
-        _ <- es.drag.drag(Observer(p => during(memo, p)))
-        ret0 <- end(memo)
-      } yield ret0).onCancelOrError(for
-        _ <- IO(es.drag.$state.set(None))
-        _ <- IO(m.set(m0))
-      yield ())
-      _ <- IO(m.record())
-    } yield ret.asInstanceOf[Return]
+      after: Memo => IO[Return]
+  )(s: Part): IO[Return] = for {
+    _ <- IO(m.save())
+    _ <- IO(m.unrecord())
+    m0 = m.now()
+    memo <- es.mousePos.flatMap(start)
+    ret <- (es.drag.drag(Observer(p => during(memo, p))) >> after(memo))
+      .onCancelOrError(IO({ es.drag.$state.set(None); m.set(m0) }))
+    _ <- IO(m.record())
+  } yield ret.asInstanceOf[Return]
 
-  // Memo = Offset, Return = Unit
+  /** Drag to move a part around */
   def dragMove(i: Part) =
     def start = (z: Complex) =>
       for
@@ -166,48 +169,30 @@ case class Actions(
         _.setSubpart(i, Center, p + offset)
       )
 
-    def end = (offset: Complex) => IO(())
+    def after = (offset: Complex) => IO(())
 
-    drag(start, during, end)(i)
+    drag(start, during, after)(i)
 
   val debug = IO(m.now()).flatMap(IO.println)
   def die[A]: IO[A] = fromMaybe(IO(None))
 
-  // Memo = Return = wire
-  // def makeWire(w:Ob,src:Hom,tgt:Hom) = (s:Part) => {
-
-  //   def start = () => for
-
-  //   yield
-  // }
-
   def liftTo(p: Part, tp: PartType): IO[Part] =
-    // println(s"liftTo: $p, $tp")
     tp.path match
       case Seq() =>
-        // println(s"lifted to $p")
         IO(p)
       case Seq(next, rest @ _*) => {
         for
           ext <- add(p, next, PropMap())
-          // _ = println(s"added $ext")
           last <- liftTo(ext, PartType(rest))
         yield last
       }
 
-  // def liftTo(p:Part,tps: Seq[PartType]): IO[Part] =
-  //   println(s"liftTos: $p, $tps")
-  //   tps match
-  //   case Seq() =>
-  //     println(s"die $p, $tps")
-  //     die
-  //   case Seq(tp,rest @_*) =>
-  //     println(s"trying lift $p to $tp")
-  //     liftTo(p,tp).onCancelOrError(liftTo(p,rest))
-
   def noLift(p: Part, pos: Complex): PartType = ROOT.ty
 
-  // Memo = Part, Return = Part
+  /** Drag to construct an edge between two parts
+    *
+    * Returns the part corresponding to the edge that was constructed
+    */
   def dragEdge(
       ob: Ob,
       src: Hom,
@@ -217,10 +202,8 @@ case class Actions(
 
     def start = (z: Complex) =>
       val ptype = liftSeq(s, z)
-      // println(s"ptype: $ptype")
       for
         p <- liftTo(s, ptype)
-        // _ = println(s"p = $p")
         w <- add(
           ROOT,
           ob,
@@ -243,10 +226,9 @@ case class Actions(
       then m.update(_.setSubpart(e, End, p))
       else m.update(_.setSubpart(e, Start, p))
 
-    def end = (e: Part) =>
+    def after = (e: Part) =>
       for
         t <- fromMaybe(es.hoveredPart)
-        // _ = println(s"end: $t")
         z <- es.mousePos
         qtype = liftSeq(t, z)
         q <- liftTo(t, qtype)
@@ -266,11 +248,9 @@ case class Actions(
           case _ => die
       yield e
 
-    drag(start, during, end)(s)
+    drag(start, during, after)(s)
 
-  // def killDrag(m0:ACSet) = for
-  // yield ()
-
+  /** Edit the content of the part `i`, using popup text box */
   def edit(p: Property { type Value = String; }, multiline: Boolean)(
       i: Part
   ): IO[Unit] = for {
@@ -294,6 +274,9 @@ case class Actions(
     })
   } yield ()
 
+  /** Bring up a textbox that can be used for copy/pasting the serialized
+    * version of the current state
+    */
   def importExport = ui.addKillableHtmlEntity(kill =>
     PositionWrapper(
       Position.topToBotMid(10),

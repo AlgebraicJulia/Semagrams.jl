@@ -4,7 +4,6 @@ import semagrams._
 import semagrams.acsets._
 import semagrams.util._
 import com.raquo.laminar.api.L._
-import semagrams.util.CustomModifier
 
 /** A bit of global state that keeps track of the entity that is currently
   * hovered.

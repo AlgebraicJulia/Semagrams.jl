@@ -58,8 +58,6 @@ export ui.{UIState}
 export util.{
   Complex,
   UndoableVar,
-  updateS,
-  updateS_,
   fromMaybe,
   toOption,
   onCancelOrError,

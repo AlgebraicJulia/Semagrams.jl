@@ -9,8 +9,10 @@ import com.raquo.domtypes.generic.codecs.StringAsIsCodec
 
 /** This creates the svg element that will all of the Semagrams activity
   *
-  * @todo: there should be more customization here
-  * @todo: markers should come from elsewhere
+  * @todo:
+  *   there should be more customization here
+  * @todo:
+  *   markers should come from elsewhere
   */
 def baseSvg() = {
   svg.svg(
@@ -36,6 +38,7 @@ def baseSvg() = {
 
 /** The abstract class that you create an instance of to create a Semagram */
 abstract class Semagram {
+
   /** This is the entrypoint to your app that you should override.
     *
     * @param es

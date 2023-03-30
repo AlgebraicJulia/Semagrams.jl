@@ -14,10 +14,11 @@ import org.scalajs.dom
 /** This is the main state for Semagrams.
   *
   * Even though we call this "state", notice that everything here is actually
-  * immutable. The state itself is all stored in Laminar stuff, like Vars
-  * and EventBuses.
+  * immutable. The state itself is all stored in Laminar stuff, like Vars and
+  * EventBuses.
   */
 class EditorState(val elt: SvgElement) {
+
   /** The main event bus for Semagrams. */
   val events = EventBus[Event]()
 
@@ -32,7 +33,8 @@ class EditorState(val elt: SvgElement) {
   /** all of the controllers */
   val controllers = Seq(mouse, hover, drag, keyboard)
 
-  /** The current size of the main element. Kept in sync by another line later. */
+  /** The current size of the main element. Kept in sync by another line later.
+    */
   val size = Var(Complex(elt.ref.clientWidth, elt.ref.clientHeight))
 
   /** All the entities in all of the viewports, and their associated sprites. */
@@ -73,7 +75,7 @@ class EditorState(val elt: SvgElement) {
   } yield ui
 
   /** Register a viewport.
-    * 
+    *
     * This adds the viewport to [[viewports]], which has the side-effect of
     * attaching its main element to `this.elt` while the viewport is still in
     * [[viewports]]
@@ -237,8 +239,8 @@ class EditorState(val elt: SvgElement) {
       }
     )
 
-  /** An IO action that filters [[hovered]] for just [[Part]]s that are one
-    * of several types.
+  /** An IO action that filters [[hovered]] for just [[Part]]s that are one of
+    * several types.
     */
   def hoveredPart(tys: Seq[PartType]): IO[Option[Part]] =
     hovered.map(e =>

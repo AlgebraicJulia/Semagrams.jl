@@ -7,6 +7,7 @@ import upickle.default.ReadWriter
 
 /** An attribute that can be attached to an Entity. */
 trait Property {
+
   /** The type of values of the attribute. */
   type Value
 

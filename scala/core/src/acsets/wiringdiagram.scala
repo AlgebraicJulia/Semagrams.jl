@@ -2,6 +2,11 @@ package semagrams.acsets
 
 import semagrams._
 
+/** Implementation of a schema for wiring diagrams
+  *
+  * Uses nested acsets so that ports are parts of the subacsets corresponding to
+  * boxes.
+  */
 object WiringDiagrams {
   case object Box extends Ob {
     override val schema = SchWiringDiagram
