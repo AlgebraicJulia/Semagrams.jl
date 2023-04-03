@@ -148,18 +148,19 @@ def bindings(
     // println(s"zoomIn $b")
     es.hover.$state.set(HoverController.State(None))
     es.currentView.set(b)
-    val vpold = es.viewports.now().toSeq(0)
-    es.deregister(vpold)
+    es.deregister("mainVP")
     for 
       // bb <- a.getBBox(b)
       // _ = println(bb)
       vp <- es.makeViewport(
+        "mainVP",
         es.size.signal.combineWith(g.signal.map(_.subacset(b)))
           .map(layoutPorts),
         entitySources(es)
-      ).map(vp => 
-        es.viewports.set(Set(vp))
       )
+      // .map(vp => 
+      //   es.viewports.set(Set(vp))
+      // )
     yield vp
 
   def zoomOut = 
@@ -207,7 +208,10 @@ def bindings(
       .map(es.bgPlus(_))
       .flatMap(p => 
         a.dragEdge(Wire,Src,Tgt,portByPos)(p)
-      ),
+      ).flatMap(
+        a.edit(Content,true)
+      )
+      ,
     menuOnPart().flatMap(p => 
       println(s"menuOnPart $p")
       p match
@@ -349,6 +353,7 @@ object Main {
             .map(layoutPorts)                        
         )
         vp <- es.makeViewport(
+          "mainVP",
           lg,
           entitySources(es)
         )

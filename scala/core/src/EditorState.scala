@@ -13,7 +13,7 @@ import org.scalajs.dom
 
 class EditorState(val elt: SvgElement) {
   val events = EventBus[Event]()
-  val viewports = Var(Set[Viewport]())
+  val viewports = Var(Map[String,Viewport]())
   val mouse = MouseController()
   val hover = HoverController()
   val drag = DragController()
@@ -24,7 +24,7 @@ class EditorState(val elt: SvgElement) {
   val entities = Var(EntityCollection())
 
   val currentView: Var[Part] = Var(ROOT)
-
+  
 
   dom.ResizeObserver(
     (newsize,_) => {
@@ -33,7 +33,7 @@ class EditorState(val elt: SvgElement) {
   ).observe(elt.ref)
 
   elt.amend(
-    children <-- viewports.signal.map(_.map(_.elt).toSeq),
+    children <-- viewports.signal.map(_.map(_._2.elt).toSeq),
   )
 
 
@@ -41,12 +41,12 @@ class EditorState(val elt: SvgElement) {
     c(this, elt)
   }
 
-  def makeViewport[A](state: Signal[A], sources: Seq[EntitySource[A]]) = 
+  def makeViewport[A](vpname:String,state: Signal[A], sources: Seq[EntitySource[A]]) = 
     println("begin mv")
     for {
     v <- IO(new EntitySourceViewport(state, sources))
     _ = println("created esv")
-    _ <- IO(register(v))
+    _ <- IO(register(vpname,v))
     _ = println("registered")
   } yield {
     println("end mv")
@@ -55,21 +55,21 @@ class EditorState(val elt: SvgElement) {
 
   def makeUI() = for {
     ui <- IO(new UIState(Var(Vector()), () => (), size.signal))
-    _ <- IO(register(ui.viewport))
+    _ <- IO(register("uiVP",ui.viewport))
   } yield ui
 
-  def register(v: Viewport) = {
+  def register(vpname: String,v: Viewport) = {
     println("begin register")
-    viewports.update(_ + v)
+    viewports.update(_ + (vpname -> v))
     println("finished update")
     elt.amend(
-      viewports.now().toSeq(0).entities --> entities.writer,
+      v.entities --> entities.writer,
     )
     println("finished amend")
   }
 
-  def deregister(v: Viewport) = {
-    viewports.update(_ - v)
+  def deregister(vname: String) = {
+    viewports.update(_.removed(vname))
   }
 
   def dimensions: Complex = Complex(elt.ref.clientWidth, elt.ref.clientHeight)
