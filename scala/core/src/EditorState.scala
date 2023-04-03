@@ -32,7 +32,11 @@ import cats.effect.std._
   *   A queue to use for events. We might also throw things into this queue for
   *   testing purposes.
   */
-class EditorState(val elt: SvgElement, dispatcher: Dispatcher[IO], val eventQueue: Queue[IO, Event]) {
+class EditorState(
+    val elt: SvgElement,
+    dispatcher: Dispatcher[IO],
+    val eventQueue: Queue[IO, Event]
+) {
 
   /** The main event bus for Semagrams. */
   val events = EventBus[Event]()
@@ -64,7 +68,9 @@ class EditorState(val elt: SvgElement, dispatcher: Dispatcher[IO], val eventQueu
   // Attach all of the root elements of the viewports to the main element
   elt.amend(
     children <-- viewports.signal.map(_.map(_.elt).toSeq),
-    events --> Observer[Event](evt => dispatcher.unsafeRunAndForget(eventQueue.offer(evt)))
+    events --> Observer[Event](evt =>
+      dispatcher.unsafeRunAndForget(eventQueue.offer(evt))
+    )
   )
 
   for (c <- controllers) {
@@ -79,7 +85,10 @@ class EditorState(val elt: SvgElement, dispatcher: Dispatcher[IO], val eventQueu
     * @param sources
     *   the viewport has entities extracted using these [[EntitySource]]s
     */
-  def makeViewport[A](state: Signal[A], sources: Seq[EntitySource[A]]): IO[EntitySourceViewport[A]] = for {
+  def makeViewport[A](
+      state: Signal[A],
+      sources: Seq[EntitySource[A]]
+  ): IO[EntitySourceViewport[A]] = for {
     v <- IO(new EntitySourceViewport(state, sources))
     _ <- IO(register(v))
   } yield v
@@ -136,7 +145,7 @@ class EditorState(val elt: SvgElement, dispatcher: Dispatcher[IO], val eventQueu
       )
       a <- actionOption match {
         case Some(action) => action
-        case None => bindNoCatch(bindings)
+        case None         => bindNoCatch(bindings)
       }
     } yield a
 

@@ -65,8 +65,8 @@ abstract class Semagram {
     render(div, base)
     val startup = for {
       eventQueue <- Queue.unbounded[IO, Event]
-      es <- Dispatcher.sequential[IO] use {
-        dispatcher => {
+      es <- Dispatcher.sequential[IO] use { dispatcher =>
+        {
           val es = EditorState(base, dispatcher, eventQueue)
           run(es, init.toOption)
         }
