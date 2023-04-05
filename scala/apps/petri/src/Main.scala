@@ -1,7 +1,6 @@
 package semagrams.petri
 
 import cats.Monad
-import cats.data.OptionT
 import cats.data._
 import cats.effect.IO
 import cats.effect.syntax.all._

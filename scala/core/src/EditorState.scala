@@ -10,14 +10,33 @@ import com.raquo.laminar.nodes.ReactiveElement
 import cats.effect._
 import cats.implicits._
 import org.scalajs.dom
+import cats.effect.std._
 
 /** This is the main state for Semagrams.
   *
   * Even though we call this "state", notice that everything here is actually
   * immutable. The state itself is all stored in Laminar stuff, like Vars and
   * EventBuses.
+  *
+  * We pass in `dispatcher` and `eventQueue` because this constructor can't run
+  * in IO, and thus can't make them itself. It can however use the `dispatcher`
+  * to attach the EventBus of events to the queue.
+  *
+  * @param elt
+  *   The main svg element of the semagram.
+  *
+  * @param dispatcher
+  *   An IO dispatcher, used to bind the EventBus of events to `eventQueue`.
+  *
+  * @param eventQueue
+  *   A queue to use for events. We might also throw things into this queue for
+  *   testing purposes.
   */
-class EditorState(val elt: SvgElement) {
+class EditorState(
+    val elt: SvgElement,
+    dispatcher: Dispatcher[IO],
+    val eventQueue: Queue[IO, Event]
+) {
 
   /** The main event bus for Semagrams. */
   val events = EventBus[Event]()
@@ -48,7 +67,10 @@ class EditorState(val elt: SvgElement) {
 
   // Attach all of the root elements of the viewports to the main element
   elt.amend(
-    children <-- viewports.signal.map(_.map(_.elt).toSeq)
+    children <-- viewports.signal.map(_.map(_.elt).toSeq),
+    events --> Observer[Event](evt =>
+      dispatcher.unsafeRunAndForget(eventQueue.offer(evt))
+    )
   )
 
   for (c <- controllers) {
@@ -63,13 +85,16 @@ class EditorState(val elt: SvgElement) {
     * @param sources
     *   the viewport has entities extracted using these [[EntitySource]]s
     */
-  def makeViewport[A](state: Signal[A], sources: Seq[EntitySource[A]]) = for {
+  def makeViewport[A](
+      state: Signal[A],
+      sources: Seq[EntitySource[A]]
+  ): IO[EntitySourceViewport[A]] = for {
     v <- IO(new EntitySourceViewport(state, sources))
     _ <- IO(register(v))
   } yield v
 
   /** Make a new [[UIState]] object and register its viewport */
-  def makeUI() = for {
+  def makeUI(): IO[UIState] = for {
     ui <- IO(new UIState(Var(Vector()), () => (), size.signal))
     _ <- IO(register(ui.viewport))
   } yield ui
@@ -80,7 +105,7 @@ class EditorState(val elt: SvgElement) {
     * attaching its main element to `this.elt` while the viewport is still in
     * [[viewports]]
     */
-  def register(v: Viewport) = {
+  def register(v: Viewport): Unit = {
     viewports.update(_ + v)
     elt.amend(
       viewports.now().toSeq(0).entities --> entities.writer
@@ -90,119 +115,49 @@ class EditorState(val elt: SvgElement) {
   /** Deregister a viewport, which has the side effect of removing its main
     * element from [[elt]]
     */
-  def deregister(v: Viewport) = {
+  def deregister(v: Viewport): Unit = {
     viewports.update(_ - v)
   }
 
   /** Deprecated in favor of [[size]] */
   def dimensions: Complex = Complex(elt.ref.clientWidth, elt.ref.clientHeight)
 
-  /** Attach a callback to `es` so that the callback will be called with the
-    * next element to come out. This returns a binder that needs to be attached
-    * to an element to manage the subscription that is created.
-    *
-    * Note: we are going to move away from this soon.
-    *
-    * @param es
-    *   The event stream to attach to
-    *
-    * @param cb
-    *   The callback to be called
-    */
-  def attachEventStream[T](
-      es: EventStream[T],
-      cb: Either[Throwable, T] => Unit
-  ): Binder[SvgElement] = {
-    var sub: Option[Subscription] = None
-    (element: SvgElement) =>
-      ReactiveElement.bindSubscription(element) { ctx =>
-        val s = es.recoverToTry.foreach { e =>
-          import scala.util.{Failure, Success}
-          e match {
-            case Success(evt) =>
-              cb(Right(evt))
-            case Failure(error) =>
-              cb(Left(error))
-          }
-          sub.foreach(_.kill())
-          sub = None
-        }(ctx.owner)
-        sub = Some(s)
-        s
-      }
-  }
-
-  /** Return the next event to come out of `stream` asynchronously */
-  def nextEvent[A](stream: EventStream[A]): IO[A] =
-    IO.async_(cb => elt.amend(attachEventStream(stream, cb)))
-
   /** Get the next event that matches one of the bindings, and then execute the
     * action that is associated to it.
     */
   def bindNoCatch[A](bindings: Seq[Binding[A]]): IO[A] =
-    nextEvent(events.events.collect(((ev: Event) => {
-      bindings.collectFirst(
+    for {
+      evt <- eventQueue.take
+      actionOption = bindings.collectFirst(
         (
             (bnd: Binding[A]) =>
               bnd.modifiers match {
                 case Some(mods) => {
                   if (keyboard.keyState.now().modifiers == mods) {
-                    bnd.selector.lift(ev)
+                    bnd.selector.lift(evt)
                   } else {
                     None
                   }
                 }
-                case None => bnd.selector.lift(ev)
+                case None => bnd.selector.lift(evt)
               }
         ).unlift
       )
-    }).unlift)).flatten
-
-  def bindHelper[A](ev: Event) = (
-      (bnd: Binding[A]) =>
-        bnd.modifiers match
-          case Some(mods) =>
-            if (keyboard.keyState.now().modifiers == mods)
-            then bnd.selector.lift(ev)
-            else None
-          case None => bnd.selector.lift(ev)
-  ).unlift
-
-  /** Same thing as [[bindNoCatch]] except when an event matches some binding,
-    * it runs *all* of the bindings that it matches, not just the first one.
-    */
-  def bindNoCatchFirst[A](bindings: Seq[Binding[A]]): IO[A] =
-    nextEvent(
-      events.events.collect(
-        ((ev: Event) =>
-          val b = bindings.collectFirst(bindHelper(ev))
-
-          val bs = bindings.collect(bindHelper(ev))
-
-          bs match
-            case Seq()             => None
-            case Seq(b, rest @ _*) => Some(doAll(b, rest))
-        ).unlift
-      )
-    ).flatten
-
-  def doAll[A](a1: IO[A], as: Seq[IO[A]]): IO[A] = as match
-    case Seq() => a1
-    case Seq(a2, rest @ _*) =>
-      for {
-        first <- a1
-        last <- doAll(a2, rest)
-      } yield last
+      a <- actionOption match {
+        case Some(action) => action
+        case None         => bindNoCatch(bindings)
+      }
+    } yield a
 
   /** Same thing as [[bindNoCatch]], except it handles any errors and returns
     * None when there is one.
     */
   def bind[A](bindings: Seq[Binding[A]]): IO[Option[A]] =
-    bindNoCatchFirst[A](bindings).map(Some(_)).handleError(_ => None)
+    bindNoCatch[A](bindings).map(Some(_)).handleError(_ => None)
 
   /** Run the bindings repeatedly until there is an error, and then stop */
   def bindUntilFail[A](bindings: Seq[Binding[A]]): IO[Unit] =
-    bindNoCatchFirst[A](bindings).foreverM.handleError(_ => ())
+    bindNoCatch[A](bindings).foreverM.handleError(_ => ())
 
   /** Run the bindings forever, ignoring any errors */
   def bindForever[A](bindings: Seq[Binding[A]]): IO[Nothing] =
