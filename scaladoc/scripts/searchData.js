@@ -148,6 +148,7 @@ pages = [{"l":"index.html#","e":false,"i":"","n":"semagrams","t":"semagrams","d"
 {"l":"semagrams/KeyModifier.html#Alt-0","e":false,"i":"","n":"Alt","t":"Alt extends KeyModifier","d":"semagrams.KeyModifier","k":"case"},
 {"l":"semagrams/KeyModifier$.html#","e":false,"i":"","n":"KeyModifier","t":"KeyModifier","d":"semagrams","k":"object"},
 {"l":"semagrams/KeyModifier$.html#all-0","e":false,"i":"","n":"all","t":"all: Set[KeyModifier]","d":"semagrams.KeyModifier","k":"val"},
+{"l":"semagrams/KeyModifier$.html#asString-0","e":false,"i":"","n":"asString","t":"asString: Map[KeyModifier, String]","d":"semagrams.KeyModifier","k":"val"},
 {"l":"semagrams/MouseButton.html#","e":false,"i":"","n":"MouseButton","t":"MouseButton","d":"semagrams","k":"enum"},
 {"l":"semagrams/MouseButton.html#Left-0","e":false,"i":"","n":"Left","t":"Left extends MouseButton","d":"semagrams.MouseButton","k":"case"},
 {"l":"semagrams/MouseButton.html#Middle-0","e":false,"i":"","n":"Middle","t":"Middle extends MouseButton","d":"semagrams.MouseButton","k":"case"},
