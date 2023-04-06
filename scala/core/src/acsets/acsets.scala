@@ -312,7 +312,11 @@ case class ACSet(
     * their corresponding subacsets.
     */
   def parts(i: Part, x: Ob): Seq[(Part, ACSet)] = {
-    val ps = subacset(i).partsMap(x)
+    val sub = subacset(i)
+    val ps = sub.partsMap.get(x).getOrElse({
+      println(s"bad partsMap $x, ${sub.partsMap}")
+      throw new RuntimeException
+    })
     ps.ids.map(id => (i.extend(x, id), ps.acsets(id)))
   }
 

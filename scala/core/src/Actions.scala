@@ -101,7 +101,6 @@ case class Actions(
         sprdata <- sprtry match
           case Some(pair) => fromMaybe(IO(sprtry))
           case None =>
-            println(s"bad $b")
             die
         (spr, acset) = sprdata
         bbtry = spr.bbox(Part(Nil), acset)
@@ -109,7 +108,6 @@ case class Actions(
           bbtry match
             case Some(bb) => IO(bb)
             case None =>
-              println(s"bad bb: $b")
               die
         }
       } yield bb
@@ -117,7 +115,6 @@ case class Actions(
       for {
         bdata <- fromMaybe(IO(es.entities.now().em.get(b.head)))
         (spr, acset) = bdata
-        _ = println(spr.bbox(Part(rest), acset))
         bb <- getBBox(ROOT)
       } yield bb
 

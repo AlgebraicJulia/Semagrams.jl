@@ -17,12 +17,21 @@ import semagrams.EntityCollection
 import scala.language.implicitConversions
 import semagrams.sprites.{AltDPBox, BasicPort}
 
-case object Box extends Ob {
-  override val schema = SchBox
-}
 
-case object OutPort extends Ob
-case object InPort extends Ob
+
+enum DWDObs(override val schema: Schema = SchEmpty) extends Ob derives ReadWriter:
+  case Box extends DWDObs(SchBox)
+  case InPort, OutPort, Wire
+
+import DWDObs._
+
+// case object Box extends Ob {
+//   override val schema = SchBox
+// }
+
+// case object OutPort extends Ob
+// case object InPort extends Ob
+// case object Wire extends Ob
 
 case object SchBox extends Schema {
   val obs = Seq(OutPort, InPort)
@@ -30,7 +39,6 @@ case object SchBox extends Schema {
   val attrs = Seq()
 }
 
-case object Wire extends Ob
 
 case object Src extends Hom {
   val doms = Seq(PartType(Seq(Wire)))
@@ -145,23 +153,20 @@ def bindings(
       ),
     dblClickOnPart(MouseButton.Left, PartType(Seq(Box)))
       .flatMap(b =>
-        // println(s"dbl box $b")
         a.edit(Content, true)(b)
       ),
     clickOnPart(Left)
       .withMods()
       .flatMap(p =>
-        // println(s"clickOnPart $p")
         p.ty match
           case ROOT.ty =>
-            es.mousePos.flatMap(z => IO(()) // IO(println(s"clicked at $z"))
+            es.mousePos.flatMap(z => IO(())
             )
           case PartType(Seq(Box, _*)) => a.dragMove(p.head)
       ),
     clickOnPart(Left)
       .withMods(Shift)
       .flatMap(p =>
-        // println(s"shiftclick: $p, ${p == ROOT}")
         p.ty match
           case ROOT.ty => a.dragEdge(Wire, Src, Tgt, portByPos)(ROOT)
           case PartType(Seq(Box, _*)) =>
