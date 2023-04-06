@@ -19,7 +19,6 @@ import ACSet._
   *   - [X] Janky automatic layout
   *   - [X] Fix focus bug (can't figure out)
   *   - Write help popup
-  *   - Generate equations
   *   - JSON export
   */
 
@@ -215,9 +214,6 @@ object Main {
 
     def run(es: EditorState, init: Option[String]): IO[Unit] = {
       for {
-        // initg <- IO(init
-        //               .map(s => petriFromCLJson(read[catlab.ACSet](s)))
-        //               .getOrElse(Petri()))
         initg <- IO(Petri())
         sprungg <- IO(
           springLayoutPetri(

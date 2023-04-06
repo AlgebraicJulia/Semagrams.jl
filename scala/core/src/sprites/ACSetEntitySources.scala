@@ -67,7 +67,7 @@ def edgeProps(
   val nd = t
     .flatMap(findBoundary(_, m, dir * rot.cong))
     .getOrElse(tpos)
-  PropMap() + (Start, spos) + (End, tpos)
+  PropMap() + (Start, start) + (End, nd)
 }
 
 /** Like [[ACSetEntitySource]], but then also computes the edge properties using

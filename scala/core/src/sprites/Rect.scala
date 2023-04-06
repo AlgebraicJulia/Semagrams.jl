@@ -74,8 +74,9 @@ case class Rect(props: PropMap) extends Sprite {
 
   override def boundaryPt(_subent: Entity, data: ACSet, dir: Complex) = {
     // Normalize to first quadrant
-    val (_, boxdims) = geom(props ++ data.props)
-    val os = (props ++ data.props)(OuterSep)
+    val pm = props ++ data.props
+    val (_, boxdims) = geom(pm)
+    val os = (pm)(OuterSep)
     val dims = Complex(boxdims.x + 2 * os, boxdims.y + 2 * os)
     val q1dir = Complex(dir.x.abs, dir.y.abs)
     val q1pt = if (q1dir.x == 0) {
@@ -93,7 +94,8 @@ case class Rect(props: PropMap) extends Sprite {
         dims.y / 2
       )
     }
-    Some(Complex(q1pt.x * dir.x.sign, q1pt.y * dir.y.sign) + data.props(Center))
+    val pt = Complex(q1pt.x * dir.x.sign, q1pt.y * dir.y.sign) + pm(Center)
+    Some(pt)
   }
 
   override def bbox(_subent: Entity, data: ACSet) = {
