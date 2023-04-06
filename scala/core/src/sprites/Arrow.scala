@@ -32,8 +32,9 @@ case class Arrow(defaults: PropMap) extends Sprite {
   def curvedPath(s: Complex, e: Complex, bend: Double): Seq[Path.Element] = {
     import Path.Element._
     val rot = Complex(0, bend).exp
-    val cs = rot * (s * (-1 / 4) + e * (1 / 4)) + s
-    val ce = rot.cong * (s * (1 / 4) + e * (-1 / 4)) + e
+    val λ = 1.0 / 4
+    val cs = rot * (λ * (e - s)) + s
+    val ce = rot.cong * (λ * (s - e)) + e
     Seq(MoveTo(s), Cubic(cs, ce, e))
   }
 
