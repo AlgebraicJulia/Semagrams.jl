@@ -6,6 +6,10 @@ import semagrams.util.Complex
 import upickle.default.ReadWriter
 
 /** An attribute that can be attached to an Entity. */
+
+
+
+
 trait Property {
 
   /** The type of values of the attribute. */
@@ -13,6 +17,7 @@ trait Property {
 
   /** A serializer for those values. */
   val rw: ReadWriter[Value]
+
 
   /** Construct a json value from a [[Value]]. */
   def writeValue(v: Any) = {

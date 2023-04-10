@@ -14,53 +14,69 @@ import ACSet._
 import semagrams.Background
 import semagrams.EntityCollection
 
-import scala.language.implicitConversions
+// import scala.language.implicitConversions
 import semagrams.sprites.{AltDPBox, BasicPort}
 
 
+case object SchDWD extends Schema {
 
-enum DWDObs(override val schema: Schema = SchEmpty) extends Ob derives ReadWriter:
-  case Box extends DWDObs(SchBox)
-  case InPort, OutPort, Wire
+  val obs = Seq(DWDObs.values*)
+  val homs = Seq(DWDHoms.values*)
+  val attrs = Seq()
 
+
+
+  enum DWDObs extends Ob derives ReadWriter:    
+    case InPort, OutPort, Wire
+    case Box extends DWDObs
+      override val schema = SchDWD
+      override val props = Set(Center,Content)
+
+  import DWDObs._
+
+  enum DWDHoms(val doms:Seq[PartType],val codoms:Seq[PartType]) extends Hom derives ReadWriter:
+    case Src extends DWDHoms(
+      Wire.asDom(),
+      InPort.asDom() :+ Box.extend(OutPort)
+    )
+    case Tgt extends DWDHoms(
+      Wire.asDom(),
+      OutPort.asDom() :+ Box.extend(InPort)
+    )
+
+  
+  
+}
+
+import SchDWD._
 import DWDObs._
+import DWDHoms._
 
-// case object Box extends Ob {
-//   override val schema = SchBox
+
+
+
+
+
+
+
+
+
+// case object Src extends Hom {
+//   val doms = Seq(PartType(Seq(Wire)))
+//   val codoms = Seq(
+//     PartType(Seq(Box, OutPort)),
+//     PartType(Seq(InPort))
+//   )
 // }
 
-// case object OutPort extends Ob
-// case object InPort extends Ob
-// case object Wire extends Ob
+// case object Tgt extends Hom {
+//   val doms = Seq(PartType(Seq(Wire)))
+//   val codoms = Seq(
+//     PartType(Seq(Box, InPort)),
+//     PartType(Seq(OutPort))
+//   )
+// }
 
-case object SchBox extends Schema {
-  val obs = Seq(OutPort, InPort)
-  val homs = Seq()
-  val attrs = Seq()
-}
-
-
-case object Src extends Hom {
-  val doms = Seq(PartType(Seq(Wire)))
-  val codoms = Seq(
-    PartType(Seq(Box, OutPort)),
-    PartType(Seq(InPort))
-  )
-}
-
-case object Tgt extends Hom {
-  val doms = Seq(PartType(Seq(Wire)))
-  val codoms = Seq(
-    PartType(Seq(Box, InPort)),
-    PartType(Seq(OutPort))
-  )
-}
-
-case object SchDWD extends Schema {
-  val obs = Seq(Box, OutPort, InPort, Wire)
-  val homs = Seq(Src, Tgt)
-  val attrs = Seq()
-}
 
 object DWD {
   def apply() = ACSet(SchDWD)
@@ -72,6 +88,13 @@ def bindings(
     ui: UIState,
     vp: Viewport
 ) = {
+
+  def test(p:Part): IO[Unit] = IO({
+    // val s = write(g.now().subacset(p).props)
+    // println(s)
+    // val e = read[PropMap](s)
+    // println(e)
+  })
 
   def dwdFromJson(s: String): Option[ACSet] = Some(DWD())
 
@@ -142,7 +165,9 @@ def bindings(
       case _ => Seq()
     PartType(obseq)
 
+
   Seq(
+    keyDown("t").andThen(fromMaybe(es.hoveredPart).flatMap(test)),
     // Add box
     dblClickOnPart(MouseButton.Left, ROOT.ty)
       .flatMap(p =>

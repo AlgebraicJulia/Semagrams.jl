@@ -6,17 +6,27 @@ import scala.collection.mutable
 import upickle.default._
 import monocle.Lens
 
-import scala.language.implicitConversions
+// import scala.language.implicitConversions
 
 /** A trait marking objects in a [[Schema]] */
 trait Ob {
 
   /** The subschema for the subacsets on parts of this type */
+  // lazy 
   val schema: Schema = SchEmpty
 
   /** This object promoted to type for the domain/codomain of a morphism */
-  def asDom() = Seq(PartType(Seq(this)))
+  def asDom() = Seq(partType)
+
+  def partType: PartType = PartType(Seq(this))
+
+  def extend(x:Ob) = partType.extend(x)
+
+  val props: Set[Property] = Set()
+
 }
+
+
 
 /** A trait marking morphisms in a [[Schema]]
   *
@@ -93,6 +103,10 @@ case class PartType(path: Seq[Ob]) extends EntityType {
 object PartType {
   given obIsPartType: Conversion[Ob, PartType] = (ob: Ob) => PartType(Seq(ob))
   given seqIsPartType: Conversion[Seq[Ob], PartType] = PartType(_)
+
+
+
+
 }
 
 /** A part is a path through a nested acset. If you visualize a nested acset as
@@ -146,6 +160,62 @@ trait Schema {
   val homs: Seq[Hom]
   val attrs: Seq[Attr]
 
+
+  implicit val obRW: ReadWriter[Ob] = readwriter[String].bimap(
+    _.toString,
+    str => obs.find(ob => ob.toString == str).getOrElse({
+      println(s"bad obRW $str")
+      throw new RuntimeException
+    })
+  )
+  // val partTypeRW: ReadWriter[PartType] = macroRW
+  implicit val partRW: ReadWriter[Part] = macroRW
+
+  val allProps = homs ++ attrs ++ obs.flatMap(_.props)
+
+  val propRW: ReadWriter[PropMap] = ??? 
+  // readwriter[Map[String,ujson.Value]].bimap(
+    // pm => Map(),
+    // mp => PropMap()
+    // PropMap(
+      // mp.map({ case (k,v) => 
+      //   println("here")
+      //   val prop = allProps.find(_.toString == k).getOrElse({
+      //     println(s"bad prop $k")
+      //     throw new RuntimeException
+      //   })
+      //   prop -> prop.readValue(v)
+      // })
+    // )
+  // )
+
+  // implicit val propsRW: ReadWriter[PropMap] =
+  //   println("propsRW")
+  //   val keys = homs ++ attrs ++ obs.map(_.props).flatten
+  //   println(keys)
+  //   val keymap = keys.map(k => k.toString -> k).toMap
+  //   readwriter[Map[String,ujson.Value]].bimap(
+  //     {println("fwd")
+  //     _.toJson()},
+  //     x => 
+  //       println("bwd")
+  //       PropMap.fromJson(keymap,x)
+  //   )
+
+  // implicit val acsetRW: ReadWriter[ACSet] = macroRW
+
+  // implicit val schemaRW: ReadWriter[Schema] = readwriter[String].bimap(
+  //   _.toString,
+  //   str => if this.toString == str
+  //   then this
+  //   else obs.map(_.schema).find(sch => sch.toString == str).getOrElse({
+  //     println(s"bad schemaRW $str")
+  //     throw new RuntimeException
+  //   })
+  // )
+
+
+
   /** Returns the subschema found by following the path in `ty`. */
   def subschema(ty: PartType): Schema = ty.path match {
     case Nil => this
@@ -169,8 +239,15 @@ trait Schema {
 
 }
 
+
+object Schema {
+
+
+}
+
+
 /** An opaque wrapper around an integer */
-case class Id(id: Int)
+case class Id(id: Int) derives ReadWriter
 
 /** Storage class for the parts corresponding to an `Ob` in a schema.
   *
@@ -278,9 +355,14 @@ case class ACSet(
   def trySubacset(p: Part): Option[ACSet] = p.path match {
     case Nil => Some(this)
     case (x, i) :: rest =>
-      partsMap
-        .get(x)
-        .flatMap(_.acsets.get(i).flatMap(_.trySubacset(Part(rest))))
+      val g = partsMap.get(x)
+      g.flatMap(parts =>
+        val aci = parts.acsets.get(i)
+        aci.flatMap(sub => {
+          val ret = sub.trySubacset(Part(rest))
+          ret
+        
+        }))
   }
 
   /** Check if a nested part exists in the ACSet */
@@ -457,7 +539,7 @@ case class ACSet(
       setSubacset(Part(pre), newSub)
     } else {
       this
-    }
+    } 
   }
 
   /** Remove a part and all of the other parts that refer to it. */
@@ -491,6 +573,15 @@ case class ACSet(
   def addProps(newProps: PropMap): ACSet = {
     this.copy(props = props ++ newProps)
   }
+
+  def allProps(p:Part): Set[Property] = 
+    val sub = subacset(p)
+    val acsets = sub.partsMap.values
+      .map(_.acsets.values).flatten.toSet
+
+    sub.props.map.keySet union
+    acsets.map(_.props.map.keySet).flatten
+
 }
 
 /** This object contains the constructor method for ACSets and also a collection
@@ -504,7 +595,8 @@ object ACSet {
 
   /** Construct a new ACSet with schema `s` and top-level parts `props` */
   def apply(s: Schema, props: PropMap): ACSet =
-    new ACSet(s, props, s.obs.map(ob => ob -> Parts(0, Seq(), Map())).toMap)
+    val pm = s.obs.map(ob => ob -> Parts(0, Seq(), Map())).toMap
+    new ACSet(s, props, pm)
 
   /** `State` wrapper around ACSet.addParts */
   def addParts(p: Part, x: Ob, props: Seq[PropMap]): State[ACSet, Seq[Part]] =

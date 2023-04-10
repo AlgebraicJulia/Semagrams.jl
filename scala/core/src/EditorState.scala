@@ -8,7 +8,7 @@ import semagrams.util._
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveElement
 import cats.effect._
-import cats.implicits._
+// import cats.implicits._
 import org.scalajs.dom
 import cats.effect.std._
 
