@@ -3,11 +3,12 @@
   "private": true,
   "version": "0.0.0",
   "scripts": {
-    "dev": "snowpack dev",
-    "build": "snowpack build"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "devDependencies": {
-    "snowpack": "^3.8.8"
+    "vite": "^4.2.1"
   },
   "dependencies": {
     "jsdom": "^20.0.3",
