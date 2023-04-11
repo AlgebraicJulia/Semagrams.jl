@@ -5,6 +5,8 @@ import cats.data.State
 import scala.collection.mutable
 import upickle.default._
 import monocle.Lens
+import semagrams.util.msgError
+import semagrams.util.bijectiveRW
 
 // import scala.language.implicitConversions
 
@@ -13,7 +15,7 @@ trait Ob {
 
   /** The subschema for the subacsets on parts of this type */
   // lazy 
-  val schema: Schema = SchEmpty
+  lazy val schema: Schema = SchEmpty
 
   /** This object promoted to type for the domain/codomain of a morphism */
   def asDom() = Seq(partType)
@@ -22,7 +24,6 @@ trait Ob {
 
   def extend(x:Ob) = partType.extend(x)
 
-  val props: Set[Property] = Set()
 
 }
 
@@ -159,60 +160,7 @@ trait Schema {
   val obs: Seq[Ob]
   val homs: Seq[Hom]
   val attrs: Seq[Attr]
-
-
-  implicit val obRW: ReadWriter[Ob] = readwriter[String].bimap(
-    _.toString,
-    str => obs.find(ob => ob.toString == str).getOrElse({
-      println(s"bad obRW $str")
-      throw new RuntimeException
-    })
-  )
-  // val partTypeRW: ReadWriter[PartType] = macroRW
-  implicit val partRW: ReadWriter[Part] = macroRW
-
-  val allProps = homs ++ attrs ++ obs.flatMap(_.props)
-
-  val propRW: ReadWriter[PropMap] = ??? 
-  // readwriter[Map[String,ujson.Value]].bimap(
-    // pm => Map(),
-    // mp => PropMap()
-    // PropMap(
-      // mp.map({ case (k,v) => 
-      //   println("here")
-      //   val prop = allProps.find(_.toString == k).getOrElse({
-      //     println(s"bad prop $k")
-      //     throw new RuntimeException
-      //   })
-      //   prop -> prop.readValue(v)
-      // })
-    // )
-  // )
-
-  // implicit val propsRW: ReadWriter[PropMap] =
-  //   println("propsRW")
-  //   val keys = homs ++ attrs ++ obs.map(_.props).flatten
-  //   println(keys)
-  //   val keymap = keys.map(k => k.toString -> k).toMap
-  //   readwriter[Map[String,ujson.Value]].bimap(
-  //     {println("fwd")
-  //     _.toJson()},
-  //     x => 
-  //       println("bwd")
-  //       PropMap.fromJson(keymap,x)
-  //   )
-
-  // implicit val acsetRW: ReadWriter[ACSet] = macroRW
-
-  // implicit val schemaRW: ReadWriter[Schema] = readwriter[String].bimap(
-  //   _.toString,
-  //   str => if this.toString == str
-  //   then this
-  //   else obs.map(_.schema).find(sch => sch.toString == str).getOrElse({
-  //     println(s"bad schemaRW $str")
-  //     throw new RuntimeException
-  //   })
-  // )
+  val props: Seq[Property] = Seq()
 
 
 
@@ -236,6 +184,80 @@ trait Schema {
           .homsInto(PartType(rest))
           .map({ case (obs, f) => (ob +: obs, f) })
   }
+
+  //** Serialization of `Ob`s in the schema */
+  implicit def obRW: ReadWriter[Ob] = bijectiveRW(obs)
+  
+  //** Serialization of `PartType`s in the schema */
+  implicit def partTypeRW: ReadWriter[PartType] = macroRW
+
+  //** Serialization of `Part`s in the schema */
+  implicit def partRW: ReadWriter[Part] = macroRW
+
+  //** A superset of properties (`Property`) occuring in the schema. For serialization. */
+  def allProps = (homs ++ attrs 
+    ++ props ++ obs.flatMap(_.schema.props)
+    ++ GenericProperty.values
+  ).toSet
+
+  //** Serialization of properties (`Property`) in the schema */
+  implicit def propertyRW: ReadWriter[Property] = bijectiveRW(allProps)
+
+  //** Serialization of `PropMap`s in the schema */
+  implicit def propRW: ReadWriter[PropMap] = readwriter[Map[String,ujson.Value]].bimap(
+    pm => pm.map.map { 
+      case (k,v:Part) => 
+        (k.toString,writeJs(v))
+      case (k,v) =>
+        (k.toString,k.writeValue(v))
+    },
+    mp => PropMap(mp.map{ case (k,v) => 
+      val prop = allProps.find(write(_) == write(k))
+        .getOrElse(throw msgError(s"bad propRW $mp"))
+      prop match
+        case _:Hom => 
+          prop -> read[Part](v)
+        case _ => 
+          prop -> prop.readValue(v)
+    })
+  )
+
+  //** All `Schema`s occuring in the schema */
+  def allSchemas = Set(this +: obs.map(_.schema)*)
+
+  //** Serialization of `Schema`s occuring in the schema */
+  implicit def schemaRW: ReadWriter[Schema] = bijectiveRW(allSchemas)
+
+  //** Serialization of `PartSet`s occuring in the schema */
+  implicit def partsRW: ReadWriter[PartSet] = readwriter[Map[Int,ujson.Value]].bimap(
+    ps => ps.ids.map(id =>
+      id.id -> writeJs(ps.acsets(id))
+    ).toMap,
+    sp => PartSet(
+      sp.keys.maxOption.map(_+1).getOrElse(0),
+      sp.keys.map(Id(_)).toSeq,
+      sp.map((i,json) => 
+        Id(i) -> read[ACSet](json)
+      )
+    )
+  )
+
+  //** Note: replacing `read[ujson.Value](write(acset.partsMap))` below with `writeJs(acset.partsMap)` introduces a parsing error `expecting string but found int32` */
+  
+  //** Serialization of `ACSets`s based on the schema */
+  implicit def acsetRW: ReadWriter[ACSet] = readwriter[Map[String,ujson.Value]].bimap(
+    acset => Map(
+      "schema" -> writeJs(acset.schema),
+      "props" -> writeJs(acset.props),
+      "partsMap" -> read[ujson.Value](write(acset.partsMap))
+      ),
+    jmap => ACSet(
+        read[Schema](jmap("schema")),
+        read[PropMap](jmap("props")),
+        read[Map[Ob,PartSet]](jmap("partsMap"))
+      )
+  )
+
 
 }
 
@@ -264,7 +286,7 @@ case class Id(id: Int) derives ReadWriter
   * @param acsets
   *   The subacset corresponding to each id
   */
-case class Parts(
+case class PartSet(
     nextId: Int,
     ids: Seq[Id],
     acsets: Map[Id, ACSet]
@@ -274,9 +296,9 @@ case class Parts(
     *
     * Returns a sequence of the ids of the added parts.
     */
-  def addParts(partacsets: Seq[ACSet]): (Parts, Seq[Id]) = {
+  def addParts(partacsets: Seq[ACSet]): (PartSet, Seq[Id]) = {
     val newIds = nextId.to(nextId + partacsets.length - 1).map(Id.apply)
-    val newPd = Parts(
+    val newPd = PartSet(
       nextId + partacsets.length,
       ids ++ newIds,
       acsets ++ newIds.zip(partacsets).toMap
@@ -285,13 +307,13 @@ case class Parts(
   }
 
   /** Adds a single part with subacset `acs`, returns its id. */
-  def addPart(acset: ACSet): (Parts, Id) = {
+  def addPart(acset: ACSet): (PartSet, Id) = {
     val (p, newIds) = addParts(Seq(acset))
     (p, newIds(0))
   }
 
   /** Set the subacset corresponding to `i` to `acs` */
-  def setAcset(i: Id, acs: ACSet): Parts = {
+  def setAcset(i: Id, acs: ACSet): PartSet = {
     this.copy(
       acsets = acsets + (i -> acs)
     )
@@ -339,13 +361,13 @@ case object SchEmpty extends Schema {
   *   for an edge, then the source and target are stored here.
   *
   * @param partsMap
-  *   the `Parts` object for each `Ob` in the schema. This is where the
+  *   the `PartSet` object for each `Ob` in the schema. This is where the
   *   subacsets are stored.
   */
 case class ACSet(
     schema: Schema,
     props: PropMap,
-    partsMap: Map[Ob, Parts]
+    partsMap: Map[Ob, PartSet]
 ) {
 
   /** Get the subacset corresponding to a nested part; error if invalid */
@@ -395,10 +417,9 @@ case class ACSet(
     */
   def parts(i: Part, x: Ob): Seq[(Part, ACSet)] = {
     val sub = subacset(i)
-    val ps = sub.partsMap.get(x).getOrElse({
-      println(s"bad partsMap $x, ${sub.partsMap}")
-      throw new RuntimeException
-    })
+    val ps = sub.partsMap.get(x).getOrElse(
+      throw msgError(s"bad partsMap $x, ${sub.partsMap}")
+    )
     ps.ids.map(id => (i.extend(x, id), ps.acsets(id)))
   }
 
@@ -472,8 +493,8 @@ case class ACSet(
   /** Convenience overload of [[addPart]] */
   def addPart(x: Ob): (ACSet, Part) = addPart(ROOT, x, PropMap())
 
-  /** Move the part `p` to the front of its parent `Parts`. See
-    * [[Parts.moveFront]].
+  /** Move the part `p` to the front of its parent `PartSet`. See
+    * [[PartSet.moveFront]].
     */
   def moveFront(p: Part): ACSet = {
     assert(p.path.length > 0)
@@ -595,7 +616,7 @@ object ACSet {
 
   /** Construct a new ACSet with schema `s` and top-level parts `props` */
   def apply(s: Schema, props: PropMap): ACSet =
-    val pm = s.obs.map(ob => ob -> Parts(0, Seq(), Map())).toMap
+    val pm = s.obs.map(ob => ob -> PartSet(0, Seq(), Map())).toMap
     new ACSet(s, props, pm)
 
   /** `State` wrapper around ACSet.addParts */

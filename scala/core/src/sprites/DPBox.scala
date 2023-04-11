@@ -108,5 +108,15 @@ case class DPBox(
       case _ => None
     }
 
-  override def bbox(subent: Entity, data: ACSet) = boxSprite.bbox(subent, data)
+  override def bbox(subent: Entity, data: ACSet) = subent match
+    case p: Part => 
+      val (spr,tail) = p.ty.path match
+        case Seq() => (boxSprite,ROOT)
+        case ip if ip == Seq(inPort) => (inPortSprite,p.tail)
+        case op if op == Seq(outPort) => (outPortSprite,p.tail)
+        case _ => throw msgError(s"DPBox bbox: unmatched part $subent")      
+      spr.bbox(tail,computePortCenters(data).subacset(p))
+    case _ => throw msgError(s"DPBox bbox: unmatched entity $subent")
+    
+  
 }

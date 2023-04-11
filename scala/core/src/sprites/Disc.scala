@@ -13,10 +13,9 @@ import semagrams.acsets._
 case class Disc(props: PropMap) extends Sprite {
   def radius(data: PropMap): Double = {
     val textBox = boxSize(data(Content), data(FontSize))
-    val center = data(Center)
-    val innerSep = data(InnerSep)
-    val d =
-      data(MinimumWidth).max(textBox.x + innerSep).max(textBox.y + innerSep)
+    val innerSep = data.get(InnerSep).getOrElse(0.0)
+    val d = data.get(MinimumWidth).getOrElse(0.0)
+      .max(textBox.x + innerSep).max(textBox.y + innerSep)
     val r = d / 2
     r
   }
@@ -84,10 +83,13 @@ case class Disc(props: PropMap) extends Sprite {
     Some(dir.normalize * rad + data(Center))
   }
 
-  override def bbox(subent: Entity, data: ACSet) =
-    Rect(props).bbox(subent, data)
+  override def bbox(subent: Entity, data: ACSet) = 
+    center(subent,data).map(
+      BoundingBox(_,Complex(2*radius(props),2*radius(props)))
+    )
 
-  override def center(_subent: Entity, data: ACSet) = Some(data.props(Center))
+  override def center(_subent: Entity, data: ACSet) = 
+    data.props.get(Center)
 
 }
 

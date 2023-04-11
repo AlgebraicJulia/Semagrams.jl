@@ -9,11 +9,11 @@ import semagrams._
   */
 object WiringDiagrams {
   case object Box extends Ob {
-    override val schema = SchWiringDiagram
+    override lazy val schema = SchWiringDiagram
   }
 
   case object PrimBox extends Ob {
-    override val schema = SchPrimBox
+    override lazy val schema = SchPrimBox
   }
 
   case object Program extends Attr with PValue[String] {

@@ -1,21 +1,15 @@
 package semagrams.dwd
 
-import semagrams.Viewport
 import semagrams.api._
-import semagrams.dblClickOn
+import semagrams.Viewport
 import semagrams.acsets.{_, given}
+import semagrams.sprites.{AltDPBox, BasicPort}
 
 import upickle.default._
 import com.raquo.laminar.api.L._
 import cats.effect._
 import scala.scalajs.js.annotation.JSExportTopLevel
 
-import ACSet._
-import semagrams.Background
-import semagrams.EntityCollection
-
-// import scala.language.implicitConversions
-import semagrams.sprites.{AltDPBox, BasicPort}
 
 
 case object SchDWD extends Schema {
@@ -26,15 +20,23 @@ case object SchDWD extends Schema {
 
 
 
-  enum DWDObs extends Ob derives ReadWriter:    
+  enum DWDObs(_schema: Schema = SchEmpty) extends Ob:    
+    override lazy val schema = _schema
     case InPort, OutPort, Wire
-    case Box extends DWDObs
-      override val schema = SchDWD
-      override val props = Set(Center,Content)
+    case Box extends DWDObs(SchBox)
 
   import DWDObs._
 
-  enum DWDHoms(val doms:Seq[PartType],val codoms:Seq[PartType]) extends Hom derives ReadWriter:
+  case object SchBox extends Schema {
+    val obs = Seq(InPort,OutPort)
+    val homs = Seq()
+    val attrs = Seq()
+  }
+
+
+
+
+  enum DWDHoms(val doms:Seq[PartType],val codoms:Seq[PartType]) extends Hom:
     case Src extends DWDHoms(
       Wire.asDom(),
       InPort.asDom() :+ Box.extend(OutPort)
@@ -53,31 +55,6 @@ import DWDObs._
 import DWDHoms._
 
 
-
-
-
-
-
-
-
-
-// case object Src extends Hom {
-//   val doms = Seq(PartType(Seq(Wire)))
-//   val codoms = Seq(
-//     PartType(Seq(Box, OutPort)),
-//     PartType(Seq(InPort))
-//   )
-// }
-
-// case object Tgt extends Hom {
-//   val doms = Seq(PartType(Seq(Wire)))
-//   val codoms = Seq(
-//     PartType(Seq(Box, InPort)),
-//     PartType(Seq(OutPort))
-//   )
-// }
-
-
 object DWD {
   def apply() = ACSet(SchDWD)
 }
@@ -88,19 +65,20 @@ def bindings(
     ui: UIState,
     vp: Viewport
 ) = {
+  val a = Actions(es, g, ui)
 
   def test(p:Part): IO[Unit] = IO({
-    // val s = write(g.now().subacset(p).props)
-    // println(s)
-    // val e = read[PropMap](s)
-    // println(e)
+    println(s"testing serialization for $p")
+    val ps = g.now().subacset(p)
+    println(s"initial acset: $ps")
+    val s = write(ps)
+    println(s"serialized: $s")
+    val a = read[ACSet](s)
+    println(s"deserialized: $a")
+    println(s"deserialized == init? ${ps == a}")
   })
 
-  def dwdFromJson(s: String): Option[ACSet] = Some(DWD())
 
-  def jsonFromDWD(dwd: ACSet): String = g.now().toString()
-
-  val a = Actions(es, g, ui, jsonFromDWD, dwdFromJson)
 
   val boxMenu = Seq(
     (
@@ -117,35 +95,33 @@ def bindings(
     )
   )
 
-  def getBgPortType() = for {
-    z <- es.mousePos
-    c = es.size.now() / 2
-    ptype =
-      if (z - c).x < 0
-      then InPort
-      else OutPort
-  } yield ptype
+  // def getBgPortType() = for {
+  //   z <- es.mousePos
+  //   c = es.size.now() / 2
+  //   ptype =
+  //     if (z - c).x < 0
+  //     then InPort
+  //     else OutPort
+  // } yield ptype
 
-  def getBgPortInfo = for
-    ptype <- getBgPortType()
-    nports = g
-      .now()
-      .partsMap
-      .get(ptype)
-      .map(pts => pts.nextId)
-      .getOrElse(0)
-    size = es.size.now()
-    p <- es.mousePos
-  yield (ptype, portNumber(p, size, nports))
+  // def getBgPortInfo = for
+  //   ptype <- getBgPortType()
+  //   nports = g
+  //     .now()
+  //     .partsMap
+  //     .get(ptype)
+  //     .map(pts => pts.nextId)
+  //     .getOrElse(0)
+  //   size = es.size.now()
+  //   p <- es.mousePos
+  // yield (ptype, portNumber(p, size, nports))
 
-  def portNumber(pos: Complex, size: Complex, nports: Int) =
-    val l = (0 to nports + 1).map(
-      _ * size.y / (nports + 1)
-    )
-    l.filter(_ < pos.y).length
+  // def portNumber(pos: Complex, size: Complex, nports: Int) =
+  //   val l = (0 to nports + 1).map(
+  //     _ * size.y / (nports + 1)
+  //   )
+  //   l.filter(_ < pos.y).length
 
-  import MouseButton._
-  import KeyModifier._
 
   def portByPos(p: Part, pos: Complex): PartType =
     val obseq = p.ty match
@@ -165,6 +141,8 @@ def bindings(
       case _ => Seq()
     PartType(obseq)
 
+  import MouseButton._
+  import KeyModifier._
 
   Seq(
     keyDown("t").andThen(fromMaybe(es.hoveredPart).flatMap(test)),

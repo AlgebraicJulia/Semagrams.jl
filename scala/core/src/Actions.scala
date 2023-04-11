@@ -7,6 +7,8 @@ import semagrams.util._
 import semagrams.widgets._
 import monocle._
 
+import upickle.default._
+
 import com.raquo.laminar.api.L._
 import cats.effect._
 import semagrams.controllers.HoverController
@@ -24,9 +26,7 @@ import semagrams.sprites.Rect
 case class Actions(
     es: EditorState,
     m: UndoableVar[ACSet],
-    ui: UIState,
-    serialize: ACSet => String,
-    deserialize: String => Option[ACSet]
+    ui: UIState
 ) {
   import ACSet._
 
@@ -91,33 +91,17 @@ case class Actions(
   } yield ()
 
   /** Get the bounding box of `b` as it is currently displayed on the screen */
-  def getBBox(b: Part): IO[BoundingBox] = b.path match
-    case Seq() =>
+  def getBBox(b: Part): Option[BoundingBox] = b match
+    case ROOT =>
       val sz = es.size.now()
-      IO(BoundingBox(sz / 2.0, sz))
-    case Seq(head) =>
-      for {
-        sprtry <- IO(es.entities.now().em.get(b))
-        sprdata <- sprtry match
-          case Some(pair) => fromMaybe(IO(sprtry))
-          case None =>
-            die
-        (spr, acset) = sprdata
-        bbtry = spr.bbox(Part(Nil), acset)
-        bb <- {
-          bbtry match
-            case Some(bb) => IO(bb)
-            case None =>
-              die
+      Some(BoundingBox(sz / 2.0, sz))
+    case p =>
+      es.entities.now().em.get(p.head)
+        .flatMap {
+          case (spr,acset) => spr.bbox(p.tail, acset)
         }
-      } yield bb
-    case Seq(head, rest @ _*) =>
-      for {
-        bdata <- fromMaybe(IO(es.entities.now().em.get(b.head)))
-        (spr, acset) = bdata
-        bb <- getBBox(ROOT)
-      } yield bb
 
+        
   /** A generalized drag action
     *
     * At the beginning, compute a value `memo` of type `Memo` from the mouse
@@ -275,10 +259,20 @@ case class Actions(
     * version of the current state
     */
   def importExport = ui.addKillableHtmlEntity(kill =>
+    val sch = m.now().schema
+    import sch._
     PositionWrapper(
       Position.topToBotMid(10),
       TextInput(
-        m.zoomL(Lens(serialize)(s => a => deserialize(s).getOrElse(a))),
+        m.zoomL(Lens(
+          (acset:ACSet) => write(acset,2)
+        )(
+          s => a => try
+            read[ACSet](s)
+          catch case e => 
+            println(s"importExport error $e")
+            a
+        )),
         true
       )(kill)
     )
