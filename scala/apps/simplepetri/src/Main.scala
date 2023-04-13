@@ -170,7 +170,7 @@ case class EquationWindow() extends Entity {
 object EquationWindow extends EntityType
 
 def bindings(es: EditorState, g: UndoableVar[ACSet], ui: UIState) = {
-  val a = Actions(es, g, ui, clJsonFromPetri, petriFromCLJson)
+  val a = Actions(es, g, ui)
 
   Seq(
     keyDown("s").andThen(a.addAtMouse_(S)),
@@ -226,6 +226,7 @@ object Main {
           g.signal.map(assignBends(Map(I -> (IS, IT), O -> (OT, OS)), 0.5))
         )
         _ <- es.makeViewport(
+          "mainVP",
           lg,
           Seq(
             ACSetEntitySource(S, BasicDisc(es)),

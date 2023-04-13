@@ -61,12 +61,11 @@ class EditorState(
 
   /** The current part shown in the viewport. Used for nested diagrams (zooming). */
   val currentView: Var[Part] = Var(ROOT)
+  
 
-  dom
-    .ResizeObserver((newsize, _) => {
-      size.set(Complex(elt.ref.clientWidth, elt.ref.clientHeight))
-    })
-    .observe(elt.ref)
+  dom.ResizeObserver( (newsize, _) => 
+    size.set(Complex(elt.ref.clientWidth, elt.ref.clientHeight))
+  ).observe(elt.ref)
 
   // Attach all of the root elements of the viewports to the main element
   elt.amend(
@@ -75,6 +74,7 @@ class EditorState(
       dispatcher.unsafeRunAndForget(eventQueue.offer(evt))
     )
   )
+
 
   for (c <- controllers) {
     c(this, elt)
@@ -94,13 +94,8 @@ class EditorState(
     sources: Seq[EntitySource[A]]
   ): IO[EntitySourceViewport[A]] = for {
     v <- IO(new EntitySourceViewport(state, sources))
-    _ = println("created esv")
     _ <- IO(register(vpname,v))
-    _ = println("registered")
-  } yield {
-    println("end mv")
-    v
-  }
+  } yield v
 
   /** Make a new [[UIState]] object and register its viewport */
   def makeUI(): IO[UIState] = for {
@@ -117,8 +112,9 @@ class EditorState(
   def register(vpname: String,v: Viewport) = {
     viewports.update(_ + (vpname -> v))
     elt.amend(
-      v.entities --> entities.writer
+      v.entities --> entities.writer,
     )
+    println(viewports.now().keys)
   }
 
   /** Deregister a viewport, which has the side effect of removing its main
@@ -140,6 +136,7 @@ class EditorState(
       actionOption = bindings.collectFirst(
         (
             (bnd: Binding[A]) =>
+              // println(s"bindNoCatch $bnd")
               bnd.modifiers match {
                 case Some(mods) => {
                   if (keyboard.keyState.now().modifiers == mods) {
@@ -176,20 +173,24 @@ class EditorState(
   def mousePos: IO[Complex] =
     IO(mouse.$state.now().pos)
 
-  /** An IO action that when run, returns the current hovered entity */
-  def hovered: IO[Option[Entity]] =
-    IO(hover.$state.now().state)
 
+
+
+  /** An IO action that when run, returns the current hovered entity */
+  def hovered: IO[Option[Entity]] = IO({
+    hover.$state.now().state.map(_ match
+        case p:Part => bgPlus(p)
+        case e => e
+    )
+  })
+
+  /** Get the current background part */
   def bgPart() = currentView.now()
+
+  /** Extend the current background part by `p` */
   def bgPlus(p:Part) = bgPart().extend(p)
 
 
-  // def hovered: IO[Option[Entity]] = IO({
-  //   hover.$state.now().state.map(_ match
-  //       case p:Part => bgPlus(p)
-  //       case e => e
-  //   )
-  // })
 
   /** An IO action that filters [[hovered]] for just [[Part]]s
     */
@@ -216,11 +217,9 @@ class EditorState(
     * several types.
     */
   def hoveredPart(tys: Seq[PartType]): IO[Option[Part]] =
-    hovered.map(e =>
-      e match {
-        case Some(p: Part) if tys contains p.ty => Some(p)
-        case _                                  => None
-      }
+    hoveredPart.map(_ match
+      case Some(p: Part) if tys contains p.ty => Some(p)
+      case _ => None
     )
 
   /** An IO action that filters [[hovered]] for entities of a certain type.

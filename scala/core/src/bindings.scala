@@ -172,6 +172,16 @@ def menuOn() = Binding(
   }
 )
 
+/** Matches a [[ContextMenu]] event on a part of any type, returns that
+  * part.
+  */
+def menuOnPart() = Binding(
+  {
+    case ContextMenu(Some(i: Part)) =>
+      IO(i)
+  }
+)
+
 /** Matches a [[ContextMenu]] event on a part of a specific type, returns that
   * part.
   */

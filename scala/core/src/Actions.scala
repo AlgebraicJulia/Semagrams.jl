@@ -51,7 +51,7 @@ case class Actions(
     */
   def addAtMouse(ob: Ob): IO[Part] = for {
     pos <- es.mousePos
-    x <- m.updateS(addPart(ob, PropMap() + (Center, pos)))
+    x <- m.updateS(addPart(es.bgPart(),ob,PropMap() + (Center, pos)))
   } yield x
 
   /** [[addAtMouse]] without returning the part */
@@ -67,6 +67,7 @@ case class Actions(
   def add(p: Part, ob: Ob, props: PropMap): IO[Part] = m.updateS(
     addPart(p, ob, props)
   )
+
 
   /** [[add]] without returning the part */
   def add_(p: Part, ob: Ob, props: PropMap): IO[Unit] =
@@ -144,54 +145,78 @@ case class Actions(
     _ <- IO(m.record())
   } yield ret.asInstanceOf[Return]
 
-  /** Drag to move a part around */
-  def dragMove(i: Part) =
-    def start = (z: Complex) =>
-      for
-        _ <- m.updateS_(moveFront(i))
-        c <- IO(m.now().subpart(Center, i))
-      yield c - z
 
-    def during = (offset: Complex, p: Complex) =>
-      m.update(
-        _.setSubpart(i, Center, p + offset)
-      )
+
+
+
+  // Memo = Offset, Return = Unit
+  def dragMove(i: Part) =
+
+    val pt = es.currentView.now().extend(i).asInstanceOf[Part]
+
+    def start = (z:Complex) => for 
+      _ <- m.updateS_(moveFront(pt))
+      c <- IO(m.now().subpart(Center, pt))
+    yield c - z
+
+    def during = (offset:Complex,p:Complex) => m.update(
+      _.setSubpart(pt, Center, p + offset)
+    )
 
     def after = (offset: Complex) => IO(())
 
-    drag(start, during, after)(i)
+    drag(start,during,after)(pt)
+
+
 
   val debug = IO(m.now()).flatMap(IO.println)
   def die[A]: IO[A] = fromMaybe(IO(None))
+  
 
-  def liftTo(p: Part, tp: PartType): IO[Part] =
-    tp.path match
-      case Seq() =>
-        IO(p)
-      case Seq(next, rest @ _*) => {
-        for
-          ext <- add(p, next, PropMap())
-          last <- liftTo(ext, PartType(rest))
-        yield last
-      }
+  // Memo = Return = wire
+  // def makeWire(w:Ob,src:Hom,tgt:Hom) = (s:Part) => {
 
-  def noLift(p: Part, pos: Complex): PartType = ROOT.ty
+  //   def start = () => for 
 
+  //   yield 
+  // }
+
+  def liftTo(p:Part,ext:Seq[(Ob,Int)]): IO[Part] = ext match
+    case Seq() => IO(p)
+    case Seq((ob,i),rest @_*) => for {
+      a <- add(p,ob,PropMap())
+      _ <- IO(m.update((acset:ACSet) =>
+        acset.moveToIndex(a,i)
+      ))
+      last <- liftTo(p.extend(a),ext.tail)
+    } yield last
+         
+    
   /** Drag to construct an edge between two parts
     *
     * Returns the part corresponding to the edge that was constructed
     */
   def dragEdge(
-      ob: Ob,
-      src: Hom,
-      tgt: Hom,
-      liftSeq: (Part, Complex) => PartType = noLift
+    ob:Ob,
+    src:Hom,
+    tgt:Hom,
+    lift: (Part,Complex) => Seq[(Ob,Int)] = (_,_) => Seq()
   )(s: Part): IO[Part] =
-
-    def start = (z: Complex) =>
-      val ptype = liftSeq(s, z)
+    // println(s"dragEdge $s")
+      
+    // val s = bgPlus(s_ext)
+    def start = (z:Complex) =>
+      // println(s"start: s = $s")
+      // println(s"ptype = $ptype")
+      
       for
-        p <- liftTo(s, ptype)
+        p <- {lift(s,z) match
+          case Seq() => IO(s)
+          case ext => liftTo(s,ext)
+        }
+        // _ = println(s"p = $p")
+        // _ = println(p - es.bgPart())
+
         w <- add(
           es.bgPart(),
           ob,
@@ -215,27 +240,31 @@ case class Actions(
       then m.update(_.setSubpart(e, End, p))
       else m.update(_.setSubpart(e, Start, p))
 
-    def after = (e: Part) =>
-      for
-        t <- fromMaybe(es.hoveredPart)
-        z <- es.mousePos
-        qtype = liftSeq(t, z)
-        q <- liftTo(t, qtype)
-        _ <- m.now() match
-          case mnow if mnow.hasSubpart(src, e) =>
-            for {
-              _ <- set(e, tgt, q)
-              _ <- remove(e, End)
-              _ <- remove(e, Interactable)
-            } yield ()
-          case mnow if mnow.hasSubpart(tgt, e) =>
-            for {
-              _ <- set(e, src, q)
-              _ <- remove(e, Start)
-              _ <- remove(e, Interactable)
-            } yield ()
-          case _ => die
-      yield e
+    def after = (e:Part) => for
+      t <- fromMaybe(es.hoveredPart)
+      // _ = println(s"end: $t")
+      z <- es.mousePos
+      q <- lift(t,z) match
+        case Seq() => IO(t)
+        case ext => liftTo(t,ext)
+      // _ = println(s"q = $q, e = $e")
+      _ <- m.now() match
+        case mnow if mnow.hasSubpart(src,e) => for {
+          _ <- set(e, tgt, q - es.bgPart())
+          // _ = println("end1")
+          _ <- remove(e, End)
+          _ <- remove(e, Interactable)
+        } yield ()
+        case mnow if mnow.hasSubpart(tgt,e) => for {
+          _ <- set(e,src,q - es.bgPart())
+          // _ = println("end2")
+          _ <- remove(e,Start)
+          _ <- remove(e,Interactable)
+        } yield ()
+        case _ => 
+          // println(s"end3 $e")         
+          die
+    yield e
 
     drag(start, during, after)(s)
 

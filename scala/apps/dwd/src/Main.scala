@@ -19,42 +19,49 @@ import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import semagrams.sprites.{AltDPBox,BasicPort}
 
-case object Box extends Ob {
-  override val schema = SchDWD
-}
-
-case object OutPort extends Ob
-case object InPort extends Ob
-
-case object SchBox extends Schema {
-  val obs = Seq(OutPort, InPort)
-  val homs = Seq()
-  val attrs = Seq()
-}
-
-case object Wire extends Ob
-
-case object Src extends Hom {
-  val doms = Seq(PartType(Seq(Wire)))
-  val codoms = Seq(
-    PartType(Seq(Box, OutPort)),
-    PartType(Seq(InPort))
-  )
-}
-
-case object Tgt extends Hom {
-  val doms = Seq(PartType(Seq(Wire)))
-  val codoms = Seq(
-    PartType(Seq(Box, InPort)),
-    PartType(Seq(OutPort))
-  )
-}
 
 case object SchDWD extends Schema {
-  val obs = Seq(Box, OutPort, InPort, Wire)
-  val homs = Seq(Src, Tgt)
+
+  val obs = Seq(DWDObs.values*)
+  val homs = Seq(DWDHoms.values*)
   val attrs = Seq()
+
+
+
+  enum DWDObs(_schema: Schema = SchEmpty) extends Ob:    
+    override lazy val schema = _schema
+    case InPort, OutPort, Wire
+    case Box extends DWDObs(SchBox)
+
+  import DWDObs._
+
+  case object SchBox extends Schema {
+    val obs = Seq(InPort,OutPort)
+    val homs = Seq()
+    val attrs = Seq()
+  }
+
+
+
+
+  enum DWDHoms(val doms:Seq[PartType],val codoms:Seq[PartType]) extends Hom:
+    case Src extends DWDHoms(
+      Wire.asDom(),
+      InPort.asDom() :+ Box.extend(OutPort)
+    )
+    case Tgt extends DWDHoms(
+      Wire.asDom(),
+      OutPort.asDom() :+ Box.extend(InPort)
+    )
+
+  
+  
 }
+
+import SchDWD._
+import DWDObs._
+import DWDHoms._
+
 
 object DWD {
   def apply() = ACSet(SchDWD)
@@ -77,15 +84,18 @@ def bindings(
   vp: Viewport
 ) = {
 
-  
+  val a = Actions(es,g,ui)
 
-  def dwdFromJson(s:String): Option[ACSet] = Some(DWD())
-
-  def jsonFromDWD(dwd: ACSet): String = g.now().toString()
-
-
-
-  val a = Actions(es, g, ui)
+  def test(p:Part): IO[Unit] = IO({
+    println(s"testing serialization for $p")
+    val ps = g.now().subacset(p)
+    println(s"initial acset: $ps")
+    val s = write(ps)
+    println(s"serialized: $s")
+    val a = read[ACSet](s)
+    println(s"deserialized: $a")
+    println(s"deserialized == init? ${ps == a}")
+  })
 
   val boxMenu = Seq(
     ("Rename", (b:Part) => IO(println("rename fired")).>>(a.edit(Content,true)(b))),
@@ -109,35 +119,53 @@ def bindings(
     hit
 
 
+  def portByPos(p: Part, pos: Complex): Seq[(Ob,Int)] =
+    val obseq = p.ty match
+      case ROOT.ty =>
+        val sz = es.size.now()
+        if pos.x < (sz.x / 2.0)
+        then Seq((InPort,0))
+        else Seq((OutPort,0))
+      case PartType(Seq(Box)) =>
+        val ctr = g.now().trySubpart(Center, p.head)
+        ctr match
+          case None => Seq((InPort,0))
+          case Some(c) =>
+            if pos.x < c.x
+            then Seq((InPort,0))
+            else Seq((OutPort,0))
+      case _ => Seq()
+    obseq
+
   import MouseButton._
   import KeyModifier._
 
-  def portByPos(p:Part,pos:Complex): Option[(Ob,Int)] = p match
-    case b if b == es.bgPart() =>
-      // println(s"portByPos bg $b")
-      val sz = es.size.now()
-      val ptype = if pos.x < (sz.x / 2.0)
-        then InPort
-        else OutPort
-      val nports = g.now().subacset(b).partsMap(ptype).ids.length
-      Some((ptype,portNumber(pos,sz,nports)))
-    case p if Seq(InPort,OutPort).contains(p.ty.path.last) => None 
-    case b if b.init == es.bgPart() =>
-      println(s"portByPos box $b")
-      val ctr = g.now().subacset(es.bgPart()).trySubpart(Center,p-es.bgPart()).getOrElse({
-        println("missing center")
-        throw new RuntimeException("broke")
-      })
-      val ptype = if pos.x < ctr.x then InPort else OutPort
-      val nports = g.now().subacset(b).partsMap(ptype).ids.length
-      // val sz = a.getSize(b)
-      // println(s"sz = $sz")
-      // println(s"x: ${ctr.x > pos.x}")
-      // println(s"y: ${ctr.y > pos.y}")
-      Some((ptype,nports))
-    case _ => 
-      // println(s"unknown portByPos $p")
-      None
+  // def portByPos(p:Part,pos:Complex): Option[(Ob,Int)] = p match
+  //   case b if b == es.bgPart() =>
+  //     // println(s"portByPos bg $b")
+  //     val sz = es.size.now()
+  //     val ptype = if pos.x < (sz.x / 2.0)
+  //       then InPort
+  //       else OutPort
+  //     val nports = g.now().subacset(b).partsMap(ptype).ids.length
+  //     Some((ptype,portNumber(pos,sz,nports)))
+  //   case p if Seq(InPort,OutPort).contains(p.ty.path.last) => None 
+  //   case b if b.init == es.bgPart() =>
+  //     println(s"portByPos box $b")
+  //     val ctr = g.now().subacset(es.bgPart()).trySubpart(Center,p-es.bgPart()).getOrElse({
+  //       println("missing center")
+  //       throw new RuntimeException("broke")
+  //     })
+  //     val ptype = if pos.x < ctr.x then InPort else OutPort
+  //     val nports = g.now().subacset(b).partsMap(ptype).ids.length
+  //     // val sz = a.getSize(b)
+  //     // println(s"sz = $sz")
+  //     // println(s"x: ${ctr.x > pos.x}")
+  //     // println(s"y: ${ctr.y > pos.y}")
+  //     Some((ptype,nports))
+  //   case _ => 
+  //     // println(s"unknown portByPos $p")
+  //     None
   
 
   // def boxSize(b:Part): Option[Complex] = 
@@ -347,15 +375,18 @@ object Main {
       // val initg = proc
       for {
         g <- IO(UndoableVar(initg))
+        _ = println("g")
         lg <- IO(
           es.size.signal.combineWith(g.signal)
             .map(layoutPorts)                        
         )
+        _ = println("lg")
         vp <- es.makeViewport(
           "mainVP",
           lg,
           entitySources(es)
         )
+        _ = println("vp")
         ui <- es.makeUI()
         _ <- es.bindForever(bindings(es, g, ui,vp))
       } yield ()
