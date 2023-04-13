@@ -94,11 +94,36 @@ case class PartType(path: Seq[Ob]) extends EntityType {
   /** The PartType relative to the first object */
   def tail: PartType = PartType(path.tail)
 
+  /** The last object in the PartType */
+  def last: Ob = path.last
+
+  /** The initial segment of the PartType */
+  def init: PartType = PartType(path.init)
+
   /** Returns if `this` an extension of `that`? */
   def <(that: PartType): Boolean = that.path match
     case Seq() => true
     case Seq(thathead, thattail @ _*) =>
       head == thathead && tail < PartType(thattail)
+
+  /** Returns if `that` an extension of `this`? */
+  def >(that: PartType): Boolean = that < this
+
+  /** Return `Some(p)` if `this == that.extend(p)`, else `None` */ 
+  def diffOption(that: PartType): Option[PartType] = that.path match
+    case Seq() => Some(this)
+    case _ if this.head == that.head => this.tail.diffOption(that.tail)
+    case _ => None
+
+  /** Return `p` if `this == that.extend(p)`, else error */
+  def -(that:PartType) = diffOption(that).getOrElse(
+    throw msgError(s"PartType $this is not an extension of $that")
+  )
+  
+
+
+
+
 }
 
 object PartType {
@@ -129,14 +154,32 @@ case class Part(path: Seq[(Ob, Id)]) extends Entity {
   /** Provide directions to go one acset deeper */
   def extend(x: Ob, i: Id) = Part(path :+ (x, i))
 
-  /** Honestly not sure if this is a good method? */
-  override def extend(e: Entity) = e match {
-    case (p: Part) => Part(path ++ p.path)
-    case _         => SubEntity(this, e)
-  }
+  /** Overload to return a Part rather than Entity */
+  def extend(p: Part): Part = Part(path ++ p.path)
 
+  /** Returns the first part in the path */
   def head: Part = Part(path.slice(0, 1))
+
+  /** Returns the first object in the path */
+  def headOb: Ob = ty.path.head
+
+  /** Returns the first id in the path */
+  def headId: Id = path.head._2
+
+  /** Returns the tail segment of a part */ 
   def tail: Part = Part(path.tail)
+
+  /** Returns the last part of the path */
+  def last: Part = Part(Seq(path.last))
+
+  /** Returns the last object in the path */
+  def lastOb: Ob = ty.path.last
+
+  /** Returns the last id in the path */
+  def lastId: Id = path.last._2
+
+  /** Returns the initial segment of the path */
+  def init: Part = Part(path.init)
 
   /** Checks if `this` is more specific than `that` */
   def <(that: Part): Boolean = that.path match
@@ -144,8 +187,23 @@ case class Part(path: Seq[(Ob, Id)]) extends Entity {
     case Seq(thathead, thattail @ _*) =>
       head == thathead && tail < Part(thattail)
 
-  /** An alias for `<` */
+  /** Checks if `that` is more specific than `this` */
+  def >(that: Part): Boolean = that < this
+
+  /** Checks if `ptype` is an initial segment of `ty` */
   def in(ptype: PartType) = ty < ptype
+
+  /** Returns `Some(p)` if `this == that.extend(p)`, else `None` */
+  def diffOption(that:Part): Option[Part] = that.path match
+    case Seq() => Some(this)
+    case _ if this.head == that.head => this.tail.diffOption(that.tail)
+    case _ => None
+
+  /** Returns `p` if `this == that.extend(p)`, else errors */
+  def -(that: Part): Part = diffOption(that).getOrElse(
+    throw msgError(s"Part $this is not an extension of $that")
+  )
+
 }
 
 /** The schema for a nested acset.
@@ -337,6 +395,21 @@ case class PartSet(
       ids = ids.filterNot(_ == i) :+ i
     )
   }
+
+
+  /** Move the id `i` to the index `j` in the list of ids.
+    *
+    * This is used, for instance, when setting the position
+    * of a port.
+    */
+  def moveToIndex(i: Id,j:Int) = {
+    val (seg1,seg2) = ids.filterNot(_ == i).splitAt(j) 
+    this.copy(
+      ids = (seg1 :+ i) ++ seg2
+    )
+  }
+
+
 }
 
 /** The part corresponding to the top-level acset itself. */
@@ -505,6 +578,19 @@ case class ACSet(
     )
     setSubacset(prefix, newsub)
   }
+
+  /** Move the part `p` to the front of its parent `PartSet`. See
+    * [[PartSet.moveFront]].
+    */
+  def moveToIndex(p: Part,idx: Int): ACSet = {
+    // val (prefix, (x, i)) = (Part(p.path.dropRight(1)), p.path.last)
+    val sub = subacset(p.init)
+    val newsub = sub.copy(
+      partsMap = sub.partsMap + (p.headOb -> sub.partsMap(p.headOb).moveToIndex(p.headId,idx))
+    )
+    setSubacset(p.init, newsub)
+  }
+
 
   /** Set the property `f` of part `p` to `v` */
   def setSubpart(p: Part, f: Property, v: f.Value): ACSet = {

@@ -27,8 +27,8 @@ case class Rect(props: PropMap) extends Sprite {
     val data = updates.map(props ++ _.props)
 
     val text = L.svg.text(
-      xy <-- data.map(_(Center)),
-      L.children <-- data.map(p =>
+      xy <-- data.map(pm => pm.get(Center).getOrElse(throw msgError(s"propmap $pm missing `Center`"))),
+      L.children <-- data.map(p => 
         val splits = p(Content).split('\n').zipWithIndex
         val l = splits.length
         splits.toIndexedSeq.map({ case (t, i) =>
@@ -36,9 +36,9 @@ case class Rect(props: PropMap) extends Sprite {
             L.textToNode(t),
             textAnchor := "middle",
             // dominantBaseline := "central",
-            x <-- data.map(p => p(Center).x.toString()),
-            y <-- data.map(p =>
-              (p(Center).y + p(FontSize) * (i + 1 - l / 2.0)).toString()
+            x <-- data.map(p => p.get(Center).getOrElse(Complex(50,50)).x.toString()),
+            y <-- data.map(
+              p => (p.get(Center).getOrElse(Complex(100,100)).y + p(FontSize)*(i + 1 - l/2.0)).toString()
             ),
             style := "user-select: none"
           )
@@ -94,8 +94,7 @@ case class Rect(props: PropMap) extends Sprite {
         dims.y / 2
       )
     }
-    val pt = Complex(q1pt.x * dir.x.sign, q1pt.y * dir.y.sign) + pm(Center)
-    Some(pt)
+    Some(Complex(q1pt.x * dir.x.sign, q1pt.y * dir.y.sign) + data.props.get(Center).getOrElse(Complex(100,100)))
   }
 
   override def bbox(_subent: Entity, data: ACSet) = {
@@ -103,13 +102,13 @@ case class Rect(props: PropMap) extends Sprite {
     Some(BoundingBox(pos, dims))
   }
 
-  override def center(_subent: Entity, data: ACSet) = Some(data.props(Center))
+  override def center(_subent: Entity, data: ACSet) = Some(data.props.get(Center).getOrElse(Complex(100,100)))
 }
 
 object Rect {
   def geom(data: PropMap): (Complex, Complex) = {
     val textRect = boxSize(data(Content), data(FontSize))
-    val center = data(Center)
+    val center = data.get(Center).getOrElse(Complex(100,100))
     val innerSep = data(InnerSep)
     val width = data(MinimumWidth).max(textRect.x + innerSep)
     val height = data(MinimumHeight).max(textRect.y + innerSep)
