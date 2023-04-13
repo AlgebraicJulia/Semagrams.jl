@@ -18,6 +18,7 @@ import semagrams.sprites.Middleware
 import semagrams.sprites.WithMiddleware
 import semagrams.sprites.DPBox
 import semagrams.sprites.Rect
+import cats.data.State
 
 /** This class bundles the common arguments to many actions one might want to do
   * in a binding so that you don't have to pass them in every time, and then
@@ -36,7 +37,13 @@ case class Actions(
     */
   def addAtMouse(ob: Ob, init: ACSet): IO[Part] = for {
     pos <- es.mousePos
-    x <- m.updateS(addPart(ob, init.setSubpart(ROOT, Center, pos)))
+    x <- m.updateS(State(_.subacset(es.bgPart())
+      .addPart(
+        es.bgPart(),
+        ob,
+        init.setSubpart(ROOT,Center,pos)
+      )
+    ))
   } yield x
 
   /** Add and return a part to the model with type `Ob` and [[Center]] the
@@ -186,7 +193,7 @@ case class Actions(
       for
         p <- liftTo(s, ptype)
         w <- add(
-          ROOT,
+          es.bgPart(),
           ob,
           p.ty match
             case tp if src.codoms.contains(tp) =>
@@ -200,6 +207,7 @@ case class Actions(
                 .set(Start, z)
                 .set(Interactable, false)
         )
+        // _ = println(w)
       yield w
 
     def during = (e: Part, p: Complex) =>

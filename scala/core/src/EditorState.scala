@@ -42,7 +42,7 @@ class EditorState(
   val events = EventBus[Event]()
 
   /** The viewports in current use */
-  val viewports = Var(Set[Viewport]())
+  val viewports = Var(Map[String,Viewport]())
 
   val mouse = MouseController()
   val hover = HoverController()
@@ -59,6 +59,9 @@ class EditorState(
   /** All the entities in all of the viewports, and their associated sprites. */
   val entities = Var(EntityCollection())
 
+  /** The current part shown in the viewport. Used for nested diagrams (zooming). */
+  val currentView: Var[Part] = Var(ROOT)
+
   dom
     .ResizeObserver((newsize, _) => {
       size.set(Complex(elt.ref.clientWidth, elt.ref.clientHeight))
@@ -67,7 +70,7 @@ class EditorState(
 
   // Attach all of the root elements of the viewports to the main element
   elt.amend(
-    children <-- viewports.signal.map(_.map(_.elt).toSeq),
+    children <-- viewports.signal.map(_.map(_._2.elt).toSeq),
     events --> Observer[Event](evt =>
       dispatcher.unsafeRunAndForget(eventQueue.offer(evt))
     )
@@ -86,17 +89,23 @@ class EditorState(
     *   the viewport has entities extracted using these [[EntitySource]]s
     */
   def makeViewport[A](
-      state: Signal[A],
-      sources: Seq[EntitySource[A]]
+    vpname: String,  
+    state: Signal[A],
+    sources: Seq[EntitySource[A]]
   ): IO[EntitySourceViewport[A]] = for {
     v <- IO(new EntitySourceViewport(state, sources))
-    _ <- IO(register(v))
-  } yield v
+    _ = println("created esv")
+    _ <- IO(register(vpname,v))
+    _ = println("registered")
+  } yield {
+    println("end mv")
+    v
+  }
 
   /** Make a new [[UIState]] object and register its viewport */
   def makeUI(): IO[UIState] = for {
     ui <- IO(new UIState(Var(Vector()), () => (), size.signal))
-    _ <- IO(register(ui.viewport))
+    _ <- IO(register("uiVP",ui.viewport))
   } yield ui
 
   /** Register a viewport.
@@ -105,18 +114,18 @@ class EditorState(
     * attaching its main element to `this.elt` while the viewport is still in
     * [[viewports]]
     */
-  def register(v: Viewport): Unit = {
-    viewports.update(_ + v)
+  def register(vpname: String,v: Viewport) = {
+    viewports.update(_ + (vpname -> v))
     elt.amend(
-      viewports.now().toSeq(0).entities --> entities.writer
+      v.entities --> entities.writer
     )
   }
 
   /** Deregister a viewport, which has the side effect of removing its main
     * element from [[elt]]
     */
-  def deregister(v: Viewport): Unit = {
-    viewports.update(_ - v)
+  def deregister(vname: String) = {
+    viewports.update(_.removed(vname))
   }
 
   /** Deprecated in favor of [[size]] */
@@ -171,6 +180,17 @@ class EditorState(
   def hovered: IO[Option[Entity]] =
     IO(hover.$state.now().state)
 
+  def bgPart() = currentView.now()
+  def bgPlus(p:Part) = bgPart().extend(p)
+
+
+  // def hovered: IO[Option[Entity]] = IO({
+  //   hover.$state.now().state.map(_ match
+  //       case p:Part => bgPlus(p)
+  //       case e => e
+  //   )
+  // })
+
   /** An IO action that filters [[hovered]] for just [[Part]]s
     */
   def hoveredPart: IO[Option[Part]] = hovered.map(h =>
@@ -187,11 +207,9 @@ class EditorState(
     * type.
     */
   def hoveredPart(ty: PartType): IO[Option[Part]] =
-    hovered.map(e =>
-      e match {
-        case Some(p: Part) if p.ty == ty => Some(p)
-        case _                           => None
-      }
+    hoveredPart.map(_ match
+      case Some(p: Part) if p.ty == ty => Some(p)
+      case _                           => None
     )
 
   /** An IO action that filters [[hovered]] for just [[Part]]s that are one of
