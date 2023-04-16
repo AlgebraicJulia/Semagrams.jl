@@ -18,6 +18,8 @@ import semagrams.EntityCollection
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import semagrams.sprites.{AltDPBox,BasicPort}
+import semagrams.util.msgError
+import semagrams.sprites.DPBox
 
 
 case object SchDWD extends Schema {
@@ -31,15 +33,15 @@ case object SchDWD extends Schema {
   enum DWDObs(_schema: Schema = SchEmpty) extends Ob:    
     override lazy val schema = _schema
     case InPort, OutPort, Wire
-    case Box extends DWDObs(SchBox)
+    case Box extends DWDObs(SchDWD)
 
   import DWDObs._
 
-  case object SchBox extends Schema {
-    val obs = Seq(InPort,OutPort)
-    val homs = Seq()
-    val attrs = Seq()
-  }
+  // case object SchBox extends Schema {
+  //   val obs = Seq(InPort,OutPort)
+  //   val homs = Seq()
+  //   val attrs = Seq()
+  // }
 
 
 
@@ -86,7 +88,9 @@ def bindings(
 
   val a = Actions(es,g,ui)
 
-  def test(p:Part): IO[Unit] = IO({
+
+
+  def test_ser(p:Part): IO[Unit] = IO({
     println(s"testing serialization for $p")
     val ps = g.now().subacset(p)
     println(s"initial acset: $ps")
@@ -120,28 +124,39 @@ def bindings(
 
 
   def portByPos(p: Part, pos: Complex): Seq[(Ob,Int)] =
-    val obseq = p.ty match
+    val obseq = (p - es.bgPart).ty match
       case ROOT.ty =>
         val sz = es.size.now()
         if pos.x < (sz.x / 2.0)
-        then Seq((InPort,0))
-        else Seq((OutPort,0))
+        then Seq((InPort,1))
+        else Seq((OutPort,1))
       case PartType(Seq(Box)) =>
-        val ctr = g.now().trySubpart(Center, p.head)
+        val ctr = g.now().trySubpart(Center, p)
+        println(s"pos = $pos, ctr = $ctr")
         ctr match
-          case None => Seq((InPort,0))
+          case None => Seq((InPort,1))
           case Some(c) =>
             if pos.x < c.x
-            then Seq((InPort,0))
-            else Seq((OutPort,0))
-      case _ => Seq()
+            then Seq((InPort,1))
+            else Seq((OutPort,1))
+      case _ => 
+        println(s"portByPos unknown part $p")
+        Seq()
     obseq
+
 
   import MouseButton._
   import KeyModifier._
 
+
+
+  def test(p:Part) = es.mousePos.map(z => 
+    println(portByPos(p,z))  
+    
+  )
+
   // def portByPos(p:Part,pos:Complex): Option[(Ob,Int)] = p match
-  //   case b if b == es.bgPart() =>
+  //   case b if b == es.bgPart =>
   //     // println(s"portByPos bg $b")
   //     val sz = es.size.now()
   //     val ptype = if pos.x < (sz.x / 2.0)
@@ -150,9 +165,9 @@ def bindings(
   //     val nports = g.now().subacset(b).partsMap(ptype).ids.length
   //     Some((ptype,portNumber(pos,sz,nports)))
   //   case p if Seq(InPort,OutPort).contains(p.ty.path.last) => None 
-  //   case b if b.init == es.bgPart() =>
+  //   case b if b.init == es.bgPart =>
   //     println(s"portByPos box $b")
-  //     val ctr = g.now().subacset(es.bgPart()).trySubpart(Center,p-es.bgPart()).getOrElse({
+  //     val ctr = g.now().subacset(es.bgPart).trySubpart(Center,p-es.bgPart).getOrElse({
   //       println("missing center")
   //       throw new RuntimeException("broke")
   //     })
@@ -174,6 +189,8 @@ def bindings(
 
   def zoomIn(b:Part) =  
     // println(s"zoomIn $b")
+    // val spr = es.getSprite(b)
+
     es.hover.$state.set(HoverController.State(None))
     es.currentView.set(b)
     es.deregister("mainVP")
@@ -183,16 +200,17 @@ def bindings(
       vp <- es.makeViewport(
         "mainVP",
         es.size.signal.combineWith(g.signal.map(_.subacset(b)))
-          .map(layoutPorts),
+          .map((sz,acset) => DPBox.layoutPorts(InPort,OutPort)(BoundingBox(sz/2.0,sz),acset)),
         entitySources(es)
       )
       // .map(vp => 
       //   es.viewports.set(Set(vp))
       // )
+      _ = println("done")
     yield vp
 
   def zoomOut = 
-    val b = es.bgPart() match
+    val b = es.bgPart match
       case ROOT => ROOT
       case p => p.init
     zoomIn(ROOT).flatMap(_ => zoomIn(b))
@@ -200,14 +218,7 @@ def bindings(
 
   
   Seq(
-    keyDown("t").andThen(
-        for
-        p <- fromMaybe(es.hoveredPart)
-        z <- es.mousePos
-        _ = println(es.entities.now().em.keys)
-        // _ = println(portByPos(p,z))
-      yield ()
-    ),
+    keyDown("t").andThen(fromMaybe(es.hoveredPart).flatMap(test)),
     // clickOn(Left).map(ent => println(s"click ent = $ent")),
     // clickOnPart(Left).map(pt => println(s"click pt = $pt")),
     // Add box
@@ -221,10 +232,14 @@ def bindings(
     dblClickOnPart(Left,PartType(Seq(Box)))
       .withMods()
       .map(b => es.bgPlus(b))
+      .flatMap(a.edit(Content,true)),
+    dblClickOnPart(Left,PartType(Seq(Box)))
+      .withMods(Ctrl)
+      .map(b => es.bgPlus(b))
       .flatMap(zoomIn),
 
     dblClickOn(Left).withMods(Ctrl).flatMap(_ => zoomOut),
-    clickOnPart(Left).withMods(Alt)
+    clickOnPart(Left).withMods()
       .flatMap(p => 
         p.ty match
         case ROOT.ty => es.mousePos.flatMap(
@@ -234,11 +249,10 @@ def bindings(
       ),
     clickOnPart(Left).withMods(Shift)
       .map(es.bgPlus(_))
-      .flatMap(p => 
-        a.dragEdge(Wire,Src,Tgt,portByPos)(p)
-      ).flatMap(
-        a.edit(Content,true)
-      ),
+      .flatMap(p => for
+        e <- a.dragEdge(Wire,Src,Tgt,portByPos)(p)
+        _ <- a.edit(Content,true)(e)
+      yield ()),
     menuOnPart().flatMap(p => 
       println(s"menuOnPart $p")
       p match
@@ -266,22 +280,22 @@ def bindings(
   
 
 
-def layoutPorts(dims: Complex, init: ACSet): ACSet = {
-  import Complex.im
-  def helper(acs: ACSet, portOb: Ob, dir: (-1) | 1): ACSet = {
-    val ports = acs.parts(ROOT, portOb)
-    val sideCenter = dims / 2 + (dir * dims.x / 2)
-    val spacer = FixedRangeExceptEnds(-dims.y / 2, dims.y / 2)
-    val n = ports.length
-    val cs = ports.zipWithIndex.map(
-      {
-        case ((p, sub), i) => (p, sideCenter + spacer.assignPos(i,n) * im)
-      }
-    )
-    cs.foldLeft(acs)((acs, pc) => acs.setSubpart(pc._1, Center, pc._2))
-  }
-  helper(helper(init, InPort, -1), OutPort, 1)
-}
+// def layoutPorts(dims: Complex, init: ACSet): ACSet = {
+//   import Complex.im
+//   def helper(acs: ACSet, portOb: Ob, dir: (-1) | 1): ACSet = {
+//     val ports = acs.parts(ROOT, portOb)
+//     val sideCenter = dims / 2 + (dir * dims.x / 2)
+//     val spacer = FixedRangeExceptEnds(-dims.y / 2, dims.y / 2)
+//     val n = ports.length
+//     val cs = ports.zipWithIndex.map(
+//       {
+//         case ((p, sub), i) => (p, sideCenter + spacer.assignPos(i,n) * im)
+//       }
+//     )
+//     cs.foldLeft(acs)((acs, pc) => acs.setSubpart(pc._1, Center, pc._2))
+//   }
+//   helper(helper(init, InPort, -1), OutPort, 1)
+// }
 
 
 
@@ -291,42 +305,56 @@ def layoutPorts(dims: Complex, init: ACSet): ACSet = {
 def wireProps(
     src: Hom,
     tgt: Hom,
-    ext: Part => Part
+    bg: Part
 )(_e: Entity, acs: ACSet, m: EntityMap): PropMap = {
+  
   val p = acs.props
+
   val s = p.get(src)
   val t = p.get(tgt)
 
+
+  // println(s"bg = $bg")
+  // println(s.map(_ - bg))
+
+  val tspos = s.flatMap(pt => findCenter((pt - bg),m))
+  val ttpos = t.flatMap(pt => findCenter((pt - bg),m))
+  
+  // println(s"wireProps m = ${m.keys}")
   // println(s"""wireProps
-  //   src = $src
-  //   tgt = $tgt
   //   s = $s
+  //   tspos = $tspos
   //   t = $t
+  //   ttpos = $ttpos
   //   _e = $_e
   //   acs = $acs
-  //   ext(s) = ${s match 
-  //     case Some(p) => ext(p)
-  //     case None => "None"
-  //   }
+  //   m = ${m.keys}
+
+
   //   """)
 
-  val tspos = s.flatMap(p => findCenter(ext(p),m))
-  val ttpos = t.flatMap(p => findCenter(ext(p),m))
-  
+  // println(s"tspos = $tspos, ttpos = $ttpos")
+
   val spos = tspos match
     case Some(z) => z
     case None => 
       // println(s"no spos")
-      p.get(Start).getOrElse(Complex(100,100))
+      p.get(Start).getOrElse({
+        // println(s"missing Start $_e")
+        Complex(100,200)
+      })
 
   val tpos = ttpos match
     case Some(z) => z
     case None => 
       // println(s"no tpos")
-      p.get(End).getOrElse(Complex(100,100))
+      p.get(End).getOrElse({
+        // println(s"missing End $_e")
+        Complex(100,100)
+      })
 
   
-  def getDir(s:Option[Part]) = s match
+  def getDir(s:Option[Part]) = s.map(_ - bg) match
     case Some(p) 
       if p.ty.path == Seq(Box,OutPort) |
         p.ty.path == Seq(InPort)
@@ -351,14 +379,14 @@ def ACSetWireSource(
     src: Hom,
     tgt: Hom,
     sprite: Sprite,
-    ext: Part => Part
-) = ACSetEntitySource(ob, sprite).addPropsBy(wireProps(src, tgt, ext))
+    es: EditorState
+) = ACSetEntitySource(ob, sprite).addPropsBy(wireProps(src, tgt, es.bgPart))
 
 val entitySources = (es:EditorState) => Seq(
   ACSetEntitySource(Box, AltDPBox(InPort, OutPort)(es)).withProps(PropMap() + (FontSize,22)),
   ACSetEntitySource(InPort, BasicPort()(es)).withProps(PropMap() + (MinimumWidth,40) + (Fill,"lightblue")),
   ACSetEntitySource(OutPort, BasicPort()(es)).withProps(PropMap() + (MinimumWidth,40) + (Fill,"lightblue")),
-  ACSetWireSource(Wire, Src, Tgt, BasicWire(es),p => p),
+  ACSetWireSource(Wire, Src, Tgt, BasicWire(es),es),
 )
 
 
@@ -372,21 +400,19 @@ object Main {
 
     def run(es: EditorState, init: Option[String]): IO[Unit] = {
       val initg = DWD()
+      // val spr = entitySources(es).head.sprite
       // val initg = proc
       for {
         g <- IO(UndoableVar(initg))
-        _ = println("g")
         lg <- IO(
           es.size.signal.combineWith(g.signal)
-            .map(layoutPorts)                        
+            .map(DPBox.layoutPortsBg(InPort,OutPort))
         )
-        _ = println("lg")
         vp <- es.makeViewport(
           "mainVP",
           lg,
           entitySources(es)
         )
-        _ = println("vp")
         ui <- es.makeUI()
         _ <- es.bindForever(bindings(es, g, ui,vp))
       } yield ()

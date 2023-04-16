@@ -27,6 +27,7 @@ type HandlerAttacher = (Entity, SvgElement) => Unit
   * and the result is saved in the EntityMap. Currently, each sprite has some
   * custom code for being able to have defaults; that should not be custom
   * because then it is inconsistent.
+  * 
   */
 trait Sprite {
 
@@ -100,4 +101,12 @@ trait Sprite {
       subent: Entity,
       data: ACSet
   ): Option[BoundingBox] = None
+
+  /** An optional layout algorithm to run before rendering an ACSet */
+  def layout(bb:BoundingBox,a:ACSet): ACSet = a
+
+  /** Compute the layout for a full window of size `sz` */
+  def layoutBg(sz:Complex,a:ACSet): ACSet = layout(BoundingBox(sz/2.0,sz),a)
+
+
 }

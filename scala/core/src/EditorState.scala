@@ -112,9 +112,8 @@ class EditorState(
   def register(vpname: String,v: Viewport) = {
     viewports.update(_ + (vpname -> v))
     elt.amend(
-      v.entities --> entities.writer,
+      viewports.now()("mainVP").entities --> entities.writer,
     )
-    println(viewports.now().keys)
   }
 
   /** Deregister a viewport, which has the side effect of removing its main
@@ -176,6 +175,13 @@ class EditorState(
 
 
 
+  /** Get the current background part */
+  def bgPart: Part = currentView.now()
+
+  /** Extend the current background part by `p` */
+  def bgPlus(p:Part): Part = bgPart.extendPart(p)
+
+
   /** An IO action that when run, returns the current hovered entity */
   def hovered: IO[Option[Entity]] = IO({
     hover.$state.now().state.map(_ match
@@ -184,28 +190,18 @@ class EditorState(
     )
   })
 
-  /** Get the current background part */
-  def bgPart() = currentView.now()
-
-  /** Extend the current background part by `p` */
-  def bgPlus(p:Part) = bgPart().extend(p)
-
-
 
   /** An IO action that filters [[hovered]] for just [[Part]]s
+    * and converts `None` the background part (e.g., `ROOT`)
     */
-  def hoveredPart: IO[Option[Part]] = hovered.map(h =>
-    h match
-      case Some(e) =>
-        e match
-          case Background() => Some(ROOT)
-          case p: Part      => Some(p)
-          case _            => None
-      case None => Some(ROOT)
+  def hoveredPart: IO[Option[Part]] = hovered.map(_ match
+    case Some(p:Part) => Some(p)
+    case Some(e) => None
+    case None => Some(bgPart)
   )
 
-  /** An IO action that filters [[hovered]] for just [[Part]]s of a certain
-    * type.
+  /** An IO action that filters [[hovered]] for just [[Part]]s 
+    * of a certain type.
     */
   def hoveredPart(ty: PartType): IO[Option[Part]] =
     hoveredPart.map(_ match
@@ -225,16 +221,14 @@ class EditorState(
   /** An IO action that filters [[hovered]] for entities of a certain type.
     */
   def hoveredEntity(ty: EntityType): IO[Option[Entity]] =
-    hovered.map(e =>
-      e match {
-        case Some(p: Part) if p.ty == ty => Some(p)
-        case _                           => None
-      }
+    hovered.map(_ match
+      case Some(e) if e.ty == ty => Some(e)
+      case _                     => None
     )
 
   import semagrams.widgets.{Menu, PositionWrapper, Position}
 
-  /** Constructs a menu at the current mouse position */
+  /** Constructs a menu at the current mouse position indexed by part `i` */
   def makeMenu(ui: UIState, entries: Seq[(String, Part => IO[Unit])])(i: Part) =
     for {
       pos <- mousePos
@@ -246,4 +240,31 @@ class EditorState(
       )
       _ <- choice(i)
     } yield ()
+
+
+
+  // def tryEntity(p:Part) = 
+  //   val e = p.diffOption(bgPart).flatMap(
+  //     q => q.path match
+  //       case Seq() => None
+  //       case _ => entities.now().em.get(q.head)
+  //   )
+  //   e
+
+  // def getEntity(p:Part) = tryEntity(p).getOrElse(
+  //   throw msgError(s"No entity associated with part $p")
+  // )
+
+  // def getSprite(p:Part): Sprite = getEntity(p)._1
+  // def getEntityACSet(p:Part): ACSet = p.path match
+  //   case Seq() | Seq(_) => getEntity(p)._2
+  //   case _ => 
+  //     val (spr,acset) = getEntity(p)
+  //     val bb = spr.bbox(ROOT,acset).get
+  //     spr.layout(bb,acset).subacset(p.tail)
+
+  // def getEntityProps(p:Part): PropMap = getEntityACSet(p).props
+  
+
+
 }

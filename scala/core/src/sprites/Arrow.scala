@@ -14,7 +14,7 @@ import semagrams.util._
   * for mouse events, because otherwise it would be very annoying to mouse over
   * the arrow.
   */
-case class Arrow(defaults: PropMap) extends Sprite {
+case class Arrow(props: PropMap) extends Sprite {
   def blockPath(
       s: Complex,
       e: Complex,
@@ -44,8 +44,8 @@ case class Arrow(defaults: PropMap) extends Sprite {
       updates: L.Signal[ACSet],
       attachHandlers: HandlerAttacher
   ): L.SvgElement = {
-    val data = updates.map(defaults ++ _.props)
-    val $p = updates.map(defaults ++ _.props)
+    val data = updates.map(props ++ _.props)
+    val $p = updates.map(props ++ _.props)
     val arrow = path(
       pathElts <-- data.map(p => curvedPath(p(Start), p(End), p(Bend))),
       stroke <-- $p.map(p =>
@@ -70,11 +70,11 @@ case class Arrow(defaults: PropMap) extends Sprite {
 }
 
 object Arrow {
-  val defaults = PropMap()
+  val props = PropMap()
     + (Stroke, "black")
     + (Bend, 0)
     + (StrokeDasharray, "none")
     + (Interactable, true)
 
-  def apply() = new Arrow(defaults)
+  def apply() = new Arrow(props)
 }

@@ -74,7 +74,7 @@ trait Attr extends Property {
     * mathematically as a separate attribute for each domain, but this makes it
     * easier to write down.
     */
-  val dom: Seq[PartType]
+  val doms: Seq[PartType]
 }
 
 /** The type of a part in a nested acset is a sequence of objects, going down
@@ -155,7 +155,7 @@ case class Part(path: Seq[(Ob, Id)]) extends Entity {
   def extend(x: Ob, i: Id) = Part(path :+ (x, i))
 
   /** Overload to return a Part rather than Entity */
-  def extend(p: Part): Part = Part(path ++ p.path)
+  def extendPart(p: Part): Part = Part(path ++ p.path)
 
   /** Returns the first part in the path */
   def head: Part = Part(path.slice(0, 1))
@@ -184,8 +184,8 @@ case class Part(path: Seq[(Ob, Id)]) extends Entity {
   /** Checks if `this` is more specific than `that` */
   def <(that: Part): Boolean = that.path match
     case Seq() => true
-    case Seq(thathead, thattail @ _*) =>
-      head == thathead && tail < Part(thattail)
+    case _ if this.head == that.head => this.tail < that.tail
+    case _ => false
 
   /** Checks if `that` is more specific than `this` */
   def >(that: Part): Boolean = that < this
@@ -193,13 +193,13 @@ case class Part(path: Seq[(Ob, Id)]) extends Entity {
   /** Checks if `ptype` is an initial segment of `ty` */
   def in(ptype: PartType) = ty < ptype
 
-  /** Returns `Some(p)` if `this == that.extend(p)`, else `None` */
+  /** Returns `Some(p)` if `this == that.extendPart(p)`, else `None` */
   def diffOption(that:Part): Option[Part] = that.path match
     case Seq() => Some(this)
     case _ if this.head == that.head => this.tail.diffOption(that.tail)
     case _ => None
 
-  /** Returns `p` if `this == that.extend(p)`, else errors */
+  /** Returns `p` if `this == that.extendPart(p)`, else errors */
   def -(that: Part): Part = diffOption(that).getOrElse(
     throw msgError(s"Part $this is not an extension of $that")
   )
@@ -242,6 +242,12 @@ trait Schema {
           .homsInto(PartType(rest))
           .map({ case (obs, f) => (ob +: obs, f) })
   }
+
+
+  /** Create an empty ACSet from this schema. */
+  def apply(): ACSet = ACSet(this)
+
+
 
   //** Serialization of `Ob`s in the schema */
   implicit def obRW: ReadWriter[Ob] = bijectiveRW(obs)
@@ -320,14 +326,14 @@ trait Schema {
 }
 
 
-object Schema {
-
-
-}
-
-
 /** An opaque wrapper around an integer */
-case class Id(id: Int) derives ReadWriter
+case class Id(id: Int)
+object Id {
+  implicit val idRW: ReadWriter[Id] = readwriter[Int].bimap(
+    _.id,
+    Id(_)
+  )
+}
 
 /** Storage class for the parts corresponding to an `Ob` in a schema.
   *
@@ -403,6 +409,7 @@ case class PartSet(
     * of a port.
     */
   def moveToIndex(i: Id,j:Int) = {
+    println(s"moveToIndex i = $i, j = $j")
     val (seg1,seg2) = ids.filterNot(_ == i).splitAt(j) 
     this.copy(
       ids = (seg1 :+ i) ++ seg2
@@ -521,7 +528,7 @@ case class ACSet(
     */
   def addPart(p: Part, x: Ob, init: ACSet): (ACSet, Part) = {
     val sub = subacset(p)
-    val subschema = schema.subschema(p.ty.asInstanceOf[PartType].extend(x))
+    val subschema = schema.subschema(p.ty.extend(x))
     val (newparts, i) = sub.partsMap(x).addPart(init)
     val newSub = sub.copy(
       partsMap = sub.partsMap + (x -> newparts)
@@ -534,7 +541,7 @@ case class ACSet(
     */
   def addParts(p: Part, x: Ob, inits: Seq[ACSet]): (ACSet, Seq[Part]) = {
     val sub = subacset(p)
-    val subschema = schema.subschema(p.ty.asInstanceOf[PartType].extend(x))
+    val subschema = schema.subschema(p.ty.extend(x))
     val (newparts, ids) = sub.partsMap(x).addParts(inits)
     val newSub = sub.copy(
       partsMap = sub.partsMap + (x -> newparts)
@@ -544,13 +551,13 @@ case class ACSet(
 
   /** Convenience overload of [[addParts]] */
   def addPartsProps(p: Part, x: Ob, props: Seq[PropMap]): (ACSet, Seq[Part]) = {
-    val subschema = schema.subschema(p.ty.asInstanceOf[PartType].extend(x))
+    val subschema = schema.subschema(p.ty.extend(x))
     addParts(p, x, props.map(p => ACSet(subschema, p)))
   }
 
   /** Convenience overload of [[addPart]] */
   def addPart(p: Part, x: Ob, props: PropMap): (ACSet, Part) = {
-    val subschema = schema.subschema(p.ty.asInstanceOf[PartType].extend(x))
+    val subschema = schema.subschema(p.ty.extend(x))
     addPart(p, x, ACSet(subschema, props))
   }
 
@@ -583,11 +590,14 @@ case class ACSet(
     * [[PartSet.moveFront]].
     */
   def moveToIndex(p: Part,idx: Int): ACSet = {
-    // val (prefix, (x, i)) = (Part(p.path.dropRight(1)), p.path.last)
+    println(s"moveToIndex p = $p, idx = $idx")
     val sub = subacset(p.init)
+    // println(s"sub = $sub")
+    println(s"pm = ${sub.partsMap(p.headOb)}")
     val newsub = sub.copy(
       partsMap = sub.partsMap + (p.headOb -> sub.partsMap(p.headOb).moveToIndex(p.headId,idx))
     )
+    // println(s"newsub = $newsub")
     setSubacset(p.init, newsub)
   }
 
@@ -712,6 +722,10 @@ object ACSet {
   /** `State` wrapper around ACSet.addPart */
   def addPart(p: Part, x: Ob, props: PropMap): State[ACSet, Part] =
     State(_.addPart(p, x, props))
+
+  /** `State` wrapper around ACSet.addPart */
+  def addPart(p: Part, x: Ob, init: ACSet): State[ACSet, Part] =
+    State(_.addPart(p, x, init))
 
   /** `State` wrapper around ACSet.addPart */
   def addPart(p: Part, x: Ob): State[ACSet, Part] =

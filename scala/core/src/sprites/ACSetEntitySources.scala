@@ -30,7 +30,8 @@ def findBoundary(p: Part, m: EntityMap, dir: Complex): Option[Complex] = for {
 /** Find the center of the sprite corresponding to `p`, by looking up the
   * sprite/data in `m`
   */
-def findCenter(p: Part, m: EntityMap): Option[Complex] = for {
+def findCenter(p: Part, m: EntityMap): Option[Complex] = 
+  for {
   ((sprite, acs), subp) <- p.path match {
     case Nil             => None
     case (x, id) :: rest => m.get(Part(Seq((x, id)))).map((_, Part(rest)))

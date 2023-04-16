@@ -35,24 +35,19 @@ case class Actions(
     * `init`, and set the [[Center]] of that new part to be the current mouse
     * position
     */
-  def addAtMouse(ob: Ob, init: ACSet): IO[Part] = for {
-    pos <- es.mousePos
-    x <- m.updateS(State(_.subacset(es.bgPart())
-      .addPart(
-        es.bgPart(),
-        ob,
-        init.setSubpart(ROOT,Center,pos)
-      )
-    ))
-  } yield x
-
+  def addAtMouse(ob: Ob, init: ACSet): IO[Part] = es.mousePos.flatMap(
+    pos => add(es.bgPart,ob,init.setSubpart(ROOT,Center,pos))
+  )
+      
   /** Add and return a part to the model with type `Ob` and [[Center]] the
     * current mouse position.
     */
-  def addAtMouse(ob: Ob): IO[Part] = for {
-    pos <- es.mousePos
-    x <- m.updateS(addPart(es.bgPart(),ob,PropMap() + (Center, pos)))
-  } yield x
+  def addAtMouse(ob: Ob): IO[Part] = addAtMouse(ob,ob.schema())
+    
+  //   for {
+  //   pos <- es.mousePos
+  //   x <- m.updateS(addPart(es.bgPart,ob,PropMap() + (Center, pos)))
+  // } yield x
 
   /** [[addAtMouse]] without returning the part */
   def addAtMouse_(ob: Ob, init: ACSet): IO[Unit] =
@@ -68,15 +63,33 @@ case class Actions(
     addPart(p, ob, props)
   )
 
+  /** Add and return a part to the acset at `p` of type `ob` with properties
+    * `props`
+    */
+  def add(p: Part, ob: Ob, init: ACSet): IO[Part] = m.updateS(
+    addPart(p, ob, init)
+  )
+
 
   /** [[add]] without returning the part */
-  def add_(p: Part, ob: Ob, props: PropMap): IO[Unit] =
-    add(p, ob, props).map(_ => ())
+  def add_(p: Part, ob: Ob, props: PropMap | ACSet): IO[Unit] = props match
+    case pm: PropMap => add(p, ob, pm).map(_ => ())
+    case a: ACSet => add(p, ob, a).map(_ => ())
 
   /** Set the value of the property `f` at the part `p` to be `v` */
-  def set(p: Part, f: Property, v: f.Value): IO[Unit] = m.updateS(
-    setSubpart(p, f, v)
-  )
+  def set(p: Part, f: Property, v: f.Value,check:Boolean=true): IO[Unit] = (f,v) match
+    case (h,pt):(Hom,Part) =>
+      if check && !h.doms.exists(dom => (p - es.bgPart).in(dom) )
+      then throw msgError(s"Part $p not in dom($h)")
+      else if check && !h.codoms.exists(codom => (pt - es.bgPart).in(codom))
+      then throw msgError(s"Part $v not in codom($h)")
+      else m.updateS(setSubpart(p, h, pt))
+    case (a,_):(Attr,Any) =>
+      if check && a.doms.exists(dom => (p - es.bgPart).in(dom) )
+      then m.updateS(setSubpart(p, f, v))
+      else throw msgError(s"Part $p not in dom($a)")
+    case _ => m.updateS(setSubpart(p, f, v))
+    
 
   /** Unset the value of the property `f` of the part `p` */
   def remove(p: Part, f: Property): IO[Unit] = m.updateS(
@@ -89,25 +102,27 @@ case class Actions(
   )
 
   /** Remove the part currently hovered */
-  val del = for {
-    ment <- es.hovered
-    _ <- ment match {
-      case Some(p: Part) => remove(p)
-      case _             => IO(())
-    }
-    _ = es.hover.$state.set(HoverController.State(None))
-  } yield ()
+  val del = fromMaybe(es.hoveredPart).flatMap(p => 
+    if p < es.bgPart && p != es.bgPart
+    then for {
+      _ <- remove(p)
+      _ = es.hover.$state.set(HoverController.State(None))
+    } yield ()
+    else die 
+  )
 
   /** Get the bounding box of `b` as it is currently displayed on the screen */
   def getBBox(b: Part): Option[BoundingBox] = b match
-    case ROOT =>
+    case _ if es.bgPart == b =>
       val sz = es.size.now()
       Some(BoundingBox(sz / 2.0, sz))
-    case p =>
-      es.entities.now().em.get(p.head)
+    case _ if es.bgPart > b =>
+      val ext = b - es.bgPart
+      es.entities.now().em.get(ext.head)
         .flatMap {
-          case (spr,acset) => spr.bbox(p.tail, acset)
+          case (spr,acset) => spr.bbox(ext.tail, acset)
         }
+    case _ => None
 
         
   /** A generalized drag action
@@ -141,7 +156,18 @@ case class Actions(
     m0 = m.now()
     memo <- es.mousePos.flatMap(start)
     ret <- (es.drag.drag(Observer(p => during(memo, p))) >> after(memo))
-      .onCancelOrError(IO({ es.drag.$state.set(None); m.set(m0) }))
+      .onCancelOrError(IO({ 
+        m.set(m0) 
+        es.drag.$state.set(None)
+      }))
+    /** TODO: `onCancelOrError` should kill the IO,
+      * but instead it returns `undefined` */
+    _ <- if scalajs.js.isUndefined(ret)
+      then 
+        println(s"drag cancelled")
+        die
+      else
+        IO(())
     _ <- IO(m.record())
   } yield ret.asInstanceOf[Return]
 
@@ -152,7 +178,7 @@ case class Actions(
   // Memo = Offset, Return = Unit
   def dragMove(i: Part) =
 
-    val pt = es.currentView.now().extend(i).asInstanceOf[Part]
+    val pt = es.bgPlus(i)
 
     def start = (z:Complex) => for 
       _ <- m.updateS_(moveFront(pt))
@@ -169,26 +195,34 @@ case class Actions(
 
 
 
-  val debug = IO(m.now()).flatMap(IO.println)
+  val debug = 
+    val sch = m.now().schema
+    import sch._
+    // val re = "{[\t\n\f\r]*}"
+    // def rep(acset:ACSet) = 
+    //   val s = write(acset,2)
+    //   println(s"s = $s")
+    //   val ret = s.replaceAll("{\n\n","{}")
+    //   println(s"ret = $ret")
+
+    IO(m.now()).map(acset => println(write(acset,2)))
+    
   def die[A]: IO[A] = fromMaybe(IO(None))
   
 
-  // Memo = Return = wire
-  // def makeWire(w:Ob,src:Hom,tgt:Hom) = (s:Part) => {
-
-  //   def start = () => for 
-
-  //   yield 
-  // }
 
   def liftTo(p:Part,ext:Seq[(Ob,Int)]): IO[Part] = ext match
-    case Seq() => IO(p)
-    case Seq((ob,i),rest @_*) => for {
+    case Seq() => 
+      // println(s"done $p")
+      IO(p)
+    case (ob,i) +: rest => for {
       a <- add(p,ob,PropMap())
+      // _ = println(s"a = $a")
       _ <- IO(m.update((acset:ACSet) =>
         acset.moveToIndex(a,i)
       ))
-      last <- liftTo(p.extend(a),ext.tail)
+      // _ = println("updated")
+      last <- liftTo(a,ext.tail)
     } yield last
          
     
@@ -196,31 +230,31 @@ case class Actions(
     *
     * Returns the part corresponding to the edge that was constructed
     */
+
+  // TODO: Split src/target logic
+  // TODO: Add dragSpan, dragCospan
+
   def dragEdge(
     ob:Ob,
     src:Hom,
     tgt:Hom,
     lift: (Part,Complex) => Seq[(Ob,Int)] = (_,_) => Seq()
   )(s: Part): IO[Part] =
-    // println(s"dragEdge $s")
       
     // val s = bgPlus(s_ext)
     def start = (z:Complex) =>
-      // println(s"start: s = $s")
-      // println(s"ptype = $ptype")
       
       for
         p <- {lift(s,z) match
           case Seq() => IO(s)
           case ext => liftTo(s,ext)
         }
-        // _ = println(s"p = $p")
-        // _ = println(p - es.bgPart())
+        // _ = println(p - es.bgPart)
 
         w <- add(
-          es.bgPart(),
+          es.bgPart,
           ob,
-          p.ty match
+          (p - es.bgPart).ty match
             case tp if src.codoms.contains(tp) =>
               PropMap()
                 .set(src, p)
@@ -232,7 +266,6 @@ case class Actions(
                 .set(Start, z)
                 .set(Interactable, false)
         )
-        // _ = println(w)
       yield w
 
     def during = (e: Part, p: Complex) =>
@@ -242,28 +275,22 @@ case class Actions(
 
     def after = (e:Part) => for
       t <- fromMaybe(es.hoveredPart)
-      // _ = println(s"end: $t")
       z <- es.mousePos
       q <- lift(t,z) match
         case Seq() => IO(t)
         case ext => liftTo(t,ext)
-      // _ = println(s"q = $q, e = $e")
       _ <- m.now() match
         case mnow if mnow.hasSubpart(src,e) => for {
-          _ <- set(e, tgt, q - es.bgPart())
-          // _ = println("end1")
+          _ <- set(e, tgt, q,false)
           _ <- remove(e, End)
           _ <- remove(e, Interactable)
         } yield ()
         case mnow if mnow.hasSubpart(tgt,e) => for {
-          _ <- set(e,src,q - es.bgPart())
-          // _ = println("end2")
+          _ <- set(e,src,q,false)
           _ <- remove(e,Start)
           _ <- remove(e,Interactable)
         } yield ()
-        case _ => 
-          // println(s"end3 $e")         
-          die
+        case _ => die
     yield e
 
     drag(start, during, after)(s)

@@ -15,7 +15,7 @@ extension [A, B](s: L.Signal[Tuple2[A, B]])
   *
   * Resizes automatically corresponding to its content.
   */
-case class Rect(props: PropMap) extends Sprite {
+case class Rect(val props: PropMap) extends Sprite {
   import Rect._
 
   def present(

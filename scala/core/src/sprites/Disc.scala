@@ -10,7 +10,7 @@ import semagrams.acsets._
   *
   * Auto-resizes based on the content inside.
   */
-case class Disc(props: PropMap) extends Sprite {
+case class Disc(val props: PropMap) extends Sprite {
   def radius(data: PropMap): Double = {
     val textBox = boxSize(data(Content), data(FontSize))
     val innerSep = data.get(InnerSep).getOrElse(0.0)
