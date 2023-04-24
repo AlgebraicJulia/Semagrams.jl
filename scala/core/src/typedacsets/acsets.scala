@@ -14,7 +14,7 @@ trait Schema {
   case class Part[X <: Ob](ob: X, i: Int)
 
   case class ACSet(
-    parts: Map[Ob, Map[Int, Map[Any, Any]]],
+    parts: Map[Ob, Map[Int, Map[HasVal, Any]]],
     next: Int
   ) {
     def addPart[X <: Ob](ob: X): (ACSet, Part[X]) = {
