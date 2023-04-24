@@ -126,9 +126,7 @@ case class DPBox(
 object DPBox {
 
   //* A pure algorithm for port layout */
-  def layoutPorts(bb:BoundingBox,n_in:Int,n_out:Int): (Seq[Complex],Seq[Complex]) = 
-    // println(s"lp $n_in, $n_out, $bb")
-    val p = (
+  def layoutPorts(bb:BoundingBox,n_in:Int,n_out:Int): (Seq[Complex],Seq[Complex]) = (
     0 until n_in map(i => Complex(
       bb.pos.x - bb.dims.x/2.0,
       bb.pos.y - (bb.dims.y/2.0) + (1 + 2*i) * (bb.dims.y/n_in)/2.0
@@ -137,22 +135,13 @@ object DPBox {
       bb.pos.x + bb.dims.x/2.0,
       bb.pos.y - (bb.dims.y/2.0) + (1 + 2*i) * (bb.dims.y/n_out)/2.0
     ))
-    
-    )
-    // println(s"p = $p")
-    p 
+  )
 
   def layoutPorts(inPort:Ob,outPort:Ob)(bb:BoundingBox,data:ACSet): ACSet = 
     val p_in = data.parts(ROOT,inPort)
     val p_out = data.parts(ROOT,outPort)
 
-    // println(s"p_in = $p_in")
-    // println(s"p_out = $p_out")
-
     val (c_in,c_out) = layoutPorts(bb,p_in.length,p_out.length)
-
-    // println(s"c_in = $c_in")
-    // println(s"c_out = $c_out")
 
     ((p_in zip c_in) ++ (p_out zip c_out))
       .foldLeft(data){
@@ -160,5 +149,7 @@ object DPBox {
       }
 
 
-  def layoutPortsBg(inPort:Ob,outPort:Ob)(sz:Complex,data:ACSet): ACSet = layoutPorts(inPort,outPort)(BoundingBox(sz/2.0,sz),data)
-}
+  def layoutPortsBg(inPort:Ob,outPort:Ob)(sz:Complex,data:ACSet): ACSet =
+    layoutPorts(inPort,outPort)(BoundingBox(sz/2.0,sz),data)
+
+} 

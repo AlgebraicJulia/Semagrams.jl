@@ -13,7 +13,8 @@ def ACSetEntitySource(
     sprite: Sprite
 ) =
   EntitySource[ACSet]((acs, _m) =>
-    acs.parts(ROOT, ob).map({ case (i, acs) => (i, sprite, acs) })
+    acs.parts(ROOT, ob).map({ case (i, acs) => 
+      (i, sprite, acs) })
   )
 
 /** Find the point on the boundary in direction `dir` of the sprite
@@ -80,3 +81,5 @@ def ACSetEdgeSource(
     tgt: Hom,
     sprite: Sprite
 ) = ACSetEntitySource(ob, sprite).addPropsBy(edgeProps(src, tgt))
+
+

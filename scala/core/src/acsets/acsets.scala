@@ -409,7 +409,6 @@ case class PartSet(
     * of a port.
     */
   def moveToIndex(i: Id,j:Int) = {
-    println(s"moveToIndex i = $i, j = $j")
     val (seg1,seg2) = ids.filterNot(_ == i).splitAt(j) 
     this.copy(
       ids = (seg1 :+ i) ++ seg2
@@ -460,11 +459,8 @@ case class ACSet(
       val g = partsMap.get(x)
       g.flatMap(parts =>
         val aci = parts.acsets.get(i)
-        aci.flatMap(sub => {
-          val ret = sub.trySubacset(Part(rest))
-          ret
-        
-        }))
+        aci.flatMap(_.trySubacset(Part(rest)))
+      )
   }
 
   /** Check if a nested part exists in the ACSet */
@@ -500,7 +496,11 @@ case class ACSet(
     val ps = sub.partsMap.get(x).getOrElse(
       throw msgError(s"bad partsMap $x, ${sub.partsMap}")
     )
-    ps.ids.map(id => (i.extend(x, id), ps.acsets(id)))
+    ps.ids.map(id => 
+      (i.extend(x, id), ps.acsets.get(id).getOrElse(
+        throw msgError(s"No acsets in $ps for $id")
+      ))
+    )
   }
 
   /** Return all of the parts of the subacset at `i` with type `x`, without
@@ -590,14 +590,10 @@ case class ACSet(
     * [[PartSet.moveFront]].
     */
   def moveToIndex(p: Part,idx: Int): ACSet = {
-    println(s"moveToIndex p = $p, idx = $idx")
     val sub = subacset(p.init)
-    // println(s"sub = $sub")
-    println(s"pm = ${sub.partsMap(p.headOb)}")
     val newsub = sub.copy(
-      partsMap = sub.partsMap + (p.headOb -> sub.partsMap(p.headOb).moveToIndex(p.headId,idx))
+      partsMap = sub.partsMap + (p.lastOb -> sub.partsMap(p.lastOb).moveToIndex(p.lastId,idx))
     )
-    // println(s"newsub = $newsub")
     setSubacset(p.init, newsub)
   }
 
@@ -624,7 +620,7 @@ case class ACSet(
   def incident(p: Part, f: Hom): Seq[Part] = {
     val codom = f.codoms
       .find(c => p.ty.path.drop(p.ty.path.length - c.path.length) == c.path)
-      .get
+      .getOrElse(throw msgError(s"missing codom in incident"))
     val prefix = Part(p.path.dropRight(codom.path.length))
 
     /** Essentially, we look at all parts with part type f.dom, and filter which

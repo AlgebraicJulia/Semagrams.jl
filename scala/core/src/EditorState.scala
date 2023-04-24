@@ -135,7 +135,6 @@ class EditorState(
       actionOption = bindings.collectFirst(
         (
             (bnd: Binding[A]) =>
-              // println(s"bindNoCatch $bnd")
               bnd.modifiers match {
                 case Some(mods) => {
                   if (keyboard.keyState.now().modifiers == mods) {

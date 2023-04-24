@@ -80,15 +80,19 @@ case class Actions(
   def set(p: Part, f: Property, v: f.Value,check:Boolean=true): IO[Unit] = (f,v) match
     case (h,pt):(Hom,Part) =>
       if check && !h.doms.exists(dom => (p - es.bgPart).in(dom) )
-      then throw msgError(s"Part $p not in dom($h)")
+      then 
+        throw msgError(s"$p not in dom($h)")
       else if check && !h.codoms.exists(codom => (pt - es.bgPart).in(codom))
-      then throw msgError(s"Part $v not in codom($h)")
-      else m.updateS(setSubpart(p, h, pt))
+      then 
+        throw msgError(s"$v not in codom($h)")
+      else 
+        m.updateS(setSubpart(p, h, pt))
     case (a,_):(Attr,Any) =>
       if check && a.doms.exists(dom => (p - es.bgPart).in(dom) )
       then m.updateS(setSubpart(p, f, v))
-      else throw msgError(s"Part $p not in dom($a)")
-    case _ => m.updateS(setSubpart(p, f, v))
+      else throw msgError(s"$p not in dom($a)")
+    case _ => 
+      m.updateS(setSubpart(p, f, v))
     
 
   /** Unset the value of the property `f` of the part `p` */
@@ -111,8 +115,8 @@ case class Actions(
     else die 
   )
 
-  /** Get the bounding box of `b` as it is currently displayed on the screen */
-  def getBBox(b: Part): Option[BoundingBox] = b match
+  /** Try to get the bounding box of `b` as it is currently displayed on the screen */
+  def tryBBox(b: Part): Option[BoundingBox] = b match
     case _ if es.bgPart == b =>
       val sz = es.size.now()
       Some(BoundingBox(sz / 2.0, sz))
@@ -123,6 +127,13 @@ case class Actions(
           case (spr,acset) => spr.bbox(ext.tail, acset)
         }
     case _ => None
+
+  def getBBox(b: Part): BoundingBox = tryBBox(b).getOrElse(
+    throw msgError(s"No bounding box for part $b")
+  )
+
+  def getPos(b:Part) = getBBox(b).pos
+  def getDims(b:Part) = getBBox(b).dims
 
         
   /** A generalized drag action
@@ -159,15 +170,7 @@ case class Actions(
       .onCancelOrError(IO({ 
         m.set(m0) 
         es.drag.$state.set(None)
-      }))
-    /** TODO: `onCancelOrError` should kill the IO,
-      * but instead it returns `undefined` */
-    _ <- if scalajs.js.isUndefined(ret)
-      then 
-        println(s"drag cancelled")
-        die
-      else
-        IO(())
+      }).flatMap(_ => die))
     _ <- IO(m.record())
   } yield ret.asInstanceOf[Return]
 
@@ -198,14 +201,7 @@ case class Actions(
   val debug = 
     val sch = m.now().schema
     import sch._
-    // val re = "{[\t\n\f\r]*}"
-    // def rep(acset:ACSet) = 
-    //   val s = write(acset,2)
-    //   println(s"s = $s")
-    //   val ret = s.replaceAll("{\n\n","{}")
-    //   println(s"ret = $ret")
-
-    IO(m.now()).map(acset => println(write(acset,2)))
+    IO(m.now()).map(acset => println(write(acset)))
     
   def die[A]: IO[A] = fromMaybe(IO(None))
   
@@ -213,15 +209,12 @@ case class Actions(
 
   def liftTo(p:Part,ext:Seq[(Ob,Int)]): IO[Part] = ext match
     case Seq() => 
-      // println(s"done $p")
       IO(p)
     case (ob,i) +: rest => for {
       a <- add(p,ob,PropMap())
-      // _ = println(s"a = $a")
       _ <- IO(m.update((acset:ACSet) =>
         acset.moveToIndex(a,i)
       ))
-      // _ = println("updated")
       last <- liftTo(a,ext.tail)
     } yield last
          
@@ -241,7 +234,6 @@ case class Actions(
     lift: (Part,Complex) => Seq[(Ob,Int)] = (_,_) => Seq()
   )(s: Part): IO[Part] =
       
-    // val s = bgPlus(s_ext)
     def start = (z:Complex) =>
       
       for
@@ -249,7 +241,6 @@ case class Actions(
           case Seq() => IO(s)
           case ext => liftTo(s,ext)
         }
-        // _ = println(p - es.bgPart)
 
         w <- add(
           es.bgPart,
@@ -269,9 +260,62 @@ case class Actions(
       yield w
 
     def during = (e: Part, p: Complex) =>
-      if m.now().hasSubpart(src, e)
+      if m.now().hasSubpart(End, e)
       then m.update(_.setSubpart(e, End, p))
       else m.update(_.setSubpart(e, Start, p))
+
+    def after = (e:Part) => for
+      t <- fromMaybe(es.hoveredPart)
+      z <- es.mousePos
+      q <- lift(t,z) match
+        case Seq() => IO(t)
+        case ext => liftTo(t,ext)
+      _ <- m.now() match
+        case mnow if mnow.hasSubpart(src,e) => for {
+          _ <- set(e, tgt, q)
+          _ <- remove(e, End)
+          _ <- remove(e, Interactable)
+        } yield ()
+        case mnow if mnow.hasSubpart(tgt,e) => for {
+          _ <- set(e,src,q)
+          _ <- remove(e,Start)
+          _ <- remove(e,Interactable)
+        } yield ()
+        case _ => die
+    yield e
+
+    drag(start, during, after)(s)
+
+
+
+  
+  def unplug(
+    p:Part,
+    w:Part,
+    src:Hom,
+    tgt:Hom,
+    lift: (Part,Complex) => Seq[(Ob,Int)] = (_,_) => Seq()
+  ) =
+
+    def start(z:Complex) = if m.now().trySubpart(src,w) == Some(p)
+      then (for
+        _ <- set(w,Start,z,false)
+        _ <- set(w,Interactable,false,false)
+        _ <- remove(w,src)
+        _ <- remove(p)
+      yield w)
+      else (for
+        _ <- set(w,End,z,false)
+        _ <- set(w,Interactable,false,false)
+        _ <- remove(w,tgt)
+        _ <- remove(p)
+      yield w)
+
+    def during = (e: Part, p: Complex) =>
+      if m.now().hasSubpart(End, e)
+      then m.update(_.setSubpart(e, End, p))
+      else m.update(_.setSubpart(e, Start, p))
+
 
     def after = (e:Part) => for
       t <- fromMaybe(es.hoveredPart)
@@ -293,7 +337,8 @@ case class Actions(
         case _ => die
     yield e
 
-    drag(start, during, after)(s)
+    drag(start, during, after)(p)
+
 
   /** Edit the content of the part `i`, using popup text box */
   def edit(p: Property { type Value = String; }, multiline: Boolean)(
