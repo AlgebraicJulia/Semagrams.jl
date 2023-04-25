@@ -101,13 +101,13 @@ case class PartType(path: Seq[Ob]) extends EntityType {
   def init: PartType = PartType(path.init)
 
   /** Returns if `this` an extension of `that`? */
-  def <(that: PartType): Boolean = that.path match
+  def >(that: PartType): Boolean = that.path match
     case Seq() => true
     case Seq(thathead, thattail @ _*) =>
-      head == thathead && tail < PartType(thattail)
+      head == thathead && tail > PartType(thattail)
 
   /** Returns if `that` an extension of `this`? */
-  def >(that: PartType): Boolean = that < this
+  def <(that: PartType): Boolean = that > this
 
   /** Return `Some(p)` if `this == that.extend(p)`, else `None` */ 
   def diffOption(that: PartType): Option[PartType] = that.path match
@@ -182,19 +182,20 @@ case class Part(path: Seq[(Ob, Id)]) extends Entity {
   def init: Part = Part(path.init)
 
   /** Checks if `this` is more specific than `that` */
-  def <(that: Part): Boolean = that.path match
+  def >(that: Part): Boolean = that.path match
     case Seq() => true
-    case _ if this.head == that.head => this.tail < that.tail
+    case _ if this.head == that.head => this.tail > that.tail
     case _ => false
 
   /** Checks if `that` is more specific than `this` */
-  def >(that: Part): Boolean = that < this
+  def <(that: Part): Boolean = that > this
 
   /** Checks if `ptype` is an initial segment of `ty` */
-  def in(ptype: PartType) = ty < ptype
+  def in(ptype: PartType) = ty > ptype
 
   /** Returns `Some(p)` if `this == that.extendPart(p)`, else `None` */
-  def diffOption(that:Part): Option[Part] = that.path match
+  def diffOption(that:Part): Option[Part] = 
+    that.path match
     case Seq() => Some(this)
     case _ if this.head == that.head => this.tail.diffOption(that.tail)
     case _ => None
@@ -249,6 +250,17 @@ trait Schema {
 
 
 
+  /** Serialization via upickle. 
+    * This must live in the schema in order to know which
+    * typesafe objects/homs/attrs are available. 
+    * 
+    * bijectiveRW(seq) serializes to String using the built-in toString 
+    * 
+    * macroRW is the built-in upickle creation for case classes, but
+    * requires access to a background ReadWriter[Ob]
+    */
+
+
   //** Serialization of `Ob`s in the schema */
   implicit def obRW: ReadWriter[Ob] = bijectiveRW(obs)
   
@@ -267,7 +279,9 @@ trait Schema {
   //** Serialization of properties (`Property`) in the schema */
   implicit def propertyRW: ReadWriter[Property] = bijectiveRW(allProps)
 
-  //** Serialization of `PropMap`s in the schema */
+  /** Serialization of `PropMap`s in the schema, writing json objects
+    * for `Part`s and values for other properties.
+    */
   implicit def propRW: ReadWriter[PropMap] = readwriter[Map[String,ujson.Value]].bimap(
     pm => pm.map.map { 
       case (k,v:Part) => 
@@ -292,7 +306,10 @@ trait Schema {
   //** Serialization of `Schema`s occuring in the schema */
   implicit def schemaRW: ReadWriter[Schema] = bijectiveRW(allSchemas)
 
-  //** Serialization of `PartSet`s occuring in the schema */
+  /** Serialization of `PartSet`s occuring in the schema. Note that this
+    * omits the `nextID` and id sequence from the `PartSet` and rebuilds
+    * these from the keys of the dictionary. 
+   */
   implicit def partsRW: ReadWriter[PartSet] = readwriter[Map[Int,ujson.Value]].bimap(
     ps => ps.ids.map(id =>
       id.id -> writeJs(ps.acsets(id))
@@ -306,7 +323,10 @@ trait Schema {
     )
   )
 
-  //** Note: replacing `read[ujson.Value](write(acset.partsMap))` below with `writeJs(acset.partsMap)` introduces a parsing error `expecting string but found int32` */
+  /** Note: replacing `read[ujson.Value](write(acset.partsMap))` in `acsetRW` with
+    * `writeJs(acset.partsMap)` introduces a parsing error `expecting string 
+    * but found int32` 
+    */
   
   //** Serialization of `ACSets`s based on the schema */
   implicit def acsetRW: ReadWriter[ACSet] = readwriter[Map[String,ujson.Value]].bimap(
@@ -620,8 +640,7 @@ case class ACSet(
   def incident(p: Part, f: Hom): Seq[Part] = {
     val codom = f.codoms
       .find(c => p.ty.path.drop(p.ty.path.length - c.path.length) == c.path)
-      .getOrElse(throw msgError(s"missing codom in incident"))
-    val prefix = Part(p.path.dropRight(codom.path.length))
+    val prefix = codom.map(x => Part(p.path.dropRight(x.path.length)))
 
     /** Essentially, we look at all parts with part type f.dom, and filter which
       * ones have a property f set to p
@@ -637,7 +656,8 @@ case class ACSet(
             .flatMap((i, acs) => helper(acs, part.extend(ob, i), rest))
       }
 
-    f.doms.flatMap(dom => helper(subacset(prefix), prefix, dom.path))
+    prefix.map(pfx => f.doms.flatMap(dom => helper(subacset(pfx), pfx, dom.path)))
+      .getOrElse(Seq())
   }
 
   /** Remove a part, but not any of the other parts that might refer to it. */

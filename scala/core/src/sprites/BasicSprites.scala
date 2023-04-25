@@ -35,10 +35,18 @@ def BasicWireStub(extend: Double) = BasicWrapper(
   WireStub(PropMap() + (Stroke, "black"), extend)
 )
 
-def AltDPBox(inPort: Ob, outPort: Ob)(es: EditorState) = DPBox(
+def AltDPBox(inPort: Ob, outPort: Ob, 
+  portProps: PropMap = PropMap() + (Fill,"black")
+)(es: EditorState): DPBox = AltDPBox(inPort,outPort,portProps,portProps)(es)
+  
+  
+def AltDPBox(inPort: Ob, outPort: Ob, 
+  srcProps: PropMap, tgtProps: PropMap
+)(es: EditorState): DPBox =  
+  DPBox(
   BasicWrapper(Rect(PropMap() + (MinimumHeight,80.0) + (MinimumWidth,50.0)))(es),
-  BasicPort(PropMap() + (Fill,"lightblue"))(es),
-  BasicPort(PropMap() + (Fill,"lightblue"))(es),
+  BasicPort(srcProps)(es),
+  BasicPort(tgtProps)(es),
   inPort,
   outPort
 )

@@ -101,17 +101,15 @@ case class Actions(
   )
 
   /** Remove the part `p` */
-  def remove(p: Part): IO[Unit] = m.updateS(
-    remPart(p)
-  )
+  def remove(p: Part): IO[Unit] = for
+    _ <- m.updateS(remPart(p))
+    _ = es.hover.$state.set(HoverController.State(None))
+  yield ()
 
   /** Remove the part currently hovered */
   val del = fromMaybe(es.hoveredPart).flatMap(p => 
-    if p < es.bgPart && p != es.bgPart
-    then for {
-      _ <- remove(p)
-      _ = es.hover.$state.set(HoverController.State(None))
-    } yield ()
+    if p > es.bgPart && p != es.bgPart
+    then remove(p)
     else die 
   )
 
@@ -120,7 +118,7 @@ case class Actions(
     case _ if es.bgPart == b =>
       val sz = es.size.now()
       Some(BoundingBox(sz / 2.0, sz))
-    case _ if es.bgPart > b =>
+    case _ if b > es.bgPart =>
       val ext = b - es.bgPart
       es.entities.now().em.get(ext.head)
         .flatMap {
@@ -172,8 +170,7 @@ case class Actions(
         es.drag.$state.set(None)
       }).flatMap(_ => die))
     _ <- IO(m.record())
-  } yield ret.asInstanceOf[Return]
-
+  } yield ret 
 
 
 
@@ -296,19 +293,22 @@ case class Actions(
     tgt:Hom,
     lift: (Part,Complex) => Seq[(Ob,Int)] = (_,_) => Seq()
   ) =
-
     def start(z:Complex) = if m.now().trySubpart(src,w) == Some(p)
       then (for
         _ <- set(w,Start,z,false)
         _ <- set(w,Interactable,false,false)
         _ <- remove(w,src)
-        _ <- remove(p)
+        _ <- if (m.now().incident(p,src) ++ m.now().incident(p,tgt)).isEmpty
+          then remove(p)
+          else IO(())
       yield w)
       else (for
         _ <- set(w,End,z,false)
         _ <- set(w,Interactable,false,false)
         _ <- remove(w,tgt)
-        _ <- remove(p)
+        _ <- if (m.now().incident(p,src) ++ m.now().incident(p,tgt)).isEmpty
+          then remove(p)
+          else IO(())
       yield w)
 
     def during = (e: Part, p: Complex) =>
@@ -325,12 +325,12 @@ case class Actions(
         case ext => liftTo(t,ext)
       _ <- m.now() match
         case mnow if mnow.hasSubpart(src,e) => for {
-          _ <- set(e, tgt, q,false)
+          _ <- set(e, tgt, q)
           _ <- remove(e, End)
           _ <- remove(e, Interactable)
         } yield ()
         case mnow if mnow.hasSubpart(tgt,e) => for {
-          _ <- set(e,src,q,false)
+          _ <- set(e,src,q)
           _ <- remove(e,Start)
           _ <- remove(e,Interactable)
         } yield ()
@@ -386,5 +386,33 @@ case class Actions(
       )(kill)
     )
   )
+
+
+  def zoomIn(
+    b:Part,
+    layout:(sz:Complex,acset:ACSet) => ACSet,
+    esources:Seq[EntitySource[ACSet]]
+  ) =  
+    es.hover.$state.set(HoverController.State(None))
+    es.currentView.set(b)
+    es.deregister("mainVP")
+    es.makeViewport(
+      "mainVP",
+      es.size.signal
+        .combineWith(m.signal.map(_.subacset(b)))
+        .map(layout.tupled),
+      esources
+    )
+
+
+  def zoomOut(
+    layout:(sz:Complex,acset:ACSet) => ACSet,
+    esources:Seq[EntitySource[ACSet]]
+  ) = 
+    val b = es.bgPart match
+      case ROOT => ROOT
+      case p => p.init
+    zoomIn(ROOT,layout,esources).flatMap(_ => zoomIn(b,layout,esources))
+
 
 }

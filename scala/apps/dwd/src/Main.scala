@@ -20,6 +20,7 @@ import scala.reflect.ClassTag
 import semagrams.sprites.{AltDPBox,BasicPort}
 import semagrams.util.msgError
 import semagrams.sprites.DPBox
+import ujson.True
 
 
 case object SchDWD extends Schema {
@@ -79,15 +80,8 @@ def bindings(
   )
 
 
-  def portNumber(pos:Complex,size:Complex,nports:Int) =
-    val l = (0 to nports+1).map(
-      _ * size.y/(nports + 1)
-    )
-    val hit = l.lastIndexWhere(_ < pos.y)
-    hit
 
-
-  def portByPos(p: Part, pos: Complex): Seq[(Ob,Int)] =
+  def liftPort(p: Part, pos: Complex): Seq[(Ob,Int)] =
     val ext = p - es.bgPart
     val (sz,c) = ext.ty.path match
       case Seq() => (
@@ -106,47 +100,24 @@ def bindings(
     val ptype = if pos.x < c.x then InPort else OutPort
 
     val nports = g.now().parts(p,ptype).length
-    val j = portNumber(pos - c + (sz/2.0),sz,nports)
+    val j = DPBox.portNumber(pos - c + (sz/2.0),sz,nports)
     Seq((ptype,j))
+
+
+
+  def test(p:Part) = es.mousePos.map(z => 
+    println(s"hovered = $p")    
+  )
+
+
+  val layout = DPBox.layoutPortsBg(InPort,OutPort)
+  val esources = entitySources(es)
 
   import MouseButton._
   import KeyModifier._
 
 
-
-  def test(p:Part) = es.mousePos.map(z => 
-    println(portByPos(p,z))  
-    
-  )
-
-
-  def zoomIn(b:Part) =  
-    es.hover.$state.set(HoverController.State(None))
-    es.currentView.set(b)
-    es.deregister("mainVP")
-    for 
-      vp <- es.makeViewport(
-        "mainVP",
-        es.size.signal.combineWith(g.signal.map(_.subacset(b)))
-          .map((sz,acset) => 
-            DPBox.layoutPorts(InPort,OutPort)
-              (BoundingBox(sz/2.0,sz),acset)
-          ),
-        entitySources(es)
-      )
-    yield vp
-
-  def zoomOut = 
-    val b = es.bgPart match
-      case ROOT => ROOT
-      case p => p.init
-    zoomIn(ROOT).flatMap(_ => zoomIn(b))
-
-
-
-  
   Seq(
-
     // test hovered part
     keyDown("t").andThen(fromMaybe(es.hoveredPart).flatMap(test)),
 
@@ -155,7 +126,7 @@ def bindings(
       .flatMap(_ => a.addAtMouse(Box)),
 
     // Edit box label
-    dblClickOnPart(Left,PartType(Seq(Box)))
+    dblClickOnPart(Left)
       .withMods()
       .map(b => es.bgPlus(b))
       .flatMap(a.edit(Content,true)),
@@ -164,10 +135,11 @@ def bindings(
     dblClickOnPart(Left,PartType(Seq(Box)))
       .withMods(Ctrl)
       .map(b => es.bgPlus(b))
-      .flatMap(zoomIn),
+      .flatMap(b => a.zoomIn(b,layout,esources)),
 
+    
     // Zoom out of box
-    dblClickOn(Left).withMods(Ctrl).flatMap(_ => zoomOut),
+    dblClickOn(Left).withMods(Ctrl).flatMap(_ => a.zoomOut(layout,esources)),
 
     // Drag box
     clickOnPart(Left).withMods()
@@ -183,15 +155,14 @@ def bindings(
     clickOnPart(Left).withMods(Shift)
       .map(es.bgPlus(_))
       .flatMap(p =>
-        val wires = try {
-          g.now().incident(p,Src) ++ g.now().incident(p,Tgt)
-        } catch { case e =>
-            Seq()
-        }
+        val wires = (g.now().incident(p,Src) ++ g.now().incident(p,Tgt))
+          .filter(_.ty == es.bgPart.ty.extend(Wire))
 
         if wires.isEmpty
-        then a.dragEdge(Wire,Src,Tgt,portByPos)(p)
-        else a.unplug(p,wires(0),Src,Tgt,portByPos)
+        then 
+          a.dragEdge(Wire,Src,Tgt,liftPort)(p)
+        else 
+          a.unplug(p,wires(0),Src,Tgt,liftPort)
       ),
 
     // Menu actions
@@ -230,54 +201,29 @@ def bindings(
   
 
 
-def wireProps(
-    src: Hom,
-    tgt: Hom,
-    bg: Part
-)(_e: Entity, acs: ACSet, m: EntityMap): PropMap = {
-  
-  val p = acs.props
-
-  val Seq(s,t) = Seq(src,tgt).map(p.get(_))
-  val sc = s.flatMap(p => findCenter((p - bg),m)).getOrElse(
-    p.get(Start).getOrElse {
-      println(s"wireProps: missing center for $s = $src($_e)")
-      Complex(500,500)
-    }
-  )
-  val tc = t.flatMap(p => findCenter((p - bg),m)).getOrElse(
-    p.get(End).getOrElse {
-      println(s"wireProps: missing center for $t = $tgt($_e)")
-      Complex(500,500)
-    }
-  )
-  val Seq(sd,td) = Seq(s,t).map(_.map(_ - bg) match {
-    case Some(p) 
-      if p.ty.path == Seq(Box,OutPort) |
-        p.ty.path == Seq(InPort)
+def portDir(p:Part) = p.ty.path match {
+    case Seq(Box,OutPort) | Seq(InPort)
       => 10.0
-    case Some(p) 
-      if p.ty.path == Seq(Box,InPort) |
-        p.ty.path == Seq(OutPort)
+    case Seq(Box,InPort) | Seq(OutPort)
       => -10.0
     case _ => 0.0
-  })
-
-  PropMap().set(Stroke,"black")
-    .set(Start,sc).set(WireProp.StartDir,sd)
-    .set(End,tc).set(WireProp.EndDir,td)
-    
-}
-
-
+  }
 
 val entitySources = (es:EditorState) => Seq(
-  ACSetEntitySource(Box, AltDPBox(InPort, OutPort)(es)).withProps(PropMap() + (FontSize,22)),
-  ACSetEntitySource(InPort, BasicPort()(es)).withProps(PropMap() + (MinimumWidth,40) + (Fill,"lightblue")),
-  ACSetEntitySource(OutPort, BasicPort()(es)).withProps(PropMap() + (MinimumWidth,40) + (Fill,"lightblue")),
-  ACSetEntitySource(Wire, BasicWire(es)).addPropsBy(
-    wireProps(Src, Tgt, es.bgPart)
-  )
+  ACSetEntitySource(Box, 
+  AltDPBox(InPort, OutPort, 
+    PropMap() + (Fill,"lightblue"),           // InPort props
+    PropMap() + (Fill,"lightgreen")           // OutPort props
+  )(es)).withProps(PropMap() + (FontSize,22)),
+  ACSetEntitySource(InPort, BasicPort()(es))
+    .withProps(PropMap() + (MinimumWidth,40) + (Fill,"lightblue")),
+  ACSetEntitySource(OutPort, BasicPort()(es))
+    .withProps(PropMap() + (MinimumWidth,40) + (Fill,"lightgreen")),
+  ACSetEntitySource(Wire, BasicWire(es))
+    .withProps(PropMap() + (Stroke,"black"))
+    .addPropsBy(
+      wireProps(Src, Tgt, portDir, es.bgPart)
+    )
 )
 
 

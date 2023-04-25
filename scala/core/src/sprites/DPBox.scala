@@ -152,4 +152,14 @@ object DPBox {
   def layoutPortsBg(inPort:Ob,outPort:Ob)(sz:Complex,data:ACSet): ACSet =
     layoutPorts(inPort,outPort)(BoundingBox(sz/2.0,sz),data)
 
+
+
+  def portNumber(pos:Complex,size:Complex,nports:Int) =
+    val l = (0 to nports+1).map(
+      _ * size.y/(nports + 1)
+    )
+    l.lastIndexWhere(_ < pos.y)
+
+
+
 } 

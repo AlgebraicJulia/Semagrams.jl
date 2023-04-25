@@ -5,7 +5,6 @@ import com.raquo.laminar.api._
 import semagrams.util._
 import semagrams._
 import semagrams.acsets._
-// import semagrams.{text as sematext,_}
 
 import semagrams.util.Complex.{im}
 
@@ -15,7 +14,6 @@ import upickle.default.ReadWriter
 enum WireProp[T: ReadWriter] extends Property {
   case StartDir extends WireProp[Complex]
   case EndDir extends WireProp[Complex]
-  // case WireLabel extends WireProp[String]
   case LabelAnchor extends WireProp[Double]
   case LabelOffset extends WireProp[Complex]
 
@@ -103,7 +101,7 @@ case class Wire() extends Sprite {
 
     def label(p: PropMap) = p.get(Content).getOrElse("")
     def fontsize(p: PropMap) = p.get(FontSize).getOrElse(16.0)
-    def pstroke(p: PropMap) = p.get(Stroke).getOrElse("black")
+    def pstroke(p: PropMap) = p.get(Stroke).getOrElse("red")
 
     val txt = L.svg.text(
       xy <-- $p.map(labelPos),
@@ -127,7 +125,7 @@ case class Wire() extends Sprite {
     )
 
     val handle = path(
-      pathElts <-- $p.map(p => blockPath(s(p), t(p), ds(p), dt(p), 3, b(p))),
+      pathElts <-- $p.map(p => blockPath(s(p), t(p), ds(p), dt(p), 5, b(p))),
       fill := "white",
       opacity := ".0",
       stroke := "none",

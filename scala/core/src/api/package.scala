@@ -54,7 +54,8 @@ package object api {
     BasicDPBox,
     BasicWrapper,
     WireProp,
-    findCenter
+    findCenter,
+    wireProps
   }
   export ui.{UIState}
   export util.{
