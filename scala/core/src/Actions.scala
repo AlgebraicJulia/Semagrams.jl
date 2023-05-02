@@ -43,12 +43,8 @@ case class Actions(
     * current mouse position.
     */
   def addAtMouse(ob: Ob): IO[Part] = addAtMouse(ob,ob.schema())
-    
-  //   for {
-  //   pos <- es.mousePos
-  //   x <- m.updateS(addPart(es.bgPart,ob,PropMap() + (Center, pos)))
-  // } yield x
 
+    
   /** [[addAtMouse]] without returning the part */
   def addAtMouse_(ob: Ob, init: ACSet): IO[Unit] =
     addAtMouse(ob, init).map(_ => ())

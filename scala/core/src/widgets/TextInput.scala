@@ -38,7 +38,6 @@ def TextInput[A](v: LensedVar[A, String], multiline: Boolean)(
         val length = ref.value.length()
         ref.setSelectionRange(0, length)
       })
-      // visibility := "hidden"
     )
   } else {
     input(

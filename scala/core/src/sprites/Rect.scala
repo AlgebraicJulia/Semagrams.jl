@@ -35,7 +35,6 @@ case class Rect(val props: PropMap) extends Sprite {
           L.svg.tspan(
             L.textToNode(t),
             textAnchor := "middle",
-            // dominantBaseline := "central",
             x <-- data.map(p => p.get(Center).getOrElse(Complex(50,50)).x.toString()),
             y <-- data.map(
               p => (p.get(Center).getOrElse(Complex(100,100)).y + p(FontSize)*(i + 1 - l/2.0)).toString()
@@ -46,16 +45,6 @@ case class Rect(val props: PropMap) extends Sprite {
       ),
       fontSize <-- data.map(_(FontSize).toString)
     )
-    // textAnchor := "middle",
-    // dominantBaseline := "central",
-    // style := "user-select: none"
-    // )),
-    // L.svg.tspan(
-    //   L.child <-- data.map(p => L.textToNode(p(Content))),
-    //   textAnchor := "middle",
-    //   dominantBaseline := "central",
-    //   style := "user-select: none"
-    // ),
 
     val box = rect(
       geomUpdater(data),
