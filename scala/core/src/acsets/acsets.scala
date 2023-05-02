@@ -8,13 +8,11 @@ import monocle.Lens
 import semagrams.util.msgError
 import semagrams.util.bijectiveRW
 
-// import scala.language.implicitConversions
 
 /** A trait marking objects in a [[Schema]] */
 trait Ob {
 
   /** The subschema for the subacsets on parts of this type */
-  // lazy 
   lazy val schema: Schema = SchEmpty
 
   /** This object promoted to type for the domain/codomain of a morphism */
@@ -261,22 +259,22 @@ trait Schema {
     */
 
 
-  //** Serialization of `Ob`s in the schema */
+  /** Serialization of `Ob`s in the schema */
   implicit def obRW: ReadWriter[Ob] = bijectiveRW(obs)
   
-  //** Serialization of `PartType`s in the schema */
+  /** Serialization of `PartType`s in the schema */
   implicit def partTypeRW: ReadWriter[PartType] = macroRW
 
-  //** Serialization of `Part`s in the schema */
+  /** Serialization of `Part`s in the schema */
   implicit def partRW: ReadWriter[Part] = macroRW
 
-  //** A superset of properties (`Property`) occuring in the schema. For serialization. */
+  /** A superset of properties (`Property`) occuring in the schema. For serialization. */
   def allProps = (homs ++ attrs 
     ++ props ++ obs.flatMap(_.schema.props)
     ++ GenericProperty.values
   ).toSet
 
-  //** Serialization of properties (`Property`) in the schema */
+  /** Serialization of properties (`Property`) in the schema */
   implicit def propertyRW: ReadWriter[Property] = bijectiveRW(allProps)
 
   /** Serialization of `PropMap`s in the schema, writing json objects
@@ -300,10 +298,10 @@ trait Schema {
     })
   )
 
-  //** All `Schema`s occuring in the schema */
+  /** All `Schema`s occuring in the schema */
   def allSchemas = Set(this +: obs.map(_.schema)*)
 
-  //** Serialization of `Schema`s occuring in the schema */
+  /** Serialization of `Schema`s occuring in the schema */
   implicit def schemaRW: ReadWriter[Schema] = bijectiveRW(allSchemas)
 
   /** Serialization of `PartSet`s occuring in the schema. Note that this
@@ -328,7 +326,7 @@ trait Schema {
     * but found int32` 
     */
   
-  //** Serialization of `ACSets`s based on the schema */
+  /** Serialization of `ACSets`s based on the schema */
   implicit def acsetRW: ReadWriter[ACSet] = readwriter[Map[String,ujson.Value]].bimap(
     acset => Map(
       "schema" -> writeJs(acset.schema),

@@ -8,7 +8,6 @@ import semagrams.util._
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.nodes.ReactiveElement
 import cats.effect._
-// import cats.implicits._
 import org.scalajs.dom
 import cats.effect.std._
 
@@ -240,30 +239,6 @@ class EditorState(
       _ <- choice(i)
     } yield ()
 
-
-
-  // def tryEntity(p:Part) = 
-  //   val e = p.diffOption(bgPart).flatMap(
-  //     q => q.path match
-  //       case Seq() => None
-  //       case _ => entities.now().em.get(q.head)
-  //   )
-  //   e
-
-  // def getEntity(p:Part) = tryEntity(p).getOrElse(
-  //   throw msgError(s"No entity associated with part $p")
-  // )
-
-  // def getSprite(p:Part): Sprite = getEntity(p)._1
-  // def getEntityACSet(p:Part): ACSet = p.path match
-  //   case Seq() | Seq(_) => getEntity(p)._2
-  //   case _ => 
-  //     val (spr,acset) = getEntity(p)
-  //     val bb = spr.bbox(ROOT,acset).get
-  //     spr.layout(bb,acset).subacset(p.tail)
-
-  // def getEntityProps(p:Part): PropMap = getEntityACSet(p).props
-  
 
 
 }

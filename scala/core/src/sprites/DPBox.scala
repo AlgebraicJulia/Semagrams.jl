@@ -70,7 +70,6 @@ case class DPBox(
   ): L.SvgElement = {
     val rect = boxSprite.present(ent, init, updates, attachHandlers)
 
-    // val bbox = boxSprite.bbox(ROOT,init).get
     val laid_out = updates.map(acset => computePortCenters(acset))
     
     val inPorts = laid_out

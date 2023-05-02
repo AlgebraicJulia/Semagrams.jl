@@ -110,13 +110,11 @@ def wireProps(
 
   val sc = s.flatMap(_.diffOption(bg)).flatMap(findCenter(_,m)).getOrElse(
     p.get(Start).getOrElse {
-      // println(s"wireProps: missing center for $s = $src($_e)")
       Complex(500,500)
     }
   )
   val tc = t.flatMap(_.diffOption(bg)).flatMap(findCenter(_,m)).getOrElse(
     p.get(End).getOrElse {
-      // println(s"wireProps: missing center for $t = $tgt($_e)")
       Complex(500,500)
     }
   )
