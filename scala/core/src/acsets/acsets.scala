@@ -81,7 +81,7 @@ trait Attr extends Property {
   * through the nested schemas.
   *
   * So `PartType(Seq())` is the type of the root acset part, and
-  * `PartType(Seq(Box,IPort))` refers to the type of input ports on boxes.
+  * `PartType(Seq(Box,InPort))` refers to the type of input ports on boxes.
   */
 case class PartType(path: Seq[Ob]) extends EntityType {
 
@@ -190,8 +190,12 @@ case class Part(path: Seq[(Ob, Id)]) extends Entity {
   /** Checks if `that` is more specific than `this` */
   def <(that: Part): Boolean = that > this
 
-  /** Checks if `ptype` is an initial segment of `ty` */
-  def in(ptype: PartType) = ty > ptype
+  /** Checks if `ptype` is an initial or final segment of `ty` */
+  def in(ptype: PartType) = 
+    (ty > ptype) | {
+      val ext = ty.path.takeRight(ptype.path.length)
+      ext == ptype.path
+    }
 
   /** Returns `Some(p)` if `this == that.extendPart(p)`, else `None` */
   def diffOption(that:Part): Option[Part] = 
@@ -204,6 +208,8 @@ case class Part(path: Seq[(Ob, Id)]) extends Entity {
   def -(that: Part): Part = diffOption(that).getOrElse(
     throw msgError(s"Part $this is not an extension of $that")
   )
+
+
 
 }
 
@@ -623,6 +629,15 @@ case class ACSet(
     val sub = subacset(p)
     val newSub = sub.copy(
       props = sub.props.set(f, v)
+    )
+    setSubacset(p, newSub)
+  }
+
+  /** Set the property `f` of part `p` to `v` */
+  def setSubpartProps(p: Part, pm:PropMap): ACSet = {
+    val sub = subacset(p)
+    val newSub = sub.copy(
+      props = sub.props ++ pm
     )
     setSubacset(p, newSub)
   }

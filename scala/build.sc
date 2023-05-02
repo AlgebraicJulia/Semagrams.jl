@@ -18,7 +18,7 @@ def defaultPomSettings(desc: String) = PomSettings(
 
 trait Defaults extends ScalaJSModule with PublishModule with ScalafmtModule {
   def scalaVersion = "3.2.1"
-  def scalaJSVersion = "1.12.0"
+  def scalaJSVersion = "1.13.0"
   def ammoniteVersion = "2.5.6"
 
   def scalacOptions = Seq("-deprecation", "-feature")
@@ -35,6 +35,7 @@ trait Defaults extends ScalaJSModule with PublishModule with ScalafmtModule {
     ivy"com.github.japgolly.scalacss::core::1.0.0",
     ivy"dev.optics::monocle-core::3.2.0",
     ivy"dev.optics::monocle-macro::3.2.0",
+    ivy"com.softwaremill.magnolia1_3::magnolia::1.3.0",
   )
 
   def desc: String

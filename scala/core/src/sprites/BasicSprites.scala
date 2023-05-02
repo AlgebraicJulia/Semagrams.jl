@@ -23,12 +23,15 @@ val BasicRect = BasicWrapper(Rect())
 
 val BasicWire = BasicWrapper(Wire())
 
-def BasicDPBox(inPort: Ob, outPort: Ob)(es: EditorState) = DPBox(
+def BasicDPBox(inPort: Ob, outPort: Ob,
+  portStyle: (ACSet,Part )=> PropMap
+)(es: EditorState) = DPBox(
   BasicRect(es),
   BasicWireStub(-10)(es),
   BasicWireStub(10)(es),
   inPort,
-  outPort
+  outPort,
+  portStyle
 )
 
 def BasicWireStub(extend: Double) = BasicWrapper(
@@ -36,19 +39,14 @@ def BasicWireStub(extend: Double) = BasicWrapper(
 )
 
 def AltDPBox(inPort: Ob, outPort: Ob, 
-  portProps: PropMap = PropMap() + (Fill,"black")
-)(es: EditorState): DPBox = AltDPBox(inPort,outPort,portProps,portProps)(es)
-  
-  
-def AltDPBox(inPort: Ob, outPort: Ob, 
-  srcProps: PropMap, tgtProps: PropMap
-)(es: EditorState): DPBox =  
-  DPBox(
+  portStyle: (ACSet,Part) => PropMap = (_,_) => PropMap()
+)(es: EditorState): DPBox = DPBox(
   BasicWrapper(Rect(PropMap() + (MinimumHeight,80.0) + (MinimumWidth,50.0)))(es),
-  BasicPort(srcProps)(es),
-  BasicPort(tgtProps)(es),
+  BasicPort()(es),
+  BasicPort()(es),
   inPort,
-  outPort
+  outPort,
+  portStyle
 )
 
 def BasicPort(props: PropMap = PropMap()) = BasicWrapper(

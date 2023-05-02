@@ -100,6 +100,7 @@ def ACSetEdgeSource(
 def wireProps(
     src: Hom,
     tgt: Hom,
+    typeProps: (ACSet,Part) => PropMap,
     dir: Part => Complex = _ => Complex(0,0),
     bg: => Part = ROOT
 )(_e: Entity, acs: ACSet, m: EntityMap): PropMap = {
@@ -122,7 +123,10 @@ def wireProps(
   )
   val Seq(sd,td) = Seq(s,t).map(_.flatMap(_.diffOption(bg)).map(dir).getOrElse(Complex(0,0)))
 
-  acs.props.set(Start,sc).set(WireProp.StartDir,sd)
+
+  (acs.props ++ typeProps(acs,_e.asInstanceOf[Part])
+    // ++ wprops(_e.asInstanceOf[Part])
+  ).set(Start,sc).set(WireProp.StartDir,sd)
     .set(End,tc).set(WireProp.EndDir,td)
     
 }

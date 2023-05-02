@@ -77,23 +77,29 @@ case class Actions(
     case a: ACSet => add(p, ob, a).map(_ => ())
 
   /** Set the value of the property `f` at the part `p` to be `v` */
-  def set(p: Part, f: Property, v: f.Value,check:Boolean=true): IO[Unit] = (f,v) match
-    case (h,pt):(Hom,Part) =>
-      if check && !h.doms.exists(dom => (p - es.bgPart).in(dom) )
-      then 
-        throw msgError(s"$p not in dom($h)")
-      else if check && !h.codoms.exists(codom => (pt - es.bgPart).in(codom))
-      then 
-        throw msgError(s"$v not in codom($h)")
-      else 
-        m.updateS(setSubpart(p, h, pt))
-    case (a,_):(Attr,Any) =>
-      if check && a.doms.exists(dom => (p - es.bgPart).in(dom) )
-      then m.updateS(setSubpart(p, f, v))
-      else throw msgError(s"$p not in dom($a)")
-    case _ => 
-      m.updateS(setSubpart(p, f, v))
-    
+  def set(p: Part, f: Property, v: f.Value,check:Boolean=true): IO[Unit] =
+    println(s"set $p")
+    // println(s"props = ${this.}")
+    f match
+      case h:Hom =>
+        val ext = v.asInstanceOf[Part] - es.bgPart
+        if check && !h.doms.exists(dom => p.in(dom) )
+        then
+          throw msgError(s"$p not in dom($h) = ${h.doms}")
+        else if check && !h.codoms.exists(codom => ext.in(codom))
+        then
+          throw msgError(s"$v not in codom($h)")
+        else 
+          m.updateS(setSubpart(p, h, v.asInstanceOf[Part]))
+      case a:Attr => 
+        if check && a.doms.exists(dom => p.in(dom) )
+        then 
+          m.updateS(setSubpart(p, a, v.asInstanceOf[a.Value]))
+        else 
+          throw msgError(s"$p not in dom($a)")
+      case _ =>
+        m.updateS(setSubpart(p, f, v))
+
 
   /** Unset the value of the property `f` of the part `p` */
   def remove(p: Part, f: Property): IO[Unit] = m.updateS(
@@ -364,6 +370,7 @@ case class Actions(
     })
   } yield ()
 
+
   /** Bring up a textbox that can be used for copy/pasting the serialized
     * version of the current state
     */
@@ -413,6 +420,15 @@ case class Actions(
       case ROOT => ROOT
       case p => p.init
     zoomIn(ROOT,layout,esources).flatMap(_ => zoomIn(b,layout,esources))
+
+
+  def doAll[A](fs:Seq[IO[A]]): IO[Seq[A]] = fs match
+    case Seq() => IO(Seq())
+    case Seq(head,tail @_*) => (for
+      a <- head
+      as <- doAll(tail)
+    yield (a +: as))
+  
 
 
 }

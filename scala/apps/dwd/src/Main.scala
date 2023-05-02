@@ -21,7 +21,11 @@ import semagrams.sprites.{AltDPBox,BasicPort}
 import semagrams.util.msgError
 import semagrams.sprites.DPBox
 import ujson.True
+import semagrams.PValue
+import cats.Traverse
 
+
+// import formula._
 
 case object SchDWD extends Schema {
 
@@ -49,13 +53,34 @@ case object SchDWD extends Schema {
       OutPort.asDom() :+ Box.extend(InPort)
     )
 
-  
+  case class Person(name:String,position:String) extends DWDType derives ReadWriter
+  case class Document(filename:String,program:String) extends DWDType derives ReadWriter
+  enum OtherTypes extends DWDType derives ReadWriter:
+    case Standard, Requirement
+
+  enum DWDAttrs(val doms:Seq[PartType]) extends Attr:
+    case WireType extends DWDAttrs(Wire.asDom()) with PValue[DWDType]
+    case PortType extends DWDAttrs(
+      InPort.asDom() ++ OutPort.asDom()
+        :+ Box.extend(InPort) :+ Box.extend(OutPort)
+    ) with PValue[DWDType]
+
+  sealed trait DWDType derives ReadWriter:
+    def props = this match
+      case Person(_,_)            => PropMap() + (Fill,"red") + (Stroke,"red")
+      case Document(_,_)          => PropMap() + (Fill,"blue") + (Stroke,"blue")
+      case OtherTypes.Standard    => PropMap() + (Fill,"green") + (Stroke,"green")
+      case OtherTypes.Requirement => PropMap() + (Fill,"purple") + (Stroke,"purple")
+
+    
+
   
 }
 
 import SchDWD._
 import DWDObs._
 import DWDHoms._
+import DWDAttrs._
 
 
 
@@ -70,15 +95,6 @@ def bindings(
   val a = Actions(es,g,ui)
 
   
-  val boxMenu = Seq(
-    ("Rename", (b:Part) => IO(println("rename fired")).>>(a.edit(Content,true)(b))),
-    ("Add Input", (b:Part) => IO(println("addIn"))),
-  )
-
-  val wireMenu = Seq(
-    ("Rename", (b:Part) => IO(println("rename fired")).>>(a.edit(Content,true)(b))),
-  )
-
 
 
   def liftPort(p: Part, pos: Complex): Seq[(Ob,Int)] =
@@ -104,17 +120,73 @@ def bindings(
     Seq((ptype,j))
 
 
+  def setType(p:Part,tpe:DWDType): IO[Unit] = 
+    p.lastOb match
+    case Wire => (for
+      _ <- a.set(p,WireType,tpe)
+      s = g.now().trySubpart(Src,p)
+      t = g.now().trySubpart(Tgt,p)
+      _ <- s match
+        case Some(p) if g.now().trySubpart(PortType,p) != Some(tpe) => setType(p,tpe)
+        case _ => IO(())
+      _ <- t match
+        case Some(p) if g.now().trySubpart(PortType,p) != Some(tpe) => setType(p,tpe)
+        case _ => IO(())
+    yield ())
+    case InPort | OutPort => (for 
+      _ <- a.set(p,PortType,tpe)
+      ws = (g.now().incident(p,Src) ++ g.now().incident(p,Tgt))
+        .filter(w => g.now().trySubpart(WireType,w) != Some(tpe))
+      _ <- a.doAll(ws.map(setType(_,tpe)))
+    yield ())
+  
 
   def test(p:Part) = es.mousePos.map(z => 
-    println(s"hovered = $p")    
+    val tpe = p.lastOb match
+      case Wire => g.now().trySubpart(WireType,p)
+      case InPort | OutPort => g.now().trySubpart(PortType,p)
+    println(s"tpe = $tpe")
   )
 
 
   val layout = DPBox.layoutPortsBg(InPort,OutPort)
   val esources = entitySources(es)
+  
+  
 
   import MouseButton._
   import KeyModifier._
+
+  val helpText = """
+    ∙ Double click  = add box/edit labels
+    ∙ Drag = Drag box
+    ∙ Drag + Shift = Add/unplug wire
+    ∙ Double click + Ctrl = Zoom into/out of boxes
+    ∙ "d" = Delete element below mouse
+    ∙ "s" = Open import/export window
+    ∙ Ctrl + "z"/Shift + Ctrl + "Z" = undo/redo
+  """
+
+
+  val boxMenu = Seq(
+    ("Rename", (b:Part) => IO(println("rename fired")).>>(a.edit(Content,true)(b))),
+  )
+  val wireMenu: Seq[(String,Part => IO[Unit])] = Seq(
+    // ("Rename", (w:Part) => IO(println("rename fired")).>>(a.edit(Content,true)(w))),
+    ("Set type to Person", (w:Part) => IO({
+      println(s"set Person")
+    })),
+    ("Set type to Document", (w:Part) => IO({
+      println(s"Set Document")
+    })),
+    ("Set type to Standard", (w:Part) => 
+      setType(es.bgPlus(w),OtherTypes.Standard)
+    ),
+    ("Set type to Requirement", (w:Part) => 
+      setType(es.bgPlus(w),OtherTypes.Requirement)
+    )
+  )
+
 
 
   Seq(
@@ -167,10 +239,10 @@ def bindings(
 
     // Menu actions
     menuOnPart().flatMap(p => 
-      p match
-      case w if w.lastOb == Wire => 
+      p.lastOb match
+      case Wire | InPort | OutPort => 
         es.makeMenu(ui,wireMenu)(p)
-      case b if b.lastOb == Box =>
+      case Box =>
         es.makeMenu(ui,boxMenu)(p)
       case _ => a.die
     ),
@@ -192,13 +264,15 @@ def bindings(
     keyDown("?").andThen(a.debug),
 
     // Open serialization window
-    keyDown("s").andThen(a.importExport)
+    keyDown("s").andThen(a.importExport),
+
+    // Help window
+    // keyDown("?").andThen(showPopoverUntil(helpText, keyDown("?"))),
+
   )
 }
 
-
-
-  
+ 
 
 
 def portDir(p:Part) = p.ty.path match {
@@ -209,20 +283,29 @@ def portDir(p:Part) = p.ty.path match {
     case _ => 0.0
   }
 
+def style(acs:ACSet,p:Part): PropMap = (p.lastOb match
+    case Wire => acs.props.get(WireType)
+    case InPort | OutPort => acs.props.get(PortType)
+    case _ => None
+  ).map(_.props).getOrElse(PropMap())
+
 val entitySources = (es:EditorState) => Seq(
   ACSetEntitySource(Box, 
-  AltDPBox(InPort, OutPort, 
-    PropMap() + (Fill,"lightblue"),           // InPort props
-    PropMap() + (Fill,"lightgreen")           // OutPort props
-  )(es)).withProps(PropMap() + (FontSize,22)),
+  AltDPBox(InPort, OutPort,style)(es))
+    .withProps(PropMap() + (FontSize,22)),
   ACSetEntitySource(InPort, BasicPort()(es))
-    .withProps(PropMap() + (MinimumWidth,40) + (Fill,"lightblue")),
+    .withProps(PropMap() + (MinimumWidth,40))
+    .addPropsBy((e:Entity,acs:ACSet,em:EntityMap) =>
+      acs.props ++ style(acs,e.asInstanceOf[Part])
+    ),
   ACSetEntitySource(OutPort, BasicPort()(es))
-    .withProps(PropMap() + (MinimumWidth,40) + (Fill,"lightgreen")),
+    .withProps(PropMap() + (MinimumWidth,40))
+    .addPropsBy((e:Entity,acs:ACSet,em:EntityMap) => 
+      acs.props ++ style(acs,e.asInstanceOf[Part])
+    ),
   ACSetEntitySource(Wire, BasicWire(es))
-    .withProps(PropMap() + (Stroke,"black"))
     .addPropsBy(
-      wireProps(Src, Tgt, portDir, es.bgPart)
+      wireProps(Src, Tgt, style, portDir, es.bgPart)
     )
 )
 
@@ -249,6 +332,7 @@ object Main {
           entitySources(es)
         )
         ui <- es.makeUI()
+        // _ = es.elt.ref.
         _ <- es.bindForever(bindings(es, g, ui,vp))
       } yield ()
     }

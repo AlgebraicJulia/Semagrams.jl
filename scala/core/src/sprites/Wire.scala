@@ -101,7 +101,7 @@ case class Wire() extends Sprite {
 
     def label(p: PropMap) = p.get(Content).getOrElse("")
     def fontsize(p: PropMap) = p.get(FontSize).getOrElse(16.0)
-    def pstroke(p: PropMap) = p.get(Stroke).getOrElse("red")
+    def pstroke(p: PropMap) = p.get(Stroke).getOrElse("black")
 
     val txt = L.svg.text(
       xy <-- $p.map(labelPos),

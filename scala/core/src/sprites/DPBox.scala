@@ -40,7 +40,8 @@ case class DPBox(
     inPortSprite: Sprite,
     outPortSprite: Sprite,
     inPort: Ob,
-    outPort: Ob
+    outPort: Ob,
+    portStyle: (ACSet,Part) => PropMap
 ) extends Sprite {
 
   
@@ -62,6 +63,16 @@ case class DPBox(
     layout(bbox,data)
   }
 
+  def stylePorts(data:ACSet,style:(ACSet,Part) => PropMap) =
+    val pts = data.parts(ROOT,inPort) ++ data.parts(ROOT,outPort)
+    var mod = data
+    for (pt,acs) <- pts
+    yield
+      val typeProps = style(mod.subacset(pt),pt)
+      mod = mod.setSubpartProps(pt,typeProps)
+    mod
+
+
   def present(
       ent: Entity,
       init: ACSet,
@@ -70,13 +81,19 @@ case class DPBox(
   ): L.SvgElement = {
     val rect = boxSprite.present(ent, init, updates, attachHandlers)
 
-    // val bbox = boxSprite.bbox(ROOT,init).get
-    val laid_out = updates.map(acset => computePortCenters(acset))
+    val laid_out = updates
+      .map(acset => computePortCenters(acset))
+      .map(acset => stylePorts(acset,portStyle))
     
     val inPorts = laid_out
-      .map(_.parts(ROOT, inPort))
+      .map(acset => acset.parts(ROOT, inPort))
       .split(_._1)((p, d, $d) => {
-        inPortSprite.present(ent.asInstanceOf[Part].extendPart(p), d._2, $d.map(_._2), attachHandlers)
+        inPortSprite.present(
+          ent.asInstanceOf[Part].extendPart(p), 
+          d._2, 
+          $d.map(_._2), 
+          attachHandlers
+        )
       })
 
     val outPorts = laid_out

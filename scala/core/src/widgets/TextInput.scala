@@ -30,13 +30,13 @@ def TextInput[A](v: LensedVar[A, String], multiline: Boolean)(
     textArea(
       height := "100px",
       width := "150px",
-      resize := "none",
+      // resize := "none",
       common,
       onMountCallback(el => {
         val ref = el.thisNode.ref
         ref.focus()
-        // val length = ref.value.length()
-        // ref.setSelectionRange(0, length)
+        val length = ref.value.length()
+        ref.setSelectionRange(0, length)
       })
       // visibility := "hidden"
     )
@@ -53,3 +53,4 @@ def TextInput[A](v: LensedVar[A, String], multiline: Boolean)(
     )
   }
 }
+
