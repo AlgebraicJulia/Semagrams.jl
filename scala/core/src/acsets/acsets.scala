@@ -311,17 +311,19 @@ trait Schema {
   implicit def schemaRW: ReadWriter[Schema] = bijectiveRW(allSchemas)
 
   /** Serialization of `PartSet`s occuring in the schema. Note that this
-    * omits the `nextID` and id sequence from the `PartSet` and rebuilds
-    * these from the keys of the dictionary. 
+    * omits the `nextID` and rebuilds it from the sequence of ids. 
    */
-  implicit def partsRW: ReadWriter[PartSet] = readwriter[Map[Int,ujson.Value]].bimap(
-    ps => ps.ids.map(id =>
-      id.id -> writeJs(ps.acsets(id))
-    ).toMap,
-    sp => PartSet(
-      sp.keys.maxOption.map(_+1).getOrElse(0),
-      sp.keys.map(Id(_)).toSeq,
-      sp.map((i,json) => 
+  implicit def partsRW: ReadWriter[PartSet] = readwriter[(Seq[Int],Map[Int,ujson.Value])].bimap(
+    ps => (
+      ps.ids.map(_.id),
+      ps.ids.map(id => 
+        id.id -> writeJs(ps.acsets(id))
+      ).toMap
+    ),
+    (seq,dict) => PartSet(
+      seq.maxOption.map(_+1).getOrElse(0),
+      seq.map(Id(_)),
+      dict.map((i,json) => 
         Id(i) -> read[ACSet](json)
       )
     )

@@ -74,8 +74,6 @@ case class Actions(
 
   /** Set the value of the property `f` at the part `p` to be `v` */
   def set(p: Part, f: Property, v: f.Value,check:Boolean=true): IO[Unit] =
-    println(s"set $p")
-    // println(s"props = ${this.}")
     f match
       case h:Hom =>
         val ext = v.asInstanceOf[Part] - es.bgPart
@@ -226,13 +224,15 @@ case class Actions(
   // TODO: Split src/target logic
   // TODO: Add dragSpan, dragCospan
 
-  def dragEdge(
+  def dragEdge[WType](
     ob:Ob,
     src:Hom,
     tgt:Hom,
-    lift: (Part,Complex) => Seq[(Ob,Int)] = (_,_) => Seq()
+    lift: (Part,Complex) => Seq[(Ob,Int)] = (_,_) => Seq(),
+    eqTypes: (Part,Part) => IO[Unit] = (p,q) => IO(())
   )(s: Part): IO[Part] =
-      
+
+
     def start = (z:Complex) =>
       
       for
@@ -240,23 +240,25 @@ case class Actions(
           case Seq() => IO(s)
           case ext => liftTo(s,ext)
         }
-
-        w <- add(
+        // props = p match {
+        props = (p - es.bgPart).ty match {
+            // case p if src.codomains.exists(p in _) => 
+          case tp if src.codoms.contains(tp) =>
+            PropMap().set(Interactable, false)
+              .set(src, p).set(End, z)  
+          // case p if tgt.codomains.exists(p in _) =>
+          case tp if tgt.codoms.contains(tp) =>            
+            PropMap().set(Interactable, false)
+              .set(Start, z).set(tgt, p)
+          // case _ => die
+        }
+        e <- add(
           es.bgPart,
           ob,
-          (p - es.bgPart).ty match
-            case tp if src.codoms.contains(tp) =>
-              PropMap()
-                .set(src, p)
-                .set(End, z)
-                .set(Interactable, false)
-            case tp if tgt.codoms.contains(tp) =>
-              PropMap()
-                .set(tgt, p)
-                .set(Start, z)
-                .set(Interactable, false)
+          props
         )
-      yield w
+        _ <- eqTypes(p,e)
+      yield e
 
     def during = (e: Part, p: Complex) =>
       if m.now().hasSubpart(End, e)
@@ -269,6 +271,7 @@ case class Actions(
       q <- lift(t,z) match
         case Seq() => IO(t)
         case ext => liftTo(t,ext)
+      _ <- eqTypes(e,q)
       _ <- m.now() match
         case mnow if mnow.hasSubpart(src,e) => for {
           _ <- set(e, tgt, q)
@@ -293,7 +296,8 @@ case class Actions(
     w:Part,
     src:Hom,
     tgt:Hom,
-    lift: (Part,Complex) => Seq[(Ob,Int)] = (_,_) => Seq()
+    lift: (Part,Complex) => Seq[(Ob,Int)] = (_,_) => Seq(),
+    eqTypes: (Part,Part) => IO[Unit] = (p,q) => IO(())
   ) =
     def start(z:Complex) = if m.now().trySubpart(src,w) == Some(p)
       then (for
@@ -325,6 +329,7 @@ case class Actions(
       q <- lift(t,z) match
         case Seq() => IO(t)
         case ext => liftTo(t,ext)
+      _ <- eqTypes(q,e)
       _ <- m.now() match
         case mnow if mnow.hasSubpart(src,e) => for {
           _ <- set(e, tgt, q)

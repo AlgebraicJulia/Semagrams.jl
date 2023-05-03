@@ -19,7 +19,7 @@ def Menu[A](
     styleAttr := "display: flex; flex-direction: column; padding: 0px; border: none",
     choices.map(
       { case (text, v) =>
-        button(
+        div(
           onClick.mapTo(v) --> finished,
           styleAttr := "padding: 2px; margin: 0px; border: none; background: lightgray; border: solid thin",
           a(textToNode(text))

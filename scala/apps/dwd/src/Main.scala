@@ -53,24 +53,22 @@ case object SchDWD extends Schema {
       OutPort.asDom() :+ Box.extend(InPort)
     )
 
-  case class Person(name:String,position:String) extends DWDType derives ReadWriter
-  case class Document(filename:String,program:String) extends DWDType derives ReadWriter
-  enum OtherTypes extends DWDType derives ReadWriter:
-    case Standard, Requirement
 
   enum DWDAttrs(val doms:Seq[PartType]) extends Attr:
-    case WireType extends DWDAttrs(Wire.asDom()) with PValue[DWDType]
+    // case WireType extends DWDAttrs() with PValue[DWDType]
     case PortType extends DWDAttrs(
-      InPort.asDom() ++ OutPort.asDom()
+      Wire.asDom() ++ InPort.asDom() ++ OutPort.asDom()
         :+ Box.extend(InPort) :+ Box.extend(OutPort)
     ) with PValue[DWDType]
 
-  sealed trait DWDType derives ReadWriter:
+  enum DWDType derives ReadWriter:
+    case Person, Document, Standard, Requirement
+
     def props = this match
-      case Person(_,_)            => PropMap() + (Fill,"red") + (Stroke,"red")
-      case Document(_,_)          => PropMap() + (Fill,"blue") + (Stroke,"blue")
-      case OtherTypes.Standard    => PropMap() + (Fill,"green") + (Stroke,"green")
-      case OtherTypes.Requirement => PropMap() + (Fill,"purple") + (Stroke,"purple")
+      case Person      => PropMap() + (Fill,"red") + (Stroke,"red")
+      case Document    => PropMap() + (Fill,"blue") + (Stroke,"blue")
+      case Standard    => PropMap() + (Fill,"green") + (Stroke,"green")
+      case Requirement => PropMap() + (Fill,"purple") + (Stroke,"purple")
 
     
 
@@ -123,7 +121,7 @@ def bindings(
   def setType(p:Part,tpe:DWDType): IO[Unit] = 
     p.lastOb match
     case Wire => (for
-      _ <- a.set(p,WireType,tpe)
+      _ <- a.set(p,PortType,tpe)
       s = g.now().trySubpart(Src,p)
       t = g.now().trySubpart(Tgt,p)
       _ <- s match
@@ -136,14 +134,14 @@ def bindings(
     case InPort | OutPort => (for 
       _ <- a.set(p,PortType,tpe)
       ws = (g.now().incident(p,Src) ++ g.now().incident(p,Tgt))
-        .filter(w => g.now().trySubpart(WireType,w) != Some(tpe))
+        .filter(w => g.now().trySubpart(PortType,w) != Some(tpe))
       _ <- a.doAll(ws.map(setType(_,tpe)))
     yield ())
   
 
   def test(p:Part) = es.mousePos.map(z => 
     val tpe = p.lastOb match
-      case Wire => g.now().trySubpart(WireType,p)
+      case Wire => g.now().trySubpart(PortType,p)
       case InPort | OutPort => g.now().trySubpart(PortType,p)
     println(s"tpe = $tpe")
   )
@@ -171,21 +169,13 @@ def bindings(
   val boxMenu = Seq(
     ("Rename", (b:Part) => IO(println("rename fired")).>>(a.edit(Content,true)(b))),
   )
-  val wireMenu: Seq[(String,Part => IO[Unit])] = Seq(
-    // ("Rename", (w:Part) => IO(println("rename fired")).>>(a.edit(Content,true)(w))),
-    ("Set type to Person", (w:Part) => IO({
-      println(s"set Person")
-    })),
-    ("Set type to Document", (w:Part) => IO({
-      println(s"Set Document")
-    })),
-    ("Set type to Standard", (w:Part) => 
-      setType(es.bgPlus(w),OtherTypes.Standard)
-    ),
-    ("Set type to Requirement", (w:Part) => 
-      setType(es.bgPlus(w),OtherTypes.Requirement)
-    )
+
+  def menuItem(tpe:DWDType) = (
+    s"Set type to $tpe",
+    (p:Part) => setType(es.bgPlus(p),tpe)
   )
+
+  val wireMenu: Seq[(String,Part => IO[Unit])] = DWDType.values.toSeq.map(menuItem)
 
 
 
@@ -229,16 +219,49 @@ def bindings(
       .flatMap(p =>
         val wires = (g.now().incident(p,Src) ++ g.now().incident(p,Tgt))
           .filter(_.ty == es.bgPart.ty.extend(Wire))
+        
+        def eqTypes(p:Part,q:Part): IO[Unit] =
+          println(s"eqTypes p = $p, q = $q")
+          val ptpe = g.now().trySubpart(PortType,p)
+          val qtpe = g.now().trySubpart(PortType,q)
+          println(s"ptpe = $ptpe, qtpe = $qtpe")
+          (ptpe,qtpe) match
+            case (Some(tpe1),Some(tpe2)) => 
+              if 
+                tpe1 == tpe2
+              then 
+                println("case 1")
+                IO(())
+              else 
+                println("case 2")
+                a.die
+            case (Some(tpe),None) => 
+              println("case 3")
+              setType(q,tpe)
+            case (None,Some(tpe)) => 
+              println("case 4")
+              setType(p,tpe)
+            case (None,None) => 
+              println("case 5")
+              IO(())
+          
+          
+          // typeLens: (Part => Option[DWDType],(Part,Option[DWDType]) => IO[Unit]) = (
+          // p => g.now().trySubpart(PortType,p),
+          // (p,tpeOpt) => tpeOpt match
+          //   case Some(tpe) => setType(p,tpe)
+          //   case None => IO(())
+          // )
 
         if wires.isEmpty
         then 
-          a.dragEdge(Wire,Src,Tgt,liftPort)(p)
+          a.dragEdge(Wire,Src,Tgt,liftPort,eqTypes)(p)
         else 
-          a.unplug(p,wires(0),Src,Tgt,liftPort)
+          a.unplug(p,wires(0),Src,Tgt,liftPort,eqTypes)
       ),
 
     // Menu actions
-    menuOnPart().flatMap(p => 
+    clickOnPart(Right).flatMap(p => 
       p.lastOb match
       case Wire | InPort | OutPort => 
         es.makeMenu(ui,wireMenu)(p)
@@ -284,7 +307,7 @@ def portDir(p:Part) = p.ty.path match {
   }
 
 def style(acs:ACSet,p:Part): PropMap = (p.lastOb match
-    case Wire => acs.props.get(WireType)
+    case Wire => acs.props.get(PortType)
     case InPort | OutPort => acs.props.get(PortType)
     case _ => None
   ).map(_.props).getOrElse(PropMap())
