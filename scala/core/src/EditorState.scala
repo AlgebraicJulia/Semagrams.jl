@@ -230,12 +230,12 @@ class EditorState(
   def makeMenu(ui: UIState, entries: Seq[(String, Part => IO[Unit])])(i: Part) =
     for {
       pos <- mousePos
-      choice <- ui.dialogue[Part => IO[Matchable]](cb =>
+      choice <- fromMaybe(ui.dialogue[Option[Part => IO[Matchable]]](cb =>
         PositionWrapper(
           Position.atPos(pos),
           Menu(entries)(cb)
         )
-      )
+      ))
       _ <- choice(i)
     } yield ()
 

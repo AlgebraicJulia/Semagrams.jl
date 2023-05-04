@@ -1,0 +1,929 @@
+{
+  "schema": "SchDWD",
+  "props": {
+    
+  },
+  "partsMap": [
+    [
+      "InPort",
+      [
+        [
+          5,
+          4,
+          3,
+          2,
+          0,
+          1
+        ],
+        {
+          "0": {
+            "schema": "SchEmpty",
+            "props": {
+              
+            },
+            "partsMap": [
+              
+            ]
+          },
+          "5": {
+            "schema": "SchEmpty",
+            "props": {
+              
+            },
+            "partsMap": [
+              
+            ]
+          },
+          "1": {
+            "schema": "SchEmpty",
+            "props": {
+              
+            },
+            "partsMap": [
+              
+            ]
+          },
+          "2": {
+            "schema": "SchEmpty",
+            "props": {
+              
+            },
+            "partsMap": [
+              
+            ]
+          },
+          "3": {
+            "schema": "SchEmpty",
+            "props": {
+              
+            },
+            "partsMap": [
+              
+            ]
+          },
+          "4": {
+            "schema": "SchEmpty",
+            "props": {
+              
+            },
+            "partsMap": [
+              
+            ]
+          }
+        }
+      ]
+    ],
+    [
+      "OutPort",
+      [
+        [
+          0
+        ],
+        {
+          "0": {
+            "schema": "SchEmpty",
+            "props": {
+              
+            },
+            "partsMap": [
+              
+            ]
+          }
+        }
+      ]
+    ],
+    [
+      "Wire",
+      [
+        [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        {
+          "0": {
+            "schema": "SchEmpty",
+            "props": {
+              "Src": {
+                "path": [
+                  [
+                    "InPort",
+                    0
+                  ]
+                ]
+              },
+              "Tgt": {
+                "path": [
+                  [
+                    "Box",
+                    0
+                  ],
+                  [
+                    "InPort",
+                    0
+                  ]
+                ]
+              },
+              "Content": "egg"
+            },
+            "partsMap": [
+              
+            ]
+          },
+          "5": {
+            "schema": "SchEmpty",
+            "props": {
+              "Src": {
+                "path": [
+                  [
+                    "InPort",
+                    2
+                  ]
+                ]
+              },
+              "Tgt": {
+                "path": [
+                  [
+                    "Box",
+                    1
+                  ],
+                  [
+                    "InPort",
+                    1
+                  ]
+                ]
+              },
+              "Content": "sugar\n"
+            },
+            "partsMap": [
+              
+            ]
+          },
+          "10": {
+            "schema": "SchEmpty",
+            "props": {
+              "Src": {
+                "path": [
+                  [
+                    "Box",
+                    2
+                  ],
+                  [
+                    "OutPort",
+                    0
+                  ]
+                ]
+              },
+              "Tgt": {
+                "path": [
+                  [
+                    "Box",
+                    4
+                  ],
+                  [
+                    "InPort",
+                    1
+                  ]
+                ]
+              },
+              "Content": "meringue"
+            },
+            "partsMap": [
+              
+            ]
+          },
+          "1": {
+            "schema": "SchEmpty",
+            "props": {
+              "Tgt": {
+                "path": [
+                  [
+                    "Box",
+                    1
+                  ],
+                  [
+                    "InPort",
+                    0
+                  ]
+                ]
+              },
+              "Src": {
+                "path": [
+                  [
+                    "Box",
+                    0
+                  ],
+                  [
+                    "OutPort",
+                    0
+                  ]
+                ]
+              },
+              "Content": "yolk"
+            },
+            "partsMap": [
+              
+            ]
+          },
+          "6": {
+            "schema": "SchEmpty",
+            "props": {
+              "Src": {
+                "path": [
+                  [
+                    "InPort",
+                    3
+                  ]
+                ]
+              },
+              "Tgt": {
+                "path": [
+                  [
+                    "Box",
+                    1
+                  ],
+                  [
+                    "InPort",
+                    2
+                  ]
+                ]
+              },
+              "Content": "butter"
+            },
+            "partsMap": [
+              
+            ]
+          },
+          "9": {
+            "schema": "SchEmpty",
+            "props": {
+              "Src": {
+                "path": [
+                  [
+                    "Box",
+                    3
+                  ],
+                  [
+                    "OutPort",
+                    0
+                  ]
+                ]
+              },
+              "Tgt": {
+                "path": [
+                  [
+                    "Box",
+                    4
+                  ],
+                  [
+                    "InPort",
+                    0
+                  ]
+                ]
+              },
+              "Content": "unbaked lemon pie"
+            },
+            "partsMap": [
+              
+            ]
+          },
+          "2": {
+            "schema": "SchEmpty",
+            "props": {
+              "Tgt": {
+                "path": [
+                  [
+                    "Box",
+                    2
+                  ],
+                  [
+                    "InPort",
+                    0
+                  ]
+                ]
+              },
+              "Src": {
+                "path": [
+                  [
+                    "Box",
+                    0
+                  ],
+                  [
+                    "OutPort",
+                    1
+                  ]
+                ]
+              },
+              "Content": "white"
+            },
+            "partsMap": [
+              
+            ]
+          },
+          "7": {
+            "schema": "SchEmpty",
+            "props": {
+              "Src": {
+                "path": [
+                  [
+                    "InPort",
+                    4
+                  ]
+                ]
+              },
+              "Tgt": {
+                "path": [
+                  [
+                    "Box",
+                    1
+                  ],
+                  [
+                    "InPort",
+                    3
+                  ]
+                ]
+              },
+              "Content": "lemon"
+            },
+            "partsMap": [
+              
+            ]
+          },
+          "3": {
+            "schema": "SchEmpty",
+            "props": {
+              "Src": {
+                "path": [
+                  [
+                    "InPort",
+                    1
+                  ]
+                ]
+              },
+              "Tgt": {
+                "path": [
+                  [
+                    "Box",
+                    2
+                  ],
+                  [
+                    "InPort",
+                    1
+                  ]
+                ]
+              },
+              "Content": "sugar"
+            },
+            "partsMap": [
+              
+            ]
+          },
+          "11": {
+            "schema": "SchEmpty",
+            "props": {
+              "Src": {
+                "path": [
+                  [
+                    "Box",
+                    4
+                  ],
+                  [
+                    "OutPort",
+                    0
+                  ]
+                ]
+              },
+              "Tgt": {
+                "path": [
+                  [
+                    "OutPort",
+                    0
+                  ]
+                ]
+              },
+              "Content": "unbaked pie"
+            },
+            "partsMap": [
+              
+            ]
+          },
+          "8": {
+            "schema": "SchEmpty",
+            "props": {
+              "Src": {
+                "path": [
+                  [
+                    "InPort",
+                    5
+                  ]
+                ]
+              },
+              "Tgt": {
+                "path": [
+                  [
+                    "Box",
+                    3
+                  ],
+                  [
+                    "InPort",
+                    1
+                  ]
+                ]
+              },
+              "Content": "crust"
+            },
+            "partsMap": [
+              
+            ]
+          },
+          "4": {
+            "schema": "SchEmpty",
+            "props": {
+              "Src": {
+                "path": [
+                  [
+                    "Box",
+                    1
+                  ],
+                  [
+                    "OutPort",
+                    0
+                  ]
+                ]
+              },
+              "Tgt": {
+                "path": [
+                  [
+                    "Box",
+                    3
+                  ],
+                  [
+                    "InPort",
+                    0
+                  ]
+                ]
+              },
+              "Content": "lemon filling"
+            },
+            "partsMap": [
+              
+            ]
+          }
+        }
+      ]
+    ],
+    [
+      "Box",
+      [
+        [
+          1,
+          3,
+          4,
+          2,
+          0
+        ],
+        {
+          "0": {
+            "schema": "SchDWD",
+            "props": {
+              "Center": {
+                "x": 174,
+                "y": 230
+              },
+              "Content": "Separate\negg"
+            },
+            "partsMap": [
+              [
+                "InPort",
+                [
+                  [
+                    0
+                  ],
+                  {
+                    "0": {
+                      "schema": "SchEmpty",
+                      "props": {
+                        
+                      },
+                      "partsMap": [
+                        
+                      ]
+                    }
+                  }
+                ]
+              ],
+              [
+                "OutPort",
+                [
+                  [
+                    0,
+                    1
+                  ],
+                  {
+                    "0": {
+                      "schema": "SchEmpty",
+                      "props": {
+                        
+                      },
+                      "partsMap": [
+                        
+                      ]
+                    },
+                    "1": {
+                      "schema": "SchEmpty",
+                      "props": {
+                        
+                      },
+                      "partsMap": [
+                        
+                      ]
+                    }
+                  }
+                ]
+              ],
+              [
+                "Wire",
+                [
+                  [
+                    
+                  ],
+                  {
+                    
+                  }
+                ]
+              ],
+              [
+                "Box",
+                [
+                  [
+                    
+                  ],
+                  {
+                    
+                  }
+                ]
+              ]
+            ]
+          },
+          "1": {
+            "schema": "SchDWD",
+            "props": {
+              "Center": {
+                "x": 400,
+                "y": 133
+              },
+              "Content": "Make\nlemon\nfilling"
+            },
+            "partsMap": [
+              [
+                "InPort",
+                [
+                  [
+                    3,
+                    2,
+                    1,
+                    0
+                  ],
+                  {
+                    "3": {
+                      "schema": "SchEmpty",
+                      "props": {
+                        
+                      },
+                      "partsMap": [
+                        
+                      ]
+                    },
+                    "2": {
+                      "schema": "SchEmpty",
+                      "props": {
+                        
+                      },
+                      "partsMap": [
+                        
+                      ]
+                    },
+                    "1": {
+                      "schema": "SchEmpty",
+                      "props": {
+                        
+                      },
+                      "partsMap": [
+                        
+                      ]
+                    },
+                    "0": {
+                      "schema": "SchEmpty",
+                      "props": {
+                        
+                      },
+                      "partsMap": [
+                        
+                      ]
+                    }
+                  }
+                ]
+              ],
+              [
+                "OutPort",
+                [
+                  [
+                    0
+                  ],
+                  {
+                    "0": {
+                      "schema": "SchEmpty",
+                      "props": {
+                        
+                      },
+                      "partsMap": [
+                        
+                      ]
+                    }
+                  }
+                ]
+              ],
+              [
+                "Wire",
+                [
+                  [
+                    
+                  ],
+                  {
+                    
+                  }
+                ]
+              ],
+              [
+                "Box",
+                [
+                  [
+                    
+                  ],
+                  {
+                    
+                  }
+                ]
+              ]
+            ]
+          },
+          "2": {
+            "schema": "SchDWD",
+            "props": {
+              "Center": {
+                "x": 605,
+                "y": 190
+              },
+              "Content": "Make\nmeringue"
+            },
+            "partsMap": [
+              [
+                "InPort",
+                [
+                  [
+                    0,
+                    1
+                  ],
+                  {
+                    "0": {
+                      "schema": "SchEmpty",
+                      "props": {
+                        
+                      },
+                      "partsMap": [
+                        
+                      ]
+                    },
+                    "1": {
+                      "schema": "SchEmpty",
+                      "props": {
+                        
+                      },
+                      "partsMap": [
+                        
+                      ]
+                    }
+                  }
+                ]
+              ],
+              [
+                "OutPort",
+                [
+                  [
+                    0
+                  ],
+                  {
+                    "0": {
+                      "schema": "SchEmpty",
+                      "props": {
+                        
+                      },
+                      "partsMap": [
+                        
+                      ]
+                    }
+                  }
+                ]
+              ],
+              [
+                "Wire",
+                [
+                  [
+                    
+                  ],
+                  {
+                    
+                  }
+                ]
+              ],
+              [
+                "Box",
+                [
+                  [
+                    
+                  ],
+                  {
+                    
+                  }
+                ]
+              ]
+            ]
+          },
+          "3": {
+            "schema": "SchDWD",
+            "props": {
+              "Center": {
+                "x": 606,
+                "y": 64
+              },
+              "Content": "Fill\ncrust"
+            },
+            "partsMap": [
+              [
+                "InPort",
+                [
+                  [
+                    1,
+                    0
+                  ],
+                  {
+                    "1": {
+                      "schema": "SchEmpty",
+                      "props": {
+                        
+                      },
+                      "partsMap": [
+                        
+                      ]
+                    },
+                    "0": {
+                      "schema": "SchEmpty",
+                      "props": {
+                        
+                      },
+                      "partsMap": [
+                        
+                      ]
+                    }
+                  }
+                ]
+              ],
+              [
+                "OutPort",
+                [
+                  [
+                    0
+                  ],
+                  {
+                    "0": {
+                      "schema": "SchEmpty",
+                      "props": {
+                        
+                      },
+                      "partsMap": [
+                        
+                      ]
+                    }
+                  }
+                ]
+              ],
+              [
+                "Wire",
+                [
+                  [
+                    
+                  ],
+                  {
+                    
+                  }
+                ]
+              ],
+              [
+                "Box",
+                [
+                  [
+                    
+                  ],
+                  {
+                    
+                  }
+                ]
+              ]
+            ]
+          },
+          "4": {
+            "schema": "SchDWD",
+            "props": {
+              "Center": {
+                "x": 840,
+                "y": 118
+              },
+              "Content": "Add\nmeringue"
+            },
+            "partsMap": [
+              [
+                "InPort",
+                [
+                  [
+                    0,
+                    1
+                  ],
+                  {
+                    "0": {
+                      "schema": "SchEmpty",
+                      "props": {
+                        
+                      },
+                      "partsMap": [
+                        
+                      ]
+                    },
+                    "1": {
+                      "schema": "SchEmpty",
+                      "props": {
+                        
+                      },
+                      "partsMap": [
+                        
+                      ]
+                    }
+                  }
+                ]
+              ],
+              [
+                "OutPort",
+                [
+                  [
+                    0
+                  ],
+                  {
+                    "0": {
+                      "schema": "SchEmpty",
+                      "props": {
+                        
+                      },
+                      "partsMap": [
+                        
+                      ]
+                    }
+                  }
+                ]
+              ],
+              [
+                "Wire",
+                [
+                  [
+                    
+                  ],
+                  {
+                    
+                  }
+                ]
+              ],
+              [
+                "Box",
+                [
+                  [
+                    
+                  ],
+                  {
+                    
+                  }
+                ]
+              ]
+            ]
+          }
+        }
+      ]
+    ]
+  ]
+}

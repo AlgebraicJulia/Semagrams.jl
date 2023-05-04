@@ -93,7 +93,7 @@ object MouseController {
 
     /** Update the state based on a mouse event */
     def processEvent(evt: Event): State = {
-      val p = evt match {
+      evt match {
         case MouseDown(_, button) =>
           this.copy(pressed = pressed + button.ordinal)
         case MouseUp(_, button) =>
@@ -102,7 +102,7 @@ object MouseController {
         case MouseMove(pos)  => this.copy(pos = pos)
         case e               => this
       }
-      p
+      
     }
   }
 

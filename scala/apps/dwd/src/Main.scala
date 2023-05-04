@@ -25,8 +25,6 @@ import semagrams.PValue
 import cats.Traverse
 
 
-// import formula._
-
 case object SchDWD extends Schema {
 
   val obs = Seq(DWDObs.values*)
@@ -55,7 +53,6 @@ case object SchDWD extends Schema {
 
 
   enum DWDAttrs(val doms:Seq[PartType]) extends Attr:
-    // case WireType extends DWDAttrs() with PValue[DWDType]
     case PortType extends DWDAttrs(
       Wire.asDom() ++ InPort.asDom() ++ OutPort.asDom()
         :+ Box.extend(InPort) :+ Box.extend(OutPort)
@@ -94,7 +91,7 @@ def bindings(
 
   
 
-
+  /** Select a new position (in/out + index) based on the mouse position */ 
   def liftPort(p: Part, pos: Complex): Seq[(Ob,Int)] =
     val ext = p - es.bgPart
     val (sz,c) = ext.ty.path match
@@ -118,6 +115,7 @@ def bindings(
     Seq((ptype,j))
 
 
+  /** Set the type of `p` and any other ports or wires connected to it */ 
   def setType(p:Part,tpe:DWDType): IO[Unit] = 
     p.lastOb match
     case Wire => (for
@@ -138,6 +136,22 @@ def bindings(
       _ <- a.doAll(ws.map(setType(_,tpe)))
     yield ())
   
+  /** Set the types of `p` and `q` to be equals, unless  both 
+    * are defined and different, in which case die. 
+    **/ 
+  def eqTypes(p:Part,q:Part): IO[Unit] =
+    val ptpe = g.now().trySubpart(PortType,p)
+    val qtpe = g.now().trySubpart(PortType,q)
+    (ptpe,qtpe) match
+      case (Some(tpe1),Some(tpe2)) => 
+        if tpe1 == tpe2
+        then IO(())
+        else a.die
+      case (Some(tpe),None) => setType(q,tpe)
+      case (None,Some(tpe)) => setType(p,tpe)
+      case (None,None) => IO(())
+          
+
 
   def test(p:Part) = es.mousePos.map(z => 
     val tpe = p.lastOb match
@@ -185,7 +199,10 @@ def bindings(
 
     // Add box at mouse 
     dblClickOnPart(Left,ROOT.ty).withMods()
-      .flatMap(_ => a.addAtMouse(Box)),
+      .flatMap(_ => for
+        b <- a.addAtMouse(Box)
+        _ <- a.edit(Content,true)(b)
+      yield b),
 
     // Edit box label
     dblClickOnPart(Left)
@@ -220,42 +237,11 @@ def bindings(
         val wires = (g.now().incident(p,Src) ++ g.now().incident(p,Tgt))
           .filter(_.ty == es.bgPart.ty.extend(Wire))
         
-        def eqTypes(p:Part,q:Part): IO[Unit] =
-          println(s"eqTypes p = $p, q = $q")
-          val ptpe = g.now().trySubpart(PortType,p)
-          val qtpe = g.now().trySubpart(PortType,q)
-          println(s"ptpe = $ptpe, qtpe = $qtpe")
-          (ptpe,qtpe) match
-            case (Some(tpe1),Some(tpe2)) => 
-              if 
-                tpe1 == tpe2
-              then 
-                println("case 1")
-                IO(())
-              else 
-                println("case 2")
-                a.die
-            case (Some(tpe),None) => 
-              println("case 3")
-              setType(q,tpe)
-            case (None,Some(tpe)) => 
-              println("case 4")
-              setType(p,tpe)
-            case (None,None) => 
-              println("case 5")
-              IO(())
-          
-          
-          // typeLens: (Part => Option[DWDType],(Part,Option[DWDType]) => IO[Unit]) = (
-          // p => g.now().trySubpart(PortType,p),
-          // (p,tpeOpt) => tpeOpt match
-          //   case Some(tpe) => setType(p,tpe)
-          //   case None => IO(())
-          // )
-
         if wires.isEmpty
-        then 
-          a.dragEdge(Wire,Src,Tgt,liftPort,eqTypes)(p)
+        then (for
+          w <- a.dragEdge(Wire,Src,Tgt,liftPort,eqTypes)(p)
+          _ <- a.edit(Content,true)(w)
+        yield w)
         else 
           a.unplug(p,wires(0),Src,Tgt,liftPort,eqTypes)
       ),
@@ -355,7 +341,6 @@ object Main {
           entitySources(es)
         )
         ui <- es.makeUI()
-        // _ = es.elt.ref.
         _ <- es.bindForever(bindings(es, g, ui,vp))
       } yield ()
     }

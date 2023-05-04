@@ -177,7 +177,6 @@ case class Actions(
 
   // Memo = Offset, Return = Unit
   def dragMove(i: Part) =
-
     val pt = es.bgPlus(i)
 
     def start = (z:Complex) => for 
@@ -191,8 +190,10 @@ case class Actions(
 
     def after = (offset: Complex) => IO(())
 
-    drag(start,during,after)(pt)
-
+    // Added check to stop spurious drags
+    if es.mouse.$state.now()._2.nonEmpty
+    then drag(start,during,after)(pt)
+    else IO(())
 
 
   val debug = 
@@ -240,17 +241,13 @@ case class Actions(
           case Seq() => IO(s)
           case ext => liftTo(s,ext)
         }
-        // props = p match {
-        props = (p - es.bgPart).ty match {
-            // case p if src.codomains.exists(p in _) => 
-          case tp if src.codoms.contains(tp) =>
+        props = p match {
+          case p if src.codoms.exists(p in _) => 
             PropMap().set(Interactable, false)
               .set(src, p).set(End, z)  
-          // case p if tgt.codomains.exists(p in _) =>
-          case tp if tgt.codoms.contains(tp) =>            
+          case p if tgt.codoms.exists(p in _) =>
             PropMap().set(Interactable, false)
               .set(Start, z).set(tgt, p)
-          // case _ => die
         }
         e <- add(
           es.bgPart,
