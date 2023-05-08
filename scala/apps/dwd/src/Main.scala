@@ -275,9 +275,6 @@ def bindings(
     // Open serialization window
     keyDown("s").andThen(a.importExport),
 
-    // Help window
-    // keyDown("?").andThen(showPopoverUntil(helpText, keyDown("?"))),
-
   )
 }
 

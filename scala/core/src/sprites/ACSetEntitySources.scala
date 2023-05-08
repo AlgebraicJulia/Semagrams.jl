@@ -122,9 +122,8 @@ def wireProps(
   val Seq(sd,td) = Seq(s,t).map(_.flatMap(_.diffOption(bg)).map(dir).getOrElse(Complex(0,0)))
 
 
-  (acs.props ++ typeProps(acs,_e.asInstanceOf[Part])
-    // ++ wprops(_e.asInstanceOf[Part])
-  ).set(Start,sc).set(WireProp.StartDir,sd)
+  (acs.props ++ typeProps(acs,_e.asInstanceOf[Part]))
+    .set(Start,sc).set(WireProp.StartDir,sd)
     .set(End,tc).set(WireProp.EndDir,td)
     
 }

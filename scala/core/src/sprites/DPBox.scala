@@ -142,7 +142,7 @@ case class DPBox(
 
 object DPBox {
 
-  //* A pure algorithm for port layout */
+  /** A pure algorithm for port layout */
   def layoutPorts(bb:BoundingBox,n_in:Int,n_out:Int): (Seq[Complex],Seq[Complex]) = (
     0 until n_in map(i => Complex(
       bb.pos.x - bb.dims.x/2.0,
@@ -154,6 +154,7 @@ object DPBox {
     ))
   )
 
+  /** Update `data` with centers for `inPort`s and `outPort`s */
   def layoutPorts(inPort:Ob,outPort:Ob)(bb:BoundingBox,data:ACSet): ACSet = 
     val p_in = data.parts(ROOT,inPort)
     val p_out = data.parts(ROOT,outPort)
@@ -166,11 +167,12 @@ object DPBox {
       }
 
 
+  /** Update `data` with centers for `inPort`s and `outPort`s on the viewport boundary */
   def layoutPortsBg(inPort:Ob,outPort:Ob)(sz:Complex,data:ACSet): ACSet =
     layoutPorts(inPort,outPort)(BoundingBox(sz/2.0,sz),data)
 
 
-
+  /** Compute the index of a new port based on a position and the number of existing ports */
   def portNumber(pos:Complex,size:Complex,nports:Int) =
     val l = (0 to nports+1).map(
       _ * size.y/(nports + 1)

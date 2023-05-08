@@ -59,6 +59,22 @@ trait Hom extends Property {
     i => Part(Seq((codoms(0).path(0), Id(i - 1))))
   )
 
+  /** Check whether `this` has `p` in the domain and `q` in the codomain,
+    * possibly nested within other parts. */
+  def canSet(p:Part,q:Any) = q match
+    case q:Part => (for
+      dom <- doms
+      codom <- codoms
+      _ = () if p.hasFinal(dom) & q.hasFinal(codom)
+      overlapP = Part(p.path.dropRight(dom.path.length))
+      overlapQ = Part(q.path.dropRight(codom.path.length))
+      _ = () if overlapP == overlapQ
+    yield 
+      (dom,codom)
+    ).nonEmpty
+    case _ => false
+
+
 }
 
 /** A trait marking attributes in a [[Schema]]
@@ -73,6 +89,15 @@ trait Attr extends Property {
     * easier to write down.
     */
   val doms: Seq[PartType]
+
+  /** Check whether `this` has `p` in the domain, possibly nested within other parts. */
+  def canSet(p:Part,a:Any): Boolean = 
+    val dval = doms.exists(dom => p.hasFinal(dom))
+    a match
+      case a: this.Value => dval
+      case _ => false    
+
+
 }
 
 /** The type of a part in a nested acset is a sequence of objects, going down
@@ -188,13 +213,6 @@ case class Part(path: Seq[(Ob, Id)]) extends Entity {
   /** Checks if `that` is more specific than `this` */
   def <(that: Part): Boolean = that > this
 
-  /** Checks if `ptype` is an initial or final segment of `ty` */
-  def in(ptype: PartType) = 
-    (ty > ptype) | {
-      val ext = ty.path.takeRight(ptype.path.length)
-      ext == ptype.path
-    }
-
   /** Returns `Some(p)` if `this == that.extendPart(p)`, else `None` */
   def diffOption(that:Part): Option[Part] = 
     that.path match
@@ -206,6 +224,20 @@ case class Part(path: Seq[(Ob, Id)]) extends Entity {
   def -(that: Part): Part = diffOption(that).getOrElse(
     throw msgError(s"Part $this is not an extension of $that")
   )
+
+  /** Checks if `ptype` is an initial segment of `ty` */
+  def hasInitial(ptype:PartType): Boolean = ptype.path match
+    case Seq() => true
+    case phead +: ptail => 
+      phead == headOb & tail.hasInitial(PartType(ptail))
+  
+  /** Checks if `ptype` is an final segment of `ty` */
+  def hasFinal(ptype:PartType): Boolean = ptype.path match
+    case Seq() => true
+    case pinit :+ plast => 
+      plast == lastOb & init.hasFinal(PartType(pinit))
+  
+
 
 
 
