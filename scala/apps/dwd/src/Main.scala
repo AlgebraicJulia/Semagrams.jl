@@ -325,9 +325,12 @@ object Main {
   object App extends Semagram {
 
     def run(es: EditorState, init: Option[String]): IO[Unit] = {
-      val initg = ACSet(SchDWD)
+      
+      implicit val rw: ReadWriter[(ACSet,Complex)] = SchDWD.runtimeSerializer(es.size.now(),"dims")      
+      val (acs,oldDims) = read[(ACSet,Complex)](pie_str)
+
       for {
-        g <- IO(UndoableVar(initg))
+        g <- IO(UndoableVar(acs.scale(oldDims,es.size.now())))
         lg <- IO(
           es.size.signal.combineWith(g.signal)
             .map(DPBox.layoutPortsBg(InPort,OutPort))

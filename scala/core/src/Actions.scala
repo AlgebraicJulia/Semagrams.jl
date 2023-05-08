@@ -19,6 +19,7 @@ import semagrams.sprites.WithMiddleware
 import semagrams.sprites.DPBox
 import semagrams.sprites.Rect
 import cats.data.State
+import scala.reflect.ClassTag
 
 /** This class bundles the common arguments to many actions one might want to do
   * in a binding so that you don't have to pass them in every time, and then
@@ -78,12 +79,12 @@ case class Actions(
       case h:Hom =>
         if check && h.canSet(p,v)
         then m.updateS(setSubpart(p, h, v.asInstanceOf[Part]))
-        else throw msgError(s"$f cannot assign $p to $q: doms = ${h.doms}, codom = ${h.codoms}")
+        else throw msgError(s"$f cannot assign $p to $v:\ndoms = ${h.doms},\ncodoms = ${h.codoms}")
         
       case a:Attr => 
         if check & a.canSet(p,v)
         then m.updateS(setSubpart(p, a, v.asInstanceOf[a.Value]))
-        else throw msgError(s"$p not in dom($a)")
+        else throw msgError(s"$f cannot assign $p to $v:\ndoms = ${a.doms},\ncodom = ${ClassTag[a.Value]}")
       case _ =>
         m.updateS(setSubpart(p, f, v))
 
@@ -367,15 +368,16 @@ case class Actions(
     */
   def importExport = ui.addKillableHtmlEntity(kill =>
     val sch = m.now().schema
-    import sch._
+    implicit val rw:ReadWriter[(ACSet,Complex)] = sch.runtimeSerializer(es.size.now(),"dims")
     PositionWrapper(
       Position.topToBotMid(10),
       TextInput(
         m.zoomL(Lens(
-          (acset:ACSet) => write(acset,2)
+          (acset:ACSet) => write((acset,es.size.now()))
         )(
           s => a => try
-            read[ACSet](s)
+            val (acs,dims) = read[(ACSet,Complex)](s)
+            acs.scale(dims,es.size.now())
           catch case e => 
             println(s"importExport error $e")
             a

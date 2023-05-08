@@ -7,6 +7,7 @@ import upickle.default._
 import monocle.Lens
 import semagrams.util.msgError
 import semagrams.util.bijectiveRW
+import semagrams.util.Complex
 
 
 /** A trait marking objects in a [[Schema]] */
@@ -91,12 +92,9 @@ trait Attr extends Property {
   val doms: Seq[PartType]
 
   /** Check whether `this` has `p` in the domain, possibly nested within other parts. */
+  // I don't know how to check 
   def canSet(p:Part,a:Any): Boolean = 
-    val dval = doms.exists(dom => p.hasFinal(dom))
-    a match
-      case a: this.Value => dval
-      case _ => false    
-
+    doms.exists(dom => p.hasFinal(dom)) & a.isInstanceOf[Value]
 
 }
 
@@ -319,7 +317,7 @@ trait Schema {
     * for `Part`s and values for other properties.
     */
   implicit def propRW: ReadWriter[PropMap] = readwriter[Map[String,ujson.Value]].bimap(
-    pm => pm.map.map { 
+    pm => pm.pmap.map { 
       case (k,v:Part) => 
         (k.toString,writeJs(v))
       case (k,v) =>
@@ -371,7 +369,7 @@ trait Schema {
     acset => Map(
       "schema" -> writeJs(acset.schema),
       "props" -> writeJs(acset.props),
-      "partsMap" -> read[ujson.Value](write(acset.partsMap))
+      "partsMap" -> read[ujson.Value](write(acset.partsMap)),
       ),
     jmap => ACSet(
         read[Schema](jmap("schema")),
@@ -379,6 +377,20 @@ trait Schema {
         read[Map[Ob,PartSet]](jmap("partsMap"))
       )
   )
+
+  /** Serializer that includes runtime information (e.g., window size) */
+  def runtimeSerializer[A:ReadWriter](a:A,key:String = "runtime"): ReadWriter[(ACSet,A)] =
+    val rw = summon[ReadWriter[A]]
+    readwriter[Map[String,ujson.Value]].bimap(
+      (acset,a) => Map(
+        "acset" -> writeJs(acset),
+        key -> writeJs[A](a)
+      ),
+      jmap => (        
+        read[ACSet](jmap("acset")),
+        read[A](jmap(key))
+      )
+    )
 
 
 }
@@ -759,8 +771,28 @@ case class ACSet(
     val acsets = sub.partsMap.values
       .map(_.acsets.values).flatten.toSet
 
-    sub.props.map.keySet union
-    acsets.map(_.props.map.keySet).flatten
+    sub.props.pmap.keySet union
+    acsets.map(_.props.pmap.keySet).flatten
+
+
+  def scale(from:Complex,to:Complex,scaleProps: Seq[Property{ type Value = Complex }] = Seq(Center)): ACSet =
+    val oldProps = props.pmap.filter((k,_) => !scaleProps.contains(k))
+
+    val newProps = scaleProps.filter(props.contains(_)).map(k =>
+      (k,props(k).scaleFrom(from).scaleTo(to))  
+    ).toMap
+
+    val newParts = partsMap.map((ob,pset) =>
+      (ob,pset.copy(
+        acsets = pset.acsets.map((ob,acs) => (ob,acs.scale(from,to,scaleProps)))
+      )
+    ))
+    this.copy(
+      props = PropMap(oldProps ++ newProps),
+      partsMap = newParts
+    )
+
+
 
 }
 

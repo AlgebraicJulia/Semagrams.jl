@@ -35,6 +35,10 @@ case class Complex(x: Double, y: Double) {
 
   def dot(other: Complex) = x * other.x + y * other.y
 
+  def scaleTo(that:Complex) = Complex(this.x * that.x, this.y * that.y)
+
+  def scaleFrom(that:Complex) = Complex(this.x / that.x, this.y / that.y)
+
   def unary_- = Complex(-x, -y)
 
   def exp = {
