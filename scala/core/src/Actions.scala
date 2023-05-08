@@ -76,21 +76,14 @@ case class Actions(
   def set(p: Part, f: Property, v: f.Value,check:Boolean=true): IO[Unit] =
     f match
       case h:Hom =>
-        val ext = v.asInstanceOf[Part] - es.bgPart
-        if check && !h.doms.exists(dom => p.in(dom) )
-        then
-          throw msgError(s"$p not in dom($h) = ${h.doms}")
-        else if check && !h.codoms.exists(codom => ext.in(codom))
-        then
-          throw msgError(s"$v not in codom($h)")
-        else 
-          m.updateS(setSubpart(p, h, v.asInstanceOf[Part]))
+        if check && h.canSet(p,v)
+        then m.updateS(setSubpart(p, h, v.asInstanceOf[Part]))
+        else throw msgError(s"$f cannot assign $p to $q: doms = ${h.doms}, codom = ${h.codoms}")
+        
       case a:Attr => 
-        if check && a.doms.exists(dom => p.in(dom) )
-        then 
-          m.updateS(setSubpart(p, a, v.asInstanceOf[a.Value]))
-        else 
-          throw msgError(s"$p not in dom($a)")
+        if check & a.canSet(p,v)
+        then m.updateS(setSubpart(p, a, v.asInstanceOf[a.Value]))
+        else throw msgError(s"$p not in dom($a)")
       case _ =>
         m.updateS(setSubpart(p, f, v))
 
@@ -242,10 +235,10 @@ case class Actions(
           case ext => liftTo(s,ext)
         }
         props = p match {
-          case p if src.codoms.exists(p in _) => 
+          case p if src.codoms.contains((p - es.bgPart).ty) => 
             PropMap().set(Interactable, false)
               .set(src, p).set(End, z)  
-          case p if tgt.codoms.exists(p in _) =>
+          case p if tgt.codoms.contains((p - es.bgPart).ty) =>
             PropMap().set(Interactable, false)
               .set(Start, z).set(tgt, p)
         }
