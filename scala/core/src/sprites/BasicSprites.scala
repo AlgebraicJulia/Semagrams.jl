@@ -21,7 +21,7 @@ val BasicDisc = BasicWrapper(Disc())
 
 val BasicRect = BasicWrapper(Rect())
 
-val BasicWire = BasicWrapper(Wire())
+def BasicWire(src:Hom,tgt:Hom) = BasicWrapper(Wire(src,tgt))
 
 def BasicDPBox(inPort: Ob, outPort: Ob,
   portStyle: (ACSet,Part )=> PropMap

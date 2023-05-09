@@ -102,6 +102,8 @@ trait Sprite {
       data: ACSet
   ): Option[BoundingBox] = None
 
+  def toTikz(p:Part,data:ACSet,visible:Boolean = true): String = ""
+
   /** An optional layout algorithm to run before rendering an ACSet */
   def layout(bb:BoundingBox,a:ACSet): ACSet = a
 

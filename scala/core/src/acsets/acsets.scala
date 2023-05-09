@@ -62,17 +62,20 @@ trait Hom extends Property {
 
   /** Check whether `this` has `p` in the domain and `q` in the codomain,
     * possibly nested within other parts. */
-  def canSet(p:Part,q:Any) = q match
+  def canSet(p:Part,_q:Any) = _q match
     case q:Part => (for
       dom <- doms
       codom <- codoms
-      _ = () if p.hasFinal(dom) & q.hasFinal(codom)
-      overlapP = Part(p.path.dropRight(dom.path.length))
-      overlapQ = Part(q.path.dropRight(codom.path.length))
-      _ = () if overlapP == overlapQ
-    yield 
-      (dom,codom)
-    ).nonEmpty
+      if p.hasFinal(dom) & q.hasFinal(codom)
+      _ = println(s"check 1")
+      pOverlap = p.path.dropRight(dom.path.length)
+      qOverlap = q.path.dropRight(codom.path.length)
+      if pOverlap == qOverlap
+    yield ()).nonEmpty
+      
+    
+        
+    
     case _ => false
 
 
@@ -94,7 +97,7 @@ trait Attr extends Property {
   /** Check whether `this` has `p` in the domain, possibly nested within other parts. */
   // I don't know how to check 
   def canSet(p:Part,a:Any): Boolean = 
-    doms.exists(dom => p.hasFinal(dom)) & a.isInstanceOf[Value]
+    doms.exists(dom => p.hasFinal(dom)) //  & a.isInstanceOf[Value]       TODO: how to check this at runtime?
 
 }
 
@@ -224,19 +227,27 @@ case class Part(path: Seq[(Ob, Id)]) extends Entity {
   )
 
   /** Checks if `ptype` is an initial segment of `ty` */
-  def hasInitial(ptype:PartType): Boolean = ptype.path match
-    case Seq() => true
-    case phead +: ptail => 
+  def hasInitial(ptype:PartType): Boolean = (this.path,ptype.path) match
+    case (_,Seq()) => true
+    case (Seq(),_) => false
+    case (_,phead +: ptail) => 
       phead == headOb & tail.hasInitial(PartType(ptail))
   
   /** Checks if `ptype` is an final segment of `ty` */
-  def hasFinal(ptype:PartType): Boolean = ptype.path match
-    case Seq() => true
-    case pinit :+ plast => 
+  def hasFinal(ptype:PartType): Boolean = (this.path,ptype.path) match
+    case (_,Seq()) => true
+    case (Seq(),_) => false
+    case (_,pinit :+ plast) => 
       plast == lastOb & init.hasFinal(PartType(pinit))
+    
   
 
-
+  /** Transform to an name that is usable in tikz */
+  def tikzName: String = 
+    path match
+    case Seq() => throw msgError(s"Can's use `ROOT` as a tikz location identifier")
+    case Seq((ob,id)) => ob.toString() + id.id.toString()
+    case _ => last.tikzName + "@" + init.tikzName
 
 
 }

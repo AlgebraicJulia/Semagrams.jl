@@ -92,6 +92,21 @@ case class Rect(val props: PropMap) extends Sprite {
   }
 
   override def center(_subent: Entity, data: ACSet) = Some(data.props.get(Center).getOrElse(Complex(100,100)))
+
+  override def toTikz(p:Part, data:ACSet,visible: Boolean = true) = tikzNode(
+    "rectangle",
+    p.tikzName,
+    data.props.get(Center).getOrElse(Complex(0,0)),
+    data.props.get(Content).getOrElse("").flatMap(_ match
+      case '\n' => "\\\\"
+      case ch => ch.toString()
+    ),
+    visible
+  )
+
+
+
+
 }
 
 object Rect {

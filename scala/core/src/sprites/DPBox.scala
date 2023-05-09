@@ -137,6 +137,51 @@ case class DPBox(
       spr.bbox(tail,computePortCenters(data).subacset(p))
     case _ => throw msgError(s"DPBox bbox: unmatched entity $subent")
     
+
+
+  override def toTikz(b:Part,data: ACSet,visible:Boolean = true): String =
+
+    val boxString = boxSprite.toTikz(b,data)
+    
+    //   tikzBox(
+    //   b.tikzName,
+    //   data.props.get(Center).getOrElse(Complex(0,0)),
+    //   data.props.get(Content).getOrElse("").map(_ match
+    //     case '\n' => ' '
+    //     case ch => ch
+    //   )
+    // )
+
+    val inPorts = data.partsMap(inPort).ids.map(b.extend(inPort,_))
+    val outPorts = data.partsMap(outPort).ids.map(b.extend(outPort,_))
+
+    val inString = tikzInPorts(inPorts) 
+    val outString = tikzOutPorts(outPorts)      
+    //   tikzPorts(
+    //   data.partsMap(inPort).ids.map(
+    //     b.extend(inPort,_)
+    //   ),
+    //   "circle"
+    // ) 
+
+
+    // val outPorts = data.partsMap(outPort).ids.zipWithIndex
+
+    // val inString = inPorts.map{ (id,idx) =>
+    //   val p = b.extend(inPort,id)
+    //   "\t" + tikzPort(p,idx,inPorts.length)
+    // }.mkString("")
+
+    // val outString = outPorts.map{ (id,idx) =>
+    //   val p = b.extend(outPort,id)
+    //   "\t" + tikzPort(p,idx,outPorts.length)
+    // }.mkString("")
+
+    boxString + inString + outString + "\n"
+
+  // def tikzBox(b:Part,ctr:Complex,label:String): String =
+  //   s"\\node[draw,rectangle] (${b.tikzName}) at (${ctr.x},${ctr.y}) {$label};\n"
+
 }
 
 

@@ -29,7 +29,7 @@ case object SchDWD extends Schema {
 
   val obs = Seq(DWDObs.values*)
   val homs = Seq(DWDHoms.values*)
-  val attrs = Seq()
+  val attrs = Seq(DWDAttrs.values*)
 
 
 
@@ -154,10 +154,16 @@ def bindings(
 
 
   def test(p:Part) = es.mousePos.map(z => 
-    val tpe = p.lastOb match
-      case Wire => g.now().trySubpart(PortType,p)
-      case InPort | OutPort => g.now().trySubpart(PortType,p)
-    println(s"tpe = $tpe")
+
+    val ijs = for
+      i <- 1 to 5
+      j <- 1 to 5
+      if (i + j) % 2 == 0
+      _ = println(s"$i,$j")
+    yield (i,j)
+
+    println(ijs)
+
   )
 
 
@@ -275,6 +281,12 @@ def bindings(
     // Open serialization window
     keyDown("s").andThen(a.importExport),
 
+    // Open serialization window
+    keyDown("w").andThen(a.exportTikz(
+      Seq(Box,InPort,OutPort,Wire),
+      Seq(InPort,OutPort)
+    )),
+
   )
 }
 
@@ -309,7 +321,7 @@ val entitySources = (es:EditorState) => Seq(
     .addPropsBy((e:Entity,acs:ACSet,em:EntityMap) => 
       acs.props ++ style(acs,e.asInstanceOf[Part])
     ),
-  ACSetEntitySource(Wire, BasicWire(es))
+  ACSetEntitySource(Wire, BasicWire(Src,Tgt)(es))
     .addPropsBy(
       wireProps(Src, Tgt, style, portDir, es.bgPart)
     )

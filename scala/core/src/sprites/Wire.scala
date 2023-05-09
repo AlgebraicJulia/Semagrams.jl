@@ -27,7 +27,7 @@ export WireProp._
   * where the beginning and the end are both horizontal, and it has no
   * arrowhead.
   */
-case class Wire() extends Sprite {
+case class Wire(src:Hom,tgt:Hom) extends Sprite {
   def exAt(p: Complex, d: Double = 5.0) = {
     import Path.Element._
 
@@ -77,12 +77,13 @@ case class Wire() extends Sprite {
 
   def present(
       ent: Entity,
-      acs: ACSet,
-      $acs: L.Signal[ACSet],
+      init: ACSet,
+      updates: L.Signal[ACSet],
       attachHandlers: HandlerAttacher
   ): L.SvgElement = {
-    val p = acs.props
-    val $p = $acs.map(_.props)
+
+
+    val data = updates.map(init.props ++ _.props)
     def s(p: PropMap) = p(Start)
     def t(p: PropMap) = p(End)
     def ds(p: PropMap): Complex = p.get(StartDir).getOrElse(-10.0)
@@ -91,32 +92,42 @@ case class Wire() extends Sprite {
 
     def ppath(p: PropMap) = curvedPath(s(p), t(p), ds(p), dt(p), b(p))
 
-    val anchor = p.get(LabelAnchor).getOrElse(.5)
-    val offset = p.get(LabelOffset).getOrElse(10 * im)
+    def anchor(p:PropMap) = p.get(LabelAnchor).getOrElse(.5)
+    def offset(p:PropMap) = p.get(LabelOffset).getOrElse(10 * im)
 
     def labelPos(p: PropMap) = {
       val crv = ppath(p)(1)
-      crv.pos(s(p), anchor) + offset * crv.dir(s(p), anchor)
+      crv.pos(s(p), anchor(p)) + offset(p) * crv.dir(s(p), anchor(p))
     }
 
     def label(p: PropMap) = p.get(Content).getOrElse("")
-    def fontsize(p: PropMap) = p.get(FontSize).getOrElse(16.0)
+    def fontsize(p: PropMap): Double = p.get(FontSize).getOrElse(16.0)
     def pstroke(p: PropMap) = p.get(Stroke).getOrElse("black")
 
-    val txt = L.svg.text(
-      xy <-- $p.map(labelPos),
-      L.svg.tspan(
-        L.child <-- $p.map(p => L.textToNode(label(p))),
-        textAnchor := "middle",
-        dominantBaseline := "central",
-        style := "user-select: none"
+    val text = L.svg.text(
+      xy <-- data.map(labelPos),
+      L.children <-- data.map(p => 
+        val splits = label(p).split('\n').zipWithIndex
+        val l = splits.length
+        splits.toIndexedSeq.map({ case (t, i) =>
+          L.svg.tspan(
+            L.textToNode(t),
+            textAnchor := "middle",
+            x <-- data.map(p => labelPos(p).x.toString()),
+            y <-- data.map(
+              p => (labelPos(p).y + fontsize(p) * (i + 1 - l/2.0)).toString()
+            ),
+            style := "user-select: none"
+          )
+        })
       ),
-      fontSize <-- $p.map(fontsize(_).toString())
+      fontSize <-- data.map(fontsize(_).toString())
     )
 
+
     val wire = path(
-      pathElts <-- $p.map(ppath),
-      stroke <-- $p.map(p =>
+      pathElts <-- data.map(ppath),
+      stroke <-- data.map(p =>
         if p.get(Hovered).isDefined then "lightgrey" else pstroke(p)
       ),
       fill := "none",
@@ -125,17 +136,39 @@ case class Wire() extends Sprite {
     )
 
     val handle = path(
-      pathElts <-- $p.map(p => blockPath(s(p), t(p), ds(p), dt(p), 5, b(p))),
+      pathElts <-- data.map(p => blockPath(s(p), t(p), ds(p), dt(p), 5, b(p))),
       fill := "white",
       opacity := ".0",
       stroke := "none",
       style := "user-select: none",
-      pointerEvents <-- $p.map(p =>
+      pointerEvents <-- data.map(p =>
         if p.get(Interactable) != Some(false) then "auto" else "none"
       )
     )
 
     attachHandlers(ent, handle)
-    g(wire, handle, txt)
+    g(wire, handle, text)
   }
+
+
+  override def toTikz(w:Part,data:ACSet,visible:Boolean = true) = if !visible
+    then ""
+    else 
+      val s = data.props(src)
+      val t = data.props(tgt)
+
+      val s_str = if s.init == ROOT
+        then s.tikzName + "-|" + s.tikzName
+        else  s.tikzName + "-|" + s.init.tikzName + ".east"
+      val t_str = if t.init == ROOT
+        then t.tikzName + "-|" + t.tikzName
+        else  t.tikzName + "-|" + t.init.tikzName + ".west"
+
+      val labelStr = data.props.get(Content)
+        .map(label =>
+          s" node[above,midway,align=center]{${tikzLabel(label,"footnotesize")}}"
+        ).getOrElse("")
+
+      s"\\draw ($s_str) to[out=0,in=180] $labelStr ($t_str);\n"  
+
 }

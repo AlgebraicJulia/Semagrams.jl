@@ -85,8 +85,7 @@ case class Actions(
         if check & a.canSet(p,v)
         then m.updateS(setSubpart(p, a, v.asInstanceOf[a.Value]))
         else throw msgError(s"$f cannot assign $p to $v:\ndoms = ${a.doms},\ncodom = ${ClassTag[a.Value]}")
-      case _ =>
-        m.updateS(setSubpart(p, f, v))
+      case _ => m.updateS(setSubpart(p, f, v))
 
 
   /** Unset the value of the property `f` of the part `p` */
@@ -375,7 +374,9 @@ case class Actions(
         m.zoomL(Lens(
           (acset:ACSet) => write((acset,es.size.now()))
         )(
-          s => a => try
+          s => a => if s == ""
+          then ACSet(sch)
+          else try
             val (acs,dims) = read[(ACSet,Complex)](s)
             acs.scale(dims,es.size.now())
           catch case e => 
@@ -386,6 +387,35 @@ case class Actions(
       )(kill)
     )
   )
+
+  /** Bring up a textbox that can be used for copy/pasting a tikz serialization */
+  def exportTikz(obs:Seq[Ob],hide:Seq[Ob] = Seq()): IO[Unit] =
+    ui.addKillableHtmlEntity(kill =>
+      PositionWrapper(
+        Position.topToBotMid(10),
+        TextInput(m.zoomL(Lens(
+          (acset:ACSet) =>
+            val ents = es.entities.now().em.asInstanceOf[Map[Part,(Sprite,ACSet)]]
+  
+            val obStrs = obs.map(ob =>
+              ents.filter((k,_) => k.lastOb == ob)
+                .map { case (p,(spr,data)) =>
+                  val obstr = spr.toTikz(
+                    p,
+                    data.scale(es.size.now(),Complex(10,10),Seq(Center)),
+                    !hide.contains(p.lastOb)
+                  )
+                  obstr                
+                }.mkString("")
+            )
+
+            obStrs.filter(_ != "").mkString("\n\n")
+        )(
+          s => a => a
+        )),
+        true
+      )(kill))
+    )
 
 
   def zoomIn(
