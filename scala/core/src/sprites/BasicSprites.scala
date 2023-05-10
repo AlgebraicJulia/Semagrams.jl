@@ -15,7 +15,7 @@ def BasicWrapper(sprite: Sprite)(es: EditorState) = WithMiddleware(
   )
 )
 
-val BasicArrow = BasicWrapper(Arrow())
+def BasicArrow(src:Hom,tgt:Hom) = BasicWrapper(Arrow(src,tgt))
 
 val BasicDisc = BasicWrapper(Disc())
 
