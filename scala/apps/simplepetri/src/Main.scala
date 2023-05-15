@@ -186,7 +186,7 @@ def bindings(es: EditorState, g: UndoableVar[ACSet], ui: UIState) = {
       .withMods(KeyModifier.Ctrl, KeyModifier.Shift)
       .andThen(IO(g.redo())),
     keyDown("x").andThen(a.importExport),
-    keyDown("w").andThen(a.exportTikz(Seq(S,T,I,O))),
+    keyDown("w").andThen(a.exportTikz(Seq(S, T, I, O))),
     clickOnPart(MouseButton.Left, PartType(Seq(S)))
       .withMods(KeyModifier.Shift)
       .flatMap(a.dragEdge(I, IS, IT)),
@@ -233,8 +233,8 @@ object Main {
           Seq(
             ACSetEntitySource(S, BasicDisc(es)),
             ACSetEntitySource(T, BasicRect(es)),
-            ACSetEdgeSource(I, IS, IT, BasicArrow(IS,IT)(es)),
-            ACSetEdgeSource(O, OT, OS, BasicArrow(OT,OS)(es))
+            ACSetEdgeSource(I, IS, IT, BasicArrow(IS, IT)(es)),
+            ACSetEdgeSource(O, OT, OS, BasicArrow(OT, OS)(es))
           )
         )
         ui <- es.makeUI()

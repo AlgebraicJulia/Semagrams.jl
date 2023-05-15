@@ -36,16 +36,15 @@ case class Actions(
     * `init`, and set the [[Center]] of that new part to be the current mouse
     * position
     */
-  def addAtMouse(ob: Ob, init: ACSet): IO[Part] = es.mousePos.flatMap(
-    pos => add(es.bgPart,ob,init.setSubpart(ROOT,Center,pos))
+  def addAtMouse(ob: Ob, init: ACSet): IO[Part] = es.mousePos.flatMap(pos =>
+    add(es.bgPart, ob, init.setSubpart(ROOT, Center, pos))
   )
-      
+
   /** Add and return a part to the model with type `Ob` and [[Center]] the
     * current mouse position.
     */
-  def addAtMouse(ob: Ob): IO[Part] = addAtMouse(ob,ob.schema())
+  def addAtMouse(ob: Ob): IO[Part] = addAtMouse(ob, ob.schema())
 
-    
   /** [[addAtMouse]] without returning the part */
   def addAtMouse_(ob: Ob, init: ACSet): IO[Unit] =
     addAtMouse(ob, init).map(_ => ())
@@ -67,26 +66,30 @@ case class Actions(
     addPart(p, ob, init)
   )
 
-
   /** [[add]] without returning the part */
   def add_(p: Part, ob: Ob, props: PropMap | ACSet): IO[Unit] = props match
     case pm: PropMap => add(p, ob, pm).map(_ => ())
-    case a: ACSet => add(p, ob, a).map(_ => ())
+    case a: ACSet    => add(p, ob, a).map(_ => ())
 
   /** Set the value of the property `f` at the part `p` to be `v` */
-  def set(p: Part, f: Property, v: f.Value,check:Boolean=true): IO[Unit] =
+  def set(p: Part, f: Property, v: f.Value, check: Boolean = true): IO[Unit] =
     f match
-      case h:Hom =>
-        if check && h.canSet(p,v)
+      case h: Hom =>
+        if check && h.canSet(p, v)
         then m.updateS(setSubpart(p, h, v.asInstanceOf[Part]))
-        else throw msgError(s"$f cannot assign $p to $v:\ndoms = ${h.doms},\ncodoms = ${h.codoms}")
-        
-      case a:Attr => 
-        if check & a.canSet(p,v)
-        then m.updateS(setSubpart(p, a, v.asInstanceOf[a.Value]))
-        else throw msgError(s"$f cannot assign $p to $v:\ndoms = ${a.doms},\ncodom = ${ClassTag[a.Value]}")
-      case _ => m.updateS(setSubpart(p, f, v))
+        else
+          throw msgError(
+            s"$f cannot assign $p to $v:\ndoms = ${h.doms},\ncodoms = ${h.codoms}"
+          )
 
+      case a: Attr =>
+        if check & a.canSet(p, v)
+        then m.updateS(setSubpart(p, a, v.asInstanceOf[a.Value]))
+        else
+          throw msgError(
+            s"$f cannot assign $p to $v:\ndoms = ${a.doms},\ncodom = ${ClassTag[a.Value]}"
+          )
+      case _ => m.updateS(setSubpart(p, f, v))
 
   /** Unset the value of the property `f` of the part `p` */
   def remove(p: Part, f: Property): IO[Unit] = m.updateS(
@@ -100,22 +103,27 @@ case class Actions(
   yield ()
 
   /** Remove the part currently hovered */
-  val del = fromMaybe(es.hoveredPart).flatMap(p => 
+  val del = fromMaybe(es.hoveredPart).flatMap(p =>
     if p > es.bgPart && p != es.bgPart
     then remove(p)
-    else die 
+    else die
   )
 
-  /** Try to get the bounding box of `b` as it is currently displayed on the screen */
+  /** Try to get the bounding box of `b` as it is currently displayed on the
+    * screen
+    */
   def tryBBox(b: Part): Option[BoundingBox] = b match
     case _ if es.bgPart == b =>
       val sz = es.size.now()
       Some(BoundingBox(sz / 2.0, sz))
     case _ if b > es.bgPart =>
       val ext = b - es.bgPart
-      es.entities.now().em.get(ext.head)
-        .flatMap {
-          case (spr,acset) => spr.bbox(ext.tail, acset)
+      es.entities
+        .now()
+        .em
+        .get(ext.head)
+        .flatMap { case (spr, acset) =>
+          spr.bbox(ext.tail, acset)
         }
     case _ => None
 
@@ -123,10 +131,9 @@ case class Actions(
     throw msgError(s"No bounding box for part $b")
   )
 
-  def getPos(b:Part) = getBBox(b).pos
-  def getDims(b:Part) = getBBox(b).dims
+  def getPos(b: Part) = getBBox(b).pos
+  def getDims(b: Part) = getBBox(b).dims
 
-        
   /** A generalized drag action
     *
     * At the beginning, compute a value `memo` of type `Memo` from the mouse
@@ -158,58 +165,52 @@ case class Actions(
     m0 = m.now()
     memo <- es.mousePos.flatMap(start)
     ret <- (es.drag.drag(Observer(p => during(memo, p))) >> after(memo))
-      .onCancelOrError(IO({ 
-        m.set(m0) 
+      .onCancelOrError(IO({
+        m.set(m0)
         es.drag.$state.set(None)
       }).flatMap(_ => die))
     _ <- IO(m.record())
-  } yield ret 
-
-
-
+  } yield ret
 
   // Memo = Offset, Return = Unit
   def dragMove(i: Part) =
     val pt = es.bgPlus(i)
 
-    def start = (z:Complex) => for 
-      _ <- m.updateS_(moveFront(pt))
-      c <- IO(m.now().subpart(Center, pt))
-    yield c - z
+    def start = (z: Complex) =>
+      for
+        _ <- m.updateS_(moveFront(pt))
+        c <- IO(m.now().subpart(Center, pt))
+      yield c - z
 
-    def during = (offset:Complex,p:Complex) => m.update(
-      _.setSubpart(pt, Center, p + offset)
-    )
+    def during = (offset: Complex, p: Complex) =>
+      m.update(
+        _.setSubpart(pt, Center, p + offset)
+      )
 
     def after = (offset: Complex) => IO(())
 
     // Added check to stop spurious drags
     if es.mouse.$state.now()._2.nonEmpty
-    then drag(start,during,after)(pt)
+    then drag(start, during, after)(pt)
     else IO(())
 
-
-  val debug = 
+  val debug =
     val sch = m.now().schema
     import sch._
     IO(m.now()).map(acset => println(write(acset)))
-    
+
   def die[A]: IO[A] = fromMaybe(IO(None))
-  
 
-
-  def liftTo(p:Part,ext:Seq[(Ob,Int)]): IO[Part] = ext match
-    case Seq() => 
+  def liftTo(p: Part, ext: Seq[(Ob, Int)]): IO[Part] = ext match
+    case Seq() =>
       IO(p)
-    case (ob,i) +: rest => for {
-      a <- add(p,ob,PropMap())
-      _ <- IO(m.update((acset:ACSet) =>
-        acset.moveToIndex(a,i)
-      ))
-      last <- liftTo(a,ext.tail)
-    } yield last
-         
-    
+    case (ob, i) +: rest =>
+      for {
+        a <- add(p, ob, PropMap())
+        _ <- IO(m.update((acset: ACSet) => acset.moveToIndex(a, i)))
+        last <- liftTo(a, ext.tail)
+      } yield last
+
   /** Drag to construct an edge between two parts
     *
     * Returns the part corresponding to the edge that was constructed
@@ -219,35 +220,38 @@ case class Actions(
   // TODO: Add dragSpan, dragCospan
 
   def dragEdge[WType](
-    ob:Ob,
-    src:Hom,
-    tgt:Hom,
-    lift: (Part,Complex) => Seq[(Ob,Int)] = (_,_) => Seq(),
-    eqTypes: (Part,Part) => IO[Unit] = (p,q) => IO(())
+      ob: Ob,
+      src: Hom,
+      tgt: Hom,
+      lift: (Part, Complex) => Seq[(Ob, Int)] = (_, _) => Seq(),
+      eqTypes: (Part, Part) => IO[Unit] = (p, q) => IO(())
   )(s: Part): IO[Part] =
 
-
-    def start = (z:Complex) =>
-      
+    def start = (z: Complex) =>
       for
-        p <- {lift(s,z) match
-          case Seq() => IO(s)
-          case ext => liftTo(s,ext)
+        p <- {
+          lift(s, z) match
+            case Seq() => IO(s)
+            case ext   => liftTo(s, ext)
         }
         props = p match {
-          case p if src.codoms.contains((p - es.bgPart).ty) => 
-            PropMap().set(Interactable, false)
-              .set(src, p).set(End, z)  
+          case p if src.codoms.contains((p - es.bgPart).ty) =>
+            PropMap()
+              .set(Interactable, false)
+              .set(src, p)
+              .set(End, z)
           case p if tgt.codoms.contains((p - es.bgPart).ty) =>
-            PropMap().set(Interactable, false)
-              .set(Start, z).set(tgt, p)
+            PropMap()
+              .set(Interactable, false)
+              .set(Start, z)
+              .set(tgt, p)
         }
         e <- add(
           es.bgPart,
           ob,
           props
         )
-        _ <- eqTypes(p,e)
+        _ <- eqTypes(p, e)
       yield e
 
     def during = (e: Part, p: Complex) =>
@@ -255,87 +259,93 @@ case class Actions(
       then m.update(_.setSubpart(e, End, p))
       else m.update(_.setSubpart(e, Start, p))
 
-    def after = (e:Part) => for
-      t <- fromMaybe(es.hoveredPart)
-      z <- es.mousePos
-      q <- lift(t,z) match
-        case Seq() => IO(t)
-        case ext => liftTo(t,ext)
-      _ <- eqTypes(e,q)
-      _ <- m.now() match
-        case mnow if mnow.hasSubpart(src,e) => for {
-          _ <- set(e, tgt, q)
-          _ <- remove(e, End)
-          _ <- remove(e, Interactable)
-        } yield ()
-        case mnow if mnow.hasSubpart(tgt,e) => for {
-          _ <- set(e,src,q)
-          _ <- remove(e,Start)
-          _ <- remove(e,Interactable)
-        } yield ()
-        case _ => die
-    yield e
+    def after = (e: Part) =>
+      for
+        t <- fromMaybe(es.hoveredPart)
+        z <- es.mousePos
+        q <- lift(t, z) match
+          case Seq() => IO(t)
+          case ext   => liftTo(t, ext)
+        _ <- eqTypes(e, q)
+        _ <- m.now() match
+          case mnow if mnow.hasSubpart(src, e) =>
+            for {
+              _ <- set(e, tgt, q)
+              _ <- remove(e, End)
+              _ <- remove(e, Interactable)
+            } yield ()
+          case mnow if mnow.hasSubpart(tgt, e) =>
+            for {
+              _ <- set(e, src, q)
+              _ <- remove(e, Start)
+              _ <- remove(e, Interactable)
+            } yield ()
+          case _ => die
+      yield e
 
     drag(start, during, after)(s)
 
-
-
-  
   def unplug(
-    p:Part,
-    w:Part,
-    src:Hom,
-    tgt:Hom,
-    lift: (Part,Complex) => Seq[(Ob,Int)] = (_,_) => Seq(),
-    eqTypes: (Part,Part) => IO[Unit] = (p,q) => IO(())
+      p: Part,
+      w: Part,
+      src: Hom,
+      tgt: Hom,
+      lift: (Part, Complex) => Seq[(Ob, Int)] = (_, _) => Seq(),
+      eqTypes: (Part, Part) => IO[Unit] = (p, q) => IO(())
   ) =
-    def start(z:Complex) = if m.now().trySubpart(src,w) == Some(p)
-      then (for
-        _ <- set(w,Start,z,false)
-        _ <- set(w,Interactable,false,false)
-        _ <- remove(w,src)
-        _ <- if (m.now().incident(p,src) ++ m.now().incident(p,tgt)).isEmpty
+    def start(z: Complex) = if m.now().trySubpart(src, w) == Some(p)
+    then
+      (for
+        _ <- set(w, Start, z, false)
+        _ <- set(w, Interactable, false, false)
+        _ <- remove(w, src)
+        _ <-
+          if (m.now().incident(p, src) ++ m.now().incident(p, tgt)).isEmpty
           then remove(p)
           else IO(())
       yield w)
-      else (for
-        _ <- set(w,End,z,false)
-        _ <- set(w,Interactable,false,false)
-        _ <- remove(w,tgt)
-        _ <- if (m.now().incident(p,src) ++ m.now().incident(p,tgt)).isEmpty
+    else
+      (for
+        _ <- set(w, End, z, false)
+        _ <- set(w, Interactable, false, false)
+        _ <- remove(w, tgt)
+        _ <-
+          if (m.now().incident(p, src) ++ m.now().incident(p, tgt)).isEmpty
           then remove(p)
           else IO(())
-      yield w)
+      yield w
+    )
 
     def during = (e: Part, p: Complex) =>
       if m.now().hasSubpart(End, e)
       then m.update(_.setSubpart(e, End, p))
       else m.update(_.setSubpart(e, Start, p))
 
-
-    def after = (e:Part) => for
-      t <- fromMaybe(es.hoveredPart)
-      z <- es.mousePos
-      q <- lift(t,z) match
-        case Seq() => IO(t)
-        case ext => liftTo(t,ext)
-      _ <- eqTypes(q,e)
-      _ <- m.now() match
-        case mnow if mnow.hasSubpart(src,e) => for {
-          _ <- set(e, tgt, q)
-          _ <- remove(e, End)
-          _ <- remove(e, Interactable)
-        } yield ()
-        case mnow if mnow.hasSubpart(tgt,e) => for {
-          _ <- set(e,src,q)
-          _ <- remove(e,Start)
-          _ <- remove(e,Interactable)
-        } yield ()
-        case _ => die
-    yield e
+    def after = (e: Part) =>
+      for
+        t <- fromMaybe(es.hoveredPart)
+        z <- es.mousePos
+        q <- lift(t, z) match
+          case Seq() => IO(t)
+          case ext   => liftTo(t, ext)
+        _ <- eqTypes(q, e)
+        _ <- m.now() match
+          case mnow if mnow.hasSubpart(src, e) =>
+            for {
+              _ <- set(e, tgt, q)
+              _ <- remove(e, End)
+              _ <- remove(e, Interactable)
+            } yield ()
+          case mnow if mnow.hasSubpart(tgt, e) =>
+            for {
+              _ <- set(e, src, q)
+              _ <- remove(e, Start)
+              _ <- remove(e, Interactable)
+            } yield ()
+          case _ => die
+      yield e
 
     drag(start, during, after)(p)
-
 
   /** Edit the content of the part `i`, using popup text box */
   def edit(p: Property { type Value = String; }, multiline: Boolean)(
@@ -361,68 +371,73 @@ case class Actions(
     })
   } yield ()
 
-
   /** Bring up a textbox that can be used for copy/pasting the serialized
     * version of the current state
     */
   def importExport = ui.addKillableHtmlEntity(kill =>
     val sch = m.now().schema
-    implicit val rw:ReadWriter[(ACSet,Complex)] = sch.runtimeSerializer(es.size.now(),"dims")
+    implicit val rw: ReadWriter[(ACSet, Complex)] =
+      sch.runtimeSerializer(es.size.now(), "dims")
     PositionWrapper(
       Position.topToBotMid(10),
       TextInput(
-        m.zoomL(Lens(
-          (acset:ACSet) => write((acset,es.size.now()))
-        )(
-          s => a => if s == ""
-          then ACSet(sch)
-          else try
-            val (acs,dims) = read[(ACSet,Complex)](s)
-            acs.scale(dims,es.size.now())
-          catch case e => 
-            println(s"importExport error $e")
-            a
-        )),
+        m.zoomL(
+          Lens((acset: ACSet) => write((acset, es.size.now())))(s =>
+            a =>
+              if s == ""
+              then ACSet(sch)
+              else
+                try
+                  val (acs, dims) = read[(ACSet, Complex)](s)
+                  acs.scale(dims, es.size.now())
+                catch
+                  case e =>
+                    println(s"importExport error $e")
+                    a
+          )
+        ),
         true
       )(kill)
     )
   )
 
-  /** Bring up a textbox that can be used for copy/pasting a tikz serialization */
-  def exportTikz(obs:Seq[Ob],hide:Seq[Ob] = Seq()): IO[Unit] =
+  /** Bring up a textbox that can be used for copy/pasting a tikz serialization
+    */
+  def exportTikz(obs: Seq[Ob], hide: Seq[Ob] = Seq()): IO[Unit] =
     ui.addKillableHtmlEntity(kill =>
       PositionWrapper(
         Position.topToBotMid(10),
-        TextInput(m.zoomL(Lens(
-          (acset:ACSet) =>
-            val ents = es.entities.now().em.asInstanceOf[Map[Part,(Sprite,ACSet)]]
-  
+        TextInput(
+          m.zoomL(Lens((acset: ACSet) =>
+            val ents =
+              es.entities.now().em.asInstanceOf[Map[Part, (Sprite, ACSet)]]
+
             val obStrs = obs.map(ob =>
-              ents.filter((k,_) => k.lastOb == ob)
-                .map { case (p,(spr,data)) =>
+              ents
+                .filter((k, _) => k.lastOb == ob)
+                .map { case (p, (spr, data)) =>
                   val obstr = spr.toTikz(
                     p,
-                    data.scale(es.size.now(),Complex(10,10),Seq(Center)),
+                    data.scale(es.size.now(), Complex(10, 10), Seq(Center)),
                     !hide.contains(p.lastOb)
                   )
-                  obstr                
-                }.mkString("")
+                  obstr
+                }
+                .mkString("")
             )
 
             obStrs.filter(_ != "").mkString("\n\n")
-        )(
-          s => a => a
-        )),
-        true
-      )(kill))
+          )(s => a => a)),
+          true
+        )(kill)
+      )
     )
 
-
   def zoomIn(
-    b:Part,
-    layout:(sz:Complex,acset:ACSet) => ACSet,
-    esources:Seq[EntitySource[ACSet]]
-  ) =  
+      b: Part,
+      layout: (sz: Complex, acset: ACSet) => ACSet,
+      esources: Seq[EntitySource[ACSet]]
+  ) =
     es.hover.$state.set(HoverController.State(None))
     es.currentView.set(b)
     es.deregister("mainVP")
@@ -434,24 +449,22 @@ case class Actions(
       esources
     )
 
-
   def zoomOut(
-    layout:(sz:Complex,acset:ACSet) => ACSet,
-    esources:Seq[EntitySource[ACSet]]
-  ) = 
+      layout: (sz: Complex, acset: ACSet) => ACSet,
+      esources: Seq[EntitySource[ACSet]]
+  ) =
     val b = es.bgPart match
       case ROOT => ROOT
-      case p => p.init
-    zoomIn(ROOT,layout,esources).flatMap(_ => zoomIn(b,layout,esources))
+      case p    => p.init
+    zoomIn(ROOT, layout, esources).flatMap(_ => zoomIn(b, layout, esources))
 
-
-  def doAll[A](fs:Seq[IO[A]]): IO[Seq[A]] = fs match
+  def doAll[A](fs: Seq[IO[A]]): IO[Seq[A]] = fs match
     case Seq() => IO(Seq())
-    case Seq(head,tail @_*) => (for
-      a <- head
-      as <- doAll(tail)
-    yield (a +: as))
-  
-
+    case Seq(head, tail @ _*) => (
+      for
+        a <- head
+        as <- doAll(tail)
+      yield (a +: as)
+    )
 
 }

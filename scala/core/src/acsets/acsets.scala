@@ -9,7 +9,6 @@ import semagrams.util.msgError
 import semagrams.util.bijectiveRW
 import semagrams.util.Complex
 
-
 /** A trait marking objects in a [[Schema]] */
 trait Ob {
 
@@ -21,12 +20,9 @@ trait Ob {
 
   def partType: PartType = PartType(Seq(this))
 
-  def extend(x:Ob) = partType.extend(x)
-
+  def extend(x: Ob) = partType.extend(x)
 
 }
-
-
 
 /** A trait marking morphisms in a [[Schema]]
   *
@@ -61,23 +57,21 @@ trait Hom extends Property {
   )
 
   /** Check whether `this` has `p` in the domain and `q` in the codomain,
-    * possibly nested within other parts. */
-  def canSet(p:Part,_q:Any) = _q match
-    case q:Part => (for
-      dom <- doms
-      codom <- codoms
-      if p.hasFinal(dom) & q.hasFinal(codom)
-      _ = println(s"check 1")
-      pOverlap = p.path.dropRight(dom.path.length)
-      qOverlap = q.path.dropRight(codom.path.length)
-      if pOverlap == qOverlap
-    yield ()).nonEmpty
-      
-    
-        
-    
-    case _ => false
+    * possibly nested within other parts.
+    */
+  def canSet(p: Part, _q: Any) = _q match
+    case q: Part =>
+      (for
+        dom <- doms
+        codom <- codoms
+        if p.hasFinal(dom) & q.hasFinal(codom)
+        _ = println(s"check 1")
+        pOverlap = p.path.dropRight(dom.path.length)
+        qOverlap = q.path.dropRight(codom.path.length)
+        if pOverlap == qOverlap
+      yield ()).nonEmpty
 
+    case _ => false
 
 }
 
@@ -94,10 +88,14 @@ trait Attr extends Property {
     */
   val doms: Seq[PartType]
 
-  /** Check whether `this` has `p` in the domain, possibly nested within other parts. */
-  // I don't know how to check 
-  def canSet(p:Part,a:Any): Boolean = 
-    doms.exists(dom => p.hasFinal(dom)) //  & a.isInstanceOf[Value]       TODO: how to check this at runtime?
+  /** Check whether `this` has `p` in the domain, possibly nested within other
+    * parts.
+    */
+  // I don't know how to check
+  def canSet(p: Part, a: Any): Boolean =
+    doms.exists(dom =>
+      p.hasFinal(dom)
+    ) //  & a.isInstanceOf[Value]       TODO: how to check this at runtime?
 
 }
 
@@ -133,29 +131,22 @@ case class PartType(path: Seq[Ob]) extends EntityType {
   /** Returns if `that` an extension of `this`? */
   def <(that: PartType): Boolean = that > this
 
-  /** Return `Some(p)` if `this == that.extend(p)`, else `None` */ 
+  /** Return `Some(p)` if `this == that.extend(p)`, else `None` */
   def diffOption(that: PartType): Option[PartType] = that.path match
-    case Seq() => Some(this)
+    case Seq()                       => Some(this)
     case _ if this.head == that.head => this.tail.diffOption(that.tail)
-    case _ => None
+    case _                           => None
 
   /** Return `p` if `this == that.extend(p)`, else error */
-  def -(that:PartType) = diffOption(that).getOrElse(
+  def -(that: PartType) = diffOption(that).getOrElse(
     throw msgError(s"PartType $this is not an extension of $that")
   )
-  
-
-
-
 
 }
 
 object PartType {
   given obIsPartType: Conversion[Ob, PartType] = (ob: Ob) => PartType(Seq(ob))
   given seqIsPartType: Conversion[Seq[Ob], PartType] = PartType(_)
-
-
-
 
 }
 
@@ -190,7 +181,7 @@ case class Part(path: Seq[(Ob, Id)]) extends Entity {
   /** Returns the first id in the path */
   def headId: Id = path.head._2
 
-  /** Returns the tail segment of a part */ 
+  /** Returns the tail segment of a part */
   def tail: Part = Part(path.tail)
 
   /** Returns the last part of the path */
@@ -207,19 +198,19 @@ case class Part(path: Seq[(Ob, Id)]) extends Entity {
 
   /** Checks if `this` is more specific than `that` */
   def >(that: Part): Boolean = that.path match
-    case Seq() => true
+    case Seq()                       => true
     case _ if this.head == that.head => this.tail > that.tail
-    case _ => false
+    case _                           => false
 
   /** Checks if `that` is more specific than `this` */
   def <(that: Part): Boolean = that > this
 
   /** Returns `Some(p)` if `this == that.extendPart(p)`, else `None` */
-  def diffOption(that:Part): Option[Part] = 
+  def diffOption(that: Part): Option[Part] =
     that.path match
-    case Seq() => Some(this)
-    case _ if this.head == that.head => this.tail.diffOption(that.tail)
-    case _ => None
+      case Seq()                       => Some(this)
+      case _ if this.head == that.head => this.tail.diffOption(that.tail)
+      case _                           => None
 
   /** Returns `p` if `this == that.extendPart(p)`, else errors */
   def -(that: Part): Part = diffOption(that).getOrElse(
@@ -227,28 +218,26 @@ case class Part(path: Seq[(Ob, Id)]) extends Entity {
   )
 
   /** Checks if `ptype` is an initial segment of `ty` */
-  def hasInitial(ptype:PartType): Boolean = (this.path,ptype.path) match
-    case (_,Seq()) => true
-    case (Seq(),_) => false
-    case (_,phead +: ptail) => 
+  def hasInitial(ptype: PartType): Boolean = (this.path, ptype.path) match
+    case (_, Seq()) => true
+    case (Seq(), _) => false
+    case (_, phead +: ptail) =>
       phead == headOb & tail.hasInitial(PartType(ptail))
-  
+
   /** Checks if `ptype` is an final segment of `ty` */
-  def hasFinal(ptype:PartType): Boolean = (this.path,ptype.path) match
-    case (_,Seq()) => true
-    case (Seq(),_) => false
-    case (_,pinit :+ plast) => 
+  def hasFinal(ptype: PartType): Boolean = (this.path, ptype.path) match
+    case (_, Seq()) => true
+    case (Seq(), _) => false
+    case (_, pinit :+ plast) =>
       plast == lastOb & init.hasFinal(PartType(pinit))
-    
-  
 
   /** Transform to an name that is usable in tikz */
-  def tikzName: String = 
+  def tikzName: String =
     path match
-    case Seq() => throw msgError(s"Can's use `ROOT` as a tikz location identifier")
-    case Seq((ob,id)) => ob.toString() + id.id.toString()
-    case _ => last.tikzName + "@" + init.tikzName
-
+      case Seq() =>
+        throw msgError(s"Can's use `ROOT` as a tikz location identifier")
+      case Seq((ob, id)) => ob.toString() + id.id.toString()
+      case _             => last.tikzName + "@" + init.tikzName
 
 }
 
@@ -265,8 +254,6 @@ trait Schema {
   val homs: Seq[Hom]
   val attrs: Seq[Attr]
   val props: Seq[Property] = Seq()
-
-
 
   /** Returns the subschema found by following the path in `ty`. */
   def subschema(ty: PartType): Schema = ty.path match {
@@ -289,61 +276,61 @@ trait Schema {
           .map({ case (obs, f) => (ob +: obs, f) })
   }
 
-
   /** Create an empty ACSet from this schema. */
   def apply(): ACSet = ACSet(this)
 
-
-
-  /** Serialization via upickle. 
-    * This must live in the schema in order to know which
-    * typesafe objects/homs/attrs are available. 
-    * 
-    * bijectiveRW(seq) serializes to String using the built-in toString 
-    * 
-    * macroRW is the built-in upickle creation for case classes, but
-    * requires access to a background ReadWriter[Ob]
+  /** Serialization via upickle. This must live in the schema in order to know
+    * which typesafe objects/homs/attrs are available.
+    *
+    * bijectiveRW(seq) serializes to String using the built-in toString
+    *
+    * macroRW is the built-in upickle creation for case classes, but requires
+    * access to a background ReadWriter[Ob]
     */
-
 
   /** Serialization of `Ob`s in the schema */
   implicit def obRW: ReadWriter[Ob] = bijectiveRW(obs)
-  
+
   /** Serialization of `PartType`s in the schema */
   implicit def partTypeRW: ReadWriter[PartType] = macroRW
 
   /** Serialization of `Part`s in the schema */
   implicit def partRW: ReadWriter[Part] = macroRW
 
-  /** A superset of properties (`Property`) occuring in the schema. For serialization. */
-  def allProps = (homs ++ attrs 
+  /** A superset of properties (`Property`) occuring in the schema. For
+    * serialization.
+    */
+  def allProps = (homs ++ attrs
     ++ props ++ obs.flatMap(_.schema.props)
-    ++ GenericProperty.values
-  ).toSet
+    ++ GenericProperty.values).toSet
 
   /** Serialization of properties (`Property`) in the schema */
   implicit def propertyRW: ReadWriter[Property] = bijectiveRW(allProps)
 
-  /** Serialization of `PropMap`s in the schema, writing json objects
-    * for `Part`s and values for other properties.
+  /** Serialization of `PropMap`s in the schema, writing json objects for
+    * `Part`s and values for other properties.
     */
-  implicit def propRW: ReadWriter[PropMap] = readwriter[Map[String,ujson.Value]].bimap(
-    pm => pm.pmap.map { 
-      case (k,v:Part) => 
-        (k.toString,writeJs(v))
-      case (k,v) =>
-        (k.toString,k.writeValue(v))
-    },
-    mp => PropMap(mp.map{ case (k,v) => 
-      val prop = allProps.find(write(_) == write(k))
-        .getOrElse(throw msgError(s"bad propRW $mp"))
-      prop match
-        case _:Hom => 
-          prop -> read[Part](v)
-        case _ => 
-          prop -> prop.readValue(v)
-    })
-  )
+  implicit def propRW: ReadWriter[PropMap] =
+    readwriter[Map[String, ujson.Value]].bimap(
+      pm =>
+        pm.pmap.map {
+          case (k, v: Part) =>
+            (k.toString, writeJs(v))
+          case (k, v) =>
+            (k.toString, k.writeValue(v))
+        },
+      mp =>
+        PropMap(mp.map { case (k, v) =>
+          val prop = allProps
+            .find(write(_) == write(k))
+            .getOrElse(throw msgError(s"bad propRW $mp"))
+          prop match
+            case _: Hom =>
+              prop -> read[Part](v)
+            case _ =>
+              prop -> prop.readValue(v)
+        })
+    )
 
   /** All `Schema`s occuring in the schema */
   def allSchemas = Set(this +: obs.map(_.schema)*)
@@ -351,61 +338,66 @@ trait Schema {
   /** Serialization of `Schema`s occuring in the schema */
   implicit def schemaRW: ReadWriter[Schema] = bijectiveRW(allSchemas)
 
-  /** Serialization of `PartSet`s occuring in the schema. Note that this
-    * omits the `nextID` and rebuilds it from the sequence of ids. 
-   */
-  implicit def partsRW: ReadWriter[PartSet] = readwriter[(Seq[Int],Map[Int,ujson.Value])].bimap(
-    ps => (
-      ps.ids.map(_.id),
-      ps.ids.map(id => 
-        id.id -> writeJs(ps.acsets(id))
-      ).toMap
-    ),
-    (seq,dict) => PartSet(
-      seq.maxOption.map(_+1).getOrElse(0),
-      seq.map(Id(_)),
-      dict.map((i,json) => 
-        Id(i) -> read[ACSet](json)
-      )
-    )
-  )
-
-  /** Note: replacing `read[ujson.Value](write(acset.partsMap))` in `acsetRW` with
-    * `writeJs(acset.partsMap)` introduces a parsing error `expecting string 
-    * but found int32` 
+  /** Serialization of `PartSet`s occuring in the schema. Note that this omits
+    * the `nextID` and rebuilds it from the sequence of ids.
     */
-  
+  implicit def partsRW: ReadWriter[PartSet] =
+    readwriter[(Seq[Int], Map[Int, ujson.Value])].bimap(
+      ps =>
+        (
+          ps.ids.map(_.id),
+          ps.ids.map(id => id.id -> writeJs(ps.acsets(id))).toMap
+        ),
+      (seq, dict) =>
+        PartSet(
+          seq.maxOption.map(_ + 1).getOrElse(0),
+          seq.map(Id(_)),
+          dict.map((i, json) => Id(i) -> read[ACSet](json))
+        )
+    )
+
+  /** Note: replacing `read[ujson.Value](write(acset.partsMap))` in `acsetRW`
+    * with `writeJs(acset.partsMap)` introduces a parsing error `expecting
+    * string but found int32`
+    */
+
   /** Serialization of `ACSets`s based on the schema */
-  implicit def acsetRW: ReadWriter[ACSet] = readwriter[Map[String,ujson.Value]].bimap(
-    acset => Map(
-      "schema" -> writeJs(acset.schema),
-      "props" -> writeJs(acset.props),
-      "partsMap" -> read[ujson.Value](write(acset.partsMap)),
-      ),
-    jmap => ACSet(
-        read[Schema](jmap("schema")),
-        read[PropMap](jmap("props")),
-        read[Map[Ob,PartSet]](jmap("partsMap"))
-      )
-  )
+  implicit def acsetRW: ReadWriter[ACSet] =
+    readwriter[Map[String, ujson.Value]].bimap(
+      acset =>
+        Map(
+          "schema" -> writeJs(acset.schema),
+          "props" -> writeJs(acset.props),
+          "partsMap" -> read[ujson.Value](write(acset.partsMap))
+        ),
+      jmap =>
+        ACSet(
+          read[Schema](jmap("schema")),
+          read[PropMap](jmap("props")),
+          read[Map[Ob, PartSet]](jmap("partsMap"))
+        )
+    )
 
   /** Serializer that includes runtime information (e.g., window size) */
-  def runtimeSerializer[A:ReadWriter](a:A,key:String = "runtime"): ReadWriter[(ACSet,A)] =
+  def runtimeSerializer[A: ReadWriter](
+      a: A,
+      key: String = "runtime"
+  ): ReadWriter[(ACSet, A)] =
     val rw = summon[ReadWriter[A]]
-    readwriter[Map[String,ujson.Value]].bimap(
-      (acset,a) => Map(
-        "acset" -> writeJs(acset),
-        key -> writeJs[A](a)
-      ),
-      jmap => (        
-        read[ACSet](jmap("acset")),
-        read[A](jmap(key))
-      )
+    readwriter[Map[String, ujson.Value]].bimap(
+      (acset, a) =>
+        Map(
+          "acset" -> writeJs(acset),
+          key -> writeJs[A](a)
+        ),
+      jmap =>
+        (
+          read[ACSet](jmap("acset")),
+          read[A](jmap(key))
+        )
     )
 
-
 }
-
 
 /** An opaque wrapper around an integer */
 case class Id(id: Int)
@@ -483,19 +475,16 @@ case class PartSet(
     )
   }
 
-
   /** Move the id `i` to the index `j` in the list of ids.
     *
-    * This is used, for instance, when setting the position
-    * of a port.
+    * This is used, for instance, when setting the position of a port.
     */
-  def moveToIndex(i: Id,j:Int) = {
-    val (seg1,seg2) = ids.filterNot(_ == i).splitAt(j) 
+  def moveToIndex(i: Id, j: Int) = {
+    val (seg1, seg2) = ids.filterNot(_ == i).splitAt(j)
     this.copy(
       ids = (seg1 :+ i) ++ seg2
     )
   }
-
 
 }
 
@@ -574,13 +563,20 @@ case class ACSet(
     */
   def parts(i: Part, x: Ob): Seq[(Part, ACSet)] = {
     val sub = subacset(i)
-    val ps = sub.partsMap.get(x).getOrElse(
-      throw msgError(s"bad partsMap $x, ${sub.partsMap}")
-    )
-    ps.ids.map(id => 
-      (i.extend(x, id), ps.acsets.get(id).getOrElse(
-        throw msgError(s"No acsets in $ps for $id")
-      ))
+    val ps = sub.partsMap
+      .get(x)
+      .getOrElse(
+        throw msgError(s"bad partsMap $x, ${sub.partsMap}")
+      )
+    ps.ids.map(id =>
+      (
+        i.extend(x, id),
+        ps.acsets
+          .get(id)
+          .getOrElse(
+            throw msgError(s"No acsets in $ps for $id")
+          )
+      )
     )
   }
 
@@ -670,14 +666,15 @@ case class ACSet(
   /** Move the part `p` to the front of its parent `PartSet`. See
     * [[PartSet.moveFront]].
     */
-  def moveToIndex(p: Part,idx: Int): ACSet = {
+  def moveToIndex(p: Part, idx: Int): ACSet = {
     val sub = subacset(p.init)
     val newsub = sub.copy(
-      partsMap = sub.partsMap + (p.lastOb -> sub.partsMap(p.lastOb).moveToIndex(p.lastId,idx))
+      partsMap = sub.partsMap + (p.lastOb -> sub
+        .partsMap(p.lastOb)
+        .moveToIndex(p.lastId, idx))
     )
     setSubacset(p.init, newsub)
   }
-
 
   /** Set the property `f` of part `p` to `v` */
   def setSubpart(p: Part, f: Property, v: f.Value): ACSet = {
@@ -689,7 +686,7 @@ case class ACSet(
   }
 
   /** Set the property `f` of part `p` to `v` */
-  def setSubpartProps(p: Part, pm:PropMap): ACSet = {
+  def setSubpartProps(p: Part, pm: PropMap): ACSet = {
     val sub = subacset(p)
     val newSub = sub.copy(
       props = sub.props ++ pm
@@ -726,7 +723,8 @@ case class ACSet(
             .flatMap((i, acs) => helper(acs, part.extend(ob, i), rest))
       }
 
-    prefix.map(pfx => f.doms.flatMap(dom => helper(subacset(pfx), pfx, dom.path)))
+    prefix
+      .map(pfx => f.doms.flatMap(dom => helper(subacset(pfx), pfx, dom.path)))
       .getOrElse(Seq())
   }
 
@@ -742,7 +740,7 @@ case class ACSet(
       setSubacset(Part(pre), newSub)
     } else {
       this
-    } 
+    }
   }
 
   /** Remove a part and all of the other parts that refer to it. */
@@ -777,33 +775,41 @@ case class ACSet(
     this.copy(props = props ++ newProps)
   }
 
-  def allProps(p:Part): Set[Property] = 
+  def allProps(p: Part): Set[Property] =
     val sub = subacset(p)
     val acsets = sub.partsMap.values
-      .map(_.acsets.values).flatten.toSet
+      .map(_.acsets.values)
+      .flatten
+      .toSet
 
     sub.props.pmap.keySet union
-    acsets.map(_.props.pmap.keySet).flatten
+      acsets.map(_.props.pmap.keySet).flatten
 
+  def scale(
+      from: Complex,
+      to: Complex,
+      scaleProps: Seq[Property { type Value = Complex }] = Seq(Center)
+  ): ACSet =
+    val oldProps = props.pmap.filter((k, _) => !scaleProps.contains(k))
 
-  def scale(from:Complex,to:Complex,scaleProps: Seq[Property{ type Value = Complex }] = Seq(Center)): ACSet =
-    val oldProps = props.pmap.filter((k,_) => !scaleProps.contains(k))
+    val newProps = scaleProps
+      .filter(props.contains(_))
+      .map(k => (k, props(k).scaleFrom(from).scaleTo(to)))
+      .toMap
 
-    val newProps = scaleProps.filter(props.contains(_)).map(k =>
-      (k,props(k).scaleFrom(from).scaleTo(to))  
-    ).toMap
-
-    val newParts = partsMap.map((ob,pset) =>
-      (ob,pset.copy(
-        acsets = pset.acsets.map((ob,acs) => (ob,acs.scale(from,to,scaleProps)))
+    val newParts = partsMap.map((ob, pset) =>
+      (
+        ob,
+        pset.copy(
+          acsets =
+            pset.acsets.map((ob, acs) => (ob, acs.scale(from, to, scaleProps)))
+        )
       )
-    ))
+    )
     this.copy(
       props = PropMap(oldProps ++ newProps),
       partsMap = newParts
     )
-
-
 
 }
 

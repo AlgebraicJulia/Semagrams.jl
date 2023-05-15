@@ -102,7 +102,7 @@ object MouseController {
         case MouseMove(pos)  => this.copy(pos = pos)
         case e               => this
       }
-      
+
     }
   }
 

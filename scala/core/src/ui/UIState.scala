@@ -91,12 +91,13 @@ case class UIState(
     a <- IO.async[A](cb =>
       addEntity(
         e,
-        GenericHTMLSprite(() =>
-          build(Observer(a => {
-            cb(Right(a))
-            remEntity(e)
-            focus()
-          })),
+        GenericHTMLSprite(
+          () =>
+            build(Observer(a => {
+              cb(Right(a))
+              remEntity(e)
+              focus()
+            })),
           globalSize
         ),
         ACSet(SchEmpty)

@@ -27,7 +27,7 @@ export WireProp._
   * where the beginning and the end are both horizontal, and it has no
   * arrowhead.
   */
-case class Wire(src:Hom,tgt:Hom) extends Sprite {
+case class Wire(src: Hom, tgt: Hom) extends Sprite {
   def exAt(p: Complex, d: Double = 5.0) = {
     import Path.Element._
 
@@ -82,7 +82,6 @@ case class Wire(src:Hom,tgt:Hom) extends Sprite {
       attachHandlers: HandlerAttacher
   ): L.SvgElement = {
 
-
     val data = updates.map(init.props ++ _.props)
     def s(p: PropMap) = p(Start)
     def t(p: PropMap) = p(End)
@@ -92,8 +91,8 @@ case class Wire(src:Hom,tgt:Hom) extends Sprite {
 
     def ppath(p: PropMap) = curvedPath(s(p), t(p), ds(p), dt(p), b(p))
 
-    def anchor(p:PropMap) = p.get(LabelAnchor).getOrElse(.5)
-    def offset(p:PropMap) = p.get(LabelOffset).getOrElse(10 * im)
+    def anchor(p: PropMap) = p.get(LabelAnchor).getOrElse(.5)
+    def offset(p: PropMap) = p.get(LabelOffset).getOrElse(10 * im)
 
     def labelPos(p: PropMap) = {
       val crv = ppath(p)(1)
@@ -106,7 +105,7 @@ case class Wire(src:Hom,tgt:Hom) extends Sprite {
 
     val text = L.svg.text(
       xy <-- data.map(labelPos),
-      L.children <-- data.map(p => 
+      L.children <-- data.map(p =>
         val splits = label(p).split('\n').zipWithIndex
         val l = splits.length
         splits.toIndexedSeq.map({ case (t, i) =>
@@ -114,8 +113,8 @@ case class Wire(src:Hom,tgt:Hom) extends Sprite {
             L.textToNode(t),
             textAnchor := "middle",
             x <-- data.map(p => labelPos(p).x.toString()),
-            y <-- data.map(
-              p => (labelPos(p).y + fontsize(p) * (i + 1 - l/2.0)).toString()
+            y <-- data.map(p =>
+              (labelPos(p).y + fontsize(p) * (i + 1 - l / 2.0)).toString()
             ),
             style := "user-select: none"
           )
@@ -123,7 +122,6 @@ case class Wire(src:Hom,tgt:Hom) extends Sprite {
       ),
       fontSize <-- data.map(fontsize(_).toString())
     )
-
 
     val wire = path(
       pathElts <-- data.map(ppath),
@@ -150,25 +148,29 @@ case class Wire(src:Hom,tgt:Hom) extends Sprite {
     g(wire, handle, text)
   }
 
-
-  override def toTikz(w:Part,data:ACSet,visible:Boolean = true) = if !visible
+  override def toTikz(w: Part, data: ACSet, visible: Boolean = true) =
+    if !visible
     then ""
-    else 
+    else
       val s = data.props(src)
       val t = data.props(tgt)
 
-      val s_str = if s.init == ROOT
+      val s_str =
+        if s.init == ROOT
         then s.tikzName + "-|" + s.tikzName
-        else  s.tikzName + "-|" + s.init.tikzName + ".east"
-      val t_str = if t.init == ROOT
+        else s.tikzName + "-|" + s.init.tikzName + ".east"
+      val t_str =
+        if t.init == ROOT
         then t.tikzName + "-|" + t.tikzName
-        else  t.tikzName + "-|" + t.init.tikzName + ".west"
+        else t.tikzName + "-|" + t.init.tikzName + ".west"
 
-      val labelStr = data.props.get(Content)
+      val labelStr = data.props
+        .get(Content)
         .map(label =>
-          s" node[above,midway,align=center]{${tikzLabel(label,"footnotesize")}}"
-        ).getOrElse("")
+          s" node[above,midway,align=center]{${tikzLabel(label, "footnotesize")}}"
+        )
+        .getOrElse("")
 
-      s"\\draw ($s_str) to[out=0,in=180] $labelStr ($t_str);\n"  
+      s"\\draw ($s_str) to[out=0,in=180] $labelStr ($t_str);\n"
 
 }

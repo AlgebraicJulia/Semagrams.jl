@@ -49,5 +49,6 @@ case class WithMiddleware(
 
   override def bbox(subent: Entity, acs: ACSet) = s.bbox(subent, acs)
 
-  override def toTikz(p:Part,data:ACSet,visible:Boolean = true) = s.toTikz(p,data,visible)
+  override def toTikz(p: Part, data: ACSet, visible: Boolean = true) =
+    s.toTikz(p, data, visible)
 }

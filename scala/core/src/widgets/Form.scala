@@ -13,7 +13,7 @@ import semagrams.acsets.Part
   *   then have an array of IO actions on the other side.
   */
 def Form[A](
-    entries: Seq[(String,LensedVar[A,String])]
+    entries: Seq[(String, LensedVar[A, String])]
 )(finished: Observer[Unit]) = {
   div(
     styleAttr := "display: flex; flex-direction: column; padding: 0px; border: none",
@@ -35,5 +35,3 @@ def Form[A](
     )
   )
 }
-
-

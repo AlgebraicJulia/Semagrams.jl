@@ -24,17 +24,18 @@ extension [A](x: Option[A]) {
 def fromMaybe[Model, A](a: IO[Option[A]]): IO[A] =
   a.flatMap(_.unwrap)
 
-
-def msgError(msg:String): RuntimeException = {
+def msgError(msg: String): RuntimeException = {
   println(msg)
   new RuntimeException
 }
 
 def bijectiveRW[A](as: Iterable[A]): ReadWriter[A] = readwriter[String].bimap(
   a => a.toString,
-  str => as.find(a => str == a.toString).getOrElse(
-    throw msgError(s"bad bijectiveRW: $str not in $as")
-  )
+  str =>
+    as.find(a => str == a.toString)
+      .getOrElse(
+        throw msgError(s"bad bijectiveRW: $str not in $as")
+      )
 )
 extension [A](action: IO[A]) {
 

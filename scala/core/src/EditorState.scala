@@ -41,7 +41,7 @@ class EditorState(
   val events = EventBus[Event]()
 
   /** The viewports in current use */
-  val viewports = Var(Map[String,Viewport]())
+  val viewports = Var(Map[String, Viewport]())
 
   val mouse = MouseController()
   val hover = HoverController()
@@ -58,13 +58,16 @@ class EditorState(
   /** All the entities in all of the viewports, and their associated sprites. */
   val entities = Var(EntityCollection())
 
-  /** The current part shown in the viewport. Used for nested diagrams (zooming). */
+  /** The current part shown in the viewport. Used for nested diagrams
+    * (zooming).
+    */
   val currentView: Var[Part] = Var(ROOT)
-  
 
-  dom.ResizeObserver( (newsize, _) => 
-    size.set(Complex(elt.ref.clientWidth, elt.ref.clientHeight))
-  ).observe(elt.ref)
+  dom
+    .ResizeObserver((newsize, _) =>
+      size.set(Complex(elt.ref.clientWidth, elt.ref.clientHeight))
+    )
+    .observe(elt.ref)
 
   // Attach all of the root elements of the viewports to the main element
   elt.amend(
@@ -73,7 +76,6 @@ class EditorState(
       dispatcher.unsafeRunAndForget(eventQueue.offer(evt))
     )
   )
-
 
   for (c <- controllers) {
     c(this, elt)
@@ -88,18 +90,18 @@ class EditorState(
     *   the viewport has entities extracted using these [[EntitySource]]s
     */
   def makeViewport[A](
-    vpname: String,  
-    state: Signal[A],
-    sources: Seq[EntitySource[A]]
+      vpname: String,
+      state: Signal[A],
+      sources: Seq[EntitySource[A]]
   ): IO[EntitySourceViewport[A]] = for {
     v <- IO(new EntitySourceViewport(state, sources))
-    _ <- IO(register(vpname,v))
+    _ <- IO(register(vpname, v))
   } yield v
 
   /** Make a new [[UIState]] object and register its viewport */
   def makeUI(): IO[UIState] = for {
     ui <- IO(new UIState(Var(Vector()), () => (), size.signal))
-    _ <- IO(register("uiVP",ui.viewport))
+    _ <- IO(register("uiVP", ui.viewport))
   } yield ui
 
   /** Register a viewport.
@@ -108,10 +110,10 @@ class EditorState(
     * attaching its main element to `this.elt` while the viewport is still in
     * [[viewports]]
     */
-  def register(vpname: String,v: Viewport) = {
+  def register(vpname: String, v: Viewport) = {
     viewports.update(_ + (vpname -> v))
     elt.amend(
-      viewports.now()("mainVP").entities --> entities.writer,
+      viewports.now()("mainVP").entities --> entities.writer
     )
   }
 
@@ -170,36 +172,31 @@ class EditorState(
   def mousePos: IO[Complex] =
     IO(mouse.$state.now().pos)
 
-
-
-
   /** Get the current background part */
   def bgPart: Part = currentView.now()
 
   /** Extend the current background part by `p` */
-  def bgPlus(p:Part): Part = bgPart.extendPart(p)
-
+  def bgPlus(p: Part): Part = bgPart.extendPart(p)
 
   /** An IO action that when run, returns the current hovered entity */
   def hovered: IO[Option[Entity]] = IO({
     hover.$state.now().state.map(_ match
-        case p:Part => bgPlus(p)
-        case e => e
+      case p: Part => bgPlus(p)
+      case e       => e
     )
   })
 
-
-  /** An IO action that filters [[hovered]] for just [[Part]]s
-    * and converts `None` the background part (e.g., `ROOT`)
+  /** An IO action that filters [[hovered]] for just [[Part]]s and converts
+    * `None` the background part (e.g., `ROOT`)
     */
   def hoveredPart: IO[Option[Part]] = hovered.map(_ match
-    case Some(p:Part) => Some(p)
-    case Some(e) => None
-    case None => Some(bgPart)
+    case Some(p: Part) => Some(p)
+    case Some(e)       => None
+    case None          => Some(bgPart)
   )
 
-  /** An IO action that filters [[hovered]] for just [[Part]]s 
-    * of a certain type.
+  /** An IO action that filters [[hovered]] for just [[Part]]s of a certain
+    * type.
     */
   def hoveredPart(ty: PartType): IO[Option[Part]] =
     hoveredPart.map(_ match
@@ -213,7 +210,7 @@ class EditorState(
   def hoveredPart(tys: Seq[PartType]): IO[Option[Part]] =
     hoveredPart.map(_ match
       case Some(p: Part) if tys contains p.ty => Some(p)
-      case _ => None
+      case _                                  => None
     )
 
   /** An IO action that filters [[hovered]] for entities of a certain type.
@@ -230,15 +227,15 @@ class EditorState(
   def makeMenu(ui: UIState, entries: Seq[(String, Part => IO[Unit])])(i: Part) =
     for {
       pos <- mousePos
-      choice <- fromMaybe(ui.dialogue[Option[Part => IO[Matchable]]](cb =>
-        PositionWrapper(
-          Position.atPos(pos),
-          Menu(entries)(cb)
+      choice <- fromMaybe(
+        ui.dialogue[Option[Part => IO[Matchable]]](cb =>
+          PositionWrapper(
+            Position.atPos(pos),
+            Menu(entries)(cb)
+          )
         )
-      ))
+      )
       _ <- choice(i)
     } yield ()
-
-
 
 }

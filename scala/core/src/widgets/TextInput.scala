@@ -51,4 +51,3 @@ def TextInput[A](v: LensedVar[A, String], multiline: Boolean)(
     )
   }
 }
-
