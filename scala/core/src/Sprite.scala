@@ -102,6 +102,7 @@ trait Sprite {
       data: ACSet
   ): Option[BoundingBox] = None
 
+  /** Convert a diagram element into tikz code */
   def toTikz(p:Part,data:ACSet,visible:Boolean = true): String = ""
 
   /** An optional layout algorithm to run before rendering an ACSet */

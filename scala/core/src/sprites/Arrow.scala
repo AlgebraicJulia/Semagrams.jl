@@ -73,38 +73,12 @@ case class Arrow(src:Hom,tgt:Hom,props: PropMap) extends Sprite {
     else
       val s = data.props(src)
       val t = data.props(tgt)
-      val b = 40 * data.props(Bend)
+      val b = 40 * data.props(Bend)      
 
-
-      println(s"toTikz edge")
-      println
-      println(s"props = $props")
-      println(s"data = $data")
-      
       val endpts = s"\\path (${s.tikzName}) to[bend left={$b}] node[pos=00](a@${s.tikzName}){} node[pos=1](b@${t.tikzName}){} (${t.tikzName});\n"
-
       val arrow = s"\\draw[->] (a@${s.tikzName}) to[bend left={$b}] (b@${t.tikzName});\n"
 
       endpts + arrow
-
-      // val s = data.props(src)
-      // val t = data.props(tgt)
-
-      // val s_str = if s.init == ROOT
-      //   then s.tikzName + "-|" + s.tikzName
-      //   else  s.tikzName + "-|" + s.init.tikzName + ".east"
-      // val t_str = if t.init == ROOT
-      //   then t.tikzName + "-|" + t.tikzName
-      //   else  t.tikzName + "-|" + t.init.tikzName + ".west"
-
-      // val labelStr = data.props.get(Content)
-      //   .map(label =>
-      //     s" node[above,midway,align=center]{${tikzLabel(label,"footnotesize")}}"
-      //   ).getOrElse("")
-
-      // s"\\draw ($s_str) to[out=0,in=180] $labelStr ($t_str);\n"  
-
-// }
 
 }
 
