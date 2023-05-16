@@ -65,7 +65,6 @@ trait Hom extends Property {
         dom <- doms
         codom <- codoms
         if p.hasFinal(dom) & q.hasFinal(codom)
-        _ = println(s"check 1")
         pOverlap = p.path.dropRight(dom.path.length)
         qOverlap = q.path.dropRight(codom.path.length)
         if pOverlap == qOverlap
