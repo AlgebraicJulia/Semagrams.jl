@@ -172,8 +172,10 @@ case class Actions(
     _ <- IO(m.record())
   } yield ret
 
-  // Memo = Offset, Return = Unit
+  /** Drag to move a part around */
   def dragMove(i: Part) =
+    // Memo = Offset, Return = Unit
+
     val pt = es.bgPlus(i)
 
     def start = (z: Complex) =>
@@ -213,12 +215,28 @@ case class Actions(
 
   /** Drag to construct an edge between two parts
     *
-    * Returns the part corresponding to the edge that was constructed
+    * Returns the part corresponding to the edge that was constructed.
+    *
+    * @param s
+    *   The part initiating the drag action
+    *
+    * @param ob
+    *   The type of the new edge
+    *
+    * @param src
+    *   The source mapping for the edge type
+    *
+    * @param tgt
+    *   The target mapping for the edge type
+    *
+    * @param lift
+    *   Optionally create/move a part (e.g., new port on a box) based on the
+    *   initiating part `s` and the mouse location
+    *
+    * @param eqTypes
+    *   Optional action when attaching `src` and `tgt` (e.g., equating port and
+    *   wire types)
     */
-
-  // TODO: Split src/target logic
-  // TODO: Add dragSpan, dragCospan
-
   def dragEdge[WType](
       ob: Ob,
       src: Hom,
@@ -226,6 +244,9 @@ case class Actions(
       lift: (Part, Complex) => Seq[(Ob, Int)] = (_, _) => Seq(),
       eqTypes: (Part, Part) => IO[Unit] = (p, q) => IO(())
   )(s: Part): IO[Part] =
+
+    // TODO: Split src/target logic
+    // TODO: Add dragSpan, dragCospan
 
     def start = (z: Complex) =>
       for
@@ -254,10 +275,18 @@ case class Actions(
         _ <- eqTypes(p, e)
       yield e
 
-    def during = (e: Part, p: Complex) =>
+    def during = (e: Part, p: Complex) => {
+      
       if m.now().hasSubpart(End, e)
-      then m.update(_.setSubpart(e, End, p))
-      else m.update(_.setSubpart(e, Start, p))
+      then 
+        m.update({
+          _.setSubpart(e, End, p)
+        })
+      else 
+        m.update({
+          _.setSubpart(e, Start, p)
+        })
+    }
 
     def after = (e: Part) =>
       for
@@ -285,6 +314,8 @@ case class Actions(
 
     drag(start, during, after)(s)
 
+  /** Like dragEdge, but begins by removing an existing port assignment.
+    */
   def unplug(
       p: Part,
       w: Part,
@@ -292,7 +323,7 @@ case class Actions(
       tgt: Hom,
       lift: (Part, Complex) => Seq[(Ob, Int)] = (_, _) => Seq(),
       eqTypes: (Part, Part) => IO[Unit] = (p, q) => IO(())
-  ) =
+  ) = {
     def start(z: Complex) = if m.now().trySubpart(src, w) == Some(p)
     then
       (for
@@ -346,6 +377,7 @@ case class Actions(
       yield e
 
     drag(start, during, after)(p)
+  }
 
   /** Edit the content of the part `i`, using popup text box */
   def edit(p: Property { type Value = String; }, multiline: Boolean)(
@@ -377,7 +409,7 @@ case class Actions(
   def importExport = ui.addKillableHtmlEntity(kill =>
     val sch = m.now().schema
     implicit val rw: ReadWriter[(ACSet, Complex)] =
-      sch.runtimeSerializer(es.size.now(), "dims")
+      sch.runtimeSerializer("dims", es.size.now())
     PositionWrapper(
       Position.topToBotMid(10),
       TextInput(
@@ -401,7 +433,7 @@ case class Actions(
     )
   )
 
-  /** Bring up a textbox that can be used for copy/pasting a tikz serialization
+  /** Bring up a textbox that can be used to export a tikz serialization
     */
   def exportTikz(obs: Seq[Ob], hide: Seq[Ob] = Seq()): IO[Unit] =
     ui.addKillableHtmlEntity(kill =>
@@ -433,30 +465,38 @@ case class Actions(
       )
     )
 
+  /** Display the internal ACSet of `b` in the main viewport.
+    *
+    * First `layout` the ACSet, then use `esources` sprites to produce the svg
+    */
   def zoomIn(
       b: Part,
       layout: (sz: Complex, acset: ACSet) => ACSet,
-      esources: Seq[EntitySource[ACSet]]
-  ) =
+      esources: EditorState => Seq[EntitySource[ACSet]]
+  ) = {
     es.hover.$state.set(HoverController.State(None))
     es.currentView.set(b)
-    es.deregister("mainVP")
+    es.deregister(es.MainViewport)
     es.makeViewport(
-      "mainVP",
+      es.MainViewport,
       es.size.signal
         .combineWith(m.signal.map(_.subacset(b)))
         .map(layout.tupled),
-      esources
+      esources(es)
     )
+  }
 
+  /** Display the internal ACSet that the current view is contained in.
+    */
   def zoomOut(
       layout: (sz: Complex, acset: ACSet) => ACSet,
-      esources: Seq[EntitySource[ACSet]]
-  ) =
+      esources: EditorState => Seq[EntitySource[ACSet]]
+  ) = {
     val b = es.bgPart match
       case ROOT => ROOT
       case p    => p.init
-    zoomIn(ROOT, layout, esources).flatMap(_ => zoomIn(b, layout, esources))
+    zoomIn(b, layout, esources)
+  }
 
   def doAll[A](fs: Seq[IO[A]]): IO[Seq[A]] = fs match
     case Seq() => IO(Seq())

@@ -12,7 +12,10 @@ import semagrams.util.Complex
 /** A trait marking objects in a [[Schema]] */
 trait Ob {
 
-  /** The subschema for the subacsets on parts of this type */
+  /** The subschema for the subacsets on parts of this type.
+    *
+    * The value is lazy in case an object is included in its own schema.
+    */
   lazy val schema: Schema = SchEmpty
 
   /** This object promoted to type for the domain/codomain of a morphism */
@@ -90,12 +93,12 @@ trait Attr extends Property {
   /** Check whether `this` has `p` in the domain, possibly nested within other
     * parts.
     */
-  // I don't know how to check
   def canSet(p: Part, a: Any): Boolean =
     doms.exists(dom =>
       p.hasFinal(dom)
-    ) //  & a.isInstanceOf[Value]       TODO: how to check this at runtime?
-
+    // TODO: how to check this at runtime?
+    //  & a.isInstanceOf[Value]       
+    )
 }
 
 /** The type of a part in a nested acset is a sequence of objects, going down
@@ -379,8 +382,8 @@ trait Schema {
 
   /** Serializer that includes runtime information (e.g., window size) */
   def runtimeSerializer[A: ReadWriter](
-      a: A,
-      key: String = "runtime"
+      key: String,
+      a: A
   ): ReadWriter[(ACSet, A)] =
     val rw = summon[ReadWriter[A]]
     readwriter[Map[String, ujson.Value]].bimap(

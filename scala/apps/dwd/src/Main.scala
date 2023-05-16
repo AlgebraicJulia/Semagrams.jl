@@ -1,27 +1,12 @@
 package semagrams.dwd
 
-import semagrams.Viewport
 import semagrams.api._
-import semagrams.dblClickOn
 import semagrams.acsets.{_, given}
 
 import upickle.default._
 import com.raquo.laminar.api.L._
 import cats.effect._
 import scala.scalajs.js.annotation.JSExportTopLevel
-
-import ACSet._
-import semagrams.Background
-import semagrams.EntityCollection
-
-import scala.language.implicitConversions
-import scala.reflect.ClassTag
-import semagrams.sprites.{AltDPBox, BasicPort}
-import semagrams.util.msgError
-import semagrams.sprites.DPBox
-import ujson.True
-import semagrams.PValue
-import cats.Traverse
 
 case object SchDWD extends Schema {
 
@@ -150,20 +135,9 @@ def bindings(
       case (None, Some(tpe)) => setType(p, tpe)
       case (None, None)      => IO(())
 
-  def test(p: Part) = es.mousePos.map(z =>
-
-    val ijs = for
-      i <- 1 to 5
-      j <- 1 to 5
-      if (i + j) % 2 == 0
-      _ = println(s"$i,$j")
-    yield (i, j)
-
-    println(ijs)
-  )
+  def test(p: Part) = es.mousePos.map(z => println(s"test: mousePos = $z"))
 
   val layout = DPBox.layoutPortsBg(InPort, OutPort)
-  val esources = entitySources(es)
 
   import MouseButton._
   import KeyModifier._
@@ -217,10 +191,10 @@ def bindings(
     dblClickOnPart(Left, PartType(Seq(Box)))
       .withMods(Ctrl)
       .map(b => es.bgPlus(b))
-      .flatMap(b => a.zoomIn(b, layout, esources)),
+      .flatMap(b => a.zoomIn(b, layout, entitySources)),
 
     // Zoom out of box
-    dblClickOn(Left).withMods(Ctrl).flatMap(_ => a.zoomOut(layout, esources)),
+    dblClickOn(Left).withMods(Ctrl).flatMap(_ => a.zoomOut(layout, entitySources)),
 
     // Drag box
     clickOnPart(Left)
@@ -303,19 +277,19 @@ val entitySources = (es: EditorState) =>
   Seq(
     ACSetEntitySource(Box, AltDPBox(InPort, OutPort, style)(es))
       .withProps(PropMap() + (FontSize, 22)),
-    ACSetEntitySource(InPort, BasicPort()(es))
+    ACSetEntitySource(InPort, BasicPort(PropMap())(es))
       .withProps(PropMap() + (MinimumWidth, 40))
       .addPropsBy((e: Entity, acs: ACSet, em: EntityMap) =>
         acs.props ++ style(acs, e.asInstanceOf[Part])
       ),
-    ACSetEntitySource(OutPort, BasicPort()(es))
+    ACSetEntitySource(OutPort, BasicPort(PropMap())(es))
       .withProps(PropMap() + (MinimumWidth, 40))
       .addPropsBy((e: Entity, acs: ACSet, em: EntityMap) =>
         acs.props ++ style(acs, e.asInstanceOf[Part])
       ),
     ACSetEntitySource(Wire, BasicWire(Src, Tgt)(es))
-      .addPropsBy(
-        wireProps(Src, Tgt, style, portDir, es.bgPart)
+      .addPropsBy((ent,acs,emap) =>
+        wireProps(Src, Tgt, style, portDir, es.bgPart)(ent,acs,emap)
       )
   )
 
@@ -325,9 +299,15 @@ object Main {
 
     def run(es: EditorState, init: Option[String]): IO[Unit] = {
 
+      // TODO: Figure out how to read a file on load
+      // val import_str: String = howDoYouReadAFile("pie.json")
+
+      val acsets = read[Map[String, ujson.Value]](import_str)
+
       implicit val rw: ReadWriter[(ACSet, Complex)] =
-        SchDWD.runtimeSerializer(es.size.now(), "dims")
-      val (acs, oldDims) = read[(ACSet, Complex)](pie_str)
+        SchDWD.runtimeSerializer("dims", es.size.now())
+
+      val (acs, oldDims) = read[(ACSet, Complex)](acsets("pie_str"))
 
       for {
         g <- IO(UndoableVar(acs.scale(oldDims, es.size.now())))
@@ -337,7 +317,7 @@ object Main {
             .map(DPBox.layoutPortsBg(InPort, OutPort))
         )
         vp <- es.makeViewport(
-          "mainVP",
+          es.MainViewport,
           lg,
           entitySources(es)
         )

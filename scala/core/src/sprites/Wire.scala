@@ -28,6 +28,7 @@ export WireProp._
   * arrowhead.
   */
 case class Wire(src: Hom, tgt: Hom) extends Sprite {
+  
   def exAt(p: Complex, d: Double = 5.0) = {
     import Path.Element._
 
@@ -83,8 +84,12 @@ case class Wire(src: Hom, tgt: Hom) extends Sprite {
   ): L.SvgElement = {
 
     val data = updates.map(init.props ++ _.props)
-    def s(p: PropMap) = p(Start)
-    def t(p: PropMap) = p(End)
+    def s(p: PropMap) = p.get(Start).getOrElse(
+      throw msgError(s"present $ent missing `Start`")
+    )
+    def t(p: PropMap) = p.get(End).getOrElse(
+      throw msgError(s"present $ent missing `End`")
+    )
     def ds(p: PropMap): Complex = p.get(StartDir).getOrElse(-10.0)
     def dt(p: PropMap): Complex = p.get(EndDir).getOrElse(-10.0)
     def b(p: PropMap) = p.get(Bend).getOrElse(10.0)

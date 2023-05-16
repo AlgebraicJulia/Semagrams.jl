@@ -228,7 +228,7 @@ object Main {
           g.signal.map(assignBends(Map(I -> (IS, IT), O -> (OT, OS)), 0.5))
         )
         _ <- es.makeViewport(
-          "mainVP",
+          es.MainViewport,
           lg,
           Seq(
             ACSetEntitySource(S, BasicDisc(es)),

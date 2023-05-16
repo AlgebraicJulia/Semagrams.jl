@@ -105,6 +105,10 @@ def wireProps(
     bg: => Part = ROOT
 )(_e: Entity, acs: ACSet, m: EntityMap): PropMap = {
 
+  // TODO: Remove default. Requires filtering addPropsBy to only run on parts
+  //       within `bgPart`
+  val defaultPos = Complex(50,50)
+
   val p = acs.props
 
   val Seq(s, t) = Seq(src, tgt).map(p.get(_))
@@ -113,17 +117,15 @@ def wireProps(
     .flatMap(_.diffOption(bg))
     .flatMap(findCenter(_, m))
     .getOrElse(
-      p.get(Start).getOrElse {
-        Complex(500, 500)
-      }
+      p.get(Start)
+        .getOrElse(defaultPos)
     )
   val tc = t
     .flatMap(_.diffOption(bg))
     .flatMap(findCenter(_, m))
     .getOrElse(
-      p.get(End).getOrElse {
-        Complex(500, 500)
-      }
+      p.get(End)
+        .getOrElse(defaultPos)
     )
   val Seq(sd, td) =
     Seq(s, t).map(_.flatMap(_.diffOption(bg)).map(dir).getOrElse(Complex(0, 0)))

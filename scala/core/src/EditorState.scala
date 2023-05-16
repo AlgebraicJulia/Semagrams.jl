@@ -41,7 +41,17 @@ class EditorState(
   val events = EventBus[Event]()
 
   /** The viewports in current use */
-  val viewports = Var(Map[String, Viewport]())
+  val viewports = Var(Map[ViewportID, Viewport]())
+
+  /** The viewports used in the editor */
+  enum ViewportID {
+    /** A viewport for the parts of the semagram */
+    case MainViewport
+
+    /** A viewport for UI (e.g., textboxes) outside the main semagram */
+    case UIViewport
+  }
+  export ViewportID.{MainViewport, UIViewport}
 
   val mouse = MouseController()
   val hover = HoverController()
@@ -90,7 +100,7 @@ class EditorState(
     *   the viewport has entities extracted using these [[EntitySource]]s
     */
   def makeViewport[A](
-      vpname: String,
+      vpname: ViewportID,
       state: Signal[A],
       sources: Seq[EntitySource[A]]
   ): IO[EntitySourceViewport[A]] = for {
@@ -101,7 +111,7 @@ class EditorState(
   /** Make a new [[UIState]] object and register its viewport */
   def makeUI(): IO[UIState] = for {
     ui <- IO(new UIState(Var(Vector()), () => (), size.signal))
-    _ <- IO(register("uiVP", ui.viewport))
+    _ <- IO(register(ViewportID.UIViewport, ui.viewport))
   } yield ui
 
   /** Register a viewport.
@@ -110,17 +120,17 @@ class EditorState(
     * attaching its main element to `this.elt` while the viewport is still in
     * [[viewports]]
     */
-  def register(vpname: String, v: Viewport) = {
+  def register(vpname: ViewportID, v: Viewport) = {
     viewports.update(_ + (vpname -> v))
     elt.amend(
-      viewports.now()("mainVP").entities --> entities.writer
+      viewports.now()(ViewportID.MainViewport).entities --> entities.writer
     )
   }
 
   /** Deregister a viewport, which has the side effect of removing its main
     * element from [[elt]]
     */
-  def deregister(vname: String) = {
+  def deregister(vname: ViewportID) = {
     viewports.update(_.removed(vname))
   }
 
