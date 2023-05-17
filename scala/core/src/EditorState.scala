@@ -44,6 +44,7 @@ class EditorState(
 
   /** The viewports used in the editor */
   enum ViewportID {
+
     /** A viewport for the parts of the semagram */
     case MainViewport
 

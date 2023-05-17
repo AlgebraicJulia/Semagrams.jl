@@ -107,7 +107,7 @@ def wireProps(
 
   // TODO: Remove default. Requires filtering addPropsBy to only run on parts
   //       within `bgPart`
-  val defaultPos = Complex(50,50)
+  val defaultPos = Complex(50, 50)
 
   val p = acs.props
 

@@ -268,13 +268,13 @@ case class Actions(
       yield e
 
     def during = (e: Part, p: Complex) => {
-      
+
       if m.now().hasSubpart(End, e)
-      then 
+      then
         m.update({
           _.setSubpart(e, End, p)
         })
-      else 
+      else
         m.update({
           _.setSubpart(e, Start, p)
         })

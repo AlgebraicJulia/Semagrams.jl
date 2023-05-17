@@ -194,7 +194,9 @@ def bindings(
       .flatMap(b => a.zoomIn(b, layout, entitySources)),
 
     // Zoom out of box
-    dblClickOn(Left).withMods(Ctrl).flatMap(_ => a.zoomOut(layout, entitySources)),
+    dblClickOn(Left)
+      .withMods(Ctrl)
+      .flatMap(_ => a.zoomOut(layout, entitySources)),
 
     // Drag box
     clickOnPart(Left)
@@ -288,8 +290,8 @@ val entitySources = (es: EditorState) =>
         acs.props ++ style(acs, e.asInstanceOf[Part])
       ),
     ACSetEntitySource(Wire, BasicWire(Src, Tgt)(es))
-      .addPropsBy((ent,acs,emap) =>
-        wireProps(Src, Tgt, style, portDir, es.bgPart)(ent,acs,emap)
+      .addPropsBy((ent, acs, emap) =>
+        wireProps(Src, Tgt, style, portDir, es.bgPart)(ent, acs, emap)
       )
   )
 

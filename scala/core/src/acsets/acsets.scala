@@ -94,10 +94,9 @@ trait Attr extends Property {
     * parts.
     */
   def canSet(p: Part, a: Any): Boolean =
-    doms.exists(dom =>
-      p.hasFinal(dom)
+    doms.exists(dom => p.hasFinal(dom)
     // TODO: how to check this at runtime?
-    //  & a.isInstanceOf[Value]       
+    //  & a.isInstanceOf[Value]
     )
 }
 
