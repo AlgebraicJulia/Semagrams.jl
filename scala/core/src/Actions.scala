@@ -5,20 +5,12 @@ import semagrams.acsets.{given, _}
 import semagrams.ui._
 import semagrams.util._
 import semagrams.widgets._
-import monocle._
+import semagrams.controllers.HoverController
 
 import upickle.default._
-
 import com.raquo.laminar.api.L._
 import cats.effect._
-import semagrams.controllers.HoverController
-import semagrams.acsets.WiringDiagrams.OutPort
-import semagrams.acsets.WiringDiagrams.InPort
-import semagrams.sprites.Middleware
-import semagrams.sprites.WithMiddleware
-import semagrams.sprites.DPBox
-import semagrams.sprites.Rect
-import cats.data.State
+import monocle._
 import scala.reflect.ClassTag
 
 /** This class bundles the common arguments to many actions one might want to do
