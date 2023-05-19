@@ -12,6 +12,7 @@ package object api {
   export semagrams.{
     Actions,
     EditorState,
+    Event,
     Semagram,
     Sprite,
     MouseButton,
