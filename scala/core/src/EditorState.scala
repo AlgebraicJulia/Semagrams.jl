@@ -35,7 +35,6 @@ class EditorState(
     dispatcher: Dispatcher[IO],
     val eventQueue: Queue[IO, Event]
 ) {
-
   /** The main event bus for Semagrams. */
   val events = EventBus[Event]()
 
@@ -145,17 +144,17 @@ class EditorState(
       evt <- eventQueue.take
       actionOption = bindings.collectFirst(
         (
-            (bnd: Binding[A]) =>
-              bnd.modifiers match {
-                case Some(mods) => {
-                  if (keyboard.keyState.now().modifiers == mods) {
-                    bnd.selector.lift(evt)
-                  } else {
-                    None
-                  }
+          (bnd: Binding[A]) =>
+            bnd.predicate match {
+              case Some(p) => {
+                if (p(this, evt)) {
+                  bnd.selector.lift(evt)
+                } else {
+                  None
                 }
-                case None => bnd.selector.lift(evt)
               }
+              case None => bnd.selector.lift(evt)
+            }
         ).unlift
       )
       a <- actionOption match {

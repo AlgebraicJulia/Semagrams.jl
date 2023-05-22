@@ -4,6 +4,8 @@ import com.raquo.laminar.api.L._
 import cats.effect._
 import semagrams.acsets._
 
+type BindingPredicate = (EditorState, Event) => Boolean
+
 /** A Binding associates an IO returning `A` action to events.
   *
   * @param selector
@@ -30,38 +32,61 @@ import semagrams.acsets._
   */
 case class Binding[A](
     selector: PartialFunction[Event, IO[A]],
-    modifiers: Option[Set[KeyModifier]],
+    //modifiers: Option[Set[KeyModifier]],
+    predicate: Option[BindingPredicate],
     docs: String
 ) {
 
   /** Add another action to do after a match, using the result of the match. */
   def flatMap[B](g: A => IO[B]): Binding[B] =
-    Binding(selector.andThen(_.flatMap(g)), modifiers)
+    Binding(selector.andThen(_.flatMap(g)), predicate)
 
   /** Transform the result of the binding with `g` after a match. */
   def map[B](g: A => B): Binding[B] =
-    Binding(selector.andThen(_.map(g)), modifiers)
+    Binding(selector.andThen(_.map(g)), predicate)
 
   /** Always return `b` after a match. */
   def mapTo[B](b: B): Binding[B] =
-    Binding(selector.andThen(_.map(_ => b)), modifiers)
+    Binding(selector.andThen(_.map(_ => b)), predicate)
 
   /** Always do `mb` after a match. */
-  def andThen[B](mb: IO[B]) = Binding(selector.andThen(_ => mb), modifiers)
+  def andThen[B](mb: IO[B]) = Binding(selector.andThen(_ => mb), predicate)
 
   /** Raise an error after a match. */
   def fail(err: Error) =
     Binding[Unit](
       selector.andThen(_ => IO.raiseError(err)),
-      modifiers
+      predicate
     )
 
+  /** Only match when a given predicate is satisfied. */
+  def withPredicate(newPredicate: BindingPredicate) = 
+    Binding(selector, Some(newPredicate))
+  
   /** Only match when `newModifiers` are set. */
   def withMods(newModifiers: KeyModifier*) =
-    Binding(selector, Some(newModifiers.toSet))
+    withPredicate(Binding.withModsPredicate(newModifiers.toSet))
+
+  /** Only match when one of `newAltModifiers` are set. */
+  def withAltMods(newAltModifiers: Set[KeyModifier]*) =
+    withPredicate(Binding.withAltModsPredicate(newAltModifiers.toSet))
+  
 }
 
 object Binding {
+
+  /** A predicate that matches when `mods` are set */
+  val withModsPredicate = (mods: Set[KeyModifier]) =>
+    (es: EditorState, evt: Event) =>
+      val currentMods = es.keyboard.keyState.now().modifiers
+      currentMods == mods
+
+  /** A predicate that matches when one of `alternativeMods` are set */
+  val withAltModsPredicate = (altMods: Set[Set[KeyModifier]]) =>
+    (es: EditorState, evt: Event) => {
+      val currentMods = es.keyboard.keyState.now().modifiers
+      altMods.exists((mods: Set[KeyModifier]) => currentMods == mods)
+    }
 
   /** Construct a [[Binding]] with no modifiers and empty docs. */
   def apply[A](f: PartialFunction[Event, IO[A]]) =
@@ -70,8 +95,9 @@ object Binding {
   /** Construct a [[Binding]] with `modifiers` and empty docs. */
   def apply[A](
       f: PartialFunction[Event, IO[A]],
-      modifiers: Option[Set[KeyModifier]]
-  ) = new Binding[A](f, modifiers, "")
+      //modifiers: Option[Set[KeyModifier]]
+      predicate: Option[BindingPredicate]
+  ) = new Binding[A](f, predicate, "")
 }
 
 /** Matches events equal to `ev` */
