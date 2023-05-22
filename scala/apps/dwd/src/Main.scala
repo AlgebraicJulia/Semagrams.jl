@@ -189,14 +189,14 @@ def bindings(
 
     // Zoom into box
     dblClickOnPart(Left, PartType(Seq(Box)))
-      //.withMods(Ctrl)
+      // .withMods(Ctrl)
       .withAltMods(Set(Ctrl), Set(Meta))
       .map(b => es.bgPlus(b))
       .flatMap(b => a.zoomIn(b, layout, entitySources)),
 
     // Zoom out of box
     dblClickOn(Left)
-      //.withMods(Ctrl)
+      // .withMods(Ctrl)
       .withAltMods(Set(Ctrl), Set(Meta))
       .flatMap(_ => a.zoomOut(layout, entitySources)),
 
@@ -241,13 +241,13 @@ def bindings(
 
     // Undo
     keyDown("z")
-      //.withMods(Ctrl)
+      // .withMods(Ctrl)
       .withAltMods(Set(Ctrl), Set(Meta))
       .andThen(IO(g.undo())),
 
     // Redo
     keyDown("Z")
-      //.withMods(Ctrl, Shift)
+      // .withMods(Ctrl, Shift)
       .withAltMods(Set(Ctrl, Shift), Set(Meta, Shift))
       .andThen(IO(g.redo())),
 

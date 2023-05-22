@@ -32,7 +32,7 @@ type BindingPredicate = (EditorState, Event) => Boolean
   */
 case class Binding[A](
     selector: PartialFunction[Event, IO[A]],
-    //modifiers: Option[Set[KeyModifier]],
+    // modifiers: Option[Set[KeyModifier]],
     predicate: Option[BindingPredicate],
     docs: String
 ) {
@@ -60,9 +60,9 @@ case class Binding[A](
     )
 
   /** Only match when a given predicate is satisfied. */
-  def withPredicate(newPredicate: BindingPredicate) = 
+  def withPredicate(newPredicate: BindingPredicate) =
     Binding(selector, Some(newPredicate))
-  
+
   /** Only match when `newModifiers` are set. */
   def withMods(newModifiers: KeyModifier*) =
     withPredicate(Binding.withModsPredicate(newModifiers.toSet))
@@ -70,7 +70,7 @@ case class Binding[A](
   /** Only match when one of `newAltModifiers` are set. */
   def withAltMods(newAltModifiers: Set[KeyModifier]*) =
     withPredicate(Binding.withAltModsPredicate(newAltModifiers.toSet))
-  
+
 }
 
 object Binding {
@@ -95,7 +95,7 @@ object Binding {
   /** Construct a [[Binding]] with `modifiers` and empty docs. */
   def apply[A](
       f: PartialFunction[Event, IO[A]],
-      //modifiers: Option[Set[KeyModifier]]
+      // modifiers: Option[Set[KeyModifier]]
       predicate: Option[BindingPredicate]
   ) = new Binding[A](f, predicate, "")
 }
