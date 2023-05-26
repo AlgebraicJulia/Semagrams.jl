@@ -32,7 +32,6 @@ type BindingPredicate = (EditorState, Event) => Boolean
   */
 case class Binding[A](
     selector: PartialFunction[Event, IO[A]],
-    // modifiers: Option[Set[KeyModifier]],
     predicate: Option[BindingPredicate],
     docs: String
 ) {
@@ -95,7 +94,6 @@ object Binding {
   /** Construct a [[Binding]] with `modifiers` and empty docs. */
   def apply[A](
       f: PartialFunction[Event, IO[A]],
-      // modifiers: Option[Set[KeyModifier]]
       predicate: Option[BindingPredicate]
   ) = new Binding[A](f, predicate, "")
 }

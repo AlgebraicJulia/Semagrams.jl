@@ -14,7 +14,7 @@ import semagrams.util._
   * for mouse events, because otherwise it would be very annoying to mouse over
   * the arrow.
   */
-case class Arrow(src: Hom, tgt: Hom, props: PropMap) extends Sprite {
+case class Arrow(props: PropMap) extends Sprite {
   def blockPath(
       s: Complex,
       e: Complex,
@@ -72,14 +72,20 @@ case class Arrow(src: Hom, tgt: Hom, props: PropMap) extends Sprite {
     if !visible
     then ""
     else
-      val s = data.props(src)
-      val t = data.props(tgt)
+      val s = data.props.get(TikzStart).getOrElse {
+        println(s"Missing TikzStart")
+        ""
+      }
+      val t = data.props.get(TikzEnd).getOrElse {
+        println(s"Missing TikzEnd")
+        ""
+      }
       val b = 40 * data.props(Bend)
 
       val endpts =
-        s"\\path (${s.tikzName}) to[bend left={$b}] node[pos=00](a@${s.tikzName}){} node[pos=1](b@${t.tikzName}){} (${t.tikzName});\n"
+        s"\\path ($s) to[bend left={$b}] node[pos=00](a@$s){} node[pos=1](b@$t){} ($t);\n"
       val arrow =
-        s"\\draw[->] (a@${s.tikzName}) to[bend left={$b}] (b@${t.tikzName});\n"
+        s"\\draw[->] (a@$s) to[bend left={$b}] (b@$t);\n"
 
       endpts + arrow
 
@@ -92,5 +98,5 @@ object Arrow {
     + (StrokeDasharray, "none")
     + (Interactable, true)
 
-  def apply(src: Hom, tgt: Hom) = new Arrow(src, tgt, props)
+  def apply() = new Arrow(props)
 }

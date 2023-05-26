@@ -16,6 +16,8 @@ enum WireProp[T: ReadWriter] extends Property {
   case EndDir extends WireProp[Complex]
   case LabelAnchor extends WireProp[Double]
   case LabelOffset extends WireProp[Complex]
+  case TikzStart extends WireProp[String]
+  case TikzEnd extends WireProp[String]
 
   type Value = T
   val rw = summon[ReadWriter[T]]
@@ -27,7 +29,7 @@ export WireProp._
   * where the beginning and the end are both horizontal, and it has no
   * arrowhead.
   */
-case class Wire(src: Hom, tgt: Hom) extends Sprite {
+case class Wire() extends Sprite {
 
   def exAt(p: Complex, d: Double = 5.0) = {
     import Path.Element._
@@ -108,27 +110,31 @@ case class Wire(src: Hom, tgt: Hom) extends Sprite {
       crv.pos(s(p), anchor(p)) + offset(p) * crv.dir(s(p), anchor(p))
     }
 
-    def label(p: PropMap) = p.get(Content).getOrElse("")
+    def label(p: PropMap): String = p.get(Content).getOrElse("")
     def fontsize(p: PropMap): Double = p.get(FontSize).getOrElse(16.0)
     def pstroke(p: PropMap) = p.get(Stroke).getOrElse("black")
 
+    def labelNode(label: String) = L.svg.text(
+    )
+
     val text = L.svg.text(
       xy <-- data.map(labelPos),
-      L.children <-- data.map(p =>
+      L.children <-- data.map { p =>
+        println(s"update $ent")
         val splits = label(p).split('\n').zipWithIndex
-        val l = splits.length
-        splits.toIndexedSeq.map({ case (t, i) =>
+        val len = splits.length
+        splits.toSeq.map((str, line) =>
           L.svg.tspan(
-            L.textToNode(t),
+            L.textToNode(str),
             textAnchor := "middle",
             x <-- data.map(p => labelPos(p).x.toString()),
             y <-- data.map(p =>
-              (labelPos(p).y + fontsize(p) * (i + 1 - l / 2.0)).toString()
+              (labelPos(p).y + fontsize(p) * (line + 1 - len / 2.0)).toString()
             ),
             style := "user-select: none"
           )
-        })
-      ),
+        )
+      },
       fontSize <-- data.map(fontsize(_).toString())
     )
 
@@ -143,9 +149,9 @@ case class Wire(src: Hom, tgt: Hom) extends Sprite {
     )
 
     val handle = path(
-      pathElts <-- data.map(p => blockPath(s(p), t(p), ds(p), dt(p), 5, b(p))),
-      fill := "white",
-      opacity := ".0",
+      pathElts <-- data.map(p => blockPath(s(p), t(p), ds(p), dt(p), 7, b(p))),
+      fill := "blue",
+      opacity := ".1",
       stroke := "none",
       style := "user-select: none",
       pointerEvents <-- data.map(p =>
@@ -161,17 +167,16 @@ case class Wire(src: Hom, tgt: Hom) extends Sprite {
     if !visible
     then ""
     else
-      val s = data.props(src)
-      val t = data.props(tgt)
-
-      val s_str =
-        if s.init == ROOT
-        then s.tikzName + "-|" + s.tikzName
-        else s.tikzName + "-|" + s.init.tikzName + ".east"
-      val t_str =
-        if t.init == ROOT
-        then t.tikzName + "-|" + t.tikzName
-        else t.tikzName + "-|" + t.init.tikzName + ".west"
+      val s_str = data.props
+        .get(TikzStart)
+        .getOrElse(
+          throw msgError(s"missing property `TikzStart`")
+        )
+      val t_str = data.props
+        .get(TikzEnd)
+        .getOrElse(
+          throw msgError(s"missing property `TikzStart`")
+        )
 
       val labelStr = data.props
         .get(Content)
@@ -180,6 +185,6 @@ case class Wire(src: Hom, tgt: Hom) extends Sprite {
         )
         .getOrElse("")
 
-      s"\\draw ($s_str) to[out=0,in=180] $labelStr ($t_str);\n"
+      s"\\draw ($s_str.center) to[out=0,in=180] $labelStr ($t_str.center);\n"
 
 }

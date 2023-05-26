@@ -7,6 +7,7 @@ import upickle.default._
 import com.raquo.laminar.api.L._
 import cats.effect._
 import scala.scalajs.js.annotation.JSExportTopLevel
+import org.scalajs.dom
 
 case object SchDWD extends Schema {
 
@@ -57,17 +58,11 @@ import DWDObs._
 import DWDHoms._
 import DWDAttrs._
 
-def bindings(
-    es: EditorState,
-    g: UndoableVar[ACSet],
-    ui: UIState,
-    vp: Viewport
-) = {
-
-  val a = Actions(es, g, ui)
+extension (a: Actions) {
 
   /** Select a new position (in/out + index) based on the mouse position */
   def liftPort(p: Part, pos: Complex): Seq[(Ob, Int)] =
+    val (es, m) = (a.es, a.m)
     val ext = p - es.bgPart
     val (sz, c) = ext.ty.path match
       case Seq() =>
@@ -78,7 +73,7 @@ def bindings(
       case Seq(Box) =>
         (
           a.getDims(p),
-          g.now()
+          m.now()
             .trySubpart(Center, p)
             .getOrElse(
               throw msgError(s"missing center for $p")
@@ -89,24 +84,25 @@ def bindings(
 
     val ptype = if pos.x < c.x then InPort else OutPort
 
-    val nports = g.now().parts(p, ptype).length
+    val nports = m.now().parts(p, ptype).length
     val j = DPBox.portNumber(pos - c + (sz / 2.0), sz, nports)
     Seq((ptype, j))
 
   /** Set the type of `p` and any other ports or wires connected to it */
   def setType(p: Part, tpe: DWDType): IO[Unit] =
+    val (es, m) = (a.es, a.m)
     p.lastOb match
       case Wire => (
         for
           _ <- a.set(p, PortType, tpe)
-          s = g.now().trySubpart(Src, p)
-          t = g.now().trySubpart(Tgt, p)
+          s = m.now().trySubpart(Src, p)
+          t = m.now().trySubpart(Tgt, p)
           _ <- s match
-            case Some(p) if g.now().trySubpart(PortType, p) != Some(tpe) =>
+            case Some(p) if m.now().trySubpart(PortType, p) != Some(tpe) =>
               setType(p, tpe)
             case _ => IO(())
           _ <- t match
-            case Some(p) if g.now().trySubpart(PortType, p) != Some(tpe) =>
+            case Some(p) if m.now().trySubpart(PortType, p) != Some(tpe) =>
               setType(p, tpe)
             case _ => IO(())
         yield ()
@@ -114,8 +110,8 @@ def bindings(
       case InPort | OutPort => (
         for
           _ <- a.set(p, PortType, tpe)
-          ws = (g.now().incident(p, Src) ++ g.now().incident(p, Tgt))
-            .filter(w => g.now().trySubpart(PortType, w) != Some(tpe))
+          ws = (m.now().incident(p, Src) ++ m.now().incident(p, Tgt))
+            .filter(w => m.now().trySubpart(PortType, w) != Some(tpe))
           _ <- a.doAll(ws.map(setType(_, tpe)))
         yield ()
       )
@@ -124,8 +120,8 @@ def bindings(
     * different, in which case die.
     */
   def eqTypes(p: Part, q: Part): IO[Unit] =
-    val ptpe = g.now().trySubpart(PortType, p)
-    val qtpe = g.now().trySubpart(PortType, q)
+    val ptpe = a.m.now().trySubpart(PortType, p)
+    val qtpe = a.m.now().trySubpart(PortType, q)
     (ptpe, qtpe) match
       case (Some(tpe1), Some(tpe2)) =>
         if tpe1 == tpe2
@@ -135,41 +131,49 @@ def bindings(
       case (None, Some(tpe)) => setType(p, tpe)
       case (None, None)      => IO(())
 
-  def test(p: Part) = es.mousePos.map(z => println(s"test: mousePos = $z"))
+  def test(p: Part) = a.es.mousePos.map(z => println(s"test: mousePos = $z"))
 
-  val layout = DPBox.layoutPortsBg(InPort, OutPort)
-
-  import MouseButton._
-  import KeyModifier._
-
-  val helpText = """
-    ∙ Double click  = add box/edit labels
-    ∙ Drag = Drag box
-    ∙ Drag + Shift = Add/unplug wire
-    ∙ Double click + Ctrl = Zoom into/out of boxes
-    ∙ "d" = Delete element below mouse
-    ∙ "s" = Open import/export window
-    ∙ Ctrl + "z"/Shift + Ctrl + "Z" = undo/redo
-  """
-
-  val boxMenu = Seq(
-    (
-      "Rename",
-      (b: Part) => IO(println("rename fired")).>>(a.edit(Content, true)(b))
-    )
-  )
+  def boxMenu = Seq(("Rename", (b: Part) => a.edit(Content, true)(b)))
 
   def menuItem(tpe: DWDType) = (
     s"Set type to $tpe",
-    (p: Part) => setType(es.bgPlus(p), tpe)
+    (p: Part) => a.setType(a.es.bgPlus(p), tpe)
   )
 
-  val wireMenu: Seq[(String, Part => IO[Unit])] =
+  def wireMenu: Seq[(String, Part => IO[Unit])] =
     DWDType.values.toSeq.map(menuItem)
+
+}
+
+val layout = DPBox.layoutPortsBg(InPort, OutPort)
+
+import MouseButton._
+import KeyModifier._
+
+val helpText = """
+  ∙ Double click  = add box/edit labels
+  ∙ Drag = Drag box
+  ∙ Shift + Drag = Add/unplug wire
+  ∙ Ctrl + Double click = Zoom into box/out of background
+  ∙ "d" = Delete element below mouse
+  ∙ "s" = Open import/export window
+  ∙ "w" = Open Tikz export window
+  ∙ Ctrl + "z"/Shift + Ctrl + "Z" = undo/redo
+  ∙ Right click on wires/ports to set types
+"""
+
+def bindings(
+    es: EditorState,
+    g: UndoableVar[ACSet],
+    ui: UIState,
+    vp: Viewport
+) = {
+
+  val a = Actions(es, g, ui)
 
   Seq(
     // test hovered part
-    keyDown("t").andThen(fromMaybe(es.hoveredPart).flatMap(test)),
+    keyDown("t").andThen(fromMaybe(es.hoveredPart).flatMap(a.test)),
 
     // Add box at mouse
     dblClickOnPart(Left, ROOT.ty)
@@ -220,19 +224,19 @@ def bindings(
         if wires.isEmpty
         then
           (for
-            w <- a.dragEdge(Wire, Src, Tgt, liftPort, eqTypes)(p)
+            w <- a.dragEdge(Wire, Src, Tgt, a.liftPort, a.eqTypes)(p)
             _ <- a.edit(Content, true)(w)
           yield w)
-        else a.unplug(p, wires(0), Src, Tgt, liftPort, eqTypes)
+        else a.unplug(p, wires(0), Src, Tgt, a.liftPort, a.eqTypes)
       ),
 
     // Menu actions
     clickOnPart(Right).flatMap(p =>
       p.lastOb match
         case Wire | InPort | OutPort =>
-          es.makeMenu(ui, wireMenu)(p)
+          es.makeMenu(ui, a.wireMenu)(p)
         case Box =>
-          es.makeMenu(ui, boxMenu)(p)
+          es.makeMenu(ui, a.boxMenu)(p)
         case _ => a.die
     ),
 
@@ -241,23 +245,24 @@ def bindings(
 
     // Undo
     keyDown("z")
-      // .withMods(Ctrl)
       .withAltMods(Set(Ctrl), Set(Meta))
       .andThen(IO(g.undo())),
 
     // Redo
     keyDown("Z")
-      // .withMods(Ctrl, Shift)
       .withAltMods(Set(Ctrl, Shift), Set(Meta, Shift))
       .andThen(IO(g.redo())),
 
     // Print current state
     keyDown("?").andThen(a.debug),
 
+    // Print help text
+    keyDown("h").andThen(IO(dom.window.alert(helpText))),
+
     // Open serialization window
     keyDown("s").andThen(a.importExport),
 
-    // Open serialization window
+    // Open tikz export window
     keyDown("w").andThen(
       a.exportTikz(
         Seq(Box, InPort, OutPort, Wire),
@@ -305,22 +310,31 @@ object Main {
 
     def run(es: EditorState, init: Option[String]): IO[Unit] = {
 
-      // TODO: Figure out how to read a file on load
-      // val import_str: String = howDoYouReadAFile("pie.json")
-
-      val acsets = read[Map[String, ujson.Value]](import_str)
+      es.elt.amend(
+        svg.text(
+          "Press \"h\" for help text",
+          svg.y := "99.5%"
+        )
+      )
 
       implicit val rw: ReadWriter[(ACSet, Complex)] =
         SchDWD.runtimeSerializer("dims", es.size.now())
 
-      val (acs, oldDims) = read[(ACSet, Complex)](acsets("pie_str"))
+      val (acs, oldDims) = initOpt
+        .flatMap(initstr =>
+          read[Map[String, (ACSet, Complex)]](initstr)
+            .get("pie_str")
+        )
+        .getOrElse(
+          (ACSet(SchDWD), Complex(1, 1))
+        )
 
       for {
         g <- IO(UndoableVar(acs.scale(oldDims, es.size.now())))
         lg <- IO(
           es.size.signal
             .combineWith(g.signal)
-            .map(DPBox.layoutPortsBg(InPort, OutPort))
+            .map(layout.tupled)
         )
         vp <- es.makeViewport(
           es.MainViewport,

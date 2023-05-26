@@ -93,7 +93,7 @@ trait Attr extends Property {
   /** Check whether `this` has `p` in the domain, possibly nested within other
     * parts.
     */
-  def canSet(p: Part, a: Any): Boolean =
+  def canSet(p: Part, v: Any): Boolean =
     doms.exists(dom => p.hasFinal(dom)
     // TODO: how to check this at runtime?
     //  & a.isInstanceOf[Value]
@@ -265,6 +265,14 @@ trait Schema {
     }
   }
 
+  /** Returns all subschemas of the `schemas` */
+  def subschemas(schemas: Set[Schema] = Set()): Set[Schema] =
+    if schemas.contains(this)
+    then schemas
+    else
+      val next = schemas ++ Set(this)
+      next ++ obs.flatMap(_.schema.subschemas(next))
+
   /** Returns all of the homs that go into the given part type Each hom is
     * prefixed by a path of objects needed to get to that hom
     */
@@ -333,11 +341,8 @@ trait Schema {
         })
     )
 
-  /** All `Schema`s occuring in the schema */
-  def allSchemas = Set(this +: obs.map(_.schema)*)
-
   /** Serialization of `Schema`s occuring in the schema */
-  implicit def schemaRW: ReadWriter[Schema] = bijectiveRW(allSchemas)
+  implicit def schemaRW: ReadWriter[Schema] = bijectiveRW(this.subschemas())
 
   /** Serialization of `PartSet`s occuring in the schema. Note that this omits
     * the `nextID` and rebuilds it from the sequence of ids.

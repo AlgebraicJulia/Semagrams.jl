@@ -72,3 +72,17 @@ def tikzOutPorts(pts: Seq[Part], shape: String = ""): String =
       s"${pts.head.init.tikzName}.south east",
       shape
     )
+
+  /** Wrap tikz declarations in the surrounding LaTeX */
+def tikzWrapper(inside: String) = s"""
+\\documentclass[convert]{standalone}
+\\usepackage{tikz}
+\\begin{document}
+\\begin{tikzpicture}
+\\draw (0,0) rectangle (10,-10);
+
+$inside
+
+\\end{tikzpicture}
+\\end{document}
+"""

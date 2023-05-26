@@ -11,7 +11,6 @@ import upickle.default._
 import com.raquo.laminar.api.L._
 import cats.effect._
 import monocle._
-import scala.reflect.ClassTag
 
 /** This class bundles the common arguments to many actions one might want to do
   * in a binding so that you don't have to pass them in every time, and then
@@ -71,16 +70,13 @@ case class Actions(
         then m.updateS(setSubpart(p, h, v.asInstanceOf[Part]))
         else
           throw msgError(
-            s"$f cannot assign $p to $v:\ndoms = ${h.doms},\ncodoms = ${h.codoms}"
+            s"Hom $f cannot assign $p to $v:\ndoms = ${h.doms},\ncodoms = ${h.codoms}"
           )
 
       case a: Attr =>
         if check & a.canSet(p, v)
         then m.updateS(setSubpart(p, a, v.asInstanceOf[a.Value]))
-        else
-          throw msgError(
-            s"$f cannot assign $p to $v:\ndoms = ${a.doms},\ncodom = ${ClassTag[a.Value]}"
-          )
+        else throw msgError(s"Attr $a cannot assign dom $p")
       case _ => m.updateS(setSubpart(p, f, v))
 
   /** Unset the value of the property `f` of the part `p` */
@@ -191,7 +187,9 @@ case class Actions(
   val debug =
     val sch = m.now().schema
     import sch._
-    IO(m.now()).map(acset => println(write(acset)))
+    IO(m.now()).map(acset => {
+      println(write(acset))
+    })
 
   def die[A]: IO[A] = fromMaybe(IO(None))
 
@@ -236,9 +234,6 @@ case class Actions(
       lift: (Part, Complex) => Seq[(Ob, Int)] = (_, _) => Seq(),
       eqTypes: (Part, Part) => IO[Unit] = (p, q) => IO(())
   )(s: Part): IO[Part] =
-
-    // TODO: Split src/target logic
-    // TODO: Add dragSpan, dragCospan
 
     def start = (z: Complex) =>
       for
@@ -429,29 +424,35 @@ case class Actions(
     */
   def exportTikz(obs: Seq[Ob], hide: Seq[Ob] = Seq()): IO[Unit] =
     ui.addKillableHtmlEntity(kill =>
+      val ents =
+        es.entities.now().em.asInstanceOf[Map[Part, (Sprite, ACSet)]]
+
+      val obStrs = obs.map(ob =>
+        ents
+          .filter((k, _) => k.lastOb == ob)
+          .map { case (p, (spr, data)) =>
+            val obstr = spr.toTikz(
+              p,
+              data.scale(es.size.now(), Complex(10, 10), Seq(Center)),
+              !hide.contains(p.lastOb)
+            )
+            obstr
+          }
+          .mkString("")
+      )
+
+      val tikzString = tikzWrapper(
+        obStrs.filter(_ != "").mkString("\n\n")
+      )
+
       PositionWrapper(
         Position.topToBotMid(10),
         TextInput(
-          m.zoomL(Lens((acset: ACSet) =>
-            val ents =
-              es.entities.now().em.asInstanceOf[Map[Part, (Sprite, ACSet)]]
-
-            val obStrs = obs.map(ob =>
-              ents
-                .filter((k, _) => k.lastOb == ob)
-                .map { case (p, (spr, data)) =>
-                  val obstr = spr.toTikz(
-                    p,
-                    data.scale(es.size.now(), Complex(10, 10), Seq(Center)),
-                    !hide.contains(p.lastOb)
-                  )
-                  obstr
-                }
-                .mkString("")
-            )
-
-            obStrs.filter(_ != "").mkString("\n\n")
-          )(s => a => a)),
+          m.zoomL(Lens { (_: ACSet) =>
+            tikzString
+          } { (_: String) => (a: ACSet) =>
+            a
+          }),
           true
         )(kill)
       )

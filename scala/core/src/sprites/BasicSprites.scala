@@ -15,13 +15,13 @@ def BasicWrapper(sprite: Sprite)(es: EditorState) = WithMiddleware(
   )
 )
 
-def BasicArrow(src: Hom, tgt: Hom) = BasicWrapper(Arrow(src, tgt))
+def BasicArrow() = BasicWrapper(Arrow())
 
 val BasicDisc = BasicWrapper(Disc())
 
 val BasicRect = BasicWrapper(Rect())
 
-def BasicWire(src: Hom, tgt: Hom) = BasicWrapper(Wire(src, tgt))
+def BasicWire(src: Hom, tgt: Hom) = BasicWrapper(Wire())
 
 def BasicDPBox(inPort: Ob, outPort: Ob, portStyle: (ACSet, Part) => PropMap)(
     es: EditorState

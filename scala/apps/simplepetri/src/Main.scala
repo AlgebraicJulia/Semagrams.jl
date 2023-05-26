@@ -233,8 +233,8 @@ object Main {
           Seq(
             ACSetEntitySource(S, BasicDisc(es)),
             ACSetEntitySource(T, BasicRect(es)),
-            ACSetEdgeSource(I, IS, IT, BasicArrow(IS, IT)(es)),
-            ACSetEdgeSource(O, OT, OS, BasicArrow(OT, OS)(es))
+            ACSetEdgeSource(I, IS, IT, BasicArrow()(es)),
+            ACSetEdgeSource(O, OT, OS, BasicArrow()(es))
           )
         )
         ui <- es.makeUI()
