@@ -120,7 +120,6 @@ case class Wire() extends Sprite {
     val text = L.svg.text(
       xy <-- data.map(labelPos),
       L.children <-- data.map { p =>
-        println(s"update $ent")
         val splits = label(p).split('\n').zipWithIndex
         val len = splits.length
         splits.toSeq.map((str, line) =>
