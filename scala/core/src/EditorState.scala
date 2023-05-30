@@ -6,9 +6,7 @@ import semagrams.controllers._
 import semagrams.ui._
 import semagrams.util._
 import com.raquo.laminar.api.L._
-import com.raquo.laminar.nodes.ReactiveElement
 import cats.effect._
-import cats.implicits._
 import org.scalajs.dom
 import cats.effect.std._
 
@@ -42,7 +40,18 @@ class EditorState(
   val events = EventBus[Event]()
 
   /** The viewports in current use */
-  val viewports = Var(Set[Viewport]())
+  val viewports = Var(Map[ViewportID, Viewport]())
+
+  /** The viewports used in the editor */
+  enum ViewportID {
+
+    /** A viewport for the parts of the semagram */
+    case MainViewport
+
+    /** A viewport for UI (e.g., textboxes) outside the main semagram */
+    case UIViewport
+  }
+  export ViewportID.{MainViewport, UIViewport}
 
   val mouse = MouseController()
   val hover = HoverController()
@@ -59,15 +68,20 @@ class EditorState(
   /** All the entities in all of the viewports, and their associated sprites. */
   val entities = Var(EntityCollection())
 
+  /** The current part shown in the viewport. Used for nested diagrams
+    * (zooming).
+    */
+  val currentView: Var[Part] = Var(ROOT)
+
   dom
-    .ResizeObserver((newsize, _) => {
+    .ResizeObserver((newsize, _) =>
       size.set(Complex(elt.ref.clientWidth, elt.ref.clientHeight))
-    })
+    )
     .observe(elt.ref)
 
   // Attach all of the root elements of the viewports to the main element
   elt.amend(
-    children <-- viewports.signal.map(_.map(_.elt).toSeq),
+    children <-- viewports.signal.map(_.map(_._2.elt).toSeq),
     events --> Observer[Event](evt =>
       dispatcher.unsafeRunAndForget(eventQueue.offer(evt))
     )
@@ -86,17 +100,18 @@ class EditorState(
     *   the viewport has entities extracted using these [[EntitySource]]s
     */
   def makeViewport[A](
+      vpname: ViewportID,
       state: Signal[A],
       sources: Seq[EntitySource[A]]
   ): IO[EntitySourceViewport[A]] = for {
     v <- IO(new EntitySourceViewport(state, sources))
-    _ <- IO(register(v))
+    _ <- IO(register(vpname, v))
   } yield v
 
   /** Make a new [[UIState]] object and register its viewport */
   def makeUI(): IO[UIState] = for {
     ui <- IO(new UIState(Var(Vector()), () => (), size.signal))
-    _ <- IO(register(ui.viewport))
+    _ <- IO(register(ViewportID.UIViewport, ui.viewport))
   } yield ui
 
   /** Register a viewport.
@@ -105,18 +120,18 @@ class EditorState(
     * attaching its main element to `this.elt` while the viewport is still in
     * [[viewports]]
     */
-  def register(v: Viewport): Unit = {
-    viewports.update(_ + v)
+  def register(vpname: ViewportID, v: Viewport) = {
+    viewports.update(_ + (vpname -> v))
     elt.amend(
-      viewports.now().toSeq(0).entities --> entities.writer
+      viewports.now()(ViewportID.MainViewport).entities --> entities.writer
     )
   }
 
   /** Deregister a viewport, which has the side effect of removing its main
     * element from [[elt]]
     */
-  def deregister(v: Viewport): Unit = {
-    viewports.update(_ - v)
+  def deregister(vname: ViewportID) = {
+    viewports.update(_.removed(vname))
   }
 
   /** Deprecated in favor of [[size]] */
@@ -131,9 +146,9 @@ class EditorState(
       actionOption = bindings.collectFirst(
         (
             (bnd: Binding[A]) =>
-              bnd.modifiers match {
-                case Some(mods) => {
-                  if (keyboard.keyState.now().modifiers == mods) {
+              bnd.predicate match {
+                case Some(p) => {
+                  if (p(this, evt)) {
                     bnd.selector.lift(evt)
                   } else {
                     None
@@ -167,66 +182,70 @@ class EditorState(
   def mousePos: IO[Complex] =
     IO(mouse.$state.now().pos)
 
-  /** An IO action that when run, returns the current hovered entity */
-  def hovered: IO[Option[Entity]] =
-    IO(hover.$state.now().state)
+  /** Get the current background part */
+  def bgPart: Part = currentView.now()
 
-  /** An IO action that filters [[hovered]] for just [[Part]]s
+  /** Extend the current background part by `p` */
+  def bgPlus(p: Part): Part = bgPart.extendPart(p)
+
+  /** An IO action that when run, returns the current hovered entity */
+  def hovered: IO[Option[Entity]] = IO({
+    hover.$state.now().state.map(_ match
+      case p: Part => bgPlus(p)
+      case e       => e
+    )
+  })
+
+  /** An IO action that filters [[hovered]] for just [[Part]]s and converts
+    * `None` the background part (e.g., `ROOT`)
     */
-  def hoveredPart: IO[Option[Part]] = hovered.map(h =>
-    h match
-      case Some(e) =>
-        e match
-          case Background() => Some(ROOT)
-          case p: Part      => Some(p)
-          case _            => None
-      case None => Some(ROOT)
+  def hoveredPart: IO[Option[Part]] = hovered.map(_ match
+    case Some(p: Part) => Some(p)
+    case Some(e)       => None
+    case None          => Some(bgPart)
   )
 
   /** An IO action that filters [[hovered]] for just [[Part]]s of a certain
     * type.
     */
   def hoveredPart(ty: PartType): IO[Option[Part]] =
-    hovered.map(e =>
-      e match {
-        case Some(p: Part) if p.ty == ty => Some(p)
-        case _                           => None
-      }
+    hoveredPart.map(_ match
+      case Some(p: Part) if p.ty == ty => Some(p)
+      case _                           => None
     )
 
   /** An IO action that filters [[hovered]] for just [[Part]]s that are one of
     * several types.
     */
   def hoveredPart(tys: Seq[PartType]): IO[Option[Part]] =
-    hovered.map(e =>
-      e match {
-        case Some(p: Part) if tys contains p.ty => Some(p)
-        case _                                  => None
-      }
+    hoveredPart.map(_ match
+      case Some(p: Part) if tys contains p.ty => Some(p)
+      case _                                  => None
     )
 
   /** An IO action that filters [[hovered]] for entities of a certain type.
     */
   def hoveredEntity(ty: EntityType): IO[Option[Entity]] =
-    hovered.map(e =>
-      e match {
-        case Some(p: Part) if p.ty == ty => Some(p)
-        case _                           => None
-      }
+    hovered.map(_ match
+      case Some(e) if e.ty == ty => Some(e)
+      case _                     => None
     )
 
   import semagrams.widgets.{Menu, PositionWrapper, Position}
 
-  /** Constructs a menu at the current mouse position */
+  /** Constructs a menu at the current mouse position indexed by part `i` */
   def makeMenu(ui: UIState, entries: Seq[(String, Part => IO[Unit])])(i: Part) =
     for {
       pos <- mousePos
-      choice <- ui.dialogue[Part => IO[Matchable]](cb =>
-        PositionWrapper(
-          Position.atPos(pos),
-          Menu(entries)(cb)
+      choice <- fromMaybe(
+        ui.dialogue[Option[Part => IO[Matchable]]](cb =>
+          PositionWrapper(
+            Position.atPos(pos),
+            Menu(entries)(cb)
+          )
         )
       )
       _ <- choice(i)
     } yield ()
+
 }

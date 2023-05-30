@@ -100,4 +100,15 @@ trait Sprite {
       subent: Entity,
       data: ACSet
   ): Option[BoundingBox] = None
+
+  /** Convert a diagram element into tikz code */
+  def toTikz(p: Part, data: ACSet, visible: Boolean = true): String = ""
+
+  /** An optional layout algorithm to run before rendering an ACSet */
+  def layout(bb: BoundingBox, a: ACSet): ACSet = a
+
+  /** Compute the layout for a full window of size `sz` */
+  def layoutBg(sz: Complex, a: ACSet): ACSet =
+    layout(BoundingBox(sz / 2.0, sz), a)
+
 }

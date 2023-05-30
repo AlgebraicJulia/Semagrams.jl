@@ -14,7 +14,7 @@ import semagrams.util._
   * for mouse events, because otherwise it would be very annoying to mouse over
   * the arrow.
   */
-case class Arrow(defaults: PropMap) extends Sprite {
+case class Arrow(props: PropMap) extends Sprite {
   def blockPath(
       s: Complex,
       e: Complex,
@@ -44,8 +44,8 @@ case class Arrow(defaults: PropMap) extends Sprite {
       updates: L.Signal[ACSet],
       attachHandlers: HandlerAttacher
   ): L.SvgElement = {
-    val data = updates.map(defaults ++ _.props)
-    val $p = updates.map(defaults ++ _.props)
+    val data = updates.map(props ++ _.props)
+    val $p = updates.map(props ++ _.props)
     val arrow = path(
       pathElts <-- data.map(p => curvedPath(p(Start), p(End), p(Bend))),
       stroke <-- $p.map(p =>
@@ -67,14 +67,36 @@ case class Arrow(defaults: PropMap) extends Sprite {
     attachHandlers(ent, handle)
     g(arrow, handle)
   }
+
+  override def toTikz(e: Part, data: ACSet, visible: Boolean = true) =
+    if !visible
+    then ""
+    else
+      val s = data.props.get(TikzStart).getOrElse {
+        println(s"Missing TikzStart")
+        ""
+      }
+      val t = data.props.get(TikzEnd).getOrElse {
+        println(s"Missing TikzEnd")
+        ""
+      }
+      val b = 40 * data.props(Bend)
+
+      val endpts =
+        s"\\path ($s) to[bend left={$b}] node[pos=00](a@$s){} node[pos=1](b@$t){} ($t);\n"
+      val arrow =
+        s"\\draw[->] (a@$s) to[bend left={$b}] (b@$t);\n"
+
+      endpts + arrow
+
 }
 
 object Arrow {
-  val defaults = PropMap()
+  val props = PropMap()
     + (Stroke, "black")
     + (Bend, 0)
     + (StrokeDasharray, "none")
     + (Interactable, true)
 
-  def apply() = new Arrow(defaults)
+  def apply() = new Arrow(props)
 }

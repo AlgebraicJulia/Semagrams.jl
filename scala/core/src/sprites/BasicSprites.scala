@@ -15,34 +15,42 @@ def BasicWrapper(sprite: Sprite)(es: EditorState) = WithMiddleware(
   )
 )
 
-val BasicArrow = BasicWrapper(Arrow())
+def BasicArrow() = BasicWrapper(Arrow())
 
 val BasicDisc = BasicWrapper(Disc())
 
 val BasicRect = BasicWrapper(Rect())
 
-val BasicWire = BasicWrapper(Wire())
+def BasicWire(src: Hom, tgt: Hom) = BasicWrapper(Wire())
 
-def BasicDPBox(inPort: Ob, outPort: Ob)(es: EditorState) = DPBox(
+def BasicDPBox(inPort: Ob, outPort: Ob, portStyle: (ACSet, Part) => PropMap)(
+    es: EditorState
+) = DPBox(
   BasicRect(es),
   BasicWireStub(-10)(es),
   BasicWireStub(10)(es),
   inPort,
-  outPort
+  outPort,
+  portStyle
 )
 
 def BasicWireStub(extend: Double) = BasicWrapper(
   WireStub(PropMap() + (Stroke, "black"), extend)
 )
 
-def AltDPBox(inPort: Ob, outPort: Ob)(es: EditorState) = DPBox(
+def AltDPBox(
+    inPort: Ob,
+    outPort: Ob,
+    portStyle: (ACSet, Part) => PropMap = (_, _) => PropMap()
+)(es: EditorState): DPBox = DPBox(
   BasicWrapper(Rect(PropMap() + (MinimumHeight, 80.0) + (MinimumWidth, 50.0)))(
     es
   ),
-  BasicPort(PropMap() + (Fill, "red"))(es),
-  BasicPort(PropMap() + (Fill, "green"))(es),
+  BasicPort()(es),
+  BasicPort()(es),
   inPort,
-  outPort
+  outPort,
+  portStyle
 )
 
 def BasicPort(props: PropMap = PropMap()) = BasicWrapper(

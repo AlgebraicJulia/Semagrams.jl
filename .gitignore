@@ -25,3 +25,4 @@
 scala/project/build.properties
 scala/.vscode/settings.json
 /scala/build/
+scala/apps/dwd/chevron/

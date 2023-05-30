@@ -6,8 +6,6 @@ import semagrams.util._
 import semagrams._
 import semagrams.acsets._
 
-//FIXME: Move these into util
-
 extension [A, B](s: L.Signal[Tuple2[A, B]])
   def splitTuple: Tuple2[L.Signal[A], L.Signal[B]] = (s.map(_._1), s.map(_._2))
 
@@ -15,7 +13,7 @@ extension [A, B](s: L.Signal[Tuple2[A, B]])
   *
   * Resizes automatically corresponding to its content.
   */
-case class Rect(props: PropMap) extends Sprite {
+case class Rect(val props: PropMap) extends Sprite {
   import Rect._
 
   def present(
@@ -27,7 +25,10 @@ case class Rect(props: PropMap) extends Sprite {
     val data = updates.map(props ++ _.props)
 
     val text = L.svg.text(
-      xy <-- data.map(_(Center)),
+      xy <-- data.map(pm =>
+        pm.get(Center)
+          .getOrElse(throw msgError(s"propmap $pm missing `Center`"))
+      ),
       L.children <-- data.map(p =>
         val splits = p(Content).split('\n').zipWithIndex
         val l = splits.length
@@ -35,10 +36,13 @@ case class Rect(props: PropMap) extends Sprite {
           L.svg.tspan(
             L.textToNode(t),
             textAnchor := "middle",
-            // dominantBaseline := "central",
-            x <-- data.map(p => p(Center).x.toString()),
+            x <-- data.map(p =>
+              p.get(Center).getOrElse(Complex(50, 50)).x.toString()
+            ),
             y <-- data.map(p =>
-              (p(Center).y + p(FontSize) * (i + 1 - l / 2.0)).toString()
+              (p.get(Center).getOrElse(Complex(100, 100)).y + p(
+                FontSize
+              ) * (i + 1 - l / 2.0)).toString()
             ),
             style := "user-select: none"
           )
@@ -46,16 +50,6 @@ case class Rect(props: PropMap) extends Sprite {
       ),
       fontSize <-- data.map(_(FontSize).toString)
     )
-    // textAnchor := "middle",
-    // dominantBaseline := "central",
-    // style := "user-select: none"
-    // )),
-    // L.svg.tspan(
-    //   L.child <-- data.map(p => L.textToNode(p(Content))),
-    //   textAnchor := "middle",
-    //   dominantBaseline := "central",
-    //   style := "user-select: none"
-    // ),
 
     val box = rect(
       geomUpdater(data),
@@ -94,8 +88,11 @@ case class Rect(props: PropMap) extends Sprite {
         dims.y / 2
       )
     }
-    val pt = Complex(q1pt.x * dir.x.sign, q1pt.y * dir.y.sign) + pm(Center)
-    Some(pt)
+    Some(
+      Complex(q1pt.x * dir.x.sign, q1pt.y * dir.y.sign) + data.props
+        .get(Center)
+        .getOrElse(Complex(100, 100))
+    )
   }
 
   override def bbox(_subent: Entity, data: ACSet) = {
@@ -103,13 +100,30 @@ case class Rect(props: PropMap) extends Sprite {
     Some(BoundingBox(pos, dims))
   }
 
-  override def center(_subent: Entity, data: ACSet) = Some(data.props(Center))
+  override def center(_subent: Entity, data: ACSet) = Some(
+    data.props.get(Center).getOrElse(Complex(100, 100))
+  )
+
+  override def toTikz(p: Part, data: ACSet, visible: Boolean = true) = tikzNode(
+    "rectangle",
+    p.tikzName,
+    data.props.get(Center).getOrElse(Complex(0, 0)),
+    data.props
+      .get(Content)
+      .getOrElse("")
+      .flatMap(_ match
+        case '\n' => "\\\\"
+        case ch   => ch.toString()
+      ),
+    visible
+  )
+
 }
 
 object Rect {
   def geom(data: PropMap): (Complex, Complex) = {
     val textRect = boxSize(data(Content), data(FontSize))
-    val center = data(Center)
+    val center = data.get(Center).getOrElse(Complex(100, 100))
     val innerSep = data(InnerSep)
     val width = data(MinimumWidth).max(textRect.x + innerSep)
     val height = data(MinimumHeight).max(textRect.y + innerSep)

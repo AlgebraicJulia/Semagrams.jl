@@ -5,7 +5,6 @@ import com.raquo.laminar.api._
 import semagrams.util._
 import semagrams._
 import semagrams.acsets._
-// import semagrams.{text as sematext,_}
 
 import semagrams.util.Complex.{im}
 
@@ -15,9 +14,10 @@ import upickle.default.ReadWriter
 enum WireProp[T: ReadWriter] extends Property {
   case StartDir extends WireProp[Complex]
   case EndDir extends WireProp[Complex]
-  // case WireLabel extends WireProp[String]
   case LabelAnchor extends WireProp[Double]
   case LabelOffset extends WireProp[Complex]
+  case TikzStart extends WireProp[String]
+  case TikzEnd extends WireProp[String]
 
   type Value = T
   val rw = summon[ReadWriter[T]]
@@ -30,6 +30,7 @@ export WireProp._
   * arrowhead.
   */
 case class Wire() extends Sprite {
+
   def exAt(p: Complex, d: Double = 5.0) = {
     import Path.Element._
 
@@ -79,46 +80,67 @@ case class Wire() extends Sprite {
 
   def present(
       ent: Entity,
-      acs: ACSet,
-      $acs: L.Signal[ACSet],
+      init: ACSet,
+      updates: L.Signal[ACSet],
       attachHandlers: HandlerAttacher
   ): L.SvgElement = {
-    val p = acs.props
-    val $p = $acs.map(_.props)
-    def s(p: PropMap) = p(Start)
-    def t(p: PropMap) = p(End)
+
+    val data = updates.map(init.props ++ _.props)
+    def s(p: PropMap) = p
+      .get(Start)
+      .getOrElse(
+        throw msgError(s"present $ent missing `Start`")
+      )
+    def t(p: PropMap) = p
+      .get(End)
+      .getOrElse(
+        throw msgError(s"present $ent missing `End`")
+      )
     def ds(p: PropMap): Complex = p.get(StartDir).getOrElse(-10.0)
     def dt(p: PropMap): Complex = p.get(EndDir).getOrElse(-10.0)
     def b(p: PropMap) = p.get(Bend).getOrElse(10.0)
 
     def ppath(p: PropMap) = curvedPath(s(p), t(p), ds(p), dt(p), b(p))
 
-    val anchor = p.get(LabelAnchor).getOrElse(.5)
-    val offset = p.get(LabelOffset).getOrElse(10 * im)
+    def anchor(p: PropMap) = p.get(LabelAnchor).getOrElse(.5)
+    def offset(p: PropMap) = p.get(LabelOffset).getOrElse(10 * im)
 
     def labelPos(p: PropMap) = {
       val crv = ppath(p)(1)
-      crv.pos(s(p), anchor) + offset * crv.dir(s(p), anchor)
+      crv.pos(s(p), anchor(p)) + offset(p) * crv.dir(s(p), anchor(p))
     }
 
-    def label(p: PropMap) = p.get(Content).getOrElse("")
-    def fontsize(p: PropMap) = p.get(FontSize).getOrElse(16.0)
+    def label(p: PropMap): String = p.get(Content).getOrElse("")
+    def fontsize(p: PropMap): Double = p.get(FontSize).getOrElse(16.0)
     def pstroke(p: PropMap) = p.get(Stroke).getOrElse("black")
 
-    val txt = L.svg.text(
-      xy <-- $p.map(labelPos),
-      L.svg.tspan(
-        L.child <-- $p.map(p => L.textToNode(label(p))),
-        textAnchor := "middle",
-        dominantBaseline := "central",
-        style := "user-select: none"
-      ),
-      fontSize <-- $p.map(fontsize(_).toString())
+    def labelNode(label: String) = L.svg.text(
+    )
+
+    val text = L.svg.text(
+      xy <-- data.map(labelPos),
+      L.children <-- data.map { p =>
+        println(s"update $ent")
+        val splits = label(p).split('\n').zipWithIndex
+        val len = splits.length
+        splits.toSeq.map((str, line) =>
+          L.svg.tspan(
+            L.textToNode(str),
+            textAnchor := "middle",
+            x <-- data.map(p => labelPos(p).x.toString()),
+            y <-- data.map(p =>
+              (labelPos(p).y + fontsize(p) * (line + 1 - len / 2.0)).toString()
+            ),
+            style := "user-select: none"
+          )
+        )
+      },
+      fontSize <-- data.map(fontsize(_).toString())
     )
 
     val wire = path(
-      pathElts <-- $p.map(ppath),
-      stroke <-- $p.map(p =>
+      pathElts <-- data.map(ppath),
+      stroke <-- data.map(p =>
         if p.get(Hovered).isDefined then "lightgrey" else pstroke(p)
       ),
       fill := "none",
@@ -127,17 +149,42 @@ case class Wire() extends Sprite {
     )
 
     val handle = path(
-      pathElts <-- $p.map(p => blockPath(s(p), t(p), ds(p), dt(p), 3, b(p))),
-      fill := "white",
-      opacity := ".0",
+      pathElts <-- data.map(p => blockPath(s(p), t(p), ds(p), dt(p), 7, b(p))),
+      fill := "blue",
+      opacity := ".1",
       stroke := "none",
       style := "user-select: none",
-      pointerEvents <-- $p.map(p =>
+      pointerEvents <-- data.map(p =>
         if p.get(Interactable) != Some(false) then "auto" else "none"
       )
     )
 
     attachHandlers(ent, handle)
-    g(wire, handle, txt)
+    g(wire, handle, text)
   }
+
+  override def toTikz(w: Part, data: ACSet, visible: Boolean = true) =
+    if !visible
+    then ""
+    else
+      val s_str = data.props
+        .get(TikzStart)
+        .getOrElse(
+          throw msgError(s"missing property `TikzStart`")
+        )
+      val t_str = data.props
+        .get(TikzEnd)
+        .getOrElse(
+          throw msgError(s"missing property `TikzStart`")
+        )
+
+      val labelStr = data.props
+        .get(Content)
+        .map(label =>
+          s" node[above,midway,align=center]{${tikzLabel(label, "footnotesize")}}"
+        )
+        .getOrElse("")
+
+      s"\\draw ($s_str.center) to[out=0,in=180] $labelStr ($t_str.center);\n"
+
 }

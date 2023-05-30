@@ -12,6 +12,7 @@ package object api {
   export semagrams.{
     Actions,
     EditorState,
+    Event,
     Semagram,
     Sprite,
     MouseButton,
@@ -25,8 +26,11 @@ package object api {
     keyDown,
     clickOn,
     clickOnPart,
+    dblClickOn,
     dblClickOnPart,
-    menuOnPart
+    menuOnPart,
+    PValue,
+    Viewport
   }
   export semagrams.GenericProperty._
   export controllers.{
@@ -54,7 +58,11 @@ package object api {
     BasicDPBox,
     BasicWrapper,
     WireProp,
-    findCenter
+    findCenter,
+    wireProps,
+    DPBox,
+    AltDPBox,
+    BasicPort
   }
   export ui.{UIState}
   export util.{
@@ -63,7 +71,8 @@ package object api {
     fromMaybe,
     toOption,
     onCancelOrError,
-    realToComplex
+    realToComplex,
+    msgError
   }
   export widgets.{Select, Position, PositionWrapper, Menu}
 }

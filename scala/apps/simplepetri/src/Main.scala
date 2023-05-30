@@ -170,7 +170,7 @@ case class EquationWindow() extends Entity {
 object EquationWindow extends EntityType
 
 def bindings(es: EditorState, g: UndoableVar[ACSet], ui: UIState) = {
-  val a = Actions(es, g, ui, clJsonFromPetri, petriFromCLJson)
+  val a = Actions(es, g, ui)
 
   Seq(
     keyDown("s").andThen(a.addAtMouse_(S)),
@@ -185,6 +185,8 @@ def bindings(es: EditorState, g: UndoableVar[ACSet], ui: UIState) = {
     keyDown("Z")
       .withMods(KeyModifier.Ctrl, KeyModifier.Shift)
       .andThen(IO(g.redo())),
+    keyDown("x").andThen(a.importExport),
+    keyDown("w").andThen(a.exportTikz(Seq(S, T, I, O))),
     clickOnPart(MouseButton.Left, PartType(Seq(S)))
       .withMods(KeyModifier.Shift)
       .flatMap(a.dragEdge(I, IS, IT)),
@@ -226,12 +228,13 @@ object Main {
           g.signal.map(assignBends(Map(I -> (IS, IT), O -> (OT, OS)), 0.5))
         )
         _ <- es.makeViewport(
+          es.MainViewport,
           lg,
           Seq(
             ACSetEntitySource(S, BasicDisc(es)),
             ACSetEntitySource(T, BasicRect(es)),
-            ACSetEdgeSource(I, IS, IT, BasicArrow(es)),
-            ACSetEdgeSource(O, OT, OS, BasicArrow(es))
+            ACSetEdgeSource(I, IS, IT, BasicArrow()(es)),
+            ACSetEdgeSource(O, OT, OS, BasicArrow()(es))
           )
         )
         ui <- es.makeUI()

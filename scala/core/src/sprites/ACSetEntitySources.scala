@@ -11,9 +11,13 @@ import com.raquo.laminar.api.L._
 def ACSetEntitySource(
     ob: Ob,
     sprite: Sprite
-) =
+): EntitySource[ACSet] =
   EntitySource[ACSet]((acs, _m) =>
-    acs.parts(ROOT, ob).map({ case (i, acs) => (i, sprite, acs) })
+    acs
+      .parts(ROOT, ob)
+      .map({ case (i, acs) =>
+        (i, sprite, acs)
+      })
   )
 
 /** Find the point on the boundary in direction `dir` of the sprite
@@ -30,13 +34,15 @@ def findBoundary(p: Part, m: EntityMap, dir: Complex): Option[Complex] = for {
 /** Find the center of the sprite corresponding to `p`, by looking up the
   * sprite/data in `m`
   */
-def findCenter(p: Part, m: EntityMap): Option[Complex] = for {
-  ((sprite, acs), subp) <- p.path match {
-    case Nil             => None
-    case (x, id) :: rest => m.get(Part(Seq((x, id)))).map((_, Part(rest)))
-  }
-  c <- sprite.center(subp, acs)
-} yield c
+def findCenter(p: Part, m: EntityMap): Option[Complex] =
+  for {
+    ((sprite, acs), subp) <- p.path match {
+      case Nil => None
+      case (x, id) :: rest =>
+        m.get(Part(Seq((x, id)))).map((_, Part(rest)))
+    }
+    c <- sprite.center(subp, acs)
+  } yield c
 
 /** Compute the properties (i.e. Start and End) for an edge, using the top-level
   * properties in `acs` and the other sprites in `m`.
@@ -67,7 +73,13 @@ def edgeProps(
   val nd = t
     .flatMap(findBoundary(_, m, dir * rot.cong))
     .getOrElse(tpos)
-  PropMap() + (Start, start) + (End, nd)
+
+  val tikzProps = (s, t) match
+    case (Some(p), Some(q)) =>
+      PropMap().set(TikzStart, p.tikzName).set(TikzEnd, q.tikzName)
+    case _ => PropMap()
+
+  tikzProps + (Start, start) + (End, nd)
 }
 
 /** Like [[ACSetEntitySource]], but then also computes the edge properties using
@@ -79,3 +91,62 @@ def ACSetEdgeSource(
     tgt: Hom,
     sprite: Sprite
 ) = ACSetEntitySource(ob, sprite).addPropsBy(edgeProps(src, tgt))
+
+/** Similar to [[edgeProps]]. Computes the position and direction for the ends
+  * of a wire from the ports it is connected to, using the top-level properties
+  * in `acs` and the other sprites in `m`.
+  *
+  * If `src`/`tgt` are present, it uses those, otherwise it looks up an explicit
+  * `Start`/`End` value in `acs`
+  *
+  * Takes an optional callback argument `bg: => Part` to relativize the lookup
+  * to a variable background for zooming in and out.
+  */
+
+def wireProps(
+    src: Hom,
+    tgt: Hom,
+    typeProps: (ACSet, Part) => PropMap,
+    dir: Part => Complex = _ => Complex(0, 0),
+    bg: => Part = ROOT
+)(_e: Entity, acs: ACSet, m: EntityMap): PropMap = {
+
+  val defaultPos = Complex(50, 50)
+
+  val p = acs.props
+
+  val Seq(s, t) = Seq(src, tgt).map(p.get(_))
+
+  val sc = s
+    .flatMap(_.diffOption(bg))
+    .flatMap(findCenter(_, m))
+    .getOrElse(
+      p.get(Start)
+        .getOrElse(defaultPos)
+    )
+  val tc = t
+    .flatMap(_.diffOption(bg))
+    .flatMap(findCenter(_, m))
+    .getOrElse(
+      p.get(End)
+        .getOrElse(defaultPos)
+    )
+
+  val Seq(sd, td) =
+    Seq(s, t).map(_.flatMap(_.diffOption(bg)).map(dir).getOrElse(Complex(0, 0)))
+
+  val tikzProps = (s, t) match
+    case (Some(p), Some(q)) =>
+      PropMap()
+        .set(TikzStart, p.tikzName)
+        .set(TikzEnd, q.tikzName)
+    case _ => PropMap()
+
+  (acs.props ++ typeProps(acs, _e.asInstanceOf[Part]))
+    .set(Start, sc)
+    .set(WireProp.StartDir, sd)
+    .set(End, tc)
+    .set(WireProp.EndDir, td)
+    ++ tikzProps
+
+}
