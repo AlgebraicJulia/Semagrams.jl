@@ -91,11 +91,12 @@ jobs:
             mkdir -p build/$hash/$appname
             cp out/apps/$appname/fullLinkJS.dest/* build/$hash/$appname/
           done
-          aws s3 sync build/ s3://semagrams-builds
+          aws s3 sync build/ s3://semagrams
 
       - name: Create link to files in commit
         uses: peter-evans/commit-comment@v2
         with:
           body: |
-            Find compiled javascript for
-            - [Petri app](https://semagrams-builds.s3.amazonaws.com/${{ steps.shorthash.outputs.sh }}/petri/main.js)
+            Find compiled javascript for \$APP at
+
+            https://semagrams-builds.s3.amazonaws.com/${{ steps.shorthash.outputs.sh }}/\$APP/main.js
