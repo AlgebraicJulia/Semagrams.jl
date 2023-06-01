@@ -48,7 +48,7 @@ jobs:
             mill "$app.checkFormat"
           done
 
-  upload:
+  build-apps:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -57,45 +57,12 @@ jobs:
       - name: Set up Mill
         uses: jodersky/setup-mill@master
         with:
-          mill-version: '0.10.5'
-
-      - name: Set AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
+          mill-version: '0.10.11'
 
       - name: Build compiled javascript
         run: |
           cd scala
           for app in $(mill resolve apps._)
           do
-            mill $app.fullLinkJS
+            mill $app.compile
           done
-
-      - name: Get shorthash
-        id: shorthash
-        run: |
-          hash=$(git rev-parse --short "$GITHUB_SHA")
-          echo "::set-output name=sh::$hash"
-
-      - name: Copy files to bucket
-        run: |
-          hash=${{ steps.shorthash.outputs.sh }}
-          cd scala
-          mkdir build
-          for app in $(mill resolve apps._)
-          do
-            appname=$(echo $app | sed 's/.*\.//')
-            mkdir -p build/$hash/$appname
-            cp out/apps/$appname/fullLinkJS.dest/* build/$hash/$appname/
-          done
-          aws s3 sync build/ s3://semagrams-builds
-
-      - name: Create link to files in commit
-        uses: peter-evans/commit-comment@v2
-        with:
-          body: |
-            Find compiled javascript for
-            - [Petri app](https://semagrams-builds.s3.amazonaws.com/${{ steps.shorthash.outputs.sh }}/petri/main.js)
