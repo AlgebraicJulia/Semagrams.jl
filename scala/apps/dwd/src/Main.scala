@@ -313,7 +313,8 @@ object Main {
       es.elt.amend(
         svg.text(
           "Press \"h\" for help text",
-          svg.y := "99.5%"
+          svg.y := "99.5%",
+          svg.style := "user-select: none",
         )
       )
 

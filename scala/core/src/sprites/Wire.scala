@@ -159,6 +159,7 @@ case class Wire() extends Sprite {
     )
 
     attachHandlers(ent, handle)
+    attachHandlers(ent, text)
     g(wire, handle, text)
   }
 
