@@ -285,14 +285,14 @@ case class Actions(
               _ <- set(e, tgt, q)
               _ <- remove(e, End)
               // _ <- remove(e, Interactable)
-              _ <- set(e, Interactable,true)
+              _ <- set(e, Interactable, true)
             } yield ()
           case mnow if mnow.hasSubpart(tgt, e) =>
             for {
               _ <- set(e, src, q)
               _ <- remove(e, Start)
               // _ <- remove(e, Interactable)
-              _ <- set(e, Interactable,true)
+              _ <- set(e, Interactable, true)
             } yield ()
           case _ => die
       yield e
@@ -358,7 +358,7 @@ case class Actions(
               _ <- set(e, src, q)
               _ <- remove(e, Start)
               // _ <- remove(e, Interactable)
-              _ <- set(e, Interactable,true)
+              _ <- set(e, Interactable, true)
             } yield ()
           case _ => die
       yield e

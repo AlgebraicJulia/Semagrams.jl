@@ -314,7 +314,7 @@ object Main {
         svg.text(
           "Press \"h\" for help text",
           svg.y := "99.5%",
-          svg.style := "user-select: none",
+          svg.style := "user-select: none"
         )
       )
 
