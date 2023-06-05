@@ -2,6 +2,7 @@ package semagrams.widgets
 
 import com.raquo.laminar.api.L._
 import semagrams.util._
+import org.scalajs.dom
 
 /** Returns a text input box that is tied to `v`.
   *
@@ -17,9 +18,12 @@ import semagrams.util._
 def TextInput[A](v: LensedVar[A, String], multiline: Boolean)(
     finished: Observer[Unit]
 ) = {
+  val noop = (evt: dom.MouseEvent) => {}
   val common = Seq(
     value <-- v.signal,
     onInput.mapToValue --> v.writer,
+    onClick.stopPropagation --> noop,
+    onDblClick.stopPropagation --> noop,
     onKeyDown.stopPropagation
       .filter(k => k.key == "Escape")
       .mapTo(())
