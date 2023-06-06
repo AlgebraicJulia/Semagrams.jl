@@ -135,7 +135,8 @@ object Viewport {
         // Only update propMap when it exists in $m, don't error when it's deleted
         val propMapStream =
           $m.changes.map(_.get(ent)).collect { case Some(x) => x._2 }
-        val $propMap = propMapStream.toSignal(propMap)
+        // deduplicate changes to the controller for entities with .distinct
+        val $propMap = propMapStream.toSignal(propMap).distinct
         (ent, sprite.present(ent, propMap, $propMap, (ent, elt) => ()))
       })
       .toMap
