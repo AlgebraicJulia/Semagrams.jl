@@ -17,21 +17,21 @@ def defaultPomSettings(desc: String) = PomSettings(
 )
 
 trait Defaults extends ScalaJSModule with PublishModule with ScalafmtModule {
-  def scalaVersion = "3.2.1"
-  def scalaJSVersion = "1.13.0"
-  def ammoniteVersion = "2.5.6"
+  def scalaVersion = "3.2.2"
+  def scalaJSVersion = "1.13.1"
+  def ammoniteVersion = "3.0.0-M0"
 
   def scalacOptions = Seq("-deprecation", "-feature")
 
   def moduleKind = T { ModuleKind.ESModule }
 
   def ivyDeps = Agg(
-    ivy"org.scala-js::scalajs-dom::2.2.0",
+    ivy"org.scala-js::scalajs-dom::2.6.0",
     ivy"com.raquo::laminar::0.14.2",
-    ivy"com.lihaoyi::upickle::2.0.0",
+    ivy"com.lihaoyi::upickle::3.1.0",
     ivy"org.typelevel::cats-core::2.9.0",
     ivy"org.typelevel::cats-kernel::2.9.0",
-    ivy"org.typelevel::cats-effect::3.4.8",
+    ivy"org.typelevel::cats-effect::3.5.0",
     ivy"com.github.japgolly.scalacss::core::1.0.0",
     ivy"dev.optics::monocle-core::3.2.0",
     ivy"dev.optics::monocle-macro::3.2.0"
@@ -56,7 +56,7 @@ object core extends Defaults {
   object test extends Tests with TestModule.Utest {
     def jsEnvConfig = T(JsEnvConfig.JsDom())
 
-    def ivyDeps = Agg(ivy"com.lihaoyi::utest::0.8.0")
+    def ivyDeps = Agg(ivy"com.lihaoyi::utest::0.8.1")
   }
 }
 
