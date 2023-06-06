@@ -29,10 +29,10 @@ extension [A](s: L.Signal[Seq[A]]) {
   * @param `outPortSprite`
   *   the sprite to use for the right hand ports
   *
-  * @param inPort
+  * @param `inPort`
   *   the object in the subschema to query for the list of in ports
   *
-  * @param outPort
+  * @param `outPort`
   *   the object in the subschema to query for the list of out ports
   */
 case class DPBox(
