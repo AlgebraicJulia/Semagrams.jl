@@ -49,7 +49,7 @@ case class Rect(val props: PropMap) extends Sprite {
         })
       ),
       fontSize <-- data.map(_(FontSize).toString),
-      pointerEvents := "none",
+      pointerEvents := "none"
     )
 
     val box = rect(
