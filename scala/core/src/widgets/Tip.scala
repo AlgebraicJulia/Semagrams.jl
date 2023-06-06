@@ -18,7 +18,7 @@ def Tip(
     children <-- $tipText.map(
       _.map(line =>
         svg.tspan(
-          textToNode(line),
+          textToTextNode(line),
           svg.dy := "1.2em",
           svg.x := "15",
           svg.textAnchor := "start",

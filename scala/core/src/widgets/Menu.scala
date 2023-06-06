@@ -22,7 +22,7 @@ def Menu[A](
         div(
           onClick.mapTo(Some(v)) --> finished,
           styleAttr := "padding: 2px; margin: 0px; border: none; background: lightgray; border: solid thin",
-          a(textToNode(text))
+          a(textToTextNode(text))
         )
       }
     )

@@ -25,7 +25,7 @@ def Popover(
         _.map(line => if line == "" then " " else line)
           .map(line =>
             svg.tspan(
-              textToNode(line),
+              textToTextNode(line),
               svg.dy := "1.2em",
               svg.x := (pos.x + innerSep).toString,
               svg.textAnchor := "start",

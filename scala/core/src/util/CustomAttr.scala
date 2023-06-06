@@ -1,16 +1,16 @@
 package semagrams.util
 
 import com.raquo.laminar.api.L._
-import com.raquo.laminar.keys.ReactiveSvgAttr
+import com.raquo.laminar.keys.SvgAttr
 
 object CustomAttr {
   trait SvgBinder[Data] {
-    def apply[Subpart](attr: ReactiveSvgAttr[Subpart], f: Data => Subpart): Unit
+    def apply[Subpart](attr: SvgAttr[Subpart], f: Data => Subpart): Unit
   }
 
   case class StaticSvgBinder[Data](el: SvgElement, x: Data)
       extends SvgBinder[Data] {
-    def apply[Subpart](attr: ReactiveSvgAttr[Subpart], f: Data => Subpart) = {
+    def apply[Subpart](attr: SvgAttr[Subpart], f: Data => Subpart) = {
       el.amend(
         attr := f(x)
       )
@@ -19,7 +19,7 @@ object CustomAttr {
 
   case class ReactiveSvgBinder[Data](el: SvgElement, $x: Source[Data])
       extends SvgBinder[Data] {
-    def apply[Subpart](attr: ReactiveSvgAttr[Subpart], f: Data => Subpart) = {
+    def apply[Subpart](attr: SvgAttr[Subpart], f: Data => Subpart) = {
       val x = $x.toObservable
       el.amend(
         attr <-- x.map(f)
