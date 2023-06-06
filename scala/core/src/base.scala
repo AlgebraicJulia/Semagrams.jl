@@ -6,7 +6,7 @@ import cats.effect.std._
 import org.scalajs.dom
 import scala.scalajs.js.annotation._
 import scala.scalajs.js
-import com.raquo.domtypes.generic.codecs.StringAsIsCodec
+import com.raquo.laminar.codecs.StringAsIsCodec
 
 /** This creates the svg element that will all of the Semagrams activity
   *
@@ -19,7 +19,7 @@ def baseSvg() = {
   svg.svg(
     svg.height := "100%",
     svg.width := "100%",
-    svg.customSvgAttr("tabindex", StringAsIsCodec) := "-1",
+    svg.svgAttr("tabindex", StringAsIsCodec, None) := "-1",
     svg.style := "border:black;" +
       "border-style:solid;" +
       "background-color:white;" +

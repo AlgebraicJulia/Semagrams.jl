@@ -27,7 +27,7 @@ trait Defaults extends ScalaJSModule with PublishModule with ScalafmtModule {
 
   def ivyDeps = Agg(
     ivy"org.scala-js::scalajs-dom::2.6.0",
-    ivy"com.raquo::laminar::0.14.2",
+    ivy"com.raquo::laminar::15.0.1",
     ivy"com.lihaoyi::upickle::3.1.0",
     ivy"org.typelevel::cats-core::2.9.0",
     ivy"org.typelevel::cats-kernel::2.9.0",

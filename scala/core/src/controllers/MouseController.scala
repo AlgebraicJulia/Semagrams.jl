@@ -5,7 +5,6 @@ import semagrams.util._
 import org.scalajs.dom
 import com.raquo.laminar.api.L._
 import scala.collection.immutable.BitSet
-import com.raquo.domtypes.jsdom.defs.events.TypedTargetMouseEvent
 import org.scalajs.dom
 
 /** A bit of global state to keep track of the mouse, along with the code that
@@ -28,14 +27,10 @@ class MouseController() extends Controller {
     Complex(svgP.x, svgP.y)
   }
 
-  def mouseLeave(el: dom.SVGSVGElement)(
-      ev: TypedTargetMouseEvent[dom.Element]
-  ) =
+  def mouseLeave(el: dom.SVGSVGElement)(ev: dom.MouseEvent) =
     MouseLeave(svgCoords(el, ev))
 
-  def mouseMove(el: dom.SVGSVGElement)(
-      ev: TypedTargetMouseEvent[dom.Element]
-  ) =
+  def mouseMove(el: dom.SVGSVGElement)(ev: dom.MouseEvent) =
     MouseMove(svgCoords(el, ev))
 
   /** Attaches the necessary event listeners to the main window

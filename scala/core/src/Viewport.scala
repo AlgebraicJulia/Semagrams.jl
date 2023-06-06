@@ -117,7 +117,7 @@ object Viewport {
   def render($m: Signal[EntityCollection]): Signal[Seq[SvgElement]] = {
     val $em = $m.map(_.em)
     val $svgMap =
-      $em.foldLeft(m => updateRendered($em)(Map[Entity, SvgElement](), m))(
+      $em.scanLeft(m => updateRendered($em)(Map[Entity, SvgElement](), m))(
         updateRendered($em)
       )
     $m.combineWith($svgMap).map((m, svgMap) => m.ordering.map(svgMap))

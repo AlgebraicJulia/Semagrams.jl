@@ -54,7 +54,7 @@ case class Disc(val props: PropMap) extends Sprite {
     val text = L.svg.text(
       xy <-- data.map(_.get(Center).getOrElse(Complex(100, 100))),
       L.svg.tspan(
-        L.child <-- data.map(p => L.textToNode(p(Content))),
+        L.child <-- data.map(p => L.textToTextNode(p(Content))),
         textAnchor := "middle",
         dominantBaseline := "central",
         style := "user-select: none"
