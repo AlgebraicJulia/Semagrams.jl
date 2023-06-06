@@ -135,7 +135,7 @@ case class Wire() extends Sprite {
         )
       },
       fontSize <-- data.map(fontsize(_).toString()),
-      pointerEvents := "none",
+      pointerEvents := "none"
     )
 
     val wire = path(
