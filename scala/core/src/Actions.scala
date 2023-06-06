@@ -185,11 +185,7 @@ case class Actions(
     else IO(())
 
   val debug =
-    val sch = m.now().schema
-    import sch._
-    IO(m.now()).map(acset => {
-      println(write(acset))
-    })
+    IO(println(m.now()))
 
   def die[A]: IO[A] = fromMaybe(IO(None))
 
@@ -288,13 +284,15 @@ case class Actions(
             for {
               _ <- set(e, tgt, q)
               _ <- remove(e, End)
-              _ <- remove(e, Interactable)
+              // _ <- remove(e, Interactable)
+              _ <- set(e, Interactable, true)
             } yield ()
           case mnow if mnow.hasSubpart(tgt, e) =>
             for {
               _ <- set(e, src, q)
               _ <- remove(e, Start)
-              _ <- remove(e, Interactable)
+              // _ <- remove(e, Interactable)
+              _ <- set(e, Interactable, true)
             } yield ()
           case _ => die
       yield e
@@ -352,13 +350,15 @@ case class Actions(
             for {
               _ <- set(e, tgt, q)
               _ <- remove(e, End)
-              _ <- remove(e, Interactable)
+              // _ <- remove(e, Interactable)
+              _ <- set(e, Interactable, true)
             } yield ()
           case mnow if mnow.hasSubpart(tgt, e) =>
             for {
               _ <- set(e, src, q)
               _ <- remove(e, Start)
-              _ <- remove(e, Interactable)
+              // _ <- remove(e, Interactable)
+              _ <- set(e, Interactable, true)
             } yield ()
           case _ => die
       yield e
