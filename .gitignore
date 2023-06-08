@@ -30,6 +30,5 @@ scala/apps/dwd/chevron/
 *.fdb_latexmk
 *.fls
 *.log
-*.pdf
 *.gz
 **/.auctex-auto
