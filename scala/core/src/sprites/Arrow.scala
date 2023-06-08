@@ -45,10 +45,10 @@ case class Arrow(props: PropMap) extends Sprite {
       attachHandlers: HandlerAttacher
   ): L.SvgElement = {
     val data = updates.map(props ++ _.props)
-    val $p = updates.map(props ++ _.props)
+    val p = updates.map(props ++ _.props)
     val arrow = path(
       pathElts <-- data.map(p => curvedPath(p(Start), p(End), p(Bend))),
-      stroke <-- $p.map(p =>
+      stroke <-- p.map(p =>
         if p.get(Hovered).isDefined then "lightgrey" else p(Stroke)
       ),
       strokeDashArray <-- data.map(_(StrokeDasharray)),

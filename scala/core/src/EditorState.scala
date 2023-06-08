@@ -180,7 +180,7 @@ class EditorState(
 
   /** An IO action that when run, returns the current mouse position */
   def mousePos: IO[Complex] =
-    IO(mouse.$state.now().pos)
+    IO(mouse.state.now().pos)
 
   /** Get the current background part */
   def bgPart: Part = currentView.now()
@@ -190,7 +190,7 @@ class EditorState(
 
   /** An IO action that when run, returns the current hovered entity */
   def hovered: IO[Option[Entity]] = IO({
-    hover.$state.now().state.map(_ match
+    hover.state.now().state.map(_ match
       case p: Part => bgPlus(p)
       case e       => e
     )

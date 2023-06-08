@@ -114,27 +114,27 @@ object Viewport {
     * @todo
     *   remove dollar signs
     */
-  def render($m: Signal[EntityCollection]): Signal[Seq[SvgElement]] = {
-    val $em = $m.map(_.em)
+  def render(m: Signal[EntityCollection]): Signal[Seq[SvgElement]] = {
+    val $em = m.map(_.em)
     val $svgMap =
       $em.scanLeft(m => updateRendered($em)(Map[Entity, SvgElement](), m))(
         updateRendered($em)
       )
-    $m.combineWith($svgMap).map((m, svgMap) => m.ordering.map(svgMap))
+    m.combineWith($svgMap).map((m, svgMap) => m.ordering.map(svgMap))
   }
 
   /** Internal method for [[render]] */
   private def updateRendered(
-      $m: Signal[EntityMap]
-  )(r: Map[Entity, SvgElement], m: EntityMap): Map[Entity, SvgElement] = {
-    val added = m.keySet -- r.keySet
-    val removed = r.keySet -- m.keySet
+      m: Signal[EntityMap]
+  )(r: Map[Entity, SvgElement], em: EntityMap): Map[Entity, SvgElement] = {
+    val added = em.keySet -- r.keySet
+    val removed = r.keySet -- em.keySet
     val newElements = added
       .map(ent => {
-        val (sprite, propMap) = m(ent)
-        // Only update propMap when it exists in $m, don't error when it's deleted
+        val (sprite, propMap) = em(ent)
+        // Only update propMap when it exists in m, don't error when it's deleted
         val propMapStream =
-          $m.changes.map(_.get(ent)).collect { case Some(x) => x._2 }
+          m.changes.map(_.get(ent)).collect { case Some(x) => x._2 }
         // deduplicate changes to the controller for entities with .distinct
         val $propMap = propMapStream.toSignal(propMap).distinct
         (ent, sprite.present(ent, propMap, $propMap, (ent, elt) => ()))

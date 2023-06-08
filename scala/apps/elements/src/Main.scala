@@ -92,8 +92,8 @@ def attributeTable(p: Part, acs: DynACSet, eltDims: Complex): SvgElement = {
 case object AttributeTable extends ElementHandle
 
 def showAttributes(p: Part): Action[DynACSet, Unit] = for {
-  $m <- ops.ask.map(_.$model)
-  m <- ops.delay($m.now())
+  m <- ops.ask.map(_.model)
+  m <- ops.delay(m.now())
   tab <- ops.delay(attributeTable(p, m, Complex(400, 300)))
   _ <- addControlElt(AttributeTable, tab)
   _ <- (for {
@@ -223,12 +223,12 @@ object Main {
     js.Dynamic.global.window.parse_payload = callback
 
     val action = for {
-      $model <- ops.ask.map(_.$model)
+      model <- ops.ask.map(_.model)
       hover <- ops.ask.map(_.hover)
       mouse <- ops.ask.map(_.mouse)
       sceneElements <- ops.ask.map(_.sceneElements)
-      _ <- addSceneElt(renderElements($model, hover, mouse, sceneElements))
-      _ <- amendElt(commandBus.events --> $model.updater(handleCommand))
+      _ <- addSceneElt(renderElements(model, hover, mouse, sceneElements))
+      _ <- amendElt(commandBus.events --> model.updater(handleCommand))
       _ <- bindings.runForever
     } yield ()
 

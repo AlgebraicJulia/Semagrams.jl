@@ -87,7 +87,7 @@ case class Actions(
   /** Remove the part `p` */
   def remove(p: Part): IO[Unit] = for
     _ <- m.updateS(remPart(p))
-    _ = es.hover.$state.set(HoverController.State(None))
+    _ = es.hover.state.set(HoverController.State(None))
   yield ()
 
   /** Remove the part currently hovered */
@@ -155,7 +155,7 @@ case class Actions(
     ret <- (es.drag.drag(Observer(p => during(memo, p))) >> after(memo))
       .onCancelOrError(IO({
         m.set(m0)
-        es.drag.$state.set(None)
+        es.drag.state.set(None)
       }).flatMap(_ => die))
     _ <- IO(m.record())
   } yield ret
@@ -180,7 +180,7 @@ case class Actions(
     def after = (offset: Complex) => IO(())
 
     // Added check to stop spurious drags
-    if es.mouse.$state.now()._2.nonEmpty
+    if es.mouse.state.now()._2.nonEmpty
     then drag(start, during, after)(pt)
     else IO(())
 
@@ -467,7 +467,7 @@ case class Actions(
       layout: (sz: Complex, acset: ACSet) => ACSet,
       esources: EditorState => Seq[EntitySource[ACSet]]
   ) = {
-    es.hover.$state.set(HoverController.State(None))
+    es.hover.state.set(HoverController.State(None))
     es.currentView.set(b)
     es.deregister(es.MainViewport)
     es.makeViewport(

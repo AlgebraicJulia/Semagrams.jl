@@ -13,7 +13,7 @@ import org.scalajs.dom
 
 class MouseController() extends Controller {
   import MouseController.State
-  val $state = Var(State())
+  val state = Var(State())
   val mouseEvents = EventBus[Event]()
 
   def svgCoords(
@@ -40,7 +40,7 @@ class MouseController() extends Controller {
     el.amend(
       onMouseLeave.map(mouseLeave(svgEl)) --> mouseEvents,
       onMouseMove.map(mouseMove(svgEl)) --> mouseEvents,
-      mouseEvents --> $state.updater[Event]((state, evt) =>
+      mouseEvents --> state.updater[Event]((state, evt) =>
         state.processEvent(evt)
       ),
       mouseEvents --> es.events,

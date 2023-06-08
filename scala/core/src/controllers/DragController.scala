@@ -19,7 +19,7 @@ import com.raquo.laminar.api.L._
 class DragController() extends Controller {
   import DragController.State
 
-  val $state = Var[Option[State]](None)
+  val state = Var[Option[State]](None)
 
   /** Processes mouse events by updating state.
     *
@@ -60,7 +60,7 @@ class DragController() extends Controller {
     */
   def drag[Model](observer: Observer[Complex]): IO[Unit] =
     IO.async_(cb => {
-      $state.set(Some(State(observer, _ => cb(Right(())))))
+      state.set(Some(State(observer, _ => cb(Right(())))))
     })
 
   /** Returns an IO action that starts a drag, and completes immediately
@@ -69,7 +69,7 @@ class DragController() extends Controller {
     *   the observer that gets updated mouse positions during the drag
     */
   def dragStart[Model](observer: Observer[Complex]): IO[Unit] =
-    IO.delay($state.set(Some(State(observer, _ => ()))))
+    IO.delay(state.set(Some(State(observer, _ => ()))))
 
   /** Hooks up the event stream from editor state to update the drags
     *
@@ -79,7 +79,7 @@ class DragController() extends Controller {
     *   the element that the binding is attached to
     */
   def apply(es: EditorState, elt: SvgElement) = elt.amend(
-    es.events --> $state.updater(processEvent)
+    es.events --> state.updater(processEvent)
   )
 }
 

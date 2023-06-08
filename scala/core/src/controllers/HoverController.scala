@@ -11,7 +11,7 @@ import com.raquo.laminar.api.L._
 class HoverController() extends Controller {
   import HoverController.State
 
-  val $state = Var(State(None))
+  val state = Var(State(None))
 
   /** Returns a list of binders that can be applied to an svg element in order
     * to make that svg element update the HoverController on mouseenter and
@@ -29,8 +29,8 @@ class HoverController() extends Controller {
     *   the Entity which should be recorded as being hovered
     */
   def hoverable(ent: Entity) = List(
-    onMouseEnter --> $state.updater((state, _) => state.hover(ent)),
-    onMouseLeave --> $state.updater((state, _) => state.leave(ent))
+    onMouseEnter --> state.updater((state, _) => state.hover(ent)),
+    onMouseLeave --> state.updater((state, _) => state.leave(ent))
   )
 
   /** Returns a [[laminar.Signal]] that either has the state `caseHovered` or
@@ -44,7 +44,7 @@ class HoverController() extends Controller {
     *   the value the signal should have when `ent` is not hovered
     */
   def switchState[A](ent: Entity, caseHovered: A, caseUnhovered: A): Signal[A] =
-    $state.signal.map(state =>
+    state.signal.map(state =>
       if state.isHovered(ent) then caseHovered else caseUnhovered
     )
 

@@ -133,7 +133,7 @@ def inputCell(labelV: String, el: Element) =
     el
   )
 
-def speciesEditor($p: Var[StratPetri], s: Part, eltDims: Complex) = {
+def speciesEditor(p: Var[StratPetri], s: Part, eltDims: Complex) = {
   import EditorParams._
 
   val pos = Complex(eltDims.x / 2, eltDims.y)
@@ -147,13 +147,13 @@ def speciesEditor($p: Var[StratPetri], s: Part, eltDims: Complex) = {
         PS.row,
         inputCell(
           "Label:",
-          makeInput("text", $p, aops.subpartLens(SName, s), Iso.id)
+          makeInput("text", p, aops.subpartLens(SName, s), Iso.id)
         ),
         inputCell(
           "Concentration:",
           makeInput(
             "text",
-            $p,
+            p,
             aops.subpartLens(Concentration, s),
             Prism(parseDouble)(_.toString)
           )
@@ -172,7 +172,7 @@ def speciesEditor($p: Var[StratPetri], s: Part, eltDims: Complex) = {
               input(
                 typ := "checkbox",
                 setChecked(
-                  $p,
+                  p,
                   aops
                     .subpartLens(StratificationWith, s)
                     .andThen(ifInLens(tt))
@@ -189,7 +189,7 @@ def speciesEditor($p: Var[StratPetri], s: Part, eltDims: Complex) = {
   )
 }
 
-def transitionEditor($p: Var[StratPetri], t: Part, eltDims: Complex) = {
+def transitionEditor(p: Var[StratPetri], t: Part, eltDims: Complex) = {
   import EditorParams._
 
   val pos = Complex(eltDims.x / 2, eltDims.y)
@@ -203,13 +203,13 @@ def transitionEditor($p: Var[StratPetri], t: Part, eltDims: Complex) = {
         PS.row,
         inputCell(
           "Label:",
-          makeInput("text", $p, aops.subpartLens(TName, t), Iso.id)
+          makeInput("text", p, aops.subpartLens(TName, t), Iso.id)
         ),
         inputCell(
           "Rate:",
           makeInput(
             "text",
-            $p,
+            p,
             aops.subpartLens(Rate, t),
             Prism(parseDouble)(_.toString)
           )
@@ -232,7 +232,7 @@ def transitionEditor($p: Var[StratPetri], t: Part, eltDims: Complex) = {
                     value := tt,
                     name := "type",
                     setChecked(
-                      $p,
+                      p,
                       aops
                         .subpartLens(TransitionType, t)
                         .andThen(setIfLens(Some(tt)))
@@ -252,9 +252,9 @@ def transitionEditor($p: Var[StratPetri], t: Part, eltDims: Complex) = {
 }
 
 def openSpeciesEditor(s: Part): Action[StratPetri, Unit] = for {
-  $p <- ops.ask.map(_.$model)
+  p <- ops.ask.map(_.model)
   eltDims <- ops.ask.map(_.dims())
-  ed <- ops.delay(speciesEditor($p, s, eltDims))
+  ed <- ops.delay(speciesEditor(p, s, eltDims))
   h <- addControlElt(ed)
   _ <- (for {
     _ <- Bindings[StratPetri, Unit](keyDown("Escape")).run
@@ -263,9 +263,9 @@ def openSpeciesEditor(s: Part): Action[StratPetri, Unit] = for {
 } yield ()
 
 def openTransitionEditor(t: Part): Action[StratPetri, Unit] = for {
-  $p <- ops.ask.map(_.$model)
+  p <- ops.ask.map(_.model)
   eltDims <- ops.ask.map(_.dims())
-  ed <- ops.delay(transitionEditor($p, t, eltDims))
+  ed <- ops.delay(transitionEditor(p, t, eltDims))
   h <- addControlElt(ed)
   bindables <- ops.ask.map(_.bindables)
   _ <- (for {
@@ -430,10 +430,10 @@ object Main {
   @JSExportTopLevel("main")
   def main(el: dom.Element): Unit = {
     val action = for {
-      $model <- ops.ask.map(_.$model)
+      model <- ops.ask.map(_.model)
       hover <- ops.ask.map(_.hover)
       mouse <- ops.ask.map(_.mouse)
-      _ <- addSceneElt(renderPetri($model, hover, mouse))
+      _ <- addSceneElt(renderPetri(model, hover, mouse))
       _ <- bindings.runForever
     } yield ()
 

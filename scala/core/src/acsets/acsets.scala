@@ -332,7 +332,7 @@ trait Schema {
         PropMap(mp.map { case (k, v) =>
           val prop = allProps
             .find(write(_) == write(k))
-            .getOrElse(throw msgError(s"bad propRW $mp"))
+            .getOrElse(throw msgError(s"bad propRW mp"))
           prop match
             case _: Hom =>
               prop -> read[Part](v)
