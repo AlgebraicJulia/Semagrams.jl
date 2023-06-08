@@ -1,0 +1,20 @@
+\documentclass[tikz]{standalone}
+\usepackage{tikz}
+\usetikzlibrary{positioning}
+\newcommand{\spacingx}{3cm}
+\newcommand{\spacingy}{2cm}
+\begin{document}
+\begin{tikzpicture}[auto]
+  \tikzset{state/.style={draw, rounded corners, inner sep=8pt, outer sep=3pt}}
+  \tikzset{external/.style={draw, inner sep=15pt, outer sep=3pt}}
+  \node[state] (model) at (-\spacingx, \spacingy) {model};
+  \node[state] (controlflow) at (-\spacingx, -\spacingy) {control flow};
+  \node[state] (application) at (\spacingx, -\spacingy) {application};
+  \node[external] (DOM) at (\spacingx, \spacingy) {\bf DOM};
+  \draw (controlflow) edge[<->] node {read/write} (model);
+  \draw (controlflow) edge[<->] node[swap, auto] {read/write} (application);
+  \draw (DOM) edge[->, dotted] node[auto] {events} (controlflow);
+  \draw (model) edge[->] node[auto] {render} (DOM);
+  \draw (DOM) edge[->, dotted] node[auto] {events} (application);
+\end{tikzpicture}
+\end{document}

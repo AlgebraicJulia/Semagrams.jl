@@ -26,3 +26,10 @@ scala/project/build.properties
 scala/.vscode/settings.json
 /scala/build/
 scala/apps/dwd/chevron/
+*.aux
+*.fdb_latexmk
+*.fls
+*.log
+*.pdf
+*.gz
+**/.auctex-auto
