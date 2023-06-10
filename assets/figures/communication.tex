@@ -11,10 +11,15 @@
   \node[state] (controlflow) at (-\spacingx, -\spacingy) {control flow};
   \node[state] (application) at (\spacingx, -\spacingy) {application};
   \node[external] (DOM) at (\spacingx, \spacingy) {\bf DOM};
+  \node[external] (user) at (9cm, \spacingy) {\bf User};
   \draw (controlflow) edge[<->] node {read/write} (model);
-  \draw (controlflow) edge[<->] node[swap, auto] {read/write} (application);
-  \draw (DOM) edge[->, dotted] node[auto] {events} (controlflow);
-  \draw (model) edge[->] node[auto] {render} (DOM);
-  \draw (DOM) edge[->, dotted] node[auto] {events} (application);
+  \draw (controlflow) edge[<->] node[swap] {read/write} (application);
+  \draw (DOM) edge[->] node {events} (controlflow);
+  \draw (model) edge[->, bend left=15] node {render} (DOM);
+  \draw (model) edge[->, bend right=15] node[swap] {set hooks} (DOM);
+  \draw (DOM) edge[->, bend left=15] node {events} (application);
+  \draw (application) edge[->, bend left=15] node {set hooks} (DOM);
+  \draw (DOM) edge[->, bend left=15] node {screen} (user);
+  \draw (user) edge[->, bend left=15] node {mouse, keyboard} (DOM);
 \end{tikzpicture}
 \end{document}

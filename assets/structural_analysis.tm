@@ -65,13 +65,52 @@
   <section|Communication>
 
   In this section, we analyze the communcation between different parts of
-  Semagrams, and between Semagrams and the browser, and ultimately the user.
+  Semagrams, between Semagrams and the browser, and ultimately between the
+  user.
 
-  <\big-figure|<image|figures/communication.pdf|256pt|148pt||>>
+  <\big-figure|<image|figures/communication.pdf||||>>
     Communication structure of Semagrams
   </big-figure>
 
+  The \Pthrone\Q of Semagrams is in the control flow, as encapsulated by the
+  <verbatim|IO> monad. This has read/write access to both application state
+  and model state, which are contained in <verbatim|Var>s. It also processes
+  events which come from the DOM through a laminar <verbatim|EventBus> that
+  feeds into a cats-effect <verbatim|Queue>. This is where any interesting
+  custom logic runs.
+
+  The model, unlike the control flow, is \Pdumb\Q in that it is simply a data
+  structure. The interesting part of the model is how it is rendered to the
+  DOM, and how it sets up hooks on the DOM to fire events. The specific data
+  structure used, and how the data structure is rendered is custom to the
+  specific Semagrams instance.
+
+  Finally, the application state, like the model, is simply a data structure,
+  or rather a collection of data structures. Unlike the model, this is not
+  custom to a specific Semagrams instance, the purpose is merely to enhance
+  the native capabilities of the DOM to book-keep some things we care about.
+
   <section|Purity>
+
+  In this section, we analyze which components of Semagrams can be
+  productively isolated from the browser, and thus tested in continuous
+  integration.
+
+  The easiest part of Semagrams to test, and indeed the only part that we
+  currently test, is the data model, i.e. acsets. Testing this simply
+  involves running various methods on an acset (which is a persistent data
+  structure, so these return new acsets) and then checking to see if the
+  desired result is produced.
+
+  What is slightly harder to test, but should be more possible, is the
+  control flow. This is because we can synthesize events at a higher level
+  than the DOM, so we can simulate clicks and keyboard actions, etc. in
+  theory without having to actually run inside a browser. Developing support
+  for this is an important step towards getting a more reliable Semagrams.
+
+  The most impure thing is the actual browser rendering. It is not really
+  possible to test for, say, rendering glitches or misfiring browser events
+  in continuous integration, so we need to have manual testing processes.
 </body>
 
 <\initial>
@@ -85,8 +124,8 @@
     <associate|auto-1|<tuple|1|1>>
     <associate|auto-2|<tuple|2|1>>
     <associate|auto-3|<tuple|3|1>>
-    <associate|auto-4|<tuple|1|1>>
-    <associate|auto-5|<tuple|4|1>>
+    <associate|auto-4|<tuple|1|2>>
+    <associate|auto-5|<tuple|4|2>>
   </collection>
 </references>
 
@@ -94,7 +133,7 @@
   <\collection>
     <\associate|figure>
       <tuple|normal|<\surround|<hidden-binding|<tuple>|1>|>
-        \;
+        Communication structure of Semagrams
       </surround>|<pageref|auto-4>>
     </associate>
     <\associate|toc>
