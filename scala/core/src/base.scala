@@ -78,3 +78,32 @@ abstract class Semagram {
     startup.unsafeRunAndForget()(unsafe.IORuntime.global)
   }
 }
+
+/**
+  * Towards an embeddable Semagrams:
+  *
+  * Parts of a Semagram:
+  * - Event queue (cats-effect queue, not Laminar)
+  * - EditorState
+  * - Model (an UndoableVar)
+  * - The actual SVG
+  *
+  * We should have a function which takes in a model, and returns:
+  * - EditorState
+  * - Event queue
+  * - SVG element
+  * - A fiber containing the event handling
+  *
+  * We might want something global playing the role of EditorState, with:
+  * - Drag handling (because drags might go across different elements!)
+  * - Keyboard events (so that losing focus isn't a problem, though then we have
+  *   to figure out what element to send keyboard events to... We could possibly
+  *   have something which manually keeps track of what Queue to route keyboard
+  *   events to)
+  */
+
+// trait Semagram {
+//   type Model
+
+//   def apply(m: Var[Model]): IO[(EditorState, Queue[IO, Event], SvgElement)]
+// }
