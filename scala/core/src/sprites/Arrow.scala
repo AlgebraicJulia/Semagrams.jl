@@ -42,7 +42,7 @@ case class Arrow(props: PropMap) extends Sprite {
       ent: Entity,
       init: ACSet,
       updates: L.Signal[ACSet],
-      attachHandlers: HandlerAttacher
+      eventWriter: L.Observer[Event]
   ): L.SvgElement = {
     val data = updates.map(props ++ _.props)
     val $p = updates.map(props ++ _.props)
@@ -64,7 +64,6 @@ case class Arrow(props: PropMap) extends Sprite {
         if p(Interactable) then "auto" else "none"
       )
     )
-    attachHandlers(ent, handle)
     g(arrow, handle)
   }
 

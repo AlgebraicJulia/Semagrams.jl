@@ -44,7 +44,7 @@ case class Disc(val props: PropMap) extends Sprite {
       ent: Entity,
       init: ACSet,
       updates: L.Signal[ACSet],
-      attachHandlers: HandlerAttacher
+      eventWriter: L.Observer[Event]
   ): L.SvgElement = {
     val data = updates.map(props ++ _.props)
     val box = circle(
@@ -69,15 +69,12 @@ case class Disc(val props: PropMap) extends Sprite {
       Rect.geomUpdater(data)
     )
 
-    val root = g(
+    g(
       box,
       bg,
-      text
+      text,
+      MouseEvents.handlers(ent, eventWriter),
     )
-
-    attachHandlers(ent, root)
-
-    root
   }
 
   override def boundaryPt(subent: Entity, orig: ACSet, dir: Complex) = {

@@ -67,7 +67,7 @@ trait Sprite {
       ent: Entity,
       init: ACSet,
       updates: Signal[ACSet],
-      attachHandlers: HandlerAttacher
+      eventWriter: Observer[Event]
   ): SvgElement
 
   /** Compute a point on the geometrical boundary of the sprite

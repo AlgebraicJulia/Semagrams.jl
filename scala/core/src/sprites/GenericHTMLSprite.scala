@@ -24,7 +24,7 @@ case class GenericHTMLSprite(
       ent: Entity,
       init: ACSet,
       updates: Signal[ACSet],
-      attachHandlers: HandlerAttacher
+      eventWriter: Observer[Event]
   ): SvgElement = {
     val elt = build()
     elt.amend(

@@ -73,9 +73,9 @@ case class DPBox(
       ent: Entity,
       init: ACSet,
       updates: L.Signal[ACSet],
-      attachHandlers: HandlerAttacher
+      eventWriter: L.Observer[Event]
   ): L.SvgElement = {
-    val rect = boxSprite.present(ent, init, updates, attachHandlers)
+    val rect = boxSprite.present(ent, init, updates, eventWriter)
 
     val laid_out = updates
       .map(acset => computePortCenters(acset))
@@ -88,7 +88,7 @@ case class DPBox(
           ent.asInstanceOf[Part].extendPart(p),
           d._2,
           $d.map(_._2),
-          attachHandlers
+          eventWriter
         )
       })
 
@@ -99,7 +99,7 @@ case class DPBox(
           ent.asInstanceOf[Part].extendPart(p),
           d._2,
           $d.map(_._2),
-          attachHandlers
+          eventWriter
         )
       })
 

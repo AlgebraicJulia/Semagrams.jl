@@ -13,7 +13,7 @@ case class WireStub(defaults: PropMap, dir: Complex) extends Sprite {
       ent: Entity,
       init: ACSet,
       updates: L.Signal[ACSet],
-      attachHandlers: HandlerAttacher
+      eventWriter: L.Observer[Event]
   ): L.SvgElement = {
     val data = updates.map(defaults ++ _.props)
     val stub = line(
@@ -32,7 +32,6 @@ case class WireStub(defaults: PropMap, dir: Complex) extends Sprite {
       fill := "white",
       opacity := "0"
     )
-    attachHandlers(ent, handle)
     g(stub, handle)
   }
 

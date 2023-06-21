@@ -82,7 +82,7 @@ case class Wire() extends Sprite {
       ent: Entity,
       init: ACSet,
       updates: L.Signal[ACSet],
-      attachHandlers: HandlerAttacher
+      eventWriter: L.Observer[Event]
   ): L.SvgElement = {
 
     val data = updates.map(init.props ++ _.props)
@@ -159,8 +159,6 @@ case class Wire() extends Sprite {
       )
     )
 
-    attachHandlers(ent, handle)
-    attachHandlers(ent, text)
     g(wire, handle, text)
   }
 

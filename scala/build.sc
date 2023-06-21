@@ -66,18 +66,22 @@ trait SemagramsApp extends Defaults {
 
 object apps extends Module {
 
-  object simplepetri extends SemagramsApp {
-    def desc = "simple petri editor"
+  // object simplepetri extends SemagramsApp {
+  //   def desc = "simple petri editor"
 
-    def artifactName = "semagrams-simplepetri"
+  //   def artifactName = "semagrams-simplepetri"
+  // }
+
+  // object dwd extends SemagramsApp {
+  //   def desc = "A string diagram editor"
+
+  //   def artifactName = "semagrams-dwd"
+  // }
+
+  object graph extends SemagramsApp {
+    def desc = "graph editor"
+
+    def artifactName = "semagrams-graph"
   }
-  
-  object dwd extends SemagramsApp {
-    def desc = "A string diagram editor"
-
-    def artifactName = "semagrams-dwd"
-  }
-
-
 
 }

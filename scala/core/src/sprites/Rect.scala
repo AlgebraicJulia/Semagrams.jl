@@ -20,7 +20,7 @@ case class Rect(val props: PropMap) extends Sprite {
       ent: Entity,
       init: ACSet,
       updates: L.Signal[ACSet],
-      attachHandlers: HandlerAttacher
+      eventWriter: L.Observer[Event]
   ): L.SvgElement = {
     val data = updates.map(props ++ _.props)
 
@@ -59,10 +59,10 @@ case class Rect(val props: PropMap) extends Sprite {
 
     val root = g(
       box,
-      text
+      text,
+      MouseEvents.hoverHandlers(ent, eventWriter),
+      MouseEvents.clickHandlers(ent, eventWriter),
     )
-
-    attachHandlers(ent, root)
 
     root
   }

@@ -10,9 +10,8 @@ package object api {
   import semagrams.widgets
 
   export semagrams.{
-    Actions,
-    EditorState,
     Event,
+    EntityCollector,
     Semagram,
     Sprite,
     MouseButton,
@@ -23,48 +22,22 @@ package object api {
     BoundingBox,
     EntityType,
     Entity,
-    keyDown,
-    clickOn,
-    clickOnPart,
-    dblClickOn,
-    dblClickOnPart,
-    menuOnPart,
     PValue,
-    Viewport
   }
   export semagrams.GenericProperty._
-  export controllers.{
-    DragController,
-    HoverController,
-    MouseController,
-    KeyboardController
-  }
   export layout.{assignBends, FixedRangeExceptEnds}
   export sprites.{
     Arrow,
     Disc,
     Rect,
     WireStub,
-    WithMiddleware,
-    Hoverable,
-    Clickable,
     ACSetEntitySource,
     ACSetEdgeSource,
-    BasicDisc,
-    BasicRect,
-    BasicArrow,
-    BasicWire,
-    BasicWireStub,
-    BasicDPBox,
-    BasicWrapper,
     WireProp,
     findCenter,
     wireProps,
     DPBox,
-    AltDPBox,
-    BasicPort
   }
-  export ui.{UIState}
   export util.{
     Complex,
     UndoableVar,
