@@ -10,8 +10,15 @@ package object api {
   import semagrams.widgets
 
   export semagrams.{
+    EditorState,
     Event,
     EntityCollector,
+    Binding,
+    Action,
+    EventHook,
+    KeyboardHook,
+    ClickOnEntityHook,
+    GlobalState,
     Semagram,
     Sprite,
     MouseButton,
