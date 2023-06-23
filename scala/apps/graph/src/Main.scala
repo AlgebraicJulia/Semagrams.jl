@@ -15,7 +15,8 @@ import org.scalajs.dom
 import scala.scalajs.js.annotation._
 import scala.scalajs.js
 import com.raquo.laminar.defs.eventProps.EventProps
-import semagrams.AddPartAction
+import com.raquo.laminar.codecs.StringAsIsCodec
+import org.scalajs.dom.SVGSVGElement
 
 // case class LabelFor(e: Entity) extends Entity
 
@@ -81,7 +82,22 @@ object Main {
       val display = GraphDisplay(graphSig, eventBus.writer).amend(
         svg.height := "100%",
         svg.width := "100%",
-        svg.style := "border: black; border-style: solid; background-color: white; box-sizing: border-box"
+        svg.style := "border: black; border-style: solid; background-color: white; box-sizing: border-box",
+        svg.svgAttr("tabindex", StringAsIsCodec, None) := "-1",
+        onKeyDown.filter(ev => !ev.repeat).map(ev => Event.KeyDown(ev.key)) --> eventBus.writer,
+      )
+
+      def svgCoords(ev: dom.MouseEvent): Complex = {
+        val el = display.ref.asInstanceOf[SVGSVGElement]
+        val pt = el.createSVGPoint()
+        pt.x = ev.clientX
+        pt.y = ev.clientY
+        val svgP = pt.matrixTransform(el.getScreenCTM().inverse())
+        Complex(svgP.x, svgP.y)
+      }
+
+      display.amend(
+        onMouseMove.map(evt => Event.MouseMove(svgCoords(evt))) --> eventBus.writer
       )
 
       GlobalState.listen(eventBus.writer)
@@ -100,26 +116,69 @@ object Main {
         }
       } yield ()
 
-      graphVar.update(_.addPart(V, PropMap() + (Center -> Complex(100, 100)))._1)
-
       main.unsafeRunAndForget()(unsafe.IORuntime.global)
     }
 
-    val bindings = Seq[Binding[Unit]](
-      new Binding[Unit] {
-        type EventData = Unit
-        val hook = KeyboardHook("a")
-        val action = AddPartAction(V)
-      }
+    def createBindings(eq: Queue[IO, Event], graphVar: Var[ACSet], stateVar: Var[EditorState]) = Seq[Binding[Unit]](
+      Binding(
+        KeyDownHook("a"),
+        Action(
+          _ => IO(
+            {
+              val pos = stateVar.now().mousePos
+              graphVar.update(_.addPart(V, PropMap() + (Center -> pos))._1)
+            }
+          ),
+          "add a new vertex"
+        )
+      ),
+      Binding(
+        KeyDownHook("d"),
+        Action(
+          _ => IO(
+            stateVar.now().hovered.map(
+              _ match {
+                case (i: Part) => {
+                  stateVar.update(_.copy(hovered = None))
+                  graphVar.update(_.remPart(i))
+                }
+                case _ => ()
+              }).getOrElse(())
+          ),
+          "remove hovered vertex"
+        )
+      ),
+      Binding(
+        ClickOnEntityHook(MouseButton.Left),
+        Action(
+          ent => dragPart(ent.asInstanceOf[Part], eq, graphVar),
+          "drag part"
+        )
+      )
     )
 
-    def mainLoop(eq: Queue[IO, Event], graphVar: Var[ACSet], stateVar: Var[EditorState]): IO[Unit] =
+    def dragPart(i: Part, eq: Queue[IO, Event], graphVar: Var[ACSet]): IO[Unit] = for {
+      evt <- eq.take
+      _ <- evt match {
+        case Event.MouseMove(p) => for {
+          _ <- IO(graphVar.update(_.setSubpart(i, Center, p)))
+          _ <- dragPart(i, eq, graphVar)
+        } yield ()
+        case Event.MouseUp(_, _) => IO(())
+        case _ => dragPart(i, eq, graphVar)
+      }
+    } yield ()
+
+    def mainLoop(eq: Queue[IO, Event], graphVar: Var[ACSet], stateVar: Var[EditorState]): IO[Unit] = {
+      val bindings = createBindings(eq, graphVar, stateVar)
       Monad[IO].whileM_(IO(true)) {
         for {
           evt <- eq.take
           _ <- IO(stateVar.update(_.processEvent(evt)))
+          _ <- Binding.process(evt, bindings)
         } yield ()
       }
+    }
   }
 
   // @JSExportTopLevel("GraphApp")

@@ -16,7 +16,7 @@ package object api {
     Binding,
     Action,
     EventHook,
-    KeyboardHook,
+    KeyDownHook,
     ClickOnEntityHook,
     GlobalState,
     Semagram,
