@@ -56,6 +56,15 @@ object GraphDisplay extends Semagram {
   }
 }
 
+/** These are common resources used by most actions
+  */
+case class Resources(
+  eventQueue: Queue[IO, Event],
+  modelVar: UndoableVar[ACSet],
+  stateVar: Var[EditorState],
+  globalStateVar: Var[GlobalState]
+)
+
 object Main {
   // TODO:
   //
