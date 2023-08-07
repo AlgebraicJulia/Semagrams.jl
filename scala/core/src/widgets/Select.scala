@@ -1,7 +1,6 @@
 package semagrams.widgets
 
 import com.raquo.laminar.api.L._
-import semagrams.util._
 
 /** Returns a menu where choices are associated with values passed back,
   * typically via [[UIState.dialogue]]

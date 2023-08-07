@@ -1,6 +1,6 @@
 package semagrams
 
-/** In this package, we define nested ACSets.
+/** The core data structures for semagrams.
   *
   * In a nested acset, each element of an acset has an associated acset, which
   * we call a subacset. The schema for a nested acset has an acset schema

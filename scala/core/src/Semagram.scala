@@ -40,7 +40,9 @@ trait Semagram {
     *
     * Contract: a given entity should only ever be associated with a single
     * sprite. If you emit the same entity with a different sprite, it will not
-    * change to a different sprite.
+    * change to a different sprite. However, entities can be associated with
+    * multiple ACSets; this will automatically update the sprite associated with
+    * the entity.
     */
   def produceSprites(m: Model, eventWriter: Observer[Event]): Seq[(Entity, ACSet, Sprite)]
 

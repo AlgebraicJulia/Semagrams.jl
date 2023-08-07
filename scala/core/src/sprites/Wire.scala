@@ -1,6 +1,6 @@
 package semagrams.sprites
 
-import com.raquo.laminar.api.L.svg.{!= as neq, text as Ltext, _}
+import com.raquo.laminar.api.L.svg._
 import com.raquo.laminar.api._
 import semagrams.util._
 import semagrams._
@@ -8,7 +8,6 @@ import semagrams.acsets._
 
 import semagrams.util.Complex.{im}
 
-import Math.{log, E}
 import upickle.default.ReadWriter
 
 enum WireProp[T: ReadWriter] extends Property {
@@ -114,8 +113,6 @@ case class Wire() extends Sprite {
     def fontsize(p: PropMap): Double = p.get(FontSize).getOrElse(16.0)
     def pstroke(p: PropMap) = p.get(Stroke).getOrElse("black")
 
-    def labelNode(label: String) = L.svg.text(
-    )
 
     val text = L.svg.text(
       xy <-- data.map(labelPos),

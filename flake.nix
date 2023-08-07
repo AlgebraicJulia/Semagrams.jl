@@ -17,11 +17,11 @@
           nativeBuildInputs = with pkgs; [
             nodejs
             openjdk
-            metals
+            coursier
             bloop
             mill
           ];
-          shellHook = "export PATH=$PWD/node_modules/.bin:$PATH";
+          shellHook = "export PATH=$PWD/node_modules/.bin:$HOME/.local/share/coursier/bin:$PATH";
         };
       });
 }

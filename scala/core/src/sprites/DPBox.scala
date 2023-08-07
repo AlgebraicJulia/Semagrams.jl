@@ -5,7 +5,6 @@ import com.raquo.laminar.api._
 import semagrams.util._
 import semagrams._
 import semagrams.acsets._
-import semagrams.layout._
 
 extension [A](s: L.Signal[Seq[A]]) {
   def splitWithIndexAndLength[B, C](

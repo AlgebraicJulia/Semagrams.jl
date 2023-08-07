@@ -1,11 +1,6 @@
 package semagrams
 
 import com.raquo.laminar.api.L._
-import cats.effect._
-import cats.effect.std._
-import org.scalajs.dom
-import scala.scalajs.js.annotation._
-import scala.scalajs.js
 import com.raquo.laminar.codecs.StringAsIsCodec
 
 /** This creates the svg element that will all of the Semagrams activity

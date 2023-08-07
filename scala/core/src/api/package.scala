@@ -1,23 +1,11 @@
 package semagrams
 
-/** This contains all of the functions that we export to apps */
+/** The external API for Semagram exposed to apps */
 package object api {
-  import semagrams.controllers
-  import semagrams.layout
-  import semagrams.sprites
-  import semagrams.ui
-  import semagrams.util
-  import semagrams.widgets
-
   export semagrams.{
     EditorState,
     Event,
     EntityCollector,
-    Binding,
-    Action,
-    EventHook,
-    KeyDownHook,
-    ClickOnEntityHook,
     GlobalState,
     Semagram,
     Sprite,

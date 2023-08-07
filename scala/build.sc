@@ -17,11 +17,11 @@ def defaultPomSettings(desc: String) = PomSettings(
 )
 
 trait Defaults extends ScalaJSModule with PublishModule with ScalafmtModule {
-  def scalaVersion = "3.2.2"
+  def scalaVersion = "3.3.0"
   def scalaJSVersion = "1.13.1"
   def ammoniteVersion = "3.0.0-M0"
 
-  def scalacOptions = Seq("-deprecation", "-feature")
+  def scalacOptions = Seq("-deprecation", "-feature", "-Wunused:all")
 
   def moduleKind = T { ModuleKind.ESModule }
 

@@ -1,4 +1,4 @@
-package util
+package semagrams.util
 
 import com.raquo.laminar.api.L
 

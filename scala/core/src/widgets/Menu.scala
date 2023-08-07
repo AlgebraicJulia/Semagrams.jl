@@ -1,7 +1,6 @@
 package semagrams.widgets
 
 import com.raquo.laminar.api.L._
-import semagrams.util._
 import cats.effect.IO
 import semagrams.acsets.Part
 
