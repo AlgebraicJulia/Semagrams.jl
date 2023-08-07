@@ -69,20 +69,25 @@ case class DeleteHovered() extends Action[Unit, ACSet] {
   def description = "remove hovered part"
 }
 
-case class MoveViaDrag() extends Action[Entity, ACSet] {
-  def apply(p: Entity, r: Action.Resources[ACSet]): IO[Unit] = for {
-    evt <- r.eventQueue.take
-    _ <- evt match {
-      case Event.MouseMove(pos) =>
-        for {
-          _ <- IO(
-            r.modelVar.update(_.setSubpart(p.asInstanceOf[Part], Center, pos))
-          )
-          _ <- apply(p, r)
-        } yield ()
-      case Event.MouseUp(_, _) => IO(())
-      case _                   => apply(p, r)
-    }
+def takeUntil[A,B](eventQueue: Queue[IO, A])(f: A => IO[Option[B]]): IO[B] = for {
+  a <- eventQueue.take
+  mb <- f(a)
+  b <- mb match {
+    case Some(b) => IO(b)
+    case None => takeUntil[A,B](eventQueue)(f)
+  }
+} yield b
+
+case class MoveViaDrag() extends Action[Part, ACSet] {
+  def apply(p: Part, r: Action.Resources[ACSet]): IO[Unit] = for {
+    offset <- IO(r.stateVar.now().mousePos - r.modelVar.now().subpart(Center, p))
+    _ <- takeUntil(r.eventQueue)(
+      evt => evt match {
+        case Event.MouseMove(pos) =>
+          IO(r.modelVar.update(_.setSubpart(p, Center, pos - offset))) *> IO(None)
+        case Event.MouseUp(_, _) => IO(Some(()))
+        case _                   => IO(None)
+      })
   } yield ()
 
   def description = "move part by dragging"

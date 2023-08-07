@@ -3,6 +3,7 @@ package semagrams.graph
 import semagrams.api._
 import semagrams.acsets._
 import semagrams.bindings._
+import semagrams.listeners._
 import Graphs._
 
 import upickle.default._
@@ -38,7 +39,7 @@ object GraphDisplay extends Semagram {
 val bindings = Seq[Binding[ACSet]](
   Binding(KeyDownHook("a"), AddAtMouse(V)),
   Binding(KeyDownHook("d"), DeleteHovered()),
-  Binding(ClickOnEntityHook(MouseButton.Left), MoveViaDrag())
+  Binding(ClickOnPartHook(MouseButton.Left), MoveViaDrag())
 )
 
 object Main {
@@ -50,34 +51,12 @@ object Main {
       val stateVar = Var(EditorState(None, Complex(0,0)))
       val globalStateVar = Var(GlobalState(Set()))
       val eventBus = EventBus[Event]()
-      val graphSig = graphVar.signal.combineWith(stateVar.signal).map(
-        (graph, state) => {
-          state.hovered match {
-            case Some(ent: Part) => graph.setSubpart(ent, Hovered, ())
-            case _ => graph
-          }
-        }
-      )
+      val graphSig = EditorState.modifyACSet(graphVar.signal, stateVar.signal)
 
       val display = GraphDisplay(graphSig, eventBus.writer).amend(
         svg.height := "100%",
         svg.width := "100%",
         svg.style := "border: black; border-style: solid; background-color: white; box-sizing: border-box",
-        svg.svgAttr("tabindex", StringAsIsCodec, None) := "-1",
-        onKeyDown.filter(ev => !ev.repeat).map(ev => Event.KeyDown(ev.key)) --> eventBus.writer,
-      )
-
-      def svgCoords(ev: dom.MouseEvent): Complex = {
-        val el = display.ref.asInstanceOf[SVGSVGElement]
-        val pt = el.createSVGPoint()
-        pt.x = ev.clientX
-        pt.y = ev.clientY
-        val svgP = pt.matrixTransform(el.getScreenCTM().inverse())
-        Complex(svgP.x, svgP.y)
-      }
-
-      display.amend(
-        onMouseMove.map(evt => Event.MouseMove(svgCoords(evt))) --> eventBus.writer
       )
 
       GlobalState.listen(eventBus.writer)
@@ -92,21 +71,11 @@ object Main {
               dispatcher.unsafeRunAndForget(eventQueue.offer(evt))
             )
           )
-          mainLoop(Action.Resources(graphVar, stateVar, globalStateVar, eventQueue))
+          Binding.processAll(Action.Resources(graphVar, stateVar, globalStateVar, eventQueue), bindings)
         }
       } yield ()
 
       main.unsafeRunAndForget()(unsafe.IORuntime.global)
-    }
-
-    def mainLoop(r: Action.Resources[ACSet]): IO[Unit] = {
-      Monad[IO].whileM_(IO(true)) {
-        for {
-          evt <- r.eventQueue.take
-          _ <- IO(r.stateVar.update(_.processEvent(evt)))
-          _ <- Binding.process(evt, r, bindings)
-        } yield ()
-      }
     }
   }
 }

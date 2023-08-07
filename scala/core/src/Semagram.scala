@@ -4,6 +4,7 @@ import com.raquo.laminar.api.L._
 import com.raquo.laminar.codecs.StringAsIsCodec
 
 import semagrams.acsets._
+import semagrams.listeners._
 
 trait Semagram {
   type Model
@@ -58,7 +59,8 @@ trait Semagram {
         .split(_._1)((ent, init, updates) => {
           val (_, initAcset, sprite) = init
           sprite.present(ent, initAcset, updates.map(_._2), eventWriter)
-        })
+        }),
+      mouseMoveListener(eventWriter)
     )
   }
 }

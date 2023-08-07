@@ -1,6 +1,7 @@
 package semagrams.bindings
 
 import semagrams._
+import semagrams.acsets._
 
 /** A trait for filters on the event stream, picking out events that are
   * relevant to a particular [[Action]] and extracting data of type `A` from
@@ -32,14 +33,14 @@ case class KeyDownHook(key: String) extends EventHook[Unit] {
   def description = key
 }
 
-/** An [[EventHook]] for click events on entities.
+/** An [[EventHook]] for click events on parts.
   *
   * @param button
   *   the mouse button that we are listening for
   */
-case class ClickOnEntityHook(button: MouseButton) extends EventHook[Entity] {
+case class ClickOnPartHook(button: MouseButton) extends EventHook[Part] {
   def apply(evt: Event) = evt match {
-    case MouseDown(Some(ent), `button`) => Some(ent)
+    case MouseDown(Some(ent: Part), `button`) => Some(ent)
     case _                              => None
   }
 
