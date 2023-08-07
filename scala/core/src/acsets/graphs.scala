@@ -14,8 +14,8 @@ object Graphs {
   }
 
   case object SchGraph extends Schema {
-    val obs = Seq(V,E)
-    val homs = Seq(Src,Tgt)
+    val obs = Seq(V, E)
+    val homs = Seq(Src, Tgt)
     val attrs = Seq()
   }
 

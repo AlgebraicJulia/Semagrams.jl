@@ -34,13 +34,16 @@ object EntityCollection {
 }
 
 object EntityCollector {
-  def collect[A](a: A, sources: Seq[EntitySource[A]]): Seq[(Entity, ACSet, Sprite)] = {
-    val collection = sources.foldLeft(EntityCollection())((ec, source) => ec.addSource(a, source))
-    collection.ordering.map(
-      ent => {
-        val (sprite, acset) = collection.em(ent)
-        (ent, acset, sprite)
-      }
+  def collect[A](
+      a: A,
+      sources: Seq[EntitySource[A]]
+  ): Seq[(Entity, ACSet, Sprite)] = {
+    val collection = sources.foldLeft(EntityCollection())((ec, source) =>
+      ec.addSource(a, source)
     )
+    collection.ordering.map(ent => {
+      val (sprite, acset) = collection.em(ent)
+      (ent, acset, sprite)
+    })
   }
 }

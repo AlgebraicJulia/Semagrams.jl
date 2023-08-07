@@ -44,18 +44,21 @@ trait Semagram {
     * multiple ACSets; this will automatically update the sprite associated with
     * the entity.
     */
-  def produceSprites(m: Model, eventWriter: Observer[Event]): Seq[(Entity, ACSet, Sprite)]
+  def produceSprites(
+      m: Model,
+      eventWriter: Observer[Event]
+  ): Seq[(Entity, ACSet, Sprite)]
 
   /** Creates the svg element ready to be inserted into a larger app. */
   def apply(mSig: Signal[Model], eventWriter: Observer[Event]): SvgElement = {
     svg.svg(
       svg.svgAttr("tabindex", StringAsIsCodec, None) := "-1",
-      children <-- mSig.map(produceSprites(_, eventWriter)).split(_._1)(
-        (ent, init, updates) => {
+      children <-- mSig
+        .map(produceSprites(_, eventWriter))
+        .split(_._1)((ent, init, updates) => {
           val (_, initAcset, sprite) = init
           sprite.present(ent, initAcset, updates.map(_._2), eventWriter)
-        }
-      )
+        })
     )
   }
 }

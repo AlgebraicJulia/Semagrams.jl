@@ -61,7 +61,7 @@ case class Rect(val props: PropMap) extends Sprite {
       box,
       text,
       MouseEvents.hoverHandlers(ent, eventWriter),
-      MouseEvents.clickHandlers(ent, eventWriter),
+      MouseEvents.clickHandlers(ent, eventWriter)
     )
 
     root

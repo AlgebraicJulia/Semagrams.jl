@@ -17,7 +17,7 @@ package object api {
     BoundingBox,
     EntityType,
     Entity,
-    PValue,
+    PValue
   }
   export semagrams.GenericProperty._
   export layout.{assignBends, FixedRangeExceptEnds}
@@ -31,7 +31,7 @@ package object api {
     WireProp,
     findCenter,
     wireProps,
-    DPBox,
+    DPBox
   }
   export util.{
     Complex,

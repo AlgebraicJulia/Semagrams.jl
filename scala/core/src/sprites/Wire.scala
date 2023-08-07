@@ -113,7 +113,6 @@ case class Wire() extends Sprite {
     def fontsize(p: PropMap): Double = p.get(FontSize).getOrElse(16.0)
     def pstroke(p: PropMap) = p.get(Stroke).getOrElse("black")
 
-
     val text = L.svg.text(
       xy <-- data.map(labelPos),
       L.children <-- data.map { p =>

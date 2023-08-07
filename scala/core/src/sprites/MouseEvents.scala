@@ -4,13 +4,19 @@ import semagrams._
 import com.raquo.laminar.api.L._
 
 object MouseEvents {
-  def hoverHandlers(ent: Entity, eventWriter: Observer[Event]): Seq[Mod[SvgElement]] =
+  def hoverHandlers(
+      ent: Entity,
+      eventWriter: Observer[Event]
+  ): Seq[Mod[SvgElement]] =
     Seq(
       onMouseEnter.mapTo(MouseEnter(ent)) --> eventWriter,
       onMouseLeave.mapTo(MouseLeave(ent)) --> eventWriter
     )
 
-  def clickHandlers(ent: Entity, eventWriter: Observer[Event]): Seq[Mod[SvgElement]] =
+  def clickHandlers(
+      ent: Entity,
+      eventWriter: Observer[Event]
+  ): Seq[Mod[SvgElement]] =
     Seq(
       onContextMenu.stopPropagation.preventDefault.map(evt =>
         ContextMenu(Some(ent))
@@ -26,7 +32,10 @@ object MouseEvents {
       ) --> eventWriter
     )
 
-  def handlers(ent: Entity, eventWriter: Observer[Event]): Seq[Mod[SvgElement]] =
+  def handlers(
+      ent: Entity,
+      eventWriter: Observer[Event]
+  ): Seq[Mod[SvgElement]] =
     Seq(
       hoverHandlers(ent, eventWriter),
       clickHandlers(ent, eventWriter)

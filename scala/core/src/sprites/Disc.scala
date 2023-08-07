@@ -73,7 +73,7 @@ case class Disc(val props: PropMap) extends Sprite {
       box,
       bg,
       text,
-      MouseEvents.handlers(ent, eventWriter),
+      MouseEvents.handlers(ent, eventWriter)
     )
   }
 
