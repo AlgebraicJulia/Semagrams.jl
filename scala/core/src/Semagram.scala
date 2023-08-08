@@ -36,6 +36,10 @@ trait Semagram {
     */
   def layout(m: Model): Model
 
+  /** Extractors for the various entities in the Semagram
+    */
+  val entitySources: Seq[EntitySource[Model]]
+
   /** Produces a list of sprites to be rendered.
     *
     * This is a pure function, so it can be tested.
@@ -49,7 +53,7 @@ trait Semagram {
   def produceSprites(
       m: Model,
       eventWriter: Observer[Event]
-  ): Seq[(Entity, ACSet, Sprite)]
+  ): Seq[(Entity, ACSet, Sprite)] = EntityCollector.collect(m, entitySources)
 
   /** Creates the svg element ready to be inserted into a larger app. */
   def apply(mSig: Signal[Model], eventWriter: Observer[Event]): SvgElement = {

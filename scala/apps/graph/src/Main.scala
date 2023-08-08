@@ -25,15 +25,10 @@ object GraphDisplay extends Semagram {
 
   def layout(g: ACSet) = assignBends(Map(E -> (Src, Tgt)), 0.5)(g)
 
-  def produceSprites(g: ACSet, eventWriter: Observer[Event]) = {
-    EntityCollector.collect(
-      g,
-      Seq(
-        ACSetEntitySource(V, Disc()),
-        ACSetEdgeSource(E, Src, Tgt, Arrow()),
-      )
-    )
-  }
+  val entitySources = Seq(
+    ACSetEntitySource(V, Disc()),
+    ACSetEdgeSource(E, Src, Tgt, Arrow()),
+  )
 }
 
 val bindings = Seq[Binding[ACSet]](
