@@ -23,7 +23,7 @@ import org.scalajs.dom.SVGSVGElement
 object GraphDisplay extends Semagram {
   type Model = ACSet
 
-  def layout(g: ACSet) = g
+  def layout(g: ACSet) = assignBends(Map(E -> (Src, Tgt)), 0.5)(g)
 
   def produceSprites(g: ACSet, eventWriter: Observer[Event]) = {
     EntityCollector.collect(

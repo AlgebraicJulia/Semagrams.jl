@@ -57,6 +57,7 @@ trait Semagram {
       svgDefs(),
       svg.svgAttr("tabindex", StringAsIsCodec, None) := "-1",
       children <-- mSig
+        .map(layout)
         .map(produceSprites(_, eventWriter))
         .split(_._1)((ent, init, updates) => {
           val (_, initAcset, sprite) = init
