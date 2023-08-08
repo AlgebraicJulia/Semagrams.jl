@@ -39,7 +39,8 @@ object GraphDisplay extends Semagram {
 val bindings = Seq[Binding[ACSet]](
   Binding(KeyDownHook("a"), AddAtMouse(V)),
   Binding(KeyDownHook("d"), DeleteHovered()),
-  Binding(ClickOnPartHook(MouseButton.Left), MoveViaDrag())
+  Binding(ClickOnPartHook(MouseButton.Left, Set(KeyModifier.Shift)), AddEdgeViaDrag(E, Src, Tgt)),
+  Binding(ClickOnPartHook(MouseButton.Left), MoveViaDrag()),
 )
 
 object Main {

@@ -11,7 +11,7 @@ trait EventHook[A] {
 
   /** Determine whether or not this is triggered, and if it is triggered
     */
-  def apply(evt: Event): Option[A]
+  def apply(evt: Event, globalState: GlobalState): Option[A]
 
   /** A brief description of what conditions trigger the eventhook, for use in
     * auto-generated help messages.
@@ -25,7 +25,7 @@ trait EventHook[A] {
   *   the key that we are listening for
   */
 case class KeyDownHook(key: String) extends EventHook[Unit] {
-  def apply(evt: Event) = evt match {
+  def apply(evt: Event, _globalState: GlobalState) = evt match {
     case KeyDown(`key`) => Some(())
     case _              => None
   }
@@ -38,11 +38,17 @@ case class KeyDownHook(key: String) extends EventHook[Unit] {
   * @param button
   *   the mouse button that we are listening for
   */
-case class ClickOnPartHook(button: MouseButton) extends EventHook[Part] {
-  def apply(evt: Event) = evt match {
-    case MouseDown(Some(ent: Part), `button`) => Some(ent)
-    case _                              => None
+case class ClickOnPartHook(button: MouseButton, modifiers: Set[KeyModifier])
+    extends EventHook[Part] {
+  def apply(evt: Event, globalState: GlobalState) = evt match {
+    case MouseDown(Some(ent: Part), `button`) if modifiers == globalState.modifiers =>
+      Some(ent)
+    case _                                    => None
   }
 
-  def description = s"$button down"
+  def description = s"$button down on part"
+}
+
+object ClickOnPartHook {
+  def apply(button: MouseButton): ClickOnPartHook = ClickOnPartHook(button, Set())
 }

@@ -38,18 +38,20 @@ object Binding {
       evt: Event,
       r: Action.Resources[Model],
       bindings: Seq[Binding[Model]]
-  ): IO[Unit] =
-    bindings
+  ): IO[Unit] = for {
+    globalState <- IO(r.globalStateVar.now())
+    _ <- bindings
       .collectFirst(
-        ((b: Binding[Model]) => b.hook(evt).map(b.action(_, r))).unlift
+        ((b: Binding[Model]) => b.hook(evt, globalState).map(b.action(_, r))).unlift
       )
       .getOrElse(IO(()))
+  } yield ()
 
   def processAll[Model](r: Action.Resources[Model], bindings: Seq[Binding[Model]]): IO[Unit] = {
     Monad[IO].whileM_(IO(true)) {
       for {
         evt <- r.eventQueue.take
-        _ <- IO(r.stateVar.update(_.processEvent(evt)))
+        _ <- r.processEvent(evt)
         _ <- Binding.process(evt, r, bindings)
       } yield ()
     }

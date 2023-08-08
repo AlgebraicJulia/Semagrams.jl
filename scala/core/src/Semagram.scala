@@ -5,6 +5,7 @@ import com.raquo.laminar.codecs.StringAsIsCodec
 
 import semagrams.acsets._
 import semagrams.listeners._
+import semagrams.sprites._
 
 trait Semagram {
   type Model
@@ -60,7 +61,8 @@ trait Semagram {
           val (_, initAcset, sprite) = init
           sprite.present(ent, initAcset, updates.map(_._2), eventWriter)
         }),
-      mouseMoveListener(eventWriter)
+      mouseMoveListener(eventWriter),
+      MouseEvents.clickHandlers(Background(), eventWriter)
     )
   }
 }

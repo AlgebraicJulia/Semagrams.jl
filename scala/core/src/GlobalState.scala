@@ -5,7 +5,19 @@ import org.scalajs.dom
 
 case class GlobalState(
     modifiers: Set[KeyModifier]
-)
+) {
+  def processEvent(evt: Event) = evt match {
+    case Event.KeyDown(key) => KeyModifier.fromString.get(key) match {
+      case Some(mod) => GlobalState(modifiers + mod)
+      case None => this
+    }
+    case Event.KeyUp(key) => KeyModifier.fromString.get(key) match {
+      case Some(mod) => GlobalState(modifiers - mod)
+      case None => this
+    }
+    case _ => this
+  }
+}
 
 object GlobalState {
   def listen(into: Observer[Event]) = {

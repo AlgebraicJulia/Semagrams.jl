@@ -4,6 +4,8 @@ import semagrams._
 import semagrams.util._
 import semagrams.acsets._
 import com.raquo.laminar.api.L._
+import cats._
+import cats.implicits._
 import cats.effect._
 import cats.effect.std._
 
@@ -23,7 +25,11 @@ object Action {
       stateVar: Var[EditorState],
       globalStateVar: Var[GlobalState],
       eventQueue: Queue[IO, Event]
-  )
+  ) {
+    def processEvent(evt: Event): IO[Unit] =
+      IO(stateVar.update(_.processEvent(evt)))
+      >> IO(globalStateVar.update(_.processEvent(evt)))
+  }
 
   /** A constructor for anonymous actions.
     */
@@ -84,11 +90,34 @@ case class MoveViaDrag() extends Action[Part, ACSet] {
     _ <- takeUntil(r.eventQueue)(
       evt => evt match {
         case Event.MouseMove(pos) =>
-          IO(r.modelVar.update(_.setSubpart(p, Center, pos - offset))) *> IO(None)
+          IO(r.modelVar.update(_.setSubpart(p, Center, pos - offset))) >> IO(None)
         case Event.MouseUp(_, _) => IO(Some(()))
         case _                   => IO(None)
       })
   } yield ()
 
   def description = "move part by dragging"
+}
+
+case class AddEdgeViaDrag(ob: Ob, src: Hom, tgt: Hom) extends Action[Part, ACSet] {
+  def apply(p: Part, r: Action.Resources[ACSet]): IO[Unit] = for {
+    initpos <- IO(r.stateVar.now().mousePos)
+    e <- r.modelVar.updateS(
+      ACSet.addPart(ob, PropMap().set(src, p).set(End, initpos).set(Interactable, false)))
+    _ <- takeUntil(r.eventQueue)(
+      evt => r.processEvent(evt) >> (evt match {
+        case Event.MouseMove(pos) => r.modelVar.updateS_(ACSet.setSubpart(e, End, pos)) >> IO(None)
+        case Event.MouseUp(Some(q: Part), _) =>
+          r.modelVar.updateS_(
+            ACSet.remSubpart(e, End)
+              >> ACSet.setSubpart(e, tgt, q)
+              >> ACSet.setSubpart(e, Interactable, true)
+          ) >> IO(Some(()))
+        case Event.MouseUp(_, _) => r.modelVar.updateS_(ACSet.remPart(e)) >> IO(Some(()))
+        case _ => IO(None)
+      })
+    )
+  } yield ()
+
+  def description = "add edge by dragging from source to target"
 }

@@ -25,4 +25,6 @@ object KeyModifier {
 
   val asString =
     Map(Ctrl -> "Ctrl", Shift -> "Shift", Meta -> "Meta", Alt -> "Alt")
+
+  val fromString = asString.toList.map({ case (mod, str) => (str, mod) }).toMap
 }
