@@ -54,6 +54,7 @@ trait Semagram {
   /** Creates the svg element ready to be inserted into a larger app. */
   def apply(mSig: Signal[Model], eventWriter: Observer[Event]): SvgElement = {
     svg.svg(
+      svgDefs(),
       svg.svgAttr("tabindex", StringAsIsCodec, None) := "-1",
       children <-- mSig
         .map(produceSprites(_, eventWriter))

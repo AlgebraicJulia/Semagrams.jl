@@ -62,7 +62,8 @@ case class Arrow(props: PropMap) extends Sprite {
       pathElts <-- data.map(p => blockPath(p(Start), p(End), 5, p(Bend))),
       pointerEvents <-- data.map(p =>
         if p(Interactable) then "auto" else "none"
-      )
+      ),
+      MouseEvents.handlers(ent, eventWriter)
     )
     g(arrow, handle)
   }
