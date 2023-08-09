@@ -107,7 +107,7 @@ case class AddEdgeViaDrag(ob: Ob, src: Hom, tgt: Hom) extends Action[Part, ACSet
     _ <- takeUntil(r.eventQueue)(
       evt => r.processEvent(evt) >> (evt match {
         case Event.MouseMove(pos) => r.modelVar.updateS_(ACSet.setSubpart(e, End, pos)) >> IO(None)
-        case Event.MouseUp(Some(q: Part), _) =>
+        case Event.MouseUp(Some(q: Part), _) if tgt.codoms.contains(q.ty) =>
           r.modelVar.updateS_(
             ACSet.remSubpart(e, End)
               >> ACSet.setSubpart(e, tgt, q)
