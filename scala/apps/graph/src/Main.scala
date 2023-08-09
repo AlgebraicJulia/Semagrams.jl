@@ -42,27 +42,41 @@ object Main {
   @JSExportTopLevel("GraphApp")
   object GraphApp {
     @JSExport
-    def main(div: dom.Element, init: js.UndefOr[String]) = {
+    def main(mountInto: dom.Element, init: js.UndefOr[String]) = {
       val graphVar = UndoableVar(Graph())
       val stateVar = Var(EditorState(None, Complex(0,0)))
       val globalStateVar = Var(GlobalState(Set()))
       val eventBus = EventBus[Event]()
       val graphSig = EditorState.modifyACSet(graphVar.signal, stateVar.signal)
 
-      val display = GraphDisplay(graphSig, eventBus.writer).amend(
-        svg.height := "100%",
+      def display() = GraphDisplay(graphSig, eventBus.writer).amend(
+        svg.height := "400px",
         svg.width := "100%",
         svg.style := "border: black; border-style: solid; background-color: white; box-sizing: border-box",
       )
 
+      val mainDiv = div(
+        display(),
+        display(),
+        button(
+          "add node",
+          onClick --> Observer(
+            _ -> {
+              println("clicked")
+              graphVar.update(a => a.addPart(V, PropMap() + (Center -> Complex(400, 200)))._1)
+            }
+          )
+        )
+      )
+
       GlobalState.listen(eventBus.writer)
 
-      render(div, display)
+      render(mountInto, mainDiv)
 
       val main = for {
         eventQueue <- Queue.unbounded[IO, Event]
         _ <- Dispatcher.sequential[IO] use { dispatcher =>
-          display.amend(
+          mainDiv.amend(
             eventBus.events --> Observer[Event](evt =>
               dispatcher.unsafeRunAndForget(eventQueue.offer(evt))
             )
