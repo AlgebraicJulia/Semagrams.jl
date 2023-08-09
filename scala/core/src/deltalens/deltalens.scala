@@ -128,20 +128,29 @@ trait EndoDeltaLensPoly {
   }
 }
 
+enum NestedObject[Interface, Key, Structure] {
+  case Empty(interface: Interface)
+  case Node(structure: Structure, children: Map[Key, NestedObject[Interface, Key, Structure]])
+}
+
+enum NestedMorphism[Interface, Key, Structure] {
+  case Empty(interface: Interface)
+  case Node(structure: Structure, children: Map[Key, (Key, NestedMorphism[Interface, Key, Structure])])
+}
+
+
 class Nested(val p: EndoDeltaLensPoly) extends Comonoid {
-  enum Object {
-    case Empty(interface: p.interface.Object)
-    case Node(structure: p.structure.Object, children: Map[p.in.Key, Object])
-  }
+  type Object = NestedObject[p.interface.Object, p.in.Key, p.structure.Object]
+  type Morphism = NestedMorphism[p.interface.Morphism, p.in.Key, p.structure.Morphism]
 
   def interfaceof(x: Object) = x match {
-    case Object.Empty(interface) => interface
-    case Object.Node(structure, _children) => p.out.ap(structure)
+    case NestedObject.Empty(interface) => interface
+    case NestedObject.Node(structure, _children) => p.out.ap(structure)
   }
 
   def checkvalidity(a: Object): Boolean = a match {
-    case Object.Empty(interface) => p.interface.checkvalidity(interface)
-    case Object.Node(structure, children) => {
+    case NestedObject.Empty(interface) => p.interface.checkvalidity(interface)
+    case NestedObject.Node(structure, children) => {
       p.structure.checkvalidity(structure)
         && p.in.keys(structure) == children.keySet
         && children.map(
@@ -155,15 +164,10 @@ class Nested(val p: EndoDeltaLensPoly) extends Comonoid {
     }
   }
 
-  enum Morphism {
-    case Empty(interface: p.interface.Morphism)
-    case Node(structure: p.structure.Morphism, children: Map[p.in.Key, (p.in.Key, Morphism)])
-  }
-
   def checkvalidity(dom: Object, f: Morphism): Boolean = (dom, f) match {
-    case (Object.Empty(interfaceObject), Morphism.Empty(interfaceMorphism)) =>
+    case (NestedObject.Empty(interfaceObject), NestedMorphism.Empty(interfaceMorphism)) =>
       p.interface.checkvalidity(interfaceObject, interfaceMorphism)
-    case (Object.Node(structureObject, childrenObjects), Morphism.Node(structureMorphism, childrenMorphisms)) => {
+    case (NestedObject.Node(structureObject, childrenObjects), NestedMorphism.Node(structureMorphism, childrenMorphisms)) => {
       val structureCodom = p.structure.codom(structureObject, structureMorphism)
       val structureCodomKeys = p.in.keys(structureCodom)
       p.structure.checkvalidity(structureObject, structureMorphism)
@@ -181,20 +185,22 @@ class Nested(val p: EndoDeltaLensPoly) extends Comonoid {
     case (_, _) => false
   }
 
+  // Problem: need to `ap` the structure morphism to get a rewrite on the interface before applying
+  // the nested morphism?
   def codom(dom: Object, f: Morphism): Object = (dom, f) match {
-    case (Object.Empty(interfaceObject), Morphism.Empty(interfaceMorphism)) =>
-      Object.Empty(p.interface.codom(interfaceObject, interfaceMorphism))
-    case (Object.Node(structureObject, childrenObjects), Morphism.Node(structureMorphism, childrenMorphisms)) => {
+    case (NestedObject.Empty(interfaceObject), NestedMorphism.Empty(interfaceMorphism)) =>
+      NestedObject.Empty(p.interface.codom(interfaceObject, interfaceMorphism))
+    case (NestedObject.Node(structureObject, childrenObjects), NestedMorphism.Node(structureMorphism, childrenMorphisms)) => {
       val structureCodom = p.structure.codom(structureObject, structureMorphism)
       val structureCodomKeys = p.in.keys(structureCodom)
-      Object.Node(
+      NestedObject.Node(
         structureCodom,
         structureCodomKeys
           .map(kNew =>
             {
               kNew -> (childrenMorphisms.get(kNew) match {
                 case Some((kOrig, fNested)) => codom(childrenObjects(kOrig), fNested)
-                case None => Object.Empty(p.in.ap(kNew, structureCodom).get)
+                case None => NestedObject.Empty(p.in.ap(kNew, structureCodom).get)
               })
             }
           ).toMap
@@ -204,17 +210,17 @@ class Nested(val p: EndoDeltaLensPoly) extends Comonoid {
   }
 
   def compose(a: Object, f: Morphism, g: Morphism): Morphism = (a, f, g) match {
-    case (Object.Empty(aInterface), Morphism.Empty(fInterface), Morphism.Empty(gInterface)) =>
-      Morphism.Empty(p.interface.compose(aInterface, fInterface, gInterface))
+    case (NestedObject.Empty(aInterface), NestedMorphism.Empty(fInterface), NestedMorphism.Empty(gInterface)) =>
+      NestedMorphism.Empty(p.interface.compose(aInterface, fInterface, gInterface))
     case (
-      Object.Node(aStructure, aChildren),
-      Morphism.Node(fStructure, fChildren),
-      Morphism.Node(gStructure, gChildren)
+      NestedObject.Node(aStructure, aChildren),
+      NestedMorphism.Node(fStructure, fChildren),
+      NestedMorphism.Node(gStructure, gChildren)
     ) => {
       val hStructure = p.structure.compose(aStructure, fStructure, gStructure)
       val hStructureCodom = p.structure.codom(aStructure, hStructure)
       val hStructureCodomKeys = p.in.keys(hStructureCodom)
-      Morphism.Node(
+      NestedMorphism.Node(
         hStructure,
         hStructureCodomKeys
           .map(kC =>
@@ -240,8 +246,57 @@ class Nested(val p: EndoDeltaLensPoly) extends Comonoid {
   }
 
   def id(a: Object) = a match {
-    case Object.Empty(interface) => Morphism.Empty(p.interface.id(interface))
-    case Object.Node(structure, children) =>
-      Morphism.Node(p.structure.id(structure), children.map({ case (k, nested) => (k, (k, id(nested))) }))
+    case NestedObject.Empty(interface) => NestedMorphism.Empty(p.interface.id(interface))
+    case NestedObject.Node(structure, children) =>
+      NestedMorphism.Node(p.structure.id(structure), children.map({ case (k, nested) => (k, (k, id(nested))) }))
   }
+}
+
+abstract class NestedRewrite(val p: EndoDeltaLensPoly) extends KeyedDeltaLens {
+  val dom : Comonoid {
+    type Object = NestedObject[p.interface.Object, p.in.Key, p.structure.Object]
+    type Morphism = NestedMorphism[p.interface.Morphism, p.in.Key, p.structure.Morphism]
+  } = Nested(p).asInstanceOf[Comonoid {
+    type Object = NestedObject[p.interface.Object, p.in.Key, p.structure.Object]
+    type Morphism = NestedMorphism[p.interface.Morphism, p.in.Key, p.structure.Morphism]
+  }]
+
+  val codom : Comonoid {
+    type Object = p.structure.Object;
+    type Morphism = p.structure.Morphism
+  } = p.structure
+
+  type Key = p.in.Key
+
+  def keys(x: dom.Object) = x match {
+    case NestedObject.Empty(_) => Set()
+    case NestedObject.Node(structure, children) => p.in.keys(structure)
+        .filter(
+          k => children(k) match {
+            case NestedObject.Empty(_) => false
+            case NestedObject.Node(_, _) => true
+          })
+  }
+
+  def ap(k: Key, x: dom.Object) = x match {
+    case NestedObject.Empty(_) => None
+    case NestedObject.Node(structure, children) => children.get(k) match {
+      case Some(NestedObject.Node(nestedStructure, _)) => Some(nestedStructure)
+      case _ => None
+    }
+  }
+
+  // This is potentially expensive, because we are only storing the "backwards"
+  // map from keys in the rewritten structure to keys in the original structure,
+  // but in order to calculate the rewrite, we need the map in the other
+  // direction.
+  //
+  // def ap(k: Key, x: dom.Object, f: dom.Morphism) = (x,f) match {
+  //   case (NestedObject.Node(_, _), NestedMorphism.Node(_, fChildren)) =>
+  //     fChildren.get(k) match {
+  //       case Some((NestedMorphism.Node(nestedF, _))) => Some(nestedF)
+  //       case _ => None
+  //   }
+  //   case _ => None
+  // }
 }
