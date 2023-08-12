@@ -37,6 +37,27 @@ val bindings = Seq[Binding[ACSet]](
   Binding(ClickOnPartHook(MouseButton.Left), MoveViaDrag()),
 )
 
+class DisplayProperty(val f: Property, val serializer: f.Value => String)
+
+case class Table(ob: Ob, props: Seq[(String, DisplayProperty)]) {
+  def rows(acset: ACSet): Seq[Element] =
+    acset.parts(ROOT, ob).map(
+      { case (p,_) => tr(
+         td(partid(p)),
+         props.map({ case (_, dp) => td(dp.serializer(acset.subpart(dp.f, p))) })
+       )
+      }
+    )
+
+
+  def apply(acsetSig: Signal[ACSet]) = table(
+    tr(th("id"), props.map({ case (label, _) => th(label) })),
+    children <-- acsetSig.map(rows)
+  )
+}
+
+def partid(p: Part) = p.path(0)._2.id.toString
+
 object Main {
   @JSExportTopLevel("GraphApp")
   object GraphApp {
@@ -58,6 +79,14 @@ object Main {
 
       val mainDiv = div(
         display(),
+        Table(V, Seq(("pos", DisplayProperty(Center, z => s"${z.x} + ${z.y}i"))))(graphSig),
+        Table(
+          E,
+          Seq(
+            ("src", DisplayProperty(Src, partid)),
+            ("tgt", DisplayProperty(Tgt, partid))
+          )
+        )(graphSig),
         globalEventBus.events --> globalStateVar.updater[Event]((globalState, evt) => globalState.processEvent(evt)),
         globalEventBus.events --> eventBus.writer
       )

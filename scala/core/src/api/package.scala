@@ -6,6 +6,7 @@ package object api {
     EditorState,
     Event,
     Message,
+    Property,
     EntityCollector,
     GlobalState,
     Semagram,
