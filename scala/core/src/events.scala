@@ -30,4 +30,8 @@ enum Event {
   case ContextMenu(ent: Option[Entity])
 }
 
+enum Message {
+  case EditEntity(ent: Entity)
+}
+
 export Event._

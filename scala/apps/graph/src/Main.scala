@@ -8,17 +8,16 @@ import Graphs._
 
 import upickle.default._
 import com.raquo.laminar.api.L._
+
 import cats._
 import cats.syntax._
 import cats.effect._
 import cats.effect.std._
+
 import scala.scalajs.js.annotation.JSExportTopLevel
 import org.scalajs.dom
 import scala.scalajs.js.annotation._
 import scala.scalajs.js
-import com.raquo.laminar.defs.eventProps.EventProps
-import com.raquo.laminar.codecs.StringAsIsCodec
-import org.scalajs.dom.SVGSVGElement
 
 object GraphDisplay extends Semagram {
   type Model = ACSet
@@ -47,7 +46,9 @@ object Main {
       val stateVar = Var(EditorState(None, Complex(0,0)))
       val globalStateVar = Var(GlobalState(Set()))
       val eventBus = EventBus[Event]()
+      val globalEventBus = EventBus[Event]()
       val graphSig = EditorState.modifyACSet(graphVar.signal, stateVar.signal)
+      val outbox = EventBus[Message]()
 
       def display() = GraphDisplay(graphSig, eventBus.writer).amend(
         svg.height := "400px",
@@ -57,19 +58,11 @@ object Main {
 
       val mainDiv = div(
         display(),
-        display(),
-        button(
-          "add node",
-          onClick --> Observer(
-            _ -> {
-              println("clicked")
-              graphVar.update(a => a.addPart(V, PropMap() + (Center -> Complex(400, 200)))._1)
-            }
-          )
-        )
+        globalEventBus.events --> globalStateVar.updater[Event]((globalState, evt) => globalState.processEvent(evt)),
+        globalEventBus.events --> eventBus.writer
       )
 
-      GlobalState.listen(eventBus.writer)
+      GlobalState.listen(globalEventBus.writer)
 
       render(mountInto, mainDiv)
 
@@ -81,7 +74,7 @@ object Main {
               dispatcher.unsafeRunAndForget(eventQueue.offer(evt))
             )
           )
-          Binding.processAll(Action.Resources(graphVar, stateVar, globalStateVar, eventQueue), bindings)
+          Binding.processAll(Action.Resources(graphVar, stateVar, globalStateVar.signal, eventQueue, outbox.writer), bindings)
         }
       } yield ()
 

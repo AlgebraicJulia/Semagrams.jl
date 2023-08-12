@@ -23,12 +23,12 @@ object Action {
   case class Resources[Model](
       modelVar: UndoableVar[Model],
       stateVar: Var[EditorState],
-      globalStateVar: Var[GlobalState],
-      eventQueue: Queue[IO, Event]
+      globalStateVar: StrictSignal[GlobalState],
+      eventQueue: Queue[IO, Event],
+      outbox: Observer[Message]
   ) {
     def processEvent(evt: Event): IO[Unit] =
       IO(stateVar.update(_.processEvent(evt)))
-      >> IO(globalStateVar.update(_.processEvent(evt)))
   }
 
   /** A constructor for anonymous actions.

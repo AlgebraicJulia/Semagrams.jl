@@ -5,6 +5,7 @@ package object api {
   export semagrams.{
     EditorState,
     Event,
+    Message,
     EntityCollector,
     GlobalState,
     Semagram,
