@@ -25,10 +25,11 @@ object Action {
       stateVar: Var[EditorState],
       globalStateVar: StrictSignal[GlobalState],
       eventQueue: Queue[IO, Event],
-      outbox: Observer[Message]
+      outbox: Observer[Message[Model]]
   ) {
     def processEvent(evt: Event): IO[Unit] =
       IO(stateVar.update(_.processEvent(evt)))
+
   }
 
   /** A constructor for anonymous actions.
@@ -53,6 +54,16 @@ case class AddAtMouse(ob: Ob) extends Action[Unit, ACSet] {
   )
 
   def description = s"add a new part of type $ob at current mouse position"
+}
+
+case class Add(ob: Ob,props:PropMap = PropMap()) extends Action[Unit, ACSet] {
+  def apply(_p: Unit, r: Action.Resources[ACSet]) = IO(
+    {
+      r.modelVar.update(_.addPart(ob, props)._1)
+    }
+  )
+
+  def description = s"add a new part of type $ob with $props"
 }
 
 case class DeleteHovered() extends Action[Unit, ACSet] {
@@ -120,4 +131,16 @@ case class AddEdgeViaDrag(ob: Ob, src: Hom, tgt: Hom) extends Action[Part, ACSet
   } yield ()
 
   def description = "add edge by dragging from source to target"
+}
+
+case class ProcessMsg[Model]() extends Action[Message[Model],Model] {
+
+  def apply(msg:Message[Model],r: Action.Resources[Model]): IO[Unit] = IO(
+    r.modelVar.update(msg.execute)
+  )
+
+  def description = "process a message from outside the semagram"
+
+
+
 }

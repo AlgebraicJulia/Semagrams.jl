@@ -2,10 +2,16 @@ package semagrams
 
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.codecs.StringAsIsCodec
+import org.scalajs.dom
+import cats.effect._
+import cats.effect.std._
 
 import semagrams.acsets._
 import semagrams.listeners._
 import semagrams.sprites._
+import semagrams.util._
+import semagrams.bindings.Binding
+import semagrams.bindings.Action
 
 trait Semagram {
   type Model
@@ -71,4 +77,79 @@ trait Semagram {
       MouseEvents.clickHandlers(Background(), eventWriter)
     )
   }
+
+}
+
+
+
+type Readout[Model] = () => Model
+type Update[Model] = Message[Model] => Unit
+
+case class SemagramElt[Model](
+  elt: Element,
+  readout: Readout[Model],
+  update: Update[Model]
+)
+
+trait ACSemagram extends Semagram {
+  type Model = ACSet
+
+  val schema: Schema
+
+  def apply(bindings: Seq[Binding[ACSet]],a:ACSet = ACSet(schema)): SemagramElt[Model] = 
+    if a.schema != schema
+    then SemagramElt(
+      div(s"ACSet schema ${a.schema} != Semagram schema $schema"),
+      () => ACSet(schema),
+      _ => ACSet(schema)
+    )
+    else {
+      val modelVar = UndoableVar(a)
+      val stateVar = Var(EditorState(None, Complex(0,0)))
+      val globalStateVar = Var(GlobalState(Set()))
+      val eventBus = EventBus[Event]()
+      val globalEventBus = EventBus[Event]()
+      val modelSig = EditorState.modifyACSet(modelVar.signal, stateVar.signal)
+      val outbox = EventBus[Message[Model]]()
+
+
+      val semaElt = div(
+        cls := "semaElt",
+        this.apply(modelSig,eventBus.writer).amend(
+          svg.height := "100%",
+          svg.width := "100%",
+        ),
+        globalEventBus.events --> globalStateVar.updater[Event]((globalState, evt) => globalState.processEvent(evt)),
+        globalEventBus.events --> eventBus.writer,
+        backgroundColor := "blue",
+      )
+
+      // It works here
+      semaElt.amend(
+        backgroundColor := "white"
+      )
+
+      GlobalState.listen(globalEventBus.writer)
+
+      val main = for {
+        eventQueue <- Queue.unbounded[IO, Event]
+        _ <- Dispatcher.sequential[IO] use { dispatcher =>
+          semaElt.amend(
+            eventBus.events --> Observer[Event](evt =>
+              dispatcher.unsafeRunAndForget(eventQueue.offer(evt))
+            )
+          )
+          Binding.processAll(Action.Resources(modelVar, stateVar, globalStateVar.signal, eventQueue, outbox.writer), bindings)
+        }
+      } yield ()
+
+      main.unsafeRunAndForget()(unsafe.IORuntime.global)
+
+      SemagramElt(
+        semaElt,
+        () => modelVar.now(),
+        (msg:Message[ACSet]) => modelVar.update(msg.execute)
+      )
+    }
+
 }

@@ -52,3 +52,16 @@ case class ClickOnPartHook(button: MouseButton, modifiers: Set[KeyModifier])
 object ClickOnPartHook {
   def apply(button: MouseButton): ClickOnPartHook = ClickOnPartHook(button, Set())
 }
+
+
+
+case class MsgHook[Model]() extends EventHook[Message[Model]] {
+
+  def apply(evt: Event, globalState: GlobalState) = evt match {
+    case MsgEvent[Model](msg) => Some(msg)
+    case _ => None
+  }
+
+  def description = "receive a message to process"
+
+}

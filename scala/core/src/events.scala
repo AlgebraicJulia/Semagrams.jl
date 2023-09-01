@@ -2,6 +2,7 @@ package semagrams
 
 import semagrams.util.Complex
 import com.raquo.laminar.api.L._
+import semagrams.acsets.Ob
 
 enum MouseButton:
   case Left
@@ -28,10 +29,13 @@ enum Event {
   case KeyDown(key: String)
   case KeyUp(key: String)
   case ContextMenu(ent: Option[Entity])
+  case MsgEvent[Model](msg:Message[Model])
 }
 
-enum Message {
-  case EditEntity(ent: Entity)
+trait Message[Model] {
+
+  def execute(m:Model): Model
+
 }
 
 export Event._

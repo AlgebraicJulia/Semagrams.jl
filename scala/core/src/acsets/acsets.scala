@@ -883,4 +883,14 @@ object ACSet {
   def subpartLens(f: Property, x: Part) =
     Lens[ACSet, f.Value](_.subpart(f, x))(y => s => s.setSubpart(x, f, y))
 
+
+
+
+sealed trait ACSetMsg extends Message[ACSet]
+
+case class AddPartMsg(ob:Ob,props:PropMap = PropMap()) extends ACSetMsg {
+  def execute(a:ACSet) = a.addPart(ob,props)._1
+}
+
+
 }
