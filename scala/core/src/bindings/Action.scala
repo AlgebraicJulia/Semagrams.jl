@@ -47,10 +47,10 @@ object Action {
 
 case class AddAtMouse(ob: Ob) extends Action[Unit, ACSet] {
   def apply(_p: Unit, r: Action.Resources[ACSet]) = IO(
-    {
+    if r.stateVar.now().hovered != None
+    then 
       val pos = r.stateVar.now().mousePos
       r.modelVar.update(_.addPart(ob, PropMap() + (Center -> pos))._1)
-    }
   )
 
   def description = s"add a new part of type $ob at current mouse position"
@@ -103,6 +103,7 @@ case class MoveViaDrag() extends Action[Part, ACSet] {
         case Event.MouseMove(pos) =>
           IO(r.modelVar.update(_.setSubpart(p, Center, pos - offset))) >> IO(None)
         case Event.MouseUp(_, _) => IO(Some(()))
+        case Event.MouseLeave(Background()) => IO(Some(()))
         case _                   => IO(None)
       })
   } yield ()

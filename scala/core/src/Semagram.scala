@@ -75,7 +75,7 @@ trait Semagram {
           sprite.present(ent, initAcset, updates.map(_._2), eventWriter)
         }),
       mouseMoveListener(eventWriter),
-      MouseEvents.clickHandlers(Background(), eventWriter)
+      MouseEvents.handlers(Background(), eventWriter)
     )
   }
 
@@ -110,7 +110,7 @@ trait ACSemagram extends Semagram {
     )
     else {
       val modelVar = UndoableVar(a)
-      val stateVar = Var(EditorState(None, Complex(0,0)))
+      val stateVar = Var(EditorState(Some(Background()), Complex(0,0)))
       val globalStateVar = Var(GlobalState(Set()))
       val eventBus = EventBus[Event]()
       val globalEventBus = EventBus[Event]()

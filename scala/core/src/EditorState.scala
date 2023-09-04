@@ -9,9 +9,10 @@ case class EditorState(
     mousePos: Complex
 ) {
   def processEvent(evt: Event): EditorState = evt match {
-    case MouseEnter(ent) => this.copy(hovered = Some(ent))
+    case MouseEnter(ent) => 
+      this.copy(hovered = Some(ent))
     case MouseLeave(ent) =>
-      this.copy(hovered = if hovered == Some(ent) then None else hovered)
+      this.copy(hovered = if ent == Background() then None else Some(Background()))
     case MouseMove(pos) => this.copy(mousePos = pos)
     case _              => this
   }

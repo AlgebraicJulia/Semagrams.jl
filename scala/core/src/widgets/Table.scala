@@ -8,6 +8,7 @@ import upickle.default._
 import semagrams._
 import semagrams.acsets._
 import semagrams.acsets.Graphs._
+import semagrams.util.Complex
 
 
 
@@ -19,7 +20,8 @@ def tableCell[T:ReadWriter](tSig:Signal[Option[T]]) = td(
   )
 )
 
-def tableInput[T:ReadWriter](tSig:Signal[Option[T]],tObs:Observer[T]) = input(
+
+def tableInput[T:ReadWriter](tSig:Signal[Option[T]],tObs:Observer[String]) = input(
   cls("dcell-edit"),
   value <-- tSig.map(_ match
     case Some(t) => write(t)
@@ -29,28 +31,24 @@ def tableInput[T:ReadWriter](tSig:Signal[Option[T]],tObs:Observer[T]) = input(
   onMountFocus,
   onKeyPress
     .filter(_.keyCode == dom.KeyCode.Enter)
-    .mapToValue
-    .map(s => {
-      println(s"got here? $s")
-      val ret = read[T](write(s))
-      println("here?") 
-      ret
-    })
-    --> tObs
+    .mapToValue --> tObs
 )
   
-def propCell(prop:Property)(tSig:Signal[Option[prop.Value]],tObs:Observer[prop.Value] = Observer(t => ())) =
-  val editVar = Var(false)
-  td(
-    cls := "cellTop",
-    onDblClick.filter(_ => !editVar.now()).mapTo(true) --> editVar.writer,
-    child <-- editVar.signal.map[HtmlElement] {
-      case true => tableInput(tSig,tObs)(prop.rw)
-      case false => tableCell(tSig)(prop.rw)
-    },
-    onKeyPress.filter(_.keyCode == dom.KeyCode.Enter)
-      .mapTo(false) --> editVar.writer
-  )
+// def propCell(prop:Property)(tSig:Signal[Option[prop.Value]],tObs:Observer[prop.Value] = Observer(t => ())) =
+//   val editVar = Var(false)
+//   td(
+//     cls := "cellTop",
+//     onDblClick.filter(_ => !editVar.now()).mapTo(true) --> editVar.writer,
+//     child <-- editVar.signal.map[HtmlElement] {
+//       case true => tableInput(
+//         tSig,
+//         tObs.contramap(str => read[prop.Value](str)(prop.rw))
+//       )(prop.rw)
+//       case false => tableCell(tSig)(prop.rw)
+//     },
+//     onKeyPress.filter(_.keyCode == dom.KeyCode.Enter)
+//       .mapTo(false) --> editVar.writer
+//   )
 
 
 

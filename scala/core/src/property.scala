@@ -31,13 +31,26 @@ trait Property {
     read[Value](sv)(rw)
   }
 
-  def laminarCell(tSig:Signal[Option[Value]],tObs:Observer[Value] = Observer(t => ())) =
+  /** Helper method with special handling for Value = String */ 
+  def readStr(s:String): Value = try
+    // Errors if Value = String ???
+    read[Value](s)(rw)
+  catch
+    case e =>
+      println(e)
+      read[Value](write(s))(rw)
+
+
+
+  def laminarCell(tSig:Signal[Option[Value]],tObs:Observer[Value]) =
     val editVar = Var(false)
     td(
       cls := "cellTop",
       onDblClick.filter(_ => !editVar.now()).mapTo(true) --> editVar.writer,
       child <-- editVar.signal.map[HtmlElement] {
-        case true => tableInput(tSig,tObs)(rw)
+        case true => tableInput(tSig,
+          tObs.contramap(readStr)
+        )(rw)
         case false => tableCell(tSig)(rw)
       },
       onKeyPress.filter(_.keyCode == dom.KeyCode.Enter)
@@ -45,14 +58,8 @@ trait Property {
     )
 
 
-  // def headers[K:ReadWriter]: Seq[K] = Seq(read[K](this.toString))
-  // def cols[K:ReadWriter]: Seq[DColumn[K]] = Seq(new DColumn[K] {
-  //   val key = read[K](this.toString())
-
-  // })
-  
-
 }
+
 
 /** A subtrait of `Property` that is simpler to implement when there's an
   * implicit ReadWriter for your value type in scope
@@ -76,6 +83,8 @@ enum GenericProperty[T: ReadWriter] extends Property {
   case Content extends GenericProperty[String]
   case ImageURL extends GenericProperty[String]
   case Label extends GenericProperty[String]
+  case XPos extends GenericProperty[Double]
+  case YPos extends GenericProperty[Double]
   case Center extends GenericProperty[Complex]
   case Start extends GenericProperty[Complex]
   case End extends GenericProperty[Complex]
@@ -89,6 +98,11 @@ enum GenericProperty[T: ReadWriter] extends Property {
 
   val rw = summon[ReadWriter[T]]
 }
+
+extension (prop: Property { type Value = String })
+  def readStr(s:String) = s    
+
+
 
 export GenericProperty._
 
