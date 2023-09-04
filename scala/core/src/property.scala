@@ -1,8 +1,13 @@
 package semagrams
 
 import upickle.default._
+import com.raquo.laminar.api.L.{*, given}
+import org.scalajs.dom
+
 
 import semagrams.util.Complex
+import semagrams.widgets._
+
 import upickle.default.ReadWriter
 import _root_.widgets._
 
@@ -25,6 +30,20 @@ trait Property {
   def readValue(sv: ujson.Value) = {
     read[Value](sv)(rw)
   }
+
+  def laminarCell(tSig:Signal[Option[Value]],tObs:Observer[Value] = Observer(t => ())) =
+    val editVar = Var(false)
+    td(
+      cls := "cellTop",
+      onDblClick.filter(_ => !editVar.now()).mapTo(true) --> editVar.writer,
+      child <-- editVar.signal.map[HtmlElement] {
+        case true => tableInput(tSig,tObs)(rw)
+        case false => tableCell(tSig)(rw)
+      },
+      onKeyPress.filter(_.keyCode == dom.KeyCode.Enter)
+        .mapTo(false) --> editVar.writer
+    )
+
 
   // def headers[K:ReadWriter]: Seq[K] = Seq(read[K](this.toString))
   // def cols[K:ReadWriter]: Seq[DColumn[K]] = Seq(new DColumn[K] {

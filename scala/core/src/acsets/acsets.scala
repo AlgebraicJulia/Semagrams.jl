@@ -882,15 +882,17 @@ object ACSet {
   /** Returns a lens into the value of the property `f` for part `x` */
   def subpartLens(f: Property, x: Part) =
     Lens[ACSet, f.Value](_.subpart(f, x))(y => s => s.setSubpart(x, f, y))
+}
 
 
 
 
-sealed trait ACSetMsg extends Message[ACSet]
-
-case class AddPartMsg(ob:Ob,props:PropMap = PropMap()) extends ACSetMsg {
+case class AddPartMsg(ob:Ob,props:PropMap = PropMap()) extends Message[ACSet] {
   def execute(a:ACSet) = a.addPart(ob,props)._1
 }
 
-
+case class SetSubpartMsg(part:Part,prop:Property)(v:prop.Value) extends Message[ACSet] {
+  def execute(a:ACSet) = a.setSubpart(part,prop,v)
 }
+
+

@@ -1,9 +1,12 @@
 package semagrams.graph
 
+import semagrams._
 import semagrams.api._
 import semagrams.acsets._
 import semagrams.bindings._
 import semagrams.listeners._
+import semagrams.widgets._
+
 import Graphs._
 
 import upickle.default._
@@ -19,10 +22,6 @@ import scala.scalajs.js.annotation.JSExportTopLevel
 import org.scalajs.dom
 import scala.scalajs.js.annotation._
 import scala.scalajs.js
-import semagrams.ACSemagram
-import semagrams.acsets.ACSet.AddPartMsg
-import semagrams.SemagramElt
-import widgets._
 
 object GraphDisplay extends ACSemagram {
   type Model = ACSet
@@ -82,14 +81,12 @@ object Main {
         (m:Message[ACSet]) => sema.update(a => m.execute(a))
       )
 
-
-      val tickStream = EventStream.periodic(1000)
       
       val dims = Var((1,1))
       val rand = scala.util.Random()
 
 
-      val s = Var("Hi")
+      // val s = Var("Hi")
 
       val clickBus = new EventBus[Unit]
 
@@ -100,20 +97,21 @@ object Main {
         ),
         button(
           "Click Me",
-          onClick.mapTo({
+          onClick.mapTo {
             dims.update(_ => (sema.elt.ref.offsetWidth.toInt,sema.elt.ref.offsetHeight.toInt))
-            ACSet.AddPartMsg(
-              V,PropMap() + (Center,Complex(
-                rand.nextInt(dims.now()._1),
-                rand.nextInt(dims.now()._2),
-              ))
-            )
-          }) --> messenger
+
+            val props = PropMap() + (Center,Complex(
+              rand.nextInt(dims.now()._1),
+              rand.nextInt(dims.now()._2),
+            ))
+
+            AddPartMsg(V, props)
+          } --> messenger
         ),
-        PropTable(Seq(Center)).laminarElt(
+        PropTable(Seq(Center,Content)).laminarElt(
           V,
           sema.signal,
-          sema.observer
+          messenger
         )
 
       )

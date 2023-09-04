@@ -1,12 +1,11 @@
-package widgets
+package semagrams.widgets
 
 import com.raquo.laminar.api.L.{*, given}
 import org.scalajs.dom
 
 import upickle.default._
 
-import semagrams.Property
-import semagrams.PropMap
+import semagrams._
 import semagrams.acsets._
 import semagrams.acsets.Graphs._
 
@@ -28,13 +27,15 @@ def tableInput[T:ReadWriter](tSig:Signal[Option[T]],tObs:Observer[T]) = input(
   ),
   placeholder("label?"),
   onMountFocus,
-  onKeyPress.filter(_.keyCode == dom.KeyCode.Enter)
+  onKeyPress
+    .filter(_.keyCode == dom.KeyCode.Enter)
     .mapToValue
     .map(s => {
-      println(s"about to read $s")
-      read[T](s)
+      println(s"got here? $s")
+      val ret = read[T](write(s))
+      println("here?") 
+      ret
     })
-    // .setValue("") 
     --> tObs
 )
   
@@ -54,59 +55,40 @@ def propCell(prop:Property)(tSig:Signal[Option[prop.Value]],tObs:Observer[prop.V
 
 
 
-case class PropTable(cols:Seq[Property],keys:Seq[Property] = Seq()):
+case class PropTable(cols:Seq[Property],keys:Seq[Property] = Seq()) {
   
   def headerRow() = tr(
     th("ID"),
     cols.map(col => th(col.toString()))
   )
 
-  def row(part:Part,propSig:Signal[PropMap],propObs:Observer[PropMap] = Observer(_ => ())) = tr(
-    td(part.toString()),
-    cols.map(col => propCell(col)(
-      propSig.splitOne(_ => col)(
-        (prop,pmap,pSig) => pmap.get(col)
-      )
-    ))
+  def row(part:Part,propSig:Signal[PropMap],messenger:Observer[Message[ACSet]]) = 
+    val cells = cols.map(col => col.laminarCell(
+      propSig.map(_.get(col)),
+      messenger.contramap(v => SetSubpartMsg(part,col)(v)))
+    )
+    
+    tr(
+      td(part.path.head.toString()),
+      cells
+    )
+    
+  
 
-  )
-
-  def rows(ob:Ob,modelSig:Signal[ACSet],modelObs:Observer[ACSet]) = 
+  def rows(ob:Ob,modelSig:Signal[ACSet],messenger:Observer[Message[ACSet]]) = 
     modelSig.map(acset =>
       acset.parts(ROOT,ob)
     ).split(_._1){
       case (_,(part,acset),pairSig) =>
-        row(part,pairSig.map(_._2.props))
+        row(part,pairSig.map(_._2.props),messenger)
     }
 
 
-  def laminarElt(ob:Ob,tableSig:Signal[ACSet],tableObs:Observer[ACSet]) = table(
+  def laminarElt(ob:Ob,tableSig:Signal[ACSet],messenger:Observer[Message[ACSet]]) = table(
     headerRow(),
-    children <-- rows(V,tableSig,
-      Observer(_ => ())
-    )
+    children <-- rows(V,tableSig,messenger)
   )
 
+}
 
-
-
-
-
-
-
-// object DTable {
-//   def apply(a:ACSet,ob:Ob): DTable = DTable(Seq(
-//     DCol("id",a.partsOnly(ROOT,ob).map(partid)),
-//     DCol("ctr",a.parts(ROOT,ob).map(_._2.props(Center)))
-//   ))
-// }
-
-
-
-
-
-
-
-
-// def partid(p: Part) = p.path(0)._2.id.toString
 
