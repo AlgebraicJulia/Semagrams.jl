@@ -21,6 +21,8 @@ import scala.scalajs.js.annotation._
 import scala.scalajs.js
 import semagrams.ACSemagram
 import semagrams.acsets.ACSet.AddPartMsg
+import semagrams.SemagramElt
+import widgets._
 
 object GraphDisplay extends ACSemagram {
   type Model = ACSet
@@ -51,63 +53,6 @@ class DisplayProperty(val f: Property, val serializer: f.Value => String)
 
 
 
-case class DTable(_cols:Seq[DColumn],_key:Option[DColumn] = None) {
-
-  val cols = _key match
-    case None => _cols
-    case Some(keycol) => keycol +: _cols.filter(_!=keycol)
-  
-  val keycol = _key match
-    case None => _cols.head
-    case Some(k) => k
-  
-  def headerRow = tr(cols.map(col => th(col.header)))
-  
-  def rows = (0 until keycol.values.length) map( idx => tr(
-    cols.map(col =>
-      td(col.values(idx).toString())
-    )
-  ))
-
-  def render() = table(
-    headerRow,
-    rows
-  )
-
-    
-}
-
-object DTable {
-  def apply(a:ACSet,ob:Ob): DTable = DTable(Seq(
-    DCol("id",a.partsOnly(ROOT,ob).map(partid)),
-    DCol("ctr",a.parts(ROOT,ob).map(_._2.props(Center)))
-  ))
-}
-
-trait DColumn {
-  val header: String
-  val values: Seq[Any]
-}
-
-case class DCol[T](header:String,values:Seq[T]) extends DColumn
-
-
-
-
-
-case class TableCell[T:ReadWriter](value:T) {
-  var editing: Boolean = false
-
-
-}
-
-
-
-
-def partid(p: Part) = p.path(0)._2.id.toString
-
-
-
 object Main {
   @JSExportTopLevel("GraphApp")
   object GraphApp {
@@ -121,10 +66,7 @@ object Main {
       // Check that it's the same element
       println(sema.elt.toString())      
 
-      // It errors here
-      sema.elt.amend(
-        // backgroundColor := "green"
-      )
+
 
       val semaAttrs = Seq(
         backgroundColor := "white",
@@ -143,30 +85,56 @@ object Main {
 
       val tickStream = EventStream.periodic(1000)
       
+      val dims = Var((1,1))
+      val rand = scala.util.Random()
 
 
+      val s = Var("Hi")
 
-      val mainDiv = div(
+      val clickBus = new EventBus[Unit]
+
+      val mainDiv: Div = div( 
         idAttr := "mainDiv",
-        sema.elt,
+        sema.elt.amend(
+          semaAttrs,
+        ),
         button(
           "Click Me",
-          onClick.mapTo(
+          onClick.mapTo({
+            dims.update(_ => (sema.elt.ref.offsetWidth.toInt,sema.elt.ref.offsetHeight.toInt))
             ACSet.AddPartMsg(
               V,PropMap() + (Center,Complex(
-                100,
-                100
+                rand.nextInt(dims.now()._1),
+                rand.nextInt(dims.now()._2),
               ))
             )
-            // "How do I send a message?"
-          ) --> messenger
+          }) --> messenger
         ),
-        child <-- tickStream.map(_ => 
-          DTable(sema.readout(),V).render()
+        PropTable(Seq(Center)).laminarElt(
+          V,
+          sema.signal,
+          sema.observer
         )
+
       )
 
+      // mainDiv.amend(
+      //   button(
+      //     "add row",
+      //     onClick --> Observer(
+      //       _ => mainDiv.amend(
+
+      //       )
+      //     )
+      //   )
+      // )
+        // child <-- tickStream.map(_ => 
+        //   // DTable(sema.readout(),V).render()
+        // )
+      
+
       render(mountInto, mainDiv)
+
 
 
     }

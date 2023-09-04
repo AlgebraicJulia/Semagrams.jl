@@ -2,6 +2,7 @@ package semagrams
 
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.codecs.StringAsIsCodec
+
 import org.scalajs.dom
 import cats.effect._
 import cats.effect.std._
@@ -86,9 +87,11 @@ type Readout[Model] = () => Model
 type Update[Model] = Message[Model] => Unit
 
 case class SemagramElt[Model](
-  elt: Element,
+  elt: Div,
   readout: Readout[Model],
-  update: Update[Model]
+  update: Update[Model],
+  signal: Signal[Model],
+  observer: Observer[Model]
 )
 
 trait ACSemagram extends Semagram {
@@ -101,7 +104,9 @@ trait ACSemagram extends Semagram {
     then SemagramElt(
       div(s"ACSet schema ${a.schema} != Semagram schema $schema"),
       () => ACSet(schema),
-      _ => ACSet(schema)
+      _ => ACSet(schema),
+      Var(ACSet(schema)).signal,
+      Var(ACSet(schema)).writer
     )
     else {
       val modelVar = UndoableVar(a)
@@ -148,7 +153,9 @@ trait ACSemagram extends Semagram {
       SemagramElt(
         semaElt,
         () => modelVar.now(),
-        (msg:Message[ACSet]) => modelVar.update(msg.execute)
+        (msg:Message[ACSet]) => modelVar.update(msg.execute),
+        modelSig,
+        modelVar.writer
       )
     }
 

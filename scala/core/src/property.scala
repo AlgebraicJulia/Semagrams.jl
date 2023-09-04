@@ -4,6 +4,7 @@ import upickle.default._
 
 import semagrams.util.Complex
 import upickle.default.ReadWriter
+import _root_.widgets._
 
 /** An attribute that can be attached to an Entity. */
 
@@ -24,6 +25,14 @@ trait Property {
   def readValue(sv: ujson.Value) = {
     read[Value](sv)(rw)
   }
+
+  // def headers[K:ReadWriter]: Seq[K] = Seq(read[K](this.toString))
+  // def cols[K:ReadWriter]: Seq[DColumn[K]] = Seq(new DColumn[K] {
+  //   val key = read[K](this.toString())
+
+  // })
+  
+
 }
 
 /** A subtrait of `Property` that is simpler to implement when there's an
