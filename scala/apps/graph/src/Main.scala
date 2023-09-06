@@ -4,19 +4,12 @@ import semagrams._
 import semagrams.api._
 import semagrams.acsets._
 import semagrams.bindings._
-import semagrams.listeners._
 import semagrams.widgets._
 
 import Graphs._
 
-import upickle.default._
 import com.raquo.laminar.api.L._
-import com.raquo.laminar.codecs.StringAsIsCodec
 
-import cats._
-import cats.syntax._
-import cats.effect._
-import cats.effect.std._
 
 import scala.scalajs.js.annotation.JSExportTopLevel
 import org.scalajs.dom

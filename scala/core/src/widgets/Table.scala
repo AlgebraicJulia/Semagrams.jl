@@ -1,16 +1,12 @@
 package semagrams.widgets
 
-import com.raquo.laminar.api.L.{*, given}
+import com.raquo.laminar.api.L._
 import org.scalajs.dom
 
 import upickle.default._
 
 import semagrams._
 import semagrams.acsets._
-import semagrams.acsets.Graphs._
-import semagrams.util.Complex
-import scala.annotation.targetName
-import semagrams.util.msgError
 import scala.util._
 
 
@@ -99,7 +95,7 @@ case class PropRow(part:Part,cols:Seq[Property]):
   //     cellSeq(i).edit()  
   //   )
   
-  
+  val cells = cols.map(col => PropCell(part,col))
   
 
 
@@ -117,16 +113,15 @@ case class PropRow(part:Part,cols:Seq[Property]):
       .split(pair => pair._1)(
         (col,initpair,pairSig) =>
           val cell = PropCell(part,col)
-          
+
           cell.laminarElt(
             pairSig.map(pair =>
-              val p = pair._1
               pair._2.asInstanceOf[Option[cell.prop.Value]]
             ),
-            messenger.contramap {
-              case v:col.Value =>
-                SetSubpartMsg(part,col)(v)
-            }
+            messenger.contramap(
+              (v:cell.prop.Value) => 
+                SetSubpartMsg(part,cell.prop)(v)
+            )
           )
       )
 

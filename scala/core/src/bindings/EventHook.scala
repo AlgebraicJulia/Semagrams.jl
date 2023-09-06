@@ -3,6 +3,7 @@ package semagrams.bindings
 import semagrams._
 import semagrams.acsets._
 
+
 /** A trait for filters on the event stream, picking out events that are
   * relevant to a particular [[Action]] and extracting data of type `A` from
   * them.
@@ -68,8 +69,9 @@ case class DoubleClickOnPartHook(button: MouseButton = MouseButton.Left, modifie
 
 case class MsgHook[Model]() extends EventHook[Message[Model]] {
 
+
   def apply(evt: Event, globalState: GlobalState) = evt match {
-    case MsgEvent[Model](msg) => Some(msg)
+    case MsgEvent(msg) => Some(msg.asInstanceOf[Message[Model]])
     case _ => None
   }
 

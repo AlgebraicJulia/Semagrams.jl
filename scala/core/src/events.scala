@@ -2,7 +2,6 @@ package semagrams
 
 import semagrams.util.Complex
 import com.raquo.laminar.api.L._
-import semagrams.acsets.Ob
 
 enum MouseButton:
   case Left

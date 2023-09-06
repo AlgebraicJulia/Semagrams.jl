@@ -1,15 +1,11 @@
 package semagrams
 
 import upickle.default._
-import com.raquo.laminar.api.L.{*, given}
-import org.scalajs.dom
 
 
 import semagrams.util.Complex
-import semagrams.widgets._
 
 import upickle.default.ReadWriter
-import _root_.widgets._
 
 /** An attribute that can be attached to an Entity. */
 

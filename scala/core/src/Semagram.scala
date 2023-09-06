@@ -3,7 +3,6 @@ package semagrams
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.codecs.StringAsIsCodec
 
-import org.scalajs.dom
 import cats.effect._
 import cats.effect.std._
 

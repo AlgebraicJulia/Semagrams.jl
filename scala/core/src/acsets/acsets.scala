@@ -389,7 +389,6 @@ trait Schema {
       key: String,
       a: A
   ): ReadWriter[(ACSet, A)] =
-    val rw = summon[ReadWriter[A]]
     readwriter[Map[String, ujson.Value]].bimap(
       (acset, a) =>
         Map(
@@ -611,7 +610,6 @@ case class ACSet(
     */
   def addPart(p: Part, x: Ob, init: ACSet): (ACSet, Part) = {
     val sub = subacset(p)
-    val subschema = schema.subschema(p.ty.extend(x))
     val (newparts, i) = sub.partsMap(x).addPart(init)
     val newSub = sub.copy(
       partsMap = sub.partsMap + (x -> newparts)
@@ -624,7 +622,6 @@ case class ACSet(
     */
   def addParts(p: Part, x: Ob, inits: Seq[ACSet]): (ACSet, Seq[Part]) = {
     val sub = subacset(p)
-    val subschema = schema.subschema(p.ty.extend(x))
     val (newparts, ids) = sub.partsMap(x).addParts(inits)
     val newSub = sub.copy(
       partsMap = sub.partsMap + (x -> newparts)
