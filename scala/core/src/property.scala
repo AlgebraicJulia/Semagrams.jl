@@ -31,32 +31,6 @@ trait Property {
     read[Value](sv)(rw)
   }
 
-  /** Helper method with special handling for Value = String */ 
-  def readStr(s:String): Value = try
-    // Errors if Value = String ???
-    read[Value](s)(rw)
-  catch
-    case e =>
-      println(e)
-      read[Value](write(s))(rw)
-
-
-
-  def laminarCell(tSig:Signal[Option[Value]],tObs:Observer[Value]) =
-    val editVar = Var(false)
-    td(
-      cls := "cellTop",
-      onDblClick.filter(_ => !editVar.now()).mapTo(true) --> editVar.writer,
-      child <-- editVar.signal.map[HtmlElement] {
-        case true => tableInput(tSig,
-          tObs.contramap(readStr)
-        )(rw)
-        case false => tableCell(tSig)(rw)
-      },
-      onKeyPress.filter(_.keyCode == dom.KeyCode.Enter)
-        .mapTo(false) --> editVar.writer
-    )
-
 
 }
 
@@ -93,15 +67,12 @@ enum GenericProperty[T: ReadWriter] extends Property {
   case Style extends GenericProperty[String]
   case Interactable extends GenericProperty[Boolean]
   case Hovered extends GenericProperty[Unit]
+  case Editing extends GenericProperty[Unit]
 
   type Value = T
 
   val rw = summon[ReadWriter[T]]
 }
-
-extension (prop: Property { type Value = String })
-  def readStr(s:String) = s    
-
 
 
 export GenericProperty._

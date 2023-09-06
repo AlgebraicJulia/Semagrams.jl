@@ -8,6 +8,7 @@ import cats._
 import cats.implicits._
 import cats.effect._
 import cats.effect.std._
+import upickle.default._
 
 /** A trait for actions which perform some effect on the Semagram. Actions are
   * paired with [[EventHook]]s in [[Binding]]s, and can use the data extracted
@@ -46,12 +47,19 @@ object Action {
 }
 
 case class AddAtMouse(ob: Ob) extends Action[Unit, ACSet] {
-  def apply(_p: Unit, r: Action.Resources[ACSet]) = IO(
-    if r.stateVar.now().hovered != None
-    then 
-      val pos = r.stateVar.now().mousePos
-      r.modelVar.update(_.addPart(ob, PropMap() + (Center -> pos))._1)
-  )
+  def apply(_p: Unit, r: Action.Resources[ACSet]) = 
+    r.stateVar.now().hovered match
+    case Some(ent) => 
+      val pos = r.stateVar.now().mousePos match
+        case Complex(0,0) => r.stateVar.now().dims/2.0
+        case z => z
+      
+      IO(r.modelVar.update(
+        _.addPart(ob, PropMap() + (Center -> pos))._1
+      ))
+    
+    case None => IO(())
+  
 
   def description = s"add a new part of type $ob at current mouse position"
 }
@@ -145,3 +153,27 @@ case class ProcessMsg[Model]() extends Action[Message[Model],Model] {
 
 
 }
+
+case class PartAction(msg:Entity => Message[ACSet]) extends Action[Entity,ACSet] {
+
+  def apply(ent:Entity,r: Action.Resources[ACSet]): IO[Unit] = IO(
+    r.modelVar.update(msg(ent).execute)
+  )
+
+  def description = "process a message from outside the semagram"
+
+
+
+}
+
+case object PrintModel extends Action[Unit,ACSet]:
+  def apply(u:Unit,r:Action.Resources[ACSet]) = 
+    val acset = r.modelVar.now()
+    val gs = r.stateVar.now()
+    IO {
+      println(write(acset, 2)(acset.schema.acsetRW))
+      println(gs.toString())
+    }
+  def description = "print a value to the console"
+
+

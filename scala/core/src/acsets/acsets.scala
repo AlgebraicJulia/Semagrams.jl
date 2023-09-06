@@ -891,8 +891,15 @@ case class AddPartMsg(ob:Ob,props:PropMap = PropMap()) extends Message[ACSet] {
   def execute(a:ACSet) = a.addPart(ob,props)._1
 }
 
+case class RemovePartMsg(part:Part) extends Message[ACSet] {
+  def execute(a:ACSet) = a.remPart(part)
+}
+
 case class SetSubpartMsg(part:Part,prop:Property)(v:prop.Value) extends Message[ACSet] {
   def execute(a:ACSet) = a.setSubpart(part,prop,v)
 }
 
+case class RemoveSubpartMsg(part:Part,prop:Property) extends Message[ACSet] {
+  def execute(a:ACSet) = a.remSubpart(part,prop)
+}
 

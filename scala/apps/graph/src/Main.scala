@@ -34,8 +34,6 @@ object GraphDisplay extends ACSemagram {
   )
 
   val schema: Schema = SchGraph
-
-
 }
 
 val bindings = Seq[Binding[ACSet]](
@@ -43,13 +41,12 @@ val bindings = Seq[Binding[ACSet]](
   Binding(KeyDownHook("d"), DeleteHovered()),
   Binding(ClickOnPartHook(MouseButton.Left, Set(KeyModifier.Shift)), AddEdgeViaDrag(E, Src, Tgt)),
   Binding(ClickOnPartHook(MouseButton.Left), MoveViaDrag()),
-  Binding(MsgHook(),ProcessMsg())
+  Binding(MsgHook(),ProcessMsg()),
+  Binding(DoubleClickOnPartHook(),PartAction(
+    part => SetSubpartMsg(part.asInstanceOf[Part],Editing)(())
+  )),
+  Binding(KeyDownHook("?"), PrintModel)
 )
-
-class DisplayProperty(val f: Property, val serializer: f.Value => String)
-
-
-
 
 
 object Main {
@@ -58,14 +55,7 @@ object Main {
     @JSExport
     def main(mountInto: dom.Element, init: js.UndefOr[String]) = {
 
-
-      // SemagramElt[ACSet] ≅ Element × Readout × Update
       val sema = GraphDisplay(bindings)
-
-      // Check that it's the same element
-      println(sema.elt.toString())      
-
-
 
       val semaAttrs = Seq(
         backgroundColor := "white",
@@ -77,18 +67,15 @@ object Main {
         boxSizing := "border-box",
       )
 
+
       val messenger = Observer(
         (m:Message[ACSet]) => sema.update(a => m.execute(a))
       )
-
-      
       val dims = Var((1,1))
       val rand = scala.util.Random()
 
+      val propTable = PropTable(V,Seq(Content,Center,Fill))
 
-      // val s = Var("Hi")
-
-      val clickBus = new EventBus[Unit]
 
       val mainDiv: Div = div( 
         idAttr := "mainDiv",
@@ -108,33 +95,17 @@ object Main {
             AddPartMsg(V, props)
           } --> messenger
         ),
-        PropTable(Seq(Center,Content)).laminarElt(
-          V,
+        propTable.laminarElt(
           sema.signal,
           messenger
         )
-
-      )
-
-      // mainDiv.amend(
-      //   button(
-      //     "add row",
-      //     onClick --> Observer(
-      //       _ => mainDiv.amend(
-
-      //       )
-      //     )
-      //   )
-      // )
-        // child <-- tickStream.map(_ => 
-        //   // DTable(sema.readout(),V).render()
+        // PropTable(Seq(Content,Center,Fill)).laminarElt(
+        //   V,
+        //   sema.signal,
+        //   messenger
         // )
-      
-
+      )
       render(mountInto, mainDiv)
-
-
-
     }
   }
 }

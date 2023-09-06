@@ -6,7 +6,8 @@ import com.raquo.laminar.api.L._
 
 case class EditorState(
     hovered: Option[Entity],
-    mousePos: Complex
+    mousePos: Complex,
+    dims: Complex
 ) {
   def processEvent(evt: Event): EditorState = evt match {
     case MouseEnter(ent) => 
@@ -14,6 +15,7 @@ case class EditorState(
     case MouseLeave(ent) =>
       this.copy(hovered = if ent == Background() then None else Some(Background()))
     case MouseMove(pos) => this.copy(mousePos = pos)
+    case Resize(newsize) => this.copy(dims = newsize)
     case _              => this
   }
 }

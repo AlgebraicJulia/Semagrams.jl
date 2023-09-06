@@ -110,13 +110,12 @@ trait ACSemagram extends Semagram {
     )
     else {
       val modelVar = UndoableVar(a)
-      val stateVar = Var(EditorState(Some(Background()), Complex(0,0)))
+      val stateVar = Var(EditorState(Some(Background()), Complex(0,0),Complex(1,1)))
       val globalStateVar = Var(GlobalState(Set()))
       val eventBus = EventBus[Event]()
       val globalEventBus = EventBus[Event]()
       val modelSig = EditorState.modifyACSet(modelVar.signal, stateVar.signal)
       val outbox = EventBus[Message[Model]]()
-
 
       val semaElt = div(
         cls := "semaElt",
@@ -126,11 +125,6 @@ trait ACSemagram extends Semagram {
         ),
         globalEventBus.events --> globalStateVar.updater[Event]((globalState, evt) => globalState.processEvent(evt)),
         globalEventBus.events --> eventBus.writer,
-        backgroundColor := "blue",
-      )
-
-      // It works here
-      semaElt.amend(
         backgroundColor := "white"
       )
 

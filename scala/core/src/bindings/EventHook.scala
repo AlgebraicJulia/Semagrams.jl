@@ -54,6 +54,17 @@ object ClickOnPartHook {
 }
 
 
+case class DoubleClickOnPartHook(button: MouseButton = MouseButton.Left, modifiers: Set[KeyModifier] = Set()) extends EventHook[Entity]:
+
+  def apply(evt:Event, globalState: GlobalState) = evt match {
+    case DoubleClick(ent,button) if modifiers == globalState.modifiers =>
+      ent
+    case _ => None 
+  }
+
+  def description = s"double-click on part with $button"
+
+
 
 case class MsgHook[Model]() extends EventHook[Message[Model]] {
 
@@ -65,3 +76,4 @@ case class MsgHook[Model]() extends EventHook[Message[Model]] {
   def description = "receive a message to process"
 
 }
+
