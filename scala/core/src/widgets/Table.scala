@@ -17,16 +17,22 @@ def noquotes(s:String) = if s.length > 1 & s.head == s.last & s.head == '"'
 
 
 
-def tableCell[T:ReadWriter](tSig:Signal[Option[T]]) = td(
-  cls("dcell"),
+def tableCell[T:ReadWriter](tSig:Signal[Option[T]],toggle:Observer[Unit]) = div(
+  cls("dcell-text"),
   child.text <-- tSig.map(_ match
     case Some(v) => noquotes(write(v))
     case None => ""
   ),
+  onDblClick.mapTo(()) --> toggle,
+  height := "100%",
 )
 
+val onEnter = onKeyPress.filter(_.keyCode == dom.KeyCode.Enter)
+val onEsc = onKeyDown.filter(_.keyCode == dom.KeyCode.Escape)
 
-def tableInput[T:ReadWriter](tSig:Signal[Option[T]],tObs:Observer[T]) = input(
+val onTab = onKeyPress.filter(_.keyCode == dom.KeyCode.Tab)
+
+def tableInput[T:ReadWriter](tSig:Signal[Option[T]],tObs:Observer[T],toggle:Observer[Unit]) = input(
   cls("dcell-edit"),
   value <-- tSig.map(_ match
     case Some(t) => noquotes(write(t))
@@ -34,14 +40,57 @@ def tableInput[T:ReadWriter](tSig:Signal[Option[T]],tObs:Observer[T]) = input(
   ),
   placeholder("label?"),
   onMountFocus,
-  onKeyPress
-    .filter(_.keyCode == dom.KeyCode.Enter)
-    .mapToValue
+  onEnter.mapToValue
     .map(readStr[T])
     .collect {
       case Some(t) => t
-    } --> tObs
+    } --> tObs,
+  onEsc.mapTo(()) --> toggle,
 )
+
+
+
+case class EditState(part:Part,prop:Property,editing:Boolean)
+
+case class PropCell(part:Part,prop:Property,
+  editSig:Signal[Boolean],
+  editToggle: Observer[EditState]
+):
+  implicit val serializer: ReadWriter[prop.Value] = prop.rw
+
+
+
+
+  def laminarElt[T:ReadWriter](
+    valSig: Signal[Option[T]],
+    valObs: Observer[prop.Value],
+    editObs: Observer[EditState]
+  ) = td(
+    cls := "dcell",
+    child <-- editSig.map {b =>
+      b match
+        case true => tableInput(
+          valSig,
+          valObs.contramap(_.asInstanceOf[prop.Value]),
+          editObs.contramap(
+            (_:Unit) => EditState(part,prop,false)
+          )
+        )
+        case false => tableCell(valSig,
+          editObs.contramap((_:Unit) => EditState(part,prop,true))
+        )
+    },
+    onEnter.mapTo(EditState(part,prop,false)) --> editObs,
+    // onKeyPress.filter(_.keyCode == dom.KeyCode.Enter)
+    //   .mapTo(false) --> editVar.writer,
+  )
+
+  // def edit() = if !editVar.now()
+  //   then editVar.set(true)
+  //   else ()
+
+
+
 
 /** Helper method with special handling for Value = String */ 
 def readStr[T:ReadWriter](s:String): Option[T] =
@@ -54,40 +103,11 @@ def readStr[T:ReadWriter](s:String): Option[T] =
 
 
 
-case class PropTable(ob:Ob,cols:Seq[Property],keys:Seq[Property] = Seq()):
 
-  // def edit(part:Part,prop:Property) = rowSig.map(rows =>
-  //   rows.find(_.part == part) match
-  //     case Some(row) => row.edit(prop)
-  //     case None => 
-  // )
-  
-  
-
-  def laminarElt(
-    modelSig: Signal[ACSet],
-    messenger: Observer[Message[ACSet]]
-  ): Element = 
-    val rowSig = modelSig
-      .map(_.parts(ROOT,ob))
-      .split(pair => pair._1)(
-        (part,pair,pairSig) => 
-          PropRow(part,cols).laminarElt(
-            pairSig.map(_._2.props),
-            messenger
-          )
-      )
-
-    table(
-      headerRow,
-      children <-- rowSig
-    )
-
-  def headerRow = th(ob.toString()) +: cols.map(prop => th(prop.toString()))
-
-
-
-case class PropRow(part:Part,cols:Seq[Property]):
+case class PropRow(part:Part,cols:Seq[Property],
+  editSig:Signal[Set[Property]],
+  editObs:Observer[EditState]
+):
 
   // def edit(col:Property) = cols.indexOf(col) match
   //   case neg if neg < 0 => ()
@@ -95,7 +115,10 @@ case class PropRow(part:Part,cols:Seq[Property]):
   //     cellSeq(i).edit()  
   //   )
   
-  val cells = cols.map(col => PropCell(part,col))
+  val cells = cols.map(col => PropCell(part,col,
+    editSig.map(_.contains(col)),
+    editObs
+  ))
   
 
 
@@ -106,23 +129,23 @@ case class PropRow(part:Part,cols:Seq[Property]):
   ) = 
 
     val cellSig = propSig
-      .combineWith(Signal.fromValue(cols))
-      .map( (props,cols) => cols.map(
-          col => (col,props.get(col))
-      ))
+      .combineWith(Signal.fromValue(cells))
+      .map { case (props,cells) => 
+        cells.map( cell =>
+          (cell,props.get(cell.prop))
+        )
+      }
       .split(pair => pair._1)(
-        (col,initpair,pairSig) =>
-          val cell = PropCell(part,col)
-
-          cell.laminarElt(
-            pairSig.map(pair =>
-              pair._2.asInstanceOf[Option[cell.prop.Value]]
-            ),
-            messenger.contramap(
-              (v:cell.prop.Value) => 
-                SetSubpartMsg(part,cell.prop)(v)
-            )
-          )
+        (cell,initpair,pairSig) => cell.laminarElt(
+          pairSig.map(pair =>
+            pair._2.asInstanceOf[Option[cell.prop.Value]]
+          ),
+          messenger.contramap(
+            (v:cell.prop.Value) => 
+              SetSubpartMsg(part,cell.prop)(v)
+          ),
+          editObs
+        )
       )
 
 
@@ -135,58 +158,71 @@ case class PropRow(part:Part,cols:Seq[Property]):
       ),
       onMouseEnter.mapTo(SetSubpartMsg(part,Hovered)(())) --> messenger,
       onMouseLeave.mapTo(RemoveSubpartMsg(part,Hovered)) --> messenger,
-
+      height := "100%",
     )
 
 
 
-//   def row(part:Part,propSig:Signal[PropMap],messenger:Observer[Message[ACSet]]) = 
-//     val cells = cols.map(col => col.laminarCell(
-//       part,
-//       propSig.map(_.get(col)),
-//       messenger.contramap(v => SetSubpartMsg(part,col)(v)))
-//     )
+case class PropTable(ob:Ob,cols:Seq[Property],keys:Seq[Property] = Seq()):
 
-//     tr(
-//       td(part.path.head.toString()),
-//       cells,
-//       backgroundColor <-- propSig.map(_.get(Hovered) match
-//         case Some(_) => "lightblue"
-//         case None => "white"
-//       ),
-//       onMouseEnter.mapTo(SetSubpartMsg(part,Hovered)(())) --> messenger,
-//       onMouseLeave.mapTo(RemoveSubpartMsg(part,Hovered)) --> messenger,
+  // def edit(part:Part,prop:Property) = rowSig.map(rows =>
+  //   rows.find(_.part == part) match
+  //     case Some(row) => row.edit(prop)
+  //     case None => 
+  // )
 
-//     )
+  def edit(ent:Entity,prop:Property) = ent match
+    case part:Part =>
+      editObs.onNext(EditState(part,prop,true))
+    case _ => ()
 
-  
 
-case class PropCell(part:Part,prop:Property):
-  implicit val serializer: ReadWriter[prop.Value] = prop.rw
 
-  val editVar = Var(false)
+  val editsVar: Var[Map[Part,Set[Property]]] = 
+    Var(Map().withDefault(_ => Set()))
 
-  
+  val editObs: Observer[EditState] = Observer {
+    case EditState(part,prop,editing) => editsVar.update(
+      edits => editing match
+        case true => 
+          edits + (part -> (edits(part) + prop))  
+        case false => edits(part).toSeq match
+          case Seq() => edits - part
+          case Seq(p) if p==prop => edits - part
+          case _ => edits + (part -> (edits(part) - prop)) 
+
+    )
+
+
+  // val edit = (part:Part,prop:Property) => println("Hi")
+
+
+  }
+
 
   def laminarElt(
-    valSig: Signal[Option[prop.Value]],
-    valObs: Observer[prop.Value]
-  ) = td(
-    cls := "cellTop",
-    onDblClick.filter(_ => !editVar.now()).mapTo(true) --> editVar.writer,
-    child <-- editVar.signal.map {b =>
-      b match
-        case true => tableInput(
-          valSig,
-          valObs
-        )
-        case false => tableCell(valSig)
-    },
-    onKeyPress.filter(_.keyCode == dom.KeyCode.Enter)
-      .mapTo(false) --> editVar.writer,
-  )
-  
-  def edit() = if !editVar.now()
-    then editVar.set(true)
-    else ()
+    modelSig: Signal[ACSet],
+    messenger: Observer[Message[ACSet]]
+  ): Element = 
+    val rowSig = modelSig
+      .map(_.parts(ROOT,ob))
+      .split(pair => pair._1)(
+        (part,pair,pairSig) => 
+          PropRow(part,cols,
+            editsVar.signal.map(_(part)),
+            editObs
+          ).laminarElt(
+            pairSig.map(_._2.props),
+            messenger
+          )
+      )
 
+    table(
+      headerRow,
+      children <-- rowSig,
+      height := "100%"
+    )
+
+  def headerRow = tr(
+    th(ob.toString()) +: cols.map(prop => th(prop.toString()))
+  )

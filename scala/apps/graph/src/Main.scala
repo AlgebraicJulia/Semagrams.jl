@@ -16,7 +16,7 @@ import org.scalajs.dom
 import scala.scalajs.js.annotation._
 import scala.scalajs.js
 
-object GraphDisplay extends ACSemagram {
+object GraphDisplay extends ACSemagram:
   type Model = ACSet
 
   def layout(g: ACSet) = assignBends(Map(E -> (Src, Tgt)), 0.5)(g)
@@ -27,7 +27,7 @@ object GraphDisplay extends ACSemagram {
   )
 
   val schema: Schema = SchGraph
-}
+
 
 val bindings = Seq[Binding[ACSet]](
   Binding(KeyDownHook("a"), AddAtMouse(V)),
@@ -35,11 +35,31 @@ val bindings = Seq[Binding[ACSet]](
   Binding(ClickOnPartHook(MouseButton.Left, Set(KeyModifier.Shift)), AddEdgeViaDrag(E, Src, Tgt)),
   Binding(ClickOnPartHook(MouseButton.Left), MoveViaDrag()),
   Binding(MsgHook(),ProcessMsg()),
-  Binding(DoubleClickOnPartHook(),PartAction(
-    part => SetSubpartMsg(part.asInstanceOf[Part],Editing)(())
+  Binding(DoubleClickOnPartHook(),PartCallback(
+    part => propTable.edit(part,Content)
   )),
   Binding(KeyDownHook("?"), PrintModel)
 )
+
+val sema = GraphDisplay(bindings)
+
+val semaAttrs = Seq(
+  backgroundColor := "white",
+  height := "400px",
+  width := "100%",
+  border := "black",
+  borderStyle := "solid",
+  backgroundColor := "white",
+  boxSizing := "border-box",
+)
+
+val messenger = Observer(
+  (m:Message[ACSet]) => sema.update(a => m.execute(a))
+)
+
+
+val propTable = PropTable(V,Seq(Content,Center,Fill))
+
 
 
 object Main {
@@ -48,26 +68,19 @@ object Main {
     @JSExport
     def main(mountInto: dom.Element, init: js.UndefOr[String]) = {
 
-      val sema = GraphDisplay(bindings)
-
-      val semaAttrs = Seq(
-        backgroundColor := "white",
-        height := "400px",
-        width := "100%",
-        border := "black",
-        borderStyle := "solid",
-        backgroundColor := "white",
-        boxSizing := "border-box",
-      )
-
-
-      val messenger = Observer(
-        (m:Message[ACSet]) => sema.update(a => m.execute(a))
-      )
-      val dims = Var((1,1))
-      val rand = scala.util.Random()
-
-      val propTable = PropTable(V,Seq(Content,Center,Fill))
+      // val cellSig = sema.signal
+      //   .map(_.parts(ROOT,V).headOption)
+      //   .splitOption({
+      //     case ((part,acset),pairSig) => PropCell2(part,Center)
+      //       .laminarElt(
+      //         pairSig.map(pair => pair._2.props.get(Center)),
+      //         messenger.contramap {
+      //           case v:Complex => SetSubpartMsg(part,Center)(v)
+      //         }
+      //       )
+      //     },
+      //     div("No vertices")
+      //   )
 
 
       val mainDiv: Div = div( 
@@ -75,29 +88,18 @@ object Main {
         sema.elt.amend(
           semaAttrs,
         ),
-        button(
-          "Click Me",
-          onClick.mapTo {
-            dims.update(_ => (sema.elt.ref.offsetWidth.toInt,sema.elt.ref.offsetHeight.toInt))
-
-            val props = PropMap() + (Center,Complex(
-              rand.nextInt(dims.now()._1),
-              rand.nextInt(dims.now()._2),
-            ))
-
-            AddPartMsg(V, props)
-          } --> messenger
-        ),
         propTable.laminarElt(
           sema.signal,
           messenger
-        )
-        // PropTable(Seq(Content,Center,Fill)).laminarElt(
-        //   V,
-        //   sema.signal,
-        //   messenger
+        ),
+        // child <-- cellSig.map(_ match
+        //   case cell:PropCell => cell.laminarElt
+        //   case elt:Element => elt 
         // )
       )
+        
+        
+
       render(mountInto, mainDiv)
     }
   }

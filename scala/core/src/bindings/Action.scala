@@ -154,11 +154,11 @@ case class ProcessMsg[Model]() extends Action[Message[Model],Model] {
 
 }
 
-case class PartAction(msg:Entity => Message[ACSet]) extends Action[Entity,ACSet] {
+case class PartCallback(cb:Entity => Unit) extends Action[Entity,ACSet] {
 
-  def apply(ent:Entity,r: Action.Resources[ACSet]): IO[Unit] = IO(
-    r.modelVar.update(msg(ent).execute)
-  )
+  def apply(ent:Entity,r: Action.Resources[ACSet]): IO[Unit] = IO {
+    cb(ent)
+  }
 
   def description = "process a message from outside the semagram"
 
