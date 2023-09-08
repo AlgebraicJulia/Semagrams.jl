@@ -12,6 +12,7 @@ import semagrams.sprites._
 import semagrams.util._
 import semagrams.bindings.Binding
 import semagrams.bindings.Action
+import semagrams.widgets.PropTable
 
 trait Semagram {
   type Model
@@ -82,74 +83,89 @@ trait Semagram {
 
 
 
-type Readout[Model] = () => Model
-type Update[Model] = Message[Model] => Unit
 
-case class SemagramElt[Model](
+case class SemagramElt(
   elt: Div,
-  readout: Readout[Model],
-  update: Update[Model],
-  signal: Signal[Model],
-  observer: Observer[Model]
-)
+  schema: Schema,
+  readout: () => ACSet,
+  signal: Signal[ACSet],
+  messenger: Observer[Message[ACSet]]
+):
+
+  def update(msg:Message[ACSet]) = messenger.onNext(msg)
+
+  def propTable(ob:Ob,cols:Seq[Property],keys:Seq[Property]) = 
+    PropTable(cols,signal.map(_.parts(ROOT,ob)),keys)
+  def propTable(ob:Ob,cols:Seq[Property],key:Property): PropTable =
+    propTable(ob,cols,Seq(key))
+  def propTable(ob:Ob,cols:Seq[Property]): PropTable =
+    propTable(ob,cols,Seq())
+
+  def propTable(ob:Ob): PropTable =
+    val cols = schema.homs.filter(_.doms.contains(PartType(Seq(ob))))
+      ++ schema.attrs.filter(_.doms.contains(PartType(Seq(ob))))
+    propTable(ob,cols)  
+
+  def laminarTable(ob:Ob,cols:Seq[Property],keys:Seq[Property] = Seq()) =
+    propTable(ob,cols,keys).laminarElt(messenger)
+
+  def laminarTable(ob:Ob) = propTable(ob)
+
 
 trait ACSemagram extends Semagram {
   type Model = ACSet
 
   val schema: Schema
 
-  def apply(bindings: Seq[Binding[ACSet]],a:ACSet = ACSet(schema)): SemagramElt[Model] = 
-    if a.schema != schema
-    then SemagramElt(
-      div(s"ACSet schema ${a.schema} != Semagram schema $schema"),
-      () => ACSet(schema),
-      _ => ACSet(schema),
-      Var(ACSet(schema)).signal,
-      Var(ACSet(schema)).writer
+  def apply(bindings: Seq[Binding[ACSet]],a:ACSet = ACSet(schema)): SemagramElt = {
+    val acset = if a.schema == schema then a else ACSet(schema)
+    if a != acset then println(s"Bad input schema ${a.schema} != $schema")
+
+    val modelVar = UndoableVar(a)
+    val stateVar = Var(EditorState(Some(Background()), Complex(0,0),Complex(1,1)))
+    val globalStateVar = Var(GlobalState(Set()))
+    val eventBus = EventBus[Event]()
+    val globalEventBus = EventBus[Event]()
+    val modelSig = EditorState.modifyACSet(modelVar.signal, stateVar.signal)
+    val outbox = EventBus[Message[Model]]()
+
+    val semaElt = div(
+      cls := "semaElt",
+      this.apply(modelSig,eventBus.writer).amend(
+        svg.height := "100%",
+        svg.width := "100%",
+      ),
+      globalEventBus.events --> globalStateVar.updater[Event]((globalState, evt) => globalState.processEvent(evt)),
+      globalEventBus.events --> eventBus.writer,
+      backgroundColor := "white"
     )
-    else {
-      val modelVar = UndoableVar(a)
-      val stateVar = Var(EditorState(Some(Background()), Complex(0,0),Complex(1,1)))
-      val globalStateVar = Var(GlobalState(Set()))
-      val eventBus = EventBus[Event]()
-      val globalEventBus = EventBus[Event]()
-      val modelSig = EditorState.modifyACSet(modelVar.signal, stateVar.signal)
-      val outbox = EventBus[Message[Model]]()
 
-      val semaElt = div(
-        cls := "semaElt",
-        this.apply(modelSig,eventBus.writer).amend(
-          svg.height := "100%",
-          svg.width := "100%",
-        ),
-        globalEventBus.events --> globalStateVar.updater[Event]((globalState, evt) => globalState.processEvent(evt)),
-        globalEventBus.events --> eventBus.writer,
-        backgroundColor := "white"
-      )
+    GlobalState.listen(globalEventBus.writer)
 
-      GlobalState.listen(globalEventBus.writer)
-
-      val main = for {
-        eventQueue <- Queue.unbounded[IO, Event]
-        _ <- Dispatcher.sequential[IO] use { dispatcher =>
-          semaElt.amend(
-            eventBus.events --> Observer[Event](evt =>
-              dispatcher.unsafeRunAndForget(eventQueue.offer(evt))
-            )
+    val main = for {
+      eventQueue <- Queue.unbounded[IO, Event]
+      _ <- Dispatcher.sequential[IO] use { dispatcher =>
+        semaElt.amend(
+          eventBus.events --> Observer[Event](evt =>
+            dispatcher.unsafeRunAndForget(eventQueue.offer(evt))
           )
-          Binding.processAll(Action.Resources(modelVar, stateVar, globalStateVar.signal, eventQueue, outbox.writer), bindings)
-        }
-      } yield ()
+        )
+        Binding.processAll(Action.Resources(modelVar, stateVar, globalStateVar.signal, eventQueue, outbox.writer), bindings)
+      }
+    } yield ()
 
-      main.unsafeRunAndForget()(unsafe.IORuntime.global)
+    main.unsafeRunAndForget()(unsafe.IORuntime.global)
 
-      SemagramElt(
-        semaElt,
-        () => modelVar.now(),
-        (msg:Message[ACSet]) => modelVar.update(msg.execute),
-        modelSig,
-        modelVar.writer
+    SemagramElt(
+      semaElt,
+      schema,
+      () => modelVar.now(),
+      modelSig,
+      modelVar.writer.contramap(
+        msg => msg.execute(modelVar.now())
       )
-    }
+    )
+  }
+
 
 }

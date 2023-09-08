@@ -36,12 +36,12 @@ val bindings = Seq[Binding[ACSet]](
   Binding(ClickOnPartHook(MouseButton.Left), MoveViaDrag()),
   Binding(MsgHook(),ProcessMsg()),
   Binding(DoubleClickOnPartHook(),PartCallback(
-    part => propTable.edit(part,Content)
+    part => pTable.setEdit(part,Content)
   )),
   Binding(KeyDownHook("?"), PrintModel)
 )
 
-val sema = GraphDisplay(bindings)
+val sema: SemagramElt = GraphDisplay(bindings)
 
 val semaAttrs = Seq(
   backgroundColor := "white",
@@ -58,7 +58,7 @@ val messenger = Observer(
 )
 
 
-val propTable = PropTable(V,Seq(Content,Center,Fill))
+val pTable = sema.propTable(V,Seq(Content,Center,Fill,Content))
 
 
 
@@ -68,38 +68,15 @@ object Main {
     @JSExport
     def main(mountInto: dom.Element, init: js.UndefOr[String]) = {
 
-      // val cellSig = sema.signal
-      //   .map(_.parts(ROOT,V).headOption)
-      //   .splitOption({
-      //     case ((part,acset),pairSig) => PropCell2(part,Center)
-      //       .laminarElt(
-      //         pairSig.map(pair => pair._2.props.get(Center)),
-      //         messenger.contramap {
-      //           case v:Complex => SetSubpartMsg(part,Center)(v)
-      //         }
-      //       )
-      //     },
-      //     div("No vertices")
-      //   )
-
 
       val mainDiv: Div = div( 
         idAttr := "mainDiv",
         sema.elt.amend(
           semaAttrs,
         ),
-        propTable.laminarElt(
-          sema.signal,
-          messenger
-        ),
-        // child <-- cellSig.map(_ match
-        //   case cell:PropCell => cell.laminarElt
-        //   case elt:Element => elt 
-        // )
+        pTable.laminarElt(messenger),
       )
         
-        
-
       render(mountInto, mainDiv)
     }
   }

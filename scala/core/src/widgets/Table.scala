@@ -30,7 +30,9 @@ def tableCell[T:ReadWriter](tSig:Signal[Option[T]],toggle:Observer[Unit]) = div(
 val onEnter = onKeyPress.filter(_.keyCode == dom.KeyCode.Enter)
 val onEsc = onKeyDown.filter(_.keyCode == dom.KeyCode.Escape)
 
-val onTab = onKeyPress.filter(_.keyCode == dom.KeyCode.Tab)
+val onTab = onKeyDown.filter(evt => evt.keyCode == dom.KeyCode.Tab)
+
+
 
 def tableInput[T:ReadWriter](tSig:Signal[Option[T]],tObs:Observer[T],toggle:Observer[Unit]) = input(
   cls("dcell-edit"),
@@ -45,16 +47,17 @@ def tableInput[T:ReadWriter](tSig:Signal[Option[T]],tObs:Observer[T],toggle:Obse
     .collect {
       case Some(t) => t
     } --> tObs,
+  onTab.mapToValue
+    .map(readStr[T])
+    .collect {
+      case Some(t) => t
+    } --> tObs,
   onEsc.mapTo(()) --> toggle,
 )
 
-
-
-case class EditState(part:Part,prop:Property,editing:Boolean)
-
 case class PropCell(part:Part,prop:Property,
   editSig:Signal[Boolean],
-  editToggle: Observer[EditState]
+  editToggle: Observer[EditMsg]
 ):
   implicit val serializer: ReadWriter[prop.Value] = prop.rw
 
@@ -64,7 +67,7 @@ case class PropCell(part:Part,prop:Property,
   def laminarElt[T:ReadWriter](
     valSig: Signal[Option[T]],
     valObs: Observer[prop.Value],
-    editObs: Observer[EditState]
+    editObs: Observer[EditMsg]
   ) = td(
     cls := "dcell",
     child <-- editSig.map {b =>
@@ -73,22 +76,24 @@ case class PropCell(part:Part,prop:Property,
           valSig,
           valObs.contramap(_.asInstanceOf[prop.Value]),
           editObs.contramap(
-            (_:Unit) => EditState(part,prop,false)
+            (_:Unit) => SetEditMsg(part,prop,false)
           )
         )
         case false => tableCell(valSig,
-          editObs.contramap((_:Unit) => EditState(part,prop,true))
+          editObs.contramap((_:Unit) => SetEditMsg(part,prop,true))
         )
     },
-    onEnter.mapTo(EditState(part,prop,false)) --> editObs,
-    // onKeyPress.filter(_.keyCode == dom.KeyCode.Enter)
-    //   .mapTo(false) --> editVar.writer,
+    onEnter.mapTo(SetEditMsg(part,prop,false)) --> editObs,
+    onTab.preventDefault
+      .map( _.getModifierState("Shift") match
+        case true => 
+          // Shift + Tab
+          EditPrevCellMsg(part,prop)
+        case false => 
+          // Tab
+          EditNextCellMsg(part,prop)
+      ) --> editObs
   )
-
-  // def edit() = if !editVar.now()
-  //   then editVar.set(true)
-  //   else ()
-
 
 
 
@@ -105,16 +110,11 @@ def readStr[T:ReadWriter](s:String): Option[T] =
 
 
 case class PropRow(part:Part,cols:Seq[Property],
+  neighbors:(Part,Part),
   editSig:Signal[Set[Property]],
-  editObs:Observer[EditState]
+  editObs:Observer[EditMsg]
 ):
 
-  // def edit(col:Property) = cols.indexOf(col) match
-  //   case neg if neg < 0 => ()
-  //   case i => cells.map(cellSeq =>
-  //     cellSeq(i).edit()  
-  //   )
-  
   val cells = cols.map(col => PropCell(part,col,
     editSig.map(_.contains(col)),
     editObs
@@ -163,59 +163,92 @@ case class PropRow(part:Part,cols:Seq[Property],
 
 
 
-case class PropTable(ob:Ob,cols:Seq[Property],keys:Seq[Property] = Seq()):
-
-  // def edit(part:Part,prop:Property) = rowSig.map(rows =>
-  //   rows.find(_.part == part) match
-  //     case Some(row) => row.edit(prop)
-  //     case None => 
-  // )
-
-  def edit(ent:Entity,prop:Property) = ent match
-    case part:Part =>
-      editObs.onNext(EditState(part,prop,true))
-    case _ => ()
 
 
 
-  val editsVar: Var[Map[Part,Set[Property]]] = 
+type Edits = Map[Part,Set[Property]]
+
+sealed trait EditMsg:
+  val part:Part
+  val prop:Property
+
+case class SetEditMsg(part:Part,prop:Property,editing:Boolean) extends EditMsg
+case class EditNextCellMsg(part:Part,prop:Property) extends EditMsg
+case class EditPrevCellMsg(part:Part,prop:Property) extends EditMsg
+
+extension (edits:Edits) {
+  def receive(msg:SetEditMsg): Edits = msg match
+    case SetEditMsg(part,prop,editing) => editing match
+      case true => 
+        edits + (part -> (edits(part) + prop))  
+      case false => edits(part).toSeq match
+        case Seq() => edits - part
+        case Seq(p) if p==prop => edits - part
+        case _ => edits + (part -> (edits(part) - prop))
+
+  def receiveAll(msgs:SetEditMsg*): Edits = msgs match
+    case Seq() => edits
+    case head +: tail => edits.receive(head).receiveAll(tail:_*)
+}
+
+
+
+case class PropTable(cols:Seq[Property],partsSig:Signal[Seq[(Part,ACSet)]],keys:Seq[Property] = Seq()):
+  
+  val editBus = new EventBus[EditMsg]
+  val editsVar: Var[Edits] = 
     Var(Map().withDefault(_ => Set()))
 
-  val editObs: Observer[EditState] = Observer {
-    case EditState(part,prop,editing) => editsVar.update(
-      edits => editing match
-        case true => 
-          edits + (part -> (edits(part) + prop))  
-        case false => edits(part).toSeq match
-          case Seq() => edits - part
-          case Seq(p) if p==prop => edits - part
-          case _ => edits + (part -> (edits(part) - prop)) 
+  def next[T](t:T,ts:Seq[T]) = ts(
+    (ts.indexOf(t) + 1) % ts.length
+  )
 
-    )
+  // Extra factor of `ts.length` avoids negative modulus
+  def prev[T](t:T,ts:Seq[T]) = ts(
+    (ts.indexOf(t) + ts.length - 1) % ts.length
+  )
 
-
-  // val edit = (part:Part,prop:Property) => println("Hi")
+  def neighbors[T](t:T,ts:Seq[T]) = (prev(t,ts),next(t,ts))
 
 
+
+  val editObs: Observer[EditMsg] = editsVar.updater {
+    case (edits,msg) => msg match
+      case msg:SetEditMsg => edits.receive(msg)
+      case EditNextCellMsg(part, prop) => edits.receiveAll(
+        SetEditMsg(part,prop,false),
+        SetEditMsg(part,next(prop,cols),true)
+      )
+      case EditPrevCellMsg(part, prop) => edits.receiveAll(
+        SetEditMsg(part,prop,false),
+        SetEditMsg(part,prev(prop,cols),true)
+      )
+    
   }
 
-
-  def laminarElt(
-    modelSig: Signal[ACSet],
-    messenger: Observer[Message[ACSet]]
-  ): Element = 
-    val rowSig = modelSig
-      .map(_.parts(ROOT,ob))
-      .split(pair => pair._1)(
-        (part,pair,pairSig) => 
-          PropRow(part,cols,
-            editsVar.signal.map(_(part)),
-            editObs
-          ).laminarElt(
-            pairSig.map(_._2.props),
-            messenger
-          )
-      )
+  def setEdit(part:Entity,prop:Property,editing:Boolean = true) = part match
+    case part:Part => editObs.onNext(SetEditMsg(part,prop,editing))
+    case _ => ()
+  
+  def laminarElt(messenger: Observer[Message[ACSet]]): Element = 
+    
+    val triplesSig = partsSig.map {pairs => 
+      pairs.unzip match {
+        case (parts,acsets) => pairs.map {
+          case (part,acset) => (part,acset,neighbors(part,parts))
+        } 
+      }
+    }
+    val rowSig = triplesSig.split(_._1){
+      case (part,(_,propmap,neighbors),tripleSig) =>
+        PropRow(part,cols,neighbors,
+          editsVar.signal.map(_(part)),
+          editObs
+        ).laminarElt(
+          tripleSig.map(_._2.props),
+          messenger
+        )
+    }
 
     table(
       headerRow,
@@ -224,5 +257,18 @@ case class PropTable(ob:Ob,cols:Seq[Property],keys:Seq[Property] = Seq()):
     )
 
   def headerRow = tr(
-    th(ob.toString()) +: cols.map(prop => th(prop.toString()))
+    th("+") +: cols.map(prop => th(prop.toString()))
   )
+
+object PropTable:
+  def apply(cols:Seq[Property],parts:Signal[Seq[(Part,ACSet)]],keys:Seq[Property] = Seq()) = 
+    keys match
+      case Seq() => 
+        new PropTable(cols.distinct,parts,cols.distinct)
+      case _ =>
+        val ks = keys.distinct
+        val cs = ks ++ cols.distinct.filterNot(ks.contains)
+        new PropTable(cs,parts,ks)
+
+
+    

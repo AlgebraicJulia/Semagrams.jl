@@ -170,9 +170,11 @@ case object PrintModel extends Action[Unit,ACSet]:
   def apply(u:Unit,r:Action.Resources[ACSet]) = 
     val acset = r.modelVar.now()
     val gs = r.stateVar.now()
+    val ogs = r.globalStateVar.now()
     IO {
-      println(write(acset, 2)(acset.schema.acsetRW))
+      println(acset.toString())
       println(gs.toString())
+      println(ogs.toString())
     }
   def description = "print a value to the console"
 
