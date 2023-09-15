@@ -34,6 +34,10 @@ case class PropMap(pmap: Map[Property, Any]) {
     this.copy(pmap = pmap + (k.asInstanceOf[Property] -> v.asInstanceOf[Any]))
   }
 
+  def filterKeys(p: Property => Boolean) = PropMap(
+    pmap.view.filterKeys(p).toMap
+  )
+
   /** Returns a new PropMap given by overwriting `this` with the key-value pairs
     * in `other`.
     */

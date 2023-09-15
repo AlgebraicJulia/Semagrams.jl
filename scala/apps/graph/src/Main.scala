@@ -36,7 +36,7 @@ val bindings = Seq[Binding[ACSet]](
   Binding(ClickOnPartHook(MouseButton.Left), MoveViaDrag()),
   Binding(MsgHook(),ProcessMsg()),
   Binding(DoubleClickOnPartHook(),PartCallback(
-    part => pTable.setEdit(part,Content)
+    part => pTable.edit(part,Content)
   )),
   Binding(KeyDownHook("?"), PrintModel)
 )
@@ -54,7 +54,8 @@ val semaAttrs = Seq(
 )
 
 val messenger = Observer(
-  (m:Message[ACSet]) => sema.update(a => m.execute(a))
+  (m:Message[ACSet]) =>
+    sema.update(a => m.execute(a))
 )
 
 
@@ -74,7 +75,7 @@ object Main {
         sema.elt.amend(
           semaAttrs,
         ),
-        pTable.laminarElt(messenger),
+        pTable.laminarElt(sema.signal,messenger),
       )
         
       render(mountInto, mainDiv)

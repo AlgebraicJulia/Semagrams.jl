@@ -95,7 +95,7 @@ case class SemagramElt(
   def update(msg:Message[ACSet]) = messenger.onNext(msg)
 
   def propTable(ob:Ob,cols:Seq[Property],keys:Seq[Property]) = 
-    PropTable(cols,signal.map(_.parts(ROOT,ob)),keys)
+    PropTable(ob,cols,keys)
   def propTable(ob:Ob,cols:Seq[Property],key:Property): PropTable =
     propTable(ob,cols,Seq(key))
   def propTable(ob:Ob,cols:Seq[Property]): PropTable =
@@ -107,7 +107,7 @@ case class SemagramElt(
     propTable(ob,cols)  
 
   def laminarTable(ob:Ob,cols:Seq[Property],keys:Seq[Property] = Seq()) =
-    propTable(ob,cols,keys).laminarElt(messenger)
+    propTable(ob,cols,keys).laminarElt(signal,messenger)
 
   def laminarTable(ob:Ob) = propTable(ob)
 

@@ -6,7 +6,8 @@ import org.scalajs.dom
 case class GlobalState(
     modifiers: Set[KeyModifier]
 ) {
-  def processEvent(evt: Event) = evt match {
+  def processEvent(evt: Event) = 
+    evt match {
     case Event.KeyDown(key) => KeyModifier.fromString.get(key) match {
       case Some(mod) => GlobalState(modifiers + mod)
       case None => this
@@ -15,6 +16,10 @@ case class GlobalState(
       case Some(mod) => GlobalState(modifiers - mod)
       case None => this
     }
+    // Clear state when focus is lost
+    case Blur() => 
+      println("blur")
+      GlobalState(Set())
     case _ => this
   }
 }
@@ -23,5 +28,6 @@ object GlobalState {
   def listen(into: Observer[Event]) = {
     dom.document.onkeydown = ev => into.onNext(KeyDown(ev.key))
     dom.document.onkeyup = ev => into.onNext(KeyUp(ev.key))
+    dom.window.onblur = ev => into.onNext(Blur())
   }
 }

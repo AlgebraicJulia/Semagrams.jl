@@ -30,12 +30,13 @@ enum Event {
   case ContextMenu(ent: Option[Entity])
   case Resize(size:Complex)
   case MsgEvent[Model](msg:Message[Model])
+  case Blur()
 }
 
-trait Message[Model] {
 
+trait Message[Model]:
   def execute(m:Model): Model
 
-}
+
 
 export Event._
