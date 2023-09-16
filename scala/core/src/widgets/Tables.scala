@@ -281,6 +281,7 @@ def tableInput[T:ReadWriter](inputObs:Observer[(InputMsg,Option[T])],init:Option
         case None => ""
       ),
       onMountFocus,
+      onKeyDown.stopPropagation --> Observer(_=> ()),
       modFilters.flatMap(mods => Seq(
         onEnter.filter(evtFilter(mods))
           .mapToValue
