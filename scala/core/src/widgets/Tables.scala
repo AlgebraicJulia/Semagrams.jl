@@ -280,6 +280,7 @@ def tableInput[T:ReadWriter](inputObs:Observer[(InputMsg,Option[T])],init:Option
         case Some(t) => noquotes(write(t))
         case None => ""
       ),
+      onKeyDown.stopPropagation --> Observer(_=> ()),
       onMountFocus,
       modFilters.flatMap(mods => Seq(
         onEnter.filter(evtFilter(mods))

@@ -18,6 +18,15 @@ trait EventHook[A] {
     * auto-generated help messages.
     */
   def description: String
+
+  def filter(pred:A=>Boolean) = FilterHook(this,pred)
+
+}
+
+
+case class FilterHook[A](base:EventHook[A],pred:A=>Boolean) extends EventHook[A] {
+  def apply(evt:Event,gs:GlobalState) = base.apply(evt,gs).filter(pred)
+  val description = "Filter an `EventHook` by some property of its return value"
 }
 
 /** An [[EventHook]] for keydown events.

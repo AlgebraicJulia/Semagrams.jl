@@ -37,3 +37,8 @@ def boxSize(text: String, fontSize: Double): Complex = {
     size
   }
 }
+
+def boxSize(text:Option[String],fontSize:Option[Double]): Complex = boxSize(
+  text.getOrElse(""),
+  fontSize.getOrElse(12.0)
+)

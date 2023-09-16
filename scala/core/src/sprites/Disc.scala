@@ -10,9 +10,9 @@ import semagrams.acsets._
   *
   * Auto-resizes based on the content inside.
   */
-case class Disc(val props: PropMap) extends Sprite {
+case class Disc(label:Property,props: PropMap) extends Sprite {
   def radius(data: PropMap): Double = {
-    val textBox = boxSize(data(Content), data(FontSize))
+    val textBox = boxSize(data.get(label).map(_.toString()), data.get(FontSize))
     val innerSep = data.get(InnerSep).getOrElse(0.0)
     val d = data
       .get(MinimumWidth)
@@ -54,7 +54,7 @@ case class Disc(val props: PropMap) extends Sprite {
     val text = L.svg.text(
       xy <-- data.map(_.get(Center).getOrElse(Complex(100, 100))),
       L.svg.tspan(
-        L.child <-- data.map(p => L.textToTextNode(p(Content))),
+        L.child <-- data.map(p => L.textToTextNode(p.get(label).map(_.toString()).getOrElse(""))),
         textAnchor := "middle",
         dominantBaseline := "central",
         style := "user-select: none"
@@ -96,7 +96,8 @@ case class Disc(val props: PropMap) extends Sprite {
     p.tikzName,
     data.props.get(Center).getOrElse(Complex(0, 0)),
     data.props
-      .get(Content)
+      .get(label)
+      .map(_.toString())
       .getOrElse("")
       .flatMap(_ match
         case '\n' => "\\\\"
@@ -119,9 +120,7 @@ object Disc {
     + (MinimumWidth, 40)
     + (MinimumHeight, 40)
 
-  def apply() = new Disc(defaults)
-
-  def apply(pm: PropMap) = new Disc(defaults ++ pm)
+  def apply(label:Property = Content,pm:PropMap = PropMap()) = new Disc(label,defaults ++ pm)
 
   def boundaryNormal(data: PropMap, dir: Complex) = dir.normalize
 
