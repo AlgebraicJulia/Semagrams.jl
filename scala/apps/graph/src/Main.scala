@@ -4,7 +4,6 @@ import semagrams._
 import semagrams.api._
 import semagrams.acsets._
 import semagrams.bindings._
-import semagrams.widgets._
 
 import Graphs._
 
