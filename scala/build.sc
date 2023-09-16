@@ -54,11 +54,11 @@ object core extends Defaults {
 
   def artifactName = "semagrams"
 
-  // object test extends Tests with TestModule.Utest {
-  //   def jsEnvConfig = T(JsEnvConfig.JsDom())
+  object test extends Tests with TestModule.Utest {
+    def jsEnvConfig = T(JsEnvConfig.JsDom())
 
-  //   def ivyDeps = Agg(ivy"com.lihaoyi::utest::0.8.1")
-  // }
+    def ivyDeps = Agg(ivy"com.lihaoyi::utest::0.8.1")
+  }
 }
 
 trait SemagramsApp extends Defaults {
