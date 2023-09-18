@@ -101,9 +101,8 @@ case class Rect(val props: PropMap) extends Sprite {
     Some(BoundingBox(pos, dims))
   }
 
-  override def center(_subent: Entity, data: ACSet) = Some(
-    data.props.get(Center).getOrElse(Complex(100, 100))
-  )
+  override def center(_subent: Entity, data: ACSet) = 
+    data.props.get(Center)
 
   override def toTikz(p: Part, data: ACSet, visible: Boolean = true) = tikzNode(
     "rectangle",

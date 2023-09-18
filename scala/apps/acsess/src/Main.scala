@@ -74,8 +74,8 @@ object AcsessDisplay extends ACSemagram:
   val entitySources = Seq(
     ACSetEntitySource(Table, Rect()),
     ACSetEntitySource(AttrType, Disc(Name)),
-    ACSetEdgeSource(FKey, FKeySrc, FKeyTgt, Arrow()),
-    ACSetEdgeSource(Attr, AttrSrc, AttrTgt, Arrow()),
+    ACSetEdgeSource(FKey, FKeySrc, FKeyTgt, Arrow(Name)),
+    ACSetEdgeSource(Attr, AttrSrc, AttrTgt, Arrow(Name)),
   )
 
   val schema: Schema = SchSchema
@@ -87,9 +87,18 @@ val bindings = Seq[Binding[ACSet]](
   Binding(KeyDownHook("d"), DeleteHovered()),
   Binding(
     ClickOnPartHook(MouseButton.Left, Set(KeyModifier.Shift))
-      .filter(_.headOb == Table), 
-    AddEdgeViaDrag(FKey, FKeySrc, FKeyTgt)
+      // .filter(_.headOb == Table)
+      , 
+    AddEdgeViaDrag2(Seq(Table))(Map(
+      Table -> (FKey,FKeySrc,FKeyTgt),
+      AttrType -> (Attr,AttrSrc,AttrTgt)
+    ))
   ),
+  // Binding(
+  //   ClickOnPartHook(MouseButton.Left, Set(KeyModifier.Shift))
+  //     .filter(_.headOb == Table), 
+  //   AddEdgeViaDrag(Attr, AttrSrc, AttrTgt)
+  // ),
   Binding(
     ClickOnPartHook(MouseButton.Left)
       .filter(part => Seq(Table,AttrType).contains(part.headOb))

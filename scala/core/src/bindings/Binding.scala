@@ -38,13 +38,17 @@ object Binding {
       evt: Event,
       r: Action.Resources[Model],
       bindings: Seq[Binding[Model]]
-  ): IO[Unit] = for {
+  ): IO[Unit] = 
+    import cats.implicits._
+    for {
     globalState <- IO(r.globalStateVar.now())
     _ <- bindings
-      .collectFirst(
-        ((b: Binding[Model]) => b.hook(evt, globalState).map(b.action(_, r))).unlift
-      )
-      .getOrElse(IO(()))
+      .flatMap{
+        (b:Binding[Model]) => 
+          val a: Option[IO[Unit]] =
+            b.hook(evt,globalState).map(b.action(_,r))
+          a
+      }.parSequence_
   } yield ()
 
   def processAll[Model](r: Action.Resources[Model], bindings: Seq[Binding[Model]]): IO[Unit] = {

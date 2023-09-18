@@ -14,7 +14,7 @@ import semagrams.util._
   * for mouse events, because otherwise it would be very annoying to mouse over
   * the arrow.
   */
-case class Arrow(props: PropMap) extends Sprite {
+case class Arrow(label:Property,props: PropMap) extends Sprite {
   def blockPath(
       s: Complex,
       e: Complex,
@@ -29,6 +29,13 @@ case class Arrow(props: PropMap) extends Sprite {
       ++ Seq(LineTo(s + dz), ClosePath)
   }
 
+  def blockPath(s:Option[Complex],e:Option[Complex],d:Double,bend:Option[Double]): Seq[Path.Element] = blockPath(
+    s.getOrElse(Complex(100,100)),
+    e.getOrElse(Complex(100,100)),
+    d,
+    bend.getOrElse(2.0)
+  )
+
   def curvedPath(s: Complex, e: Complex, bend: Double): Seq[Path.Element] = {
     import Path.Element._
     val rot = Complex(0, bend).exp
@@ -37,6 +44,11 @@ case class Arrow(props: PropMap) extends Sprite {
     val ce = rot.cong * (λ * (s - e)) + e
     Seq(MoveTo(s), Cubic(cs, ce, e))
   }
+  def curvedPath(s:Option[Complex],e:Option[Complex],bend:Option[Double]): Seq[Path.Element] = curvedPath(
+    s.getOrElse(Complex(100,100)),
+    e.getOrElse(Complex(200,200)),
+    bend.getOrElse(2.0)
+  )
 
   def present(
       ent: Entity,
@@ -45,10 +57,9 @@ case class Arrow(props: PropMap) extends Sprite {
       eventWriter: L.Observer[Event]
   ): L.SvgElement = {
     val data = updates.map(props ++ _.props)
-    val $p = updates.map(props ++ _.props)
     val arrow = path(
-      pathElts <-- data.map(p => curvedPath(p(Start), p(End), p(Bend))),
-      stroke <-- $p.map(p =>
+      pathElts <-- data.map(p => curvedPath(p.get(Start), p.get(End), p.get(Bend))),
+      stroke <-- data.map(p =>
         if p.get(Hovered).isDefined then "lightgrey" else p(Stroke)
       ),
       strokeDashArray <-- data.map(_(StrokeDasharray)),
@@ -59,7 +70,7 @@ case class Arrow(props: PropMap) extends Sprite {
     val handle = path(
       fill := "white",
       opacity := "0",
-      pathElts <-- data.map(p => blockPath(p(Start), p(End), 5, p(Bend))),
+      pathElts <-- data.map(p => blockPath(p.get(Start), p.get(End), 5, p.get(Bend))),
       pointerEvents <-- data.map(p =>
         if p(Interactable) then "auto" else "none"
       ),
@@ -92,11 +103,11 @@ case class Arrow(props: PropMap) extends Sprite {
 }
 
 object Arrow {
-  val props = PropMap()
+  val defaultProps = PropMap()
     + (Stroke, "black")
     + (Bend, 0)
     + (StrokeDasharray, "none")
     + (Interactable, true)
 
-  def apply() = new Arrow(props)
+  def apply(label:Property=Content,props:PropMap = PropMap()) = new Arrow(label,defaultProps ++ props)
 }

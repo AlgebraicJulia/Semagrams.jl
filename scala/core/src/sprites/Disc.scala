@@ -47,6 +47,7 @@ case class Disc(label:Property,props: PropMap) extends Sprite {
       eventWriter: L.Observer[Event]
   ): L.SvgElement = {
     val data = updates.map(props ++ _.props)
+    
     val box = circle(
       geomUpdater(data),
       styleUpdater(data)

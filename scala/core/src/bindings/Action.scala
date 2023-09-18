@@ -142,6 +142,67 @@ case class AddEdgeViaDrag(ob: Ob, src: Hom, tgt: Hom) extends Action[Part, ACSet
   def description = "add edge by dragging from source to target"
 }
 
+
+case class AddEdgeViaDrag2(srcObs: Seq[Ob])(tgtObs: Map[Ob,(Ob,Hom,Hom)]) extends Action[Part, ACSet] {
+  def apply(p: Part, r: Action.Resources[ACSet]): IO[Unit] = if !srcObs.contains(p.lastOb) | tgtObs.isEmpty
+    then IO(())
+    else 
+      
+      for {
+        initpos <- IO(r.stateVar.now().mousePos)
+        /* Create temporary part */
+        (tempTgt,(tempOb,tempSrc,_)) = tgtObs.toSeq.head
+        tempPart <- r.modelVar.updateS(
+          ACSet.addPart(tempOb, PropMap().set(tempSrc, p).set(End, initpos).set(Interactable, false)))
+        /* Drag loop */
+        _ <- takeUntil(r.eventQueue)(
+          evt => r.processEvent(evt) >> (evt match {
+            /* During drag */
+            case Event.MouseMove(pos) => r.modelVar.updateS_(ACSet.setSubpart(tempPart, End, pos)) >> IO(None)
+            /* End of drag */
+            case Event.MouseUp(Some(tgtPart:Part), _) => 
+              println("mouseup")
+              tgtPart.lastOb match
+              case tgtOb if tgtObs.keySet.contains(tgtOb) =>
+                println(s"good $tgtOb")
+                val (dragOb,dragSrc,dragTgt) = tgtObs.get(tgtOb).getOrElse(
+                  throw msgError("bork")
+                )
+                
+                r.modelVar.updateS_(
+                  ACSet.remPart(tempPart)
+                    .flatMap(_ => ACSet.addPart(dragOb,
+                      PropMap().set(dragSrc, p).set(dragTgt, tgtPart).set(Interactable, true)
+                    ))
+                ) >> IO(Some(()))
+              case _ =>
+                r.modelVar.updateS_(
+                  ACSet.remPart(tempPart)
+                ) >> IO(Some(()))
+                //  >> 
+                //     ACSet.addPart(dragOb, 
+                //     ) >> 
+                //     IO(Some(()))
+
+            case Event.KeyUp("Shift") =>
+              println("Shift up")
+              r.modelVar.updateS_(
+                ACSet.remPart(tempPart)
+              ) >> IO(Some(()))
+            case Event.MouseUp(ent,but) =>
+              IO(println(s"mouseup $ent")) >> 
+              IO(None)
+
+            case _ => IO(None)
+          })
+        )
+      } yield ()
+
+  def description = "add edge by dragging from source to target"
+}
+
+
+
 case class ProcessMsg[Model]() extends Action[Message[Model],Model] {
 
   def apply(msg:Message[Model],r: Action.Resources[Model]): IO[Unit] = IO(
