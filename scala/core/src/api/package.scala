@@ -30,7 +30,6 @@ package object api {
     WireStub,
     ACSetEntitySource,
     ACSetEdgeSource,
-    WireProp,
     findCenter,
     wireProps,
     DPBox

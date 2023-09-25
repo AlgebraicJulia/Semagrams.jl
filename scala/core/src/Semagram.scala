@@ -159,17 +159,27 @@ trait ACSemagram extends Semagram {
     // Refactor to use it or remove?
     val outbox = EventBus[Message[Model]]()
 
+    val defaultAttrs = Seq(
+      backgroundColor := "lightblue",
+      height := "400px",
+      width := "100%",
+      border := "black",
+      borderStyle := "solid",
+      boxSizing := "border-box",
+    )
+    
+    
     /* Construct the laminar element associated with the semagram */
     val semaElt = div(
-      cls := "semaElt",
       this.apply(modelSig,eventBus.writer).amend(
         svg.height := "100%",
         svg.width := "100%",
       ),
       globalEventBus.events --> globalStateVar.updater[Event]((globalState, evt) => globalState.processEvent(evt)),
       globalEventBus.events --> eventBus.writer,
-      backgroundColor := "white"
+      defaultAttrs
     )
+    
 
     /* Attach global (keyboard) listeners */
     GlobalState.listen(globalEventBus.writer)

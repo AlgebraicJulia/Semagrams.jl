@@ -10,20 +10,6 @@ import semagrams.util.Complex.{im}
 
 import upickle.default.ReadWriter
 
-enum WireProp[T: ReadWriter] extends Property {
-  case StartDir extends WireProp[Complex]
-  case EndDir extends WireProp[Complex]
-  case LabelAnchor extends WireProp[Double]
-  case LabelOffset extends WireProp[Complex]
-  case TikzStart extends WireProp[String]
-  case TikzEnd extends WireProp[String]
-
-  type Value = T
-  val rw = summon[ReadWriter[T]]
-}
-
-export WireProp._
-
 /** A sprite used for wires. Similar to [[Arrow]], except this one is a spline
   * where the beginning and the end are both horizontal, and it has no
   * arrowhead.

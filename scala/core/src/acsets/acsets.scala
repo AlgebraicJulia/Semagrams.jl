@@ -151,6 +151,8 @@ object PartType {
 
 }
 
+
+
 /** A part is a path through a nested acset. If you visualize a nested acset as
   * a tree, where each node is an acset and its children are all of its
   * subacsets, then a part tells at each level which subacset to choose.
@@ -236,7 +238,7 @@ case class Part(path: Seq[(Ob, Id)]) extends Entity {
   def tikzName: String =
     path match
       case Seq() =>
-        throw msgError(s"Can's use `ROOT` as a tikz location identifier")
+        throw msgError(s"Can't use `ROOT` as a tikz location identifier")
       case Seq((ob, id)) => ob.toString() + id.id.toString()
       case _             => last.tikzName + "@" + init.tikzName
 
@@ -696,6 +698,49 @@ case class ACSet(
     )
     setSubacset(p, newSub)
   }
+
+  /** Set the property `f` of parts `ps` to `v` */
+  def setSubpartProps(ps: Seq[Part], pm: PropMap): ACSet = 
+    ps match
+      case Seq() => this
+      case head +: tail => setSubpartProps(head,pm).setSubpartProps(tail,pm)
+
+  /** Set the properties `pm` for all parts of type `ob` **/
+  def setGlobalProps(ob:Ob,pm:PropMap): ACSet =
+    setSubpartProps(partsOnly(ROOT,ob),pm)
+    
+  /** Set properties `pm` on parts of type `ob` for (`ob`,`pm`) in `obProps` */
+  def setGlobalProps(obProps:Seq[(Ob,PropMap)]): ACSet =
+    obProps match
+      case Seq() => this
+      case (ob,props) +: tail => setGlobalProps(ob,props).setGlobalProps(tail)
+    
+  /** Set the property `f` of parts `ps` to `v` if it is unset */
+  def softSetSubpart(p:Part,f:Property,v: f.Value) =
+    if hasSubpart(f,p) then this else setSubpart(p,f,v)
+
+  /** Set the property `f` of parts `ps` to `v` if it is unset */
+  def softSetSubpartProps(p:Part,pm:PropMap) =
+    setSubpartProps(p,pm.filterKeys(f => !hasSubpart(f,p)))
+
+  /** Set the properties `pm` on parts `ps` if they are unset */
+  def softSetSubpartProps(ps:Seq[Part],pm:PropMap): ACSet = ps match
+    case Seq() => this
+    case head +: tail => 
+      softSetSubpartProps(head,pm)
+        .softSetSubpartProps(tail,pm)
+  
+  /** Set the properties `pm` on parts of type `ob` if they are unset */
+  def softSetGlobalProps(ob:Ob,pm:PropMap): ACSet = 
+    softSetSubpartProps(partsOnly(ROOT,ob),pm)
+
+  /** Set properties `pm` on parts of type `ob` for (`ob`,`pm`)
+   *  in `obProps` if they are unset */
+  def softSetGlobalProps(obProps:Seq[(Ob,PropMap)]): ACSet = obProps match
+    case Seq() => this
+    case (ob,props) +: tail => 
+      softSetGlobalProps(ob,props)
+        .softSetGlobalProps(tail)
 
   /** Unset the property `f` of `p` */
   def remSubpart(p: Part, f: Property): ACSet = {

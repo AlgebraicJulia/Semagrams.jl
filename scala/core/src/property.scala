@@ -40,7 +40,7 @@ trait PValue[T: ReadWriter] extends Property {
   val rw = summon[ReadWriter[T]]
 }
 
-enum GenericProperty[T: ReadWriter] extends Property {
+enum GenericProperty[T: ReadWriter] extends PValue[T] {
   case Fill extends GenericProperty[String]
   case Stroke extends GenericProperty[String]
   case StrokeDasharray extends GenericProperty[String]
@@ -67,9 +67,24 @@ enum GenericProperty[T: ReadWriter] extends Property {
 
   type Value = T
 
-  val rw = summon[ReadWriter[T]]
+  // val rw = summon[ReadWriter[T]]
 }
 
+
+enum PathProp[T: ReadWriter] extends PValue[T] {
+  case StartDir extends PathProp[Complex]
+  case EndDir extends PathProp[Complex]
+  case LabelAnchor extends PathProp[Double]
+  case LabelOffset extends PathProp[Complex]
+  case PathLabel extends PathProp[String]
+  case TikzStart extends PathProp[String]
+  case TikzEnd extends PathProp[String]
+
+  type Value = T
+  // val rw = summon[ReadWriter[T]]
+}
+
+export PathProp._
 
 export GenericProperty._
 

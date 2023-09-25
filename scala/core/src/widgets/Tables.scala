@@ -282,17 +282,22 @@ def tableInput[T:ReadWriter](inputObs:Observer[(InputMsg,Option[T])],init:Option
       ),
       onKeyDown.stopPropagation --> Observer(_=> ()),
       onMountFocus,
-      modFilters.flatMap(mods => Seq(
-        onEnter.filter(evtFilter(mods))
-          .mapToValue
-          .map(v => (EnterMsg(mods),readStr[T](v))) --> inputObs,  
-        onTab.filter(evtFilter(mods))
-          .mapToValue
-          .map(v => (TabMsg(mods),readStr[T](v))) --> inputObs,  
-        onEsc.filter(evtFilter(mods))
-          .mapToValue
-          .map(v => (EscMsg(mods),readStr[T](v))) --> inputObs,  
-      ))
+      modFilters.flatMap(mods => 
+        def catchEmpty(s:String) = (init,readStr[T](s)) match
+          case (None,Some("")) => None
+          case (_,opt) => opt
+        
+        Seq(
+          onEnter.filter(evtFilter(mods))
+            .mapToValue
+            .map(v => (EnterMsg(mods),catchEmpty(v))) --> inputObs,  
+          onTab.filter(evtFilter(mods))
+            .mapToValue
+            .map(v => (TabMsg(mods),catchEmpty(v))) --> inputObs,  
+          onEsc.filter(evtFilter(mods))
+            .mapToValue
+            .map(v => (EscMsg(mods),catchEmpty(v))) --> inputObs,  
+        ))
     )
   )
 

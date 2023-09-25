@@ -25,8 +25,10 @@ object EditorState {
     acsetSig.combineWith(stateSig).map(
       (acset, state) => {
         state.hovered match {
-          case Some(ent: Part) => acset.setSubpart(ent, Hovered, ())
-          case _ => acset
+          case Some(ent: Part) => 
+            acset.setSubpart(ent, Hovered, ())
+          case _ => 
+            acset
         }
       }
     )

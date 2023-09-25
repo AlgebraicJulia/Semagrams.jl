@@ -119,80 +119,42 @@ case class MoveViaDrag() extends Action[Part, ACSet] {
   def description = "move part by dragging"
 }
 
-case class AddEdgeViaDrag(ob: Ob, src: Hom, tgt: Hom) extends Action[Part, ACSet] {
-  def apply(p: Part, r: Action.Resources[ACSet]): IO[Unit] = for {
-    initpos <- IO(r.stateVar.now().mousePos)
-    e <- r.modelVar.updateS(
-      ACSet.addPart(ob, PropMap().set(src, p).set(End, initpos).set(Interactable, false)))
-    _ <- takeUntil(r.eventQueue)(
-      evt => r.processEvent(evt) >> (evt match {
-        case Event.MouseMove(pos) => r.modelVar.updateS_(ACSet.setSubpart(e, End, pos)) >> IO(None)
-        case Event.MouseUp(Some(q: Part), _) if tgt.codoms.contains(q.ty) =>
-          r.modelVar.updateS_(
-            ACSet.remSubpart(e, End)
-              >> ACSet.setSubpart(e, tgt, q)
-              >> ACSet.setSubpart(e, Interactable, true)
-          ) >> IO(Some(()))
-        case Event.MouseUp(_, _) => r.modelVar.updateS_(ACSet.remPart(e)) >> IO(Some(()))
-        case _ => IO(None)
-      })
-    )
-  } yield ()
 
-  def description = "add edge by dragging from source to target"
-}
-
-
-case class AddEdgeViaDrag2(srcObs: Seq[Ob])(tgtObs: Map[Ob,(Ob,Hom,Hom)]) extends Action[Part, ACSet] {
-  def apply(p: Part, r: Action.Resources[ACSet]): IO[Unit] = if !srcObs.contains(p.lastOb) | tgtObs.isEmpty
-    then IO(())
-    else 
-      
-      for {
+case class AddEdgeViaDrag(tgtObs: Map[Ob,(Ob,Hom,Hom)]) extends Action[Part, ACSet] {
+  def apply(srcPart: Part, r: Action.Resources[ACSet]): IO[Unit] = 
+    for {
         initpos <- IO(r.stateVar.now().mousePos)
         /* Create temporary part */
         (tempTgt,(tempOb,tempSrc,_)) = tgtObs.toSeq.head
         tempPart <- r.modelVar.updateS(
-          ACSet.addPart(tempOb, PropMap().set(tempSrc, p).set(End, initpos).set(Interactable, false)))
+          ACSet.addPart(tempOb, PropMap().set(tempSrc, srcPart).set(End, initpos).set(Interactable, false)))
         /* Drag loop */
         _ <- takeUntil(r.eventQueue)(
           evt => r.processEvent(evt) >> (evt match {
             /* During drag */
             case Event.MouseMove(pos) => r.modelVar.updateS_(ACSet.setSubpart(tempPart, End, pos)) >> IO(None)
-            /* End of drag */
-            case Event.MouseUp(Some(tgtPart:Part), _) => 
-              println("mouseup")
-              tgtPart.lastOb match
-              case tgtOb if tgtObs.keySet.contains(tgtOb) =>
-                println(s"good $tgtOb")
-                val (dragOb,dragSrc,dragTgt) = tgtObs.get(tgtOb).getOrElse(
-                  throw msgError("bork")
-                )
+            /* End of drag: Good drop target */
+            case Event.MouseUp(Some(tgtPart:Part), _) if 
+              tgtObs.keySet.contains(tgtPart.lastOb) =>
+                val (dragOb,dragSrc,dragTgt) = tgtObs(tgtPart.lastOb)
                 
-                r.modelVar.updateS_(
-                  ACSet.remPart(tempPart)
-                    .flatMap(_ => ACSet.addPart(dragOb,
-                      PropMap().set(dragSrc, p).set(dragTgt, tgtPart).set(Interactable, true)
-                    ))
-                ) >> IO(Some(()))
-              case _ =>
-                r.modelVar.updateS_(
-                  ACSet.remPart(tempPart)
-                ) >> IO(Some(()))
-                //  >> 
-                //     ACSet.addPart(dragOb, 
-                //     ) >> 
-                //     IO(Some(()))
 
-            case Event.KeyUp("Shift") =>
-              println("Shift up")
+                r.modelVar.updateS_(
+                  if dragSrc.codoms.contains(srcPart.ty) 
+                    & dragTgt.codoms.contains(tgtPart.ty)
+                  then ACSet.remPart(tempPart).flatMap(_ =>
+                    ACSet.addPart(dragOb, PropMap()
+                      .set(dragSrc, srcPart).set(dragTgt, tgtPart)
+                      .set(Interactable, true)
+                    )
+                  ).map(_ => ())
+                  else ACSet.remPart(tempPart)
+                ) >> IO(Some(()))
+            /* End of drag: Bad drop target */
+            case Event.MouseUp(ent,but) => 
               r.modelVar.updateS_(
                 ACSet.remPart(tempPart)
               ) >> IO(Some(()))
-            case Event.MouseUp(ent,but) =>
-              IO(println(s"mouseup $ent")) >> 
-              IO(None)
-
             case _ => IO(None)
           })
         )
@@ -201,6 +163,13 @@ case class AddEdgeViaDrag2(srcObs: Seq[Ob])(tgtObs: Map[Ob,(Ob,Hom,Hom)]) extend
   def description = "add edge by dragging from source to target"
 }
 
+object AddEdgeViaDrag:
+  def apply(e:Ob,src:Hom,tgt:Hom): AddEdgeViaDrag = 
+    AddEdgeViaDrag(
+      tgt.codoms.map(codom => codom.last -> (e,src,tgt)).toMap
+    )
+  def apply(tgtObData:(Ob, (Ob,Hom,Hom))*): AddEdgeViaDrag = 
+    AddEdgeViaDrag(tgtObData.toMap)
 
 
 case class ProcessMsg[Model]() extends Action[Message[Model],Model] {

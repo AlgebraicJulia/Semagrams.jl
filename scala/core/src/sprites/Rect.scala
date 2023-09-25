@@ -13,55 +13,42 @@ extension [A, B](s: L.Signal[Tuple2[A, B]])
   *
   * Resizes automatically corresponding to its content.
   */
-case class Rect(val props: PropMap) extends Sprite {
+case class Rect(label:Property,val props: PropMap) extends Sprite {
   import Rect._
 
+  def setLabel: PropMap => PropMap = Sprite.setContent(label)
   def present(
       ent: Entity,
       init: ACSet,
       updates: L.Signal[ACSet],
       eventWriter: L.Observer[Event]
   ): L.SvgElement = {
-    val data = updates.map(props ++ _.props)
+    val data = updates
+      .map(props ++ _.props)
+      .map(setLabel)
 
-    val text = L.svg.text(
-      xy <-- data.map(pm =>
-        pm.get(Center)
-          .getOrElse(throw msgError(s"propmap $pm missing `Center`"))
-      ),
-      L.children <-- data.map(p =>
-        val splits = p(Content).split('\n').zipWithIndex
-        val l = splits.length
-        splits.toIndexedSeq.map({ case (t, i) =>
-          L.svg.tspan(
-            L.textToTextNode(t),
-            textAnchor := "middle",
-            x <-- data.map(p =>
-              p.get(Center).getOrElse(Complex(50, 50)).x.toString()
-            ),
-            y <-- data.map(p =>
-              (p.get(Center).getOrElse(Complex(100, 100)).y + p(
-                FontSize
-              ) * (i + 1 - l / 2.0)).toString()
-            ),
-            style := "user-select: none"
-          )
-        })
-      ),
-      fontSize <-- data.map(_(FontSize).toString),
-      pointerEvents := "none"
-    )
-
+    val text = Sprite.innerText(data)
+    
     val box = rect(
+      L.onClick --> printObs("box"),
       geomUpdater(data),
-      styleUpdater(data)
+      styleUpdater(data),
     )
+
+    val bg = image(
+      cls := "disc-bg",
+      href <-- data.map(_(ImageURL)),
+      clipPathAttr := "inset(0% round 50%)",
+      pointerEvents := "none",
+      Rect.geomUpdater(data)
+    )
+
 
     val root = g(
       box,
       text,
-      MouseEvents.hoverHandlers(ent, eventWriter),
-      MouseEvents.clickHandlers(ent, eventWriter)
+      bg,
+      MouseEvents.handlers(ent, eventWriter),
     )
 
     root
@@ -108,9 +95,7 @@ case class Rect(val props: PropMap) extends Sprite {
     "rectangle",
     p.tikzName,
     data.props.get(Center).getOrElse(Complex(0, 0)),
-    data.props
-      .get(Content)
-      .getOrElse("")
+    data.props(Content)
       .flatMap(_ match
         case '\n' => "\\\\"
         case ch   => ch.toString()
@@ -122,11 +107,16 @@ case class Rect(val props: PropMap) extends Sprite {
 
 object Rect {
   def geom(data: PropMap): (Complex, Complex) = {
-    val textRect = boxSize(data(Content), data(FontSize))
-    val center = data.get(Center).getOrElse(Complex(100, 100))
-    val innerSep = data(InnerSep)
-    val width = data(MinimumWidth).max(textRect.x + innerSep)
-    val height = data(MinimumHeight).max(textRect.y + innerSep)
+    val props = defaults ++ data
+    val textRect = boxSize(
+      props(Content), 
+      props(FontSize),
+      split = true
+    )
+    val center = props.get(Center).getOrElse(Complex(100, 100))
+    val innerSep = props(InnerSep)
+    val width = props(MinimumWidth).max(textRect.x + innerSep)
+    val height = props(MinimumHeight).max(textRect.y + innerSep)
     val dims = Complex(width, height)
     val pos = center - dims / 2
     (pos, dims)
@@ -138,12 +128,13 @@ object Rect {
   }
 
   def styleUpdater(data: L.Signal[PropMap]) = {
+    val props = data.map(defaults ++ _)
     List(
-      fill <-- data.map(d =>
+      fill <-- props.map(d =>
         if d.get(Hovered).isDefined then "lightgrey" else d(Fill)
       ),
-      stroke <-- data.map(_(Stroke)),
-      style <-- data.map(_.get(Style).getOrElse(""))
+      stroke <-- props.map(_(Stroke)),
+      style <-- props.map(_(Style))
     )
   }
 
@@ -157,9 +148,11 @@ object Rect {
     + (OuterSep, 5)
     + (MinimumWidth, 40)
     + (MinimumHeight, 40)
+    + (Style,"")
 
-  def apply() = new Rect(defaults)
-
-  def apply(props: PropMap) = new Rect(defaults ++ props)
+  def apply() = new Rect(Content,defaults)
+  def apply(props:PropMap) = new Rect(Content,defaults ++ props)
+  def apply(label:Property) = new Rect(label,defaults)
+  def apply(label:Property,props: PropMap) = new Rect(label,defaults ++ props)
 
 }

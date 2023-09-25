@@ -11,34 +11,11 @@ import semagrams.acsets._
   * Auto-resizes based on the content inside.
   */
 case class Disc(label:Property,props: PropMap) extends Sprite {
-  def radius(data: PropMap): Double = {
-    val textBox = boxSize(data.get(label).map(_.toString()), data.get(FontSize))
-    val innerSep = data.get(InnerSep).getOrElse(0.0)
-    val d = data
-      .get(MinimumWidth)
-      .getOrElse(0.0)
-      .max(textBox.x + innerSep)
-      .max(textBox.y + innerSep)
-    val r = d / 2
-    r
-  }
+  import Disc._
 
-  def geomUpdater(data: L.Signal[PropMap]) = {
-    List(
-      cxy <-- data.map(_.get(Center).getOrElse(Complex(100, 100))),
-      r <-- data.map(radius(_).toString)
-    )
-  }
+  def setLabel: PropMap => PropMap = Sprite.setContent(label)
 
-  def styleUpdater(data: L.Signal[PropMap]) = {
-    List(
-      fill <-- data.map(d =>
-        if d.get(Hovered).isDefined then "lightgrey" else d(Fill)
-      ),
-      stroke <-- data.map(_(Stroke)),
-      style <-- data.map(_.get(Style).getOrElse(""))
-    )
-  }
+
 
   def present(
       ent: Entity,
@@ -46,24 +23,30 @@ case class Disc(label:Property,props: PropMap) extends Sprite {
       updates: L.Signal[ACSet],
       eventWriter: L.Observer[Event]
   ): L.SvgElement = {
-    val data = updates.map(props ++ _.props)
+    val data = updates
+      .map(props ++ _.props)
+      .map(setLabel)
     
     val box = circle(
       geomUpdater(data),
       styleUpdater(data)
     )
-    val text = L.svg.text(
-      xy <-- data.map(_.get(Center).getOrElse(Complex(100, 100))),
-      L.svg.tspan(
-        L.child <-- data.map(p => L.textToTextNode(p.get(label).map(_.toString()).getOrElse(""))),
-        textAnchor := "middle",
-        dominantBaseline := "central",
-        style := "user-select: none"
-      ),
-      fontSize <-- data.map(_(FontSize).toString)
-    )
+
+    val text = Sprite.innerText(data) 
+      
+    //   L.svg.text(
+    //   xy <-- data.map(_.get(Center).getOrElse(Complex(100, 100))),
+    //   L.svg.tspan(
+    //     L.child <-- data.map(p => L.textToTextNode(p(Content))),
+    //     textAnchor := "middle",
+    //     dominantBaseline := "central",
+    //     style := "user-select: none"
+    //   ),
+    //   fontSize <-- data.map(_(FontSize).toString)
+    // )
 
     val bg = image(
+      cls := "disc-bg",
       href <-- data.map(_(ImageURL)),
       clipPathAttr := "inset(0% round 50%)",
       pointerEvents := "none",
@@ -80,8 +63,10 @@ case class Disc(label:Property,props: PropMap) extends Sprite {
 
   override def boundaryPt(subent: Entity, orig: ACSet, dir: Complex) = {
     val data = props ++ orig.props
-    val rad = radius(data) + data(OuterSep)
-    Some(dir.normalize * rad + data.get(Center).getOrElse(Complex(100, 100)))
+    val rad = radius(data) + data.get(OuterSep)
+      .getOrElse(Disc.defaults(OuterSep))
+    
+    data.get(Center).map(dir.normalize * rad + _)
   }
 
   override def bbox(subent: Entity, data: ACSet) =
@@ -96,10 +81,7 @@ case class Disc(label:Property,props: PropMap) extends Sprite {
     "circle",
     p.tikzName,
     data.props.get(Center).getOrElse(Complex(0, 0)),
-    data.props
-      .get(label)
-      .map(_.toString())
-      .getOrElse("")
+    data.props.get(label).getOrElse("").toString
       .flatMap(_ match
         case '\n' => "\\\\"
         case ch   => ch.toString()
@@ -110,7 +92,41 @@ case class Disc(label:Property,props: PropMap) extends Sprite {
 }
 
 object Disc {
+
+  def radius(data: PropMap): Double = {
+    val textBox = boxSize(data.get(Content), data.get(FontSize),split = true)
+    val innerSep = data.get(InnerSep).getOrElse(defaults(InnerSep))
+    val d = data
+      .get(MinimumWidth)
+      .getOrElse(defaults(MinimumWidth))
+      .max(textBox.x + innerSep)
+      .max(textBox.y + innerSep)
+    val r = d / 2
+    r
+  }
+
+  def geomUpdater(data: L.Signal[PropMap]) = {
+    List(
+      cxy <-- data.map(_.get(Center).getOrElse(defaults(Center))),
+      r <-- data.map(radius(_).toString)
+    )
+  }
+
+  def styleUpdater(data: L.Signal[PropMap]) = {
+    List(
+      fill <-- data.map(d =>
+        if d.get(Hovered).isDefined then "lightgrey" else d.get(Fill).getOrElse("white")
+      ),
+      stroke <-- data.map(_.get(Stroke).getOrElse(defaults(Stroke))),
+      style <-- data.map(_.get(Style).getOrElse(defaults(Style)))
+    )
+  }
+
+
+
+
   val defaults = PropMap()
+    + (Center, Complex(100,100))
     + (Content, "")
     + (ImageURL, "")
     + (FontSize, 14)
@@ -120,8 +136,12 @@ object Disc {
     + (OuterSep, 5)
     + (MinimumWidth, 40)
     + (MinimumHeight, 40)
+    + (Style,"")
 
-  def apply(label:Property = Content,pm:PropMap = PropMap()) = new Disc(label,defaults ++ pm)
+  def apply() = new Disc(Content,defaults)
+  def apply(props:PropMap) = new Disc(Content,defaults ++ props)
+  def apply(label:Property) = new Disc(label,defaults)
+  def apply(label:Property,props: PropMap) = new Disc(label,defaults ++ props)
 
   def boundaryNormal(data: PropMap, dir: Complex) = dir.normalize
 

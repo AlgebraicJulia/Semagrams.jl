@@ -23,7 +23,6 @@ trait EventHook[A] {
 
 }
 
-
 case class FilterHook[A](base:EventHook[A],pred:A=>Boolean) extends EventHook[A] {
   def apply(evt:Event,gs:GlobalState) = base.apply(evt,gs).filter(pred)
   val description = "Filter an `EventHook` by some property of its return value"
@@ -61,8 +60,13 @@ case class ClickOnPartHook(button: MouseButton, modifiers: Set[KeyModifier])
 
 object ClickOnPartHook {
   def apply(button: MouseButton): ClickOnPartHook = ClickOnPartHook(button, Set())
+  def apply(button: MouseButton,mod:KeyModifier): ClickOnPartHook = ClickOnPartHook(button, Set(mod))
+  def apply(ptype:PartType,button: MouseButton,mod:KeyModifier): EventHook[Part] = ClickOnPartHook(button, Set(mod)).filter(ptype)
 }
 
+
+extension (hook:EventHook[Part])
+  def filter(ptypes:PartType*) = hook.filter(part => ptypes.contains(part.ty))
 
 case class DoubleClickOnPartHook(button: MouseButton = MouseButton.Left, modifiers: Set[KeyModifier] = Set()) extends EventHook[Entity]:
 

@@ -15,24 +15,15 @@ import org.scalajs.dom
 import scala.scalajs.js.annotation._
 import scala.scalajs.js
 
-object GraphDisplay extends ACSemagram:
-  type Model = ACSet
-
-  def layout(g: ACSet) = assignBends(Map(E -> (Src, Tgt)), 0.5)(g)
-
-  val entitySources = Seq(
-    ACSetEntitySource(V, Disc()),
-    ACSetEdgeSource(E, Src, Tgt, Arrow()),
-  )
-
-  val schema: Schema = SchGraph
-
 
 val bindings = Seq[Binding[ACSet]](
   Binding(KeyDownHook("a"), AddAtMouse(V)),
   Binding(KeyDownHook("d"), DeleteHovered()),
-  Binding(ClickOnPartHook(MouseButton.Left, Set(KeyModifier.Shift)), AddEdgeViaDrag(E, Src, Tgt)),
   Binding(ClickOnPartHook(MouseButton.Left), MoveViaDrag()),
+  Binding(
+    ClickOnPartHook(MouseButton.Left, KeyModifier.Shift), 
+    AddEdgeViaDrag(E, Src, Tgt)
+  ),
   Binding(MsgHook(),ProcessMsg()),
   Binding(DoubleClickOnPartHook(),PartCallback(
     part => pTable.edit(part,Content)
@@ -40,7 +31,12 @@ val bindings = Seq[Binding[ACSet]](
   Binding(KeyDownHook("?"), PrintModel)
 )
 
-val sema: SemagramElt = GraphDisplay(bindings)
+
+val sema: SemagramElt = GraphDisplay(
+  SchGraph,
+  Seq(VertexDef(V,Rect(Content),PropMap() + (Fill,"red"))),
+  Seq(EdgeDef(E,Src,Tgt,Arrow(Content),PropMap() + (Stroke,"purple")))
+)(bindings)
 
 val semaAttrs = Seq(
   backgroundColor := "white",

@@ -112,3 +112,67 @@ trait Sprite {
     layout(BoundingBox(sz / 2.0, sz), a)
 
 }
+
+
+object Sprite:
+  def setContent(label:Property)(props:PropMap) =
+    props.set(Content,
+      props.get(label).getOrElse("").toString()
+    )
+
+  def innerText(dataSig:Signal[PropMap]): SvgElement = svg.text(
+    xy <-- dataSig.map(pm => pm.get(Center).getOrElse(
+      throw msgError(s"propmap $pm missing `Center`")
+    )),
+    children <-- dataSig.map(p =>
+      val splits = splitString(p(Content)).zipWithIndex
+      val l = splits.length
+      splits.toIndexedSeq.map({ case (t, i) =>
+        svg.tspan(
+          textToTextNode(t),
+          svg.textAnchor := "middle",
+          svg.x <-- dataSig.map(p =>
+            p.get(Center).getOrElse(Complex(50, 50)).x.toString()
+          ),
+          svg.y <-- dataSig.map(p =>
+            (p.get(Center).getOrElse(Complex(100, 100)).y 
+              + p.get(FontSize).getOrElse(12.0) * (i + 1 - l / 2.0)).toString()
+          ),
+          svg.style := "user-select: none"
+        )
+      })
+    ),
+    svg.fontSize <-- dataSig.map(
+      _.get(FontSize).getOrElse(12.0).toString
+    ),
+    svg.pointerEvents := "none",
+  )
+
+  // def innerText2(dataSig:Signal[PropMap]): Signal[SvgElement] = 
+  //   dataSig.map(pm => svg.text(
+  //     xy <-- pm.get(Center).getOrElse(
+  //       throw msgError(s"propmap $pm missing `Center`")
+  //     ),
+  //     children <-- dataSig.map(p =>
+  //       val splits = splitString(p(Content)).zipWithIndex
+  //       val l = splits.length
+  //       splits.toIndexedSeq.map({ case (t, i) =>
+  //         svg.tspan(
+  //           textToTextNode(t),
+  //           svg.textAnchor := "middle",
+  //           svg.x <-- dataSig.map(p =>
+  //             p.get(Center).getOrElse(Complex(50, 50)).x.toString()
+  //           ),
+  //           svg.y <-- dataSig.map(p =>
+  //             (p.get(Center).getOrElse(Complex(100, 100)).y 
+  //               + p.get(FontSize).getOrElse(12.0) * (i + 1 - l / 2.0)).toString()
+  //           ),
+  //           svg.style := "user-select: none"
+  //         )
+  //       })
+  //     ),
+  //     svg.fontSize <-- dataSig.map(
+  //       _.get(FontSize).getOrElse(12.0).toString
+  //     ),
+  //     svg.pointerEvents := "none",
+  //   )

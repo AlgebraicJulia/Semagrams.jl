@@ -1,5 +1,7 @@
 package semagrams
 
+import semagrams.util.Complex
+
 /** A dependently-typed, persistent mapping from properties to values; the type
   * of the value stored for a given property depends on the property.
   *
@@ -29,7 +31,7 @@ case class PropMap(pmap: Map[Property, Any]) {
     * Scala's type system doesn't have Sigma-types, so this only works with
     * [[GenericProperty]], not [[Property]]
     */
-  def +[T](kv: (GenericProperty[T], T)): PropMap = {
+  def +[T](kv: (PValue[T], T)): PropMap = {
     val (k, v) = kv
     this.copy(pmap = pmap + (k.asInstanceOf[Property] -> v.asInstanceOf[Any]))
   }
@@ -37,6 +39,28 @@ case class PropMap(pmap: Map[Property, Any]) {
   def filterKeys(p: Property => Boolean) = PropMap(
     pmap.view.filterKeys(p).toMap
   )
+
+  def filter(pred:(Property,Any) => Boolean) = PropMap(
+    pmap.filter(pred.tupled)
+  )
+
+  def transform(prop:Property,f:prop.Value => prop.Value) = get(prop) match
+    case Some(v) => set(prop,f(v))
+    case None => this
+
+  def scale(f:Property{type Value = Complex},from:Complex,to:Complex) =
+    get(f) match
+      case Some(v) => set(f,(v/from)*to)
+      case None => this
+    
+  def scale(fs:Seq[Property{type Value = Complex}],from:Complex,to:Complex): PropMap =
+    fs match
+      case Seq() => this
+      case head +: tail => scale(head,from,to).scale(tail,from,to)
+    
+
+  
+
 
   /** Returns a new PropMap given by overwriting `this` with the key-value pairs
     * in `other`.
@@ -56,7 +80,10 @@ case class PropMap(pmap: Map[Property, Any]) {
   def -(p: Property): PropMap = this -- Seq(p)
 
   /** Check if `p` is set */
-  def contains(p: Property) = pmap contains p
+  def contains(p: Property):Boolean = pmap contains p
+
+  /** Check if `ps` are set */
+  def contains(ps: Seq[Property]): Boolean = ps.forall(p => contains(p))
 }
 
 object PropMap {
@@ -65,6 +92,8 @@ object PropMap {
   def apply() = {
     new PropMap(Map[Property, Any]())
   }
+
+  def apply(kvs:(Property,Any)*) = new PropMap(kvs.toMap)
 
   /** Deserialize a PropMap, using a supplied map which says how to interpret
     * strings as properties

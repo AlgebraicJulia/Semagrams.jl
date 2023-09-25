@@ -15,6 +15,7 @@ import semagrams.util._
   * the arrow.
   */
 case class Arrow(label:Property,props: PropMap) extends Sprite {
+
   def blockPath(
       s: Complex,
       e: Complex,
@@ -38,7 +39,7 @@ case class Arrow(label:Property,props: PropMap) extends Sprite {
 
   def curvedPath(s: Complex, e: Complex, bend: Double): Seq[Path.Element] = {
     import Path.Element._
-    val rot = Complex(0, bend).exp
+    val rot = Complex(0, -bend).exp
     val λ = 1.0 / 4
     val cs = rot * (λ * (e - s)) + s
     val ce = rot.cong * (λ * (s - e)) + e
@@ -56,27 +57,59 @@ case class Arrow(label:Property,props: PropMap) extends Sprite {
       updates: L.Signal[ACSet],
       eventWriter: L.Observer[Event]
   ): L.SvgElement = {
-    val data = updates.map(props ++ _.props)
+    val data = updates.map(Arrow.defaultProps ++ props ++ _.props)
+
+    def ppath(p:PropMap) = curvedPath(p.get(Start), p.get(End), p.get(Bend))
+    def hov(p:PropMap) = if p.contains(Hovered) then "lightgrey" else p.get(Stroke).getOrElse("black")
+    def labelStr(p:PropMap) = if p.contains(label) then p(label).toString else p(PathLabel)
+    def labelPos(p:PropMap) = 
+      val pathElt = ppath(p)((ppath(p).length * p(LabelAnchor)).toInt)
+      pathElt.pos(p(Start),p(LabelAnchor)) -
+        Complex.im * p(LabelOffset) * pathElt.dir(p(Start),p(LabelAnchor))
+
+    
     val arrow = path(
-      pathElts <-- data.map(p => curvedPath(p.get(Start), p.get(End), p.get(Bend))),
-      stroke <-- data.map(p =>
-        if p.get(Hovered).isDefined then "lightgrey" else p(Stroke)
-      ),
+      pathElts <-- data.map(ppath),
+      stroke <-- data.map(hov),
       strokeDashArray <-- data.map(_(StrokeDasharray)),
       fill := "none",
       markerEnd := "url(#arrowhead)",
       pointerEvents := "none"
     )
+    
+    val text = L.svg.text(
+      xy <-- data.map(labelPos),
+      L.children <-- data.map { p =>
+        val splits = splitString(labelStr(p)).zipWithIndex
+        val len = splits.length
+        splits.toSeq.map((str, line) =>
+          L.svg.tspan(
+            L.textToTextNode(str),
+            textAnchor := "middle",
+            x <-- data.map(p => labelPos(p).x.toString()),
+            y <-- data.map(p =>
+              (labelPos(p).y + p(FontSize) * (line + 1 - len / 2.0)).toString()
+            ),
+            style := "user-select: none"
+          )
+        )
+      },
+      fontSize <-- data.map(_(FontSize).toString),
+      pointerEvents := "none"
+    )
+
+
+
     val handle = path(
-      fill := "white",
-      opacity := "0",
+      fill := "red",
+      opacity := "0.1",
       pathElts <-- data.map(p => blockPath(p.get(Start), p.get(End), 5, p.get(Bend))),
       pointerEvents <-- data.map(p =>
         if p(Interactable) then "auto" else "none"
       ),
       MouseEvents.handlers(ent, eventWriter)
     )
-    g(arrow, handle)
+    g(arrow, handle, text)
   }
 
   override def toTikz(e: Part, data: ACSet, visible: Boolean = true) =
@@ -91,7 +124,7 @@ case class Arrow(label:Property,props: PropMap) extends Sprite {
         println(s"Missing TikzEnd")
         ""
       }
-      val b = 40 * data.props(Bend)
+      val b = 40 * data.props.get(Bend).getOrElse(0.0)
 
       val endpts =
         s"\\path ($s) to[bend left={$b}] node[pos=00](a@$s){} node[pos=1](b@$t){} ($t);\n"
@@ -108,6 +141,12 @@ object Arrow {
     + (Bend, 0)
     + (StrokeDasharray, "none")
     + (Interactable, true)
+    + (Start,Complex(100,100))
+    + (End,Complex(200,200))
+    + (LabelAnchor,0.5)
+    + (LabelOffset,10.0)
+    + (PathLabel,"")
+    + (FontSize,10.0)
 
   def apply(label:Property=Content,props:PropMap = PropMap()) = new Arrow(label,defaultProps ++ props)
 }

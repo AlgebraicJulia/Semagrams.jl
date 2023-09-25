@@ -62,15 +62,15 @@ def edgeProps(
   val p = acs.props
   val s = p.get(src)
   val t = p.get(tgt)
-  val spos = s.flatMap(findCenter(_, m)).getOrElse(p(Start))
-  val tpos = t.flatMap(findCenter(_, m)).getOrElse(p(End))
+  val spos = s.flatMap(findCenter(_, m)).getOrElse(p.get(Start).getOrElse(Complex(100,100)))
+  val tpos = t.flatMap(findCenter(_, m)).getOrElse(p.get(End).getOrElse(Complex(100,100)))
   val dir = spos - tpos
   val bend = p.get(Bend).getOrElse(0.0)
-  val rot = Complex(0, bend).exp
+  val rot = Complex(0, -bend).exp
   val start = s
     .flatMap(findBoundary(_, m, -dir * rot))
     .getOrElse(spos)
-  val nd = t
+  val theend = t
     .flatMap(findBoundary(_, m, dir * rot.cong))
     .getOrElse(tpos)
 
@@ -79,7 +79,7 @@ def edgeProps(
       PropMap().set(TikzStart, p.tikzName).set(TikzEnd, q.tikzName)
     case _ => PropMap()
 
-  tikzProps + (Start, start) + (End, nd)
+  tikzProps + (Start, start) + (End, theend)
 }
 
 /** Like [[ACSetEntitySource]], but then also computes the edge properties using
@@ -144,9 +144,9 @@ def wireProps(
 
   (acs.props ++ typeProps(acs, _e.asInstanceOf[Part]))
     .set(Start, sc)
-    .set(WireProp.StartDir, sd)
+    .set(StartDir, sd)
     .set(End, tc)
-    .set(WireProp.EndDir, td)
+    .set(EndDir, td)
     ++ tikzProps
 
 }
