@@ -17,9 +17,7 @@ case class GlobalState(
       case None => this
     }
     // Clear state when focus is lost
-    case Blur() => 
-      println("blur")
-      GlobalState(Set())
+    case Blur() => GlobalState(Set())
     case _ => this
   }
 }

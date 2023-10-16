@@ -1,7 +1,7 @@
 package semagrams.util
 
-import semagrams.acsets.Part
-import semagrams.acsets.ROOT
+import semagrams.acsets.abstr.Part
+// import semagrams.acsets.ROOT
 
 /** Create the declaration of a Tikz node. */
 def tikzNode(
@@ -48,13 +48,13 @@ def tikzPort(p: Part, idx: Int, n_ports: Int, shape: String = "") =
   * string to make the ports visible.
   */
 def tikzInPorts(pts: Seq[Part], shape: String = ""): String =
-  if pts.isEmpty | pts.head == ROOT
+  if pts.isEmpty
   then ""
   else
     tikzPorts(
       pts,
-      s"${pts.head.init.tikzName}.north west",
-      s"${pts.head.init.tikzName}.south west",
+      s"${pts.head.tikzName}.north west",
+      s"${pts.head.tikzName}.south west",
       shape
     )
 
@@ -62,13 +62,13 @@ def tikzInPorts(pts: Seq[Part], shape: String = ""): String =
   * string to make the ports visible.
   */
 def tikzOutPorts(pts: Seq[Part], shape: String = ""): String =
-  if pts.isEmpty | pts.head == ROOT
+  if pts.isEmpty
   then ""
   else
     tikzPorts(
       pts,
-      s"${pts.head.init.tikzName}.north east",
-      s"${pts.head.init.tikzName}.south east",
+      s"${pts.head.tikzName}.north east",
+      s"${pts.head.tikzName}.south east",
       shape
     )
 

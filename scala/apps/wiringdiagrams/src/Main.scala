@@ -15,12 +15,12 @@ val mkAdd = for {
   _ <- addPart(OutPort)
   _ <- addPart(InPort)
   _ <- addPart(InPort)
-  _ <- setSubpart(ROOT, Content, "+")
+  _ <- setProp(ROOT, Content, "+")
 } yield ()
 
 val mkZero = for {
   _ <- addPart(OutPort)
-  _ <- setSubpart(ROOT, Content, "0")
+  _ <- setProp(ROOT, Content, "0")
 } yield ()
 
 val monoidOps = Seq(
@@ -86,7 +86,7 @@ def layoutPorts(dims: Complex, init: ACSet): ACSet = {
         (p, sideCenter + spacer.assignPos(i, n) * im)
       }
     )
-    cs.foldLeft(acs)((acs, pc) => acs.setSubpart(pc._1, Center, pc._2))
+    cs.foldLeft(acs)((acs, pc) => acs.setProp(pc._1, Center, pc._2))
   }
   helper(helper(init, InPort, -1), OutPort, 1)
 }

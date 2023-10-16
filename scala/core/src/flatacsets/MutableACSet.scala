@@ -20,7 +20,7 @@ class MutableACSet[S: IsSchema](
 
   def addPart(ob: Ob): Part = addPart(ob, PropMap())
 
-  def setSubpart(f: Property, x: Part, y: f.Value): Unit =
+  def setProp(f: Property, x: Part, y: f.Value): Unit =
     props.put(x, props(x).set(f, y))
 
   def setSubparts(pm: PropMap, x: Part): Unit =

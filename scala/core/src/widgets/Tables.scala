@@ -6,7 +6,7 @@ import org.scalajs.dom
 import upickle.default._
 
 import semagrams._
-import semagrams.acsets._
+import semagrams.acsets.abstr._
 import scala.util._
 
 
@@ -70,18 +70,15 @@ case class PropTable(ob:Ob,cols:Seq[Property],keys:Seq[Property]):
   }
 
   /** Create an editable laminar element. */ 
-  def laminarElt(modelSig:Signal[ACSet],messenger:Observer[Message[ACSet]]) =
+  def laminarElt[A:ACSet](modelSig:Signal[A],messenger:Observer[Message[A]]) =
 
     case class RowData(part:Part,props:PropMap,prev:Option[Part],next:Option[Part])
 
     /* Collect the props and neighbors of each part */
     val rowData: Signal[Seq[RowData]] = modelSig.map{ acset =>
-      val (parts,acsets) = acset.parts(ROOT,ob).unzip
-      parts.zip(
-        acsets.map(_.props)
-      ).map( (part,props) =>
+      acset.getProps(ob).toSeq.map( (part,props) =>
         val colProps = props.filterKeys(prop => cols.contains(prop))
-        val (prv,nxt) = neighbors(part,parts)
+        val (prv,nxt) = neighbors(part,acset.getParts(ob))
         RowData(part,colProps,prv,nxt)  
       )
     }
@@ -143,9 +140,9 @@ case class PropRow(part:Part,cols:Seq[Property]):
   }
 
   /** Create an editable laminar element. */ 
-  def laminarElt(
+  def laminarElt[A:ACSet](
     rowSig:Signal[(PropMap,Option[Part],Option[Part])],
-    messenger:Observer[Message[ACSet]],
+    messenger:Observer[Message[A]],
     editSig:Signal[Option[Property]],
     editObs:Observer[TableEditMsg],
   ) =
@@ -172,14 +169,14 @@ case class PropRow(part:Part,cols:Seq[Property]):
 
     /* Return a row element */
     tr(
-      td(part.headId.id.toString()),
+      td(part.id.toString()),
       cellMods,
       backgroundColor <-- rowSig.map(_._1.get(Hovered) match
         case Some(_) => "lightblue"
         case None => "white"
       ),
-      onMouseEnter.mapTo(SetSubpartMsg(part,Hovered)(())) --> messenger,
-      onMouseLeave.mapTo(RemoveSubpartMsg(part,Hovered)) --> messenger,
+      onMouseEnter.mapTo(SetSubpartMsg(Hovered,part)(())) --> messenger,
+      onMouseLeave.mapTo(RemoveSubpartMsg(Hovered,part)) --> messenger,
     )
 
 
@@ -187,9 +184,9 @@ case class PropRow(part:Part,cols:Seq[Property]):
 case class PropCell[T](part:Part,prop:Property {type Value = T})(tOpt:Option[T]):
   
   
-  def laminarElt(
+  def laminarElt[A:ACSet](
     valSig: Signal[Option[prop.Value]],
-    messenger: Observer[Message[ACSet]],
+    messenger: Observer[Message[A]],
     editSig: Signal[Boolean],
     editObs: Observer[EditMsg]
   ) = 
@@ -202,12 +199,12 @@ case class PropCell[T](part:Part,prop:Property {type Value = T})(tOpt:Option[T])
         then EditPrevCellMsg(part,prop)
         else EditNextCellMsg(part,prop)
     
-    def acsetMsg(inputMsg:InputMsg,vOpt:Option[prop.Value]): Option[Message[ACSet]] = 
+    def acsetMsg(inputMsg:InputMsg,vOpt:Option[prop.Value]): Option[Message[A]] = 
       inputMsg match
         case EscMsg(_) => None
         case EnterMsg(_) | TabMsg(_) => vOpt match
-          case Some(v) => Some(SetSubpartMsg(part,prop)(v))
-          case None => Some(RemoveSubpartMsg(part,prop))
+          case Some(v) => Some(SetSubpartMsg(prop,part)(v))
+          case None => Some(RemoveSubpartMsg(prop,part))
         
       
     

@@ -1,9 +1,10 @@
 package semagrams
 
-import semagrams.acsets._
+// import semagrams.acsets._
 import semagrams.util._
 import com.raquo.laminar.api.L._
 import scala.util.Random
+import semagrams.acsets.abstr._
 
 case class BoundingBox(
     pos: Complex,
@@ -18,7 +19,7 @@ case class BoundingBox(
 
 type HandlerAttacher = (Entity, SvgElement) => Unit
 
-/** A Sprite contains the information necessary to turn a sub-ACSet into a
+/** A Sprite contains the information necessary to turn a sub-D into a
   * reactive SVG on the screen.
   *
   * TODO: Sprites should have an "injection" method for statically computing
@@ -28,7 +29,7 @@ type HandlerAttacher = (Entity, SvgElement) => Unit
   * custom code for being able to have defaults; that should not be custom
   * because then it is inconsistent.
   */
-trait Sprite {
+trait Sprite[D:PartData] {
 
   /** Construct an SvgElement for a subacset.
     *
@@ -64,9 +65,9 @@ trait Sprite {
     *   (which may be different from the top-level svg element).
     */
   def present(
-      ent: Entity,
-      init: ACSet,
-      updates: Signal[ACSet],
+      p: Part,
+      init: D,
+      updates: Signal[D],
       eventWriter: Observer[Event]
   ): SvgElement
 
@@ -78,18 +79,24 @@ trait Sprite {
     * This might not make sense, so is optional to implement.
     */
   def boundaryPt(
-      subent: Entity,
-      data: ACSet,
-      dir: Complex
+      data: D,
+      dir: Complex,
+      subparts: Seq[Part] = Seq()
   ): Option[Complex] = None
+
+  // def boundaryNormal(
+  //     data: D,
+  //     dir: Complex,
+  //     subparts: Seq[Part] = Seq()
+  // ): Option[Complex] = None
 
   /** Compute the geometric center of the sprite
     *
     * Similar to [[boundaryPt]]
     */
   def center(
-      subent: Entity,
-      data: ACSet
+    data: D,
+    subparts: Seq[Part] = Seq()
   ): Option[Complex] = None
 
   /** Compute the bounding box of the sprite
@@ -97,53 +104,54 @@ trait Sprite {
     * Similar to [[boundaryPt]]
     */
   def bbox(
-      subent: Entity,
-      data: ACSet
+    data: D,
+    subparts: Seq[Part] = Seq(),
   ): Option[BoundingBox] = None
 
   /** Convert a diagram element into tikz code */
-  def toTikz(p: Part, data: ACSet, visible: Boolean = true): String = ""
+  def toTikz(p: Part, data: D, visible: Boolean = true): String = ""
 
-  /** An optional layout algorithm to run before rendering an ACSet */
-  def layout(bb: BoundingBox, a: ACSet): ACSet = a
+  /** An optional layout algorithm to run before rendering an D */
+  def layout(bb: BoundingBox, a: D): D = a
 
   /** Compute the layout for a full window of size `sz` */
-  def layoutBg(sz: Complex, a: ACSet): ACSet =
+  def layoutBg(sz: Complex, a: D): D =
     layout(BoundingBox(sz / 2.0, sz), a)
 
 }
 
 
 object Sprite:
-  def setContent(label:Property)(props:PropMap) =
-    props.set(Content,
-      props.get(label).getOrElse("").toString()
+  def setContent[D:PartData](label:Property)(data:D) =
+    data.setProp(Content,
+      // data.g
+      data.tryProp(label).getOrElse("").toString()
     )
 
-  def innerText(dataSig:Signal[PropMap]): SvgElement = svg.text(
-    xy <-- dataSig.map(pm => pm.get(Center).getOrElse(
+  def innerText[D:PartData](dataSig:Signal[D]): SvgElement = svg.text(
+    xy <-- dataSig.map(pm => pm.tryProp(Center).getOrElse(
       throw msgError(s"propmap $pm missing `Center`")
     )),
-    children <-- dataSig.map(p =>
-      val splits = splitString(p(Content)).zipWithIndex
+    children <-- dataSig.map(data =>
+      val splits = splitString(data.getProp(Content)).zipWithIndex
       val l = splits.length
       splits.toIndexedSeq.map({ case (t, i) =>
         svg.tspan(
           textToTextNode(t),
           svg.textAnchor := "middle",
           svg.x <-- dataSig.map(p =>
-            p.get(Center).getOrElse(Complex(50, 50)).x.toString()
+            data.tryProp(Center).getOrElse(Complex(50, 50)).x.toString()
           ),
           svg.y <-- dataSig.map(p =>
-            (p.get(Center).getOrElse(Complex(100, 100)).y 
-              + p.get(FontSize).getOrElse(12.0) * (i + 1 - l / 2.0)).toString()
+            (data.tryProp(Center).getOrElse(Complex(100, 100)).y 
+              + data.tryProp(FontSize).getOrElse(12.0) * (i + 1 - l / 2.0)).toString()
           ),
           svg.style := "user-select: none"
         )
       })
     ),
     svg.fontSize <-- dataSig.map(
-      _.get(FontSize).getOrElse(12.0).toString
+      _.tryProp(FontSize).getOrElse(12.0).toString
     ),
     svg.pointerEvents := "none",
   )

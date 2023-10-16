@@ -6,6 +6,7 @@ import upickle.default._
 import semagrams.util.Complex
 
 import upickle.default.ReadWriter
+import semagrams.acsets.abstr.Part
 
 /** An attribute that can be attached to an Entity. */
 
@@ -30,6 +31,7 @@ trait Property {
 
 }
 
+type PartProp = Property { type Value = Part }
 
 /** A subtrait of `Property` that is simpler to implement when there's an
   * implicit ReadWriter for your value type in scope
@@ -74,6 +76,7 @@ enum GenericProperty[T: ReadWriter] extends PValue[T] {
 enum PathProp[T: ReadWriter] extends PValue[T] {
   case StartDir extends PathProp[Complex]
   case EndDir extends PathProp[Complex]
+  case WireDir extends PathProp[Complex]
   case LabelAnchor extends PathProp[Double]
   case LabelOffset extends PathProp[Complex]
   case PathLabel extends PathProp[String]

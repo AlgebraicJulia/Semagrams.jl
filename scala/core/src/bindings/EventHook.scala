@@ -1,7 +1,7 @@
 package semagrams.bindings
 
 import semagrams._
-import semagrams.acsets._
+import semagrams.acsets.abstr._
 
 
 /** A trait for filters on the event stream, picking out events that are
@@ -9,6 +9,8 @@ import semagrams.acsets._
   * them.
   */
 trait EventHook[A] {
+
+  // override def toString = description
 
   /** Determine whether or not this is triggered, and if it is triggered
     */
@@ -28,16 +30,17 @@ case class FilterHook[A](base:EventHook[A],pred:A=>Boolean) extends EventHook[A]
   val description = "Filter an `EventHook` by some property of its return value"
 }
 
+
 /** An [[EventHook]] for keydown events.
   *
   * @param key
   *   the key that we are listening for
   */
 case class KeyDownHook(key: String) extends EventHook[Unit] {
-  def apply(evt: Event, _globalState: GlobalState) = evt match {
+  def apply(evt: Event, _globalState: GlobalState) = evt match 
     case KeyDown(`key`) => Some(())
     case _              => None
-  }
+
 
   def description = key
 }
@@ -61,12 +64,12 @@ case class ClickOnPartHook(button: MouseButton, modifiers: Set[KeyModifier])
 object ClickOnPartHook {
   def apply(button: MouseButton): ClickOnPartHook = ClickOnPartHook(button, Set())
   def apply(button: MouseButton,mod:KeyModifier): ClickOnPartHook = ClickOnPartHook(button, Set(mod))
-  def apply(ptype:PartType,button: MouseButton,mod:KeyModifier): EventHook[Part] = ClickOnPartHook(button, Set(mod)).filter(ptype)
+  def apply(ob:Ob,button: MouseButton,mod:KeyModifier): EventHook[Part] = ClickOnPartHook(button, Set(mod)).filter(ob)
 }
 
 
 extension (hook:EventHook[Part])
-  def filter(ptypes:PartType*) = hook.filter(part => ptypes.contains(part.ty))
+  def filter(obs:Ob*) = hook.filter(part => obs.contains(part.ty))
 
 case class DoubleClickOnPartHook(button: MouseButton = MouseButton.Left, modifiers: Set[KeyModifier] = Set()) extends EventHook[Entity]:
 

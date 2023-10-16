@@ -1,6 +1,6 @@
 package semagrams
 
-import semagrams.acsets._
+import semagrams.acsets.abstr._
 
 /** A collection of entities and sprites
   *
@@ -12,17 +12,17 @@ import semagrams.acsets._
   *   matters for figuring out which sprite should be on top in the case of
   *   overlaps.
   */
-case class EntityCollection(
-    em: EntityMap,
-    ordering: Seq[Entity]
+case class EntityCollection[D:PartData,Model](
+    em: EntityMap[D],
+    ordering: Seq[Part]
 ) {
 
   /** Construct a new [[EntityCollection]] by adding the entities coming from
     * `source`
     */
-  def addSource[A](a: A, source: EntitySource[A]): EntityCollection = {
-    val xs = source.entities(a, em)
-    val xsMap = xs.map((e, s, p) => (e, (s, p))).toMap
+  def addSource(m: Model, source: EntitySource[D,Model]): EntityCollection[D,Model] = {
+    val xs = source.entities(m, em)
+    val xsMap = xs.map((part, spr, data) => (part, (spr, data))).toMap
     EntityCollection(em ++ xsMap, ordering ++ xs.map(_._1))
   }
 }
@@ -30,16 +30,16 @@ case class EntityCollection(
 object EntityCollection {
 
   /** Construct a new empty [[EntityCollection]] */
-  def apply() = new EntityCollection(EntityMap(), Seq())
+  def apply[D:PartData,Model]() = new EntityCollection[D,Model](EntityMap(), Seq())
 }
 
 object EntityCollector {
-  def collect[A](
-      a: A,
-      sources: Seq[EntitySource[A]]
-  ): Seq[(Entity, ACSet, Sprite)] = {
-    val collection = sources.foldLeft(EntityCollection())((ec, source) =>
-      ec.addSource(a, source)
+  def collect[D:PartData,Model](
+      m: Model,
+      sources: Seq[EntitySource[D,Model]]
+  ): Seq[(Part, D, Sprite[D])] = {
+    val collection = sources.foldLeft(EntityCollection[D,Model]())((ec, source) =>
+      ec.addSource(m, source)
     )
     collection.ordering.map(ent => {
       val (sprite, acset) = collection.em(ent)

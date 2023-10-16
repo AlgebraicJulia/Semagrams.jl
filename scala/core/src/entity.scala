@@ -1,6 +1,6 @@
 package semagrams
 
-import semagrams.acsets._
+import semagrams.acsets.abstr._
 import com.raquo.laminar.api.L._
 
 /** A runtime-introspectable type tag for an Entity. */
@@ -47,18 +47,19 @@ case class Background() extends Entity {
 /** The [[EntityType]] for Background */
 object Background extends EntityType
 
-/** A map associating a [[Sprite]] and an [[ACSet]] to the entities alive in the
+/** A map associating a [[Sprite[D]]] and an [[ACSet]] to the entities alive in the
   * Semagram.
   *
   * ACSets have properties associated to their roots, but also subparts, both of
-  * which might be used by the [[Sprite]].
+  * which might be used by the [[Sprite[D]]].
   */
-type EntityMap = Map[Entity, (Sprite, ACSet)]
+type EntityMap[D] = Map[Part, (Sprite[D], D)]
 
 object EntityMap {
 
   /** Construct a new empty [[EntityMap]] */
-  def apply(): EntityMap = Map[Entity, (Sprite, ACSet)]()
+  def apply[D:PartData](): EntityMap[D] = 
+    Map[Part, (Sprite[D], D)]()
 }
 
 /** A wrapper around a function which extracts a sequence of entity, sprite,
@@ -67,39 +68,42 @@ object EntityMap {
   * and an [[EntityMap]] is that we might want to query, for instance, the
   * boundary of a previously extracted vertex while constructing an edge.
   */
-case class EntitySource[A](
-    entities: (A, EntityMap) => Seq[(Entity, Sprite, ACSet)]
+case class EntitySource[D:PartData,A:ACSetWithData[D]](
+    entities: (A, EntityMap[D]) => Seq[(Part, Sprite[D], D)]
 ) {
 
   /** Use the EntitySource to add entities with their sprites/acsets to an
     * EntityMap
     */
-  def addEntities(a: A, m: EntityMap) = {
-    m ++ entities(a, m).map((e, s, p) => (e, (s, p))).toMap
+  def addEntities(a: A, em: EntityMap[D]) = {
+    em ++ entities(a, em).map((part, spr, data) => (part, (spr, data))).toMap
   }
 
   /** Construct a new [[EntitySource]] which adds the properties in `props` to
     * every acset produced by this [[EntitySource]].
     */
-  def withProps(props: PropMap) = EntitySource[A](
-    entities(_, _).map((e, s, a) => (e, s, a.addProps(props)))
+  def withProps(props: PropMap) = EntitySource[D,A](
+    entities(_, _).map((part, spr, data) => (part, spr, data.setProps(props)))
   )
 
   /** Construct a new [[EntitySource]] which uses `f` to make new properties to
     * add to every acset produced by this [[EntitySource]].
     */
-  def addPropsBy(f: (Entity, ACSet, EntityMap) => PropMap) =
-    EntitySource[A]((g, m) =>
-      entities(g, m).map((e, s, a) => (e, s, a.addProps(f(e, a, m))))
+  def addPropsBy(f: (Part, D, EntityMap[D]) => PropMap) =
+    EntitySource[D,A]((a, em) =>
+      entities(a, em).map((part, spr, data) => (part, spr, data.setProps(f(part, data, em))))
     )
 
   /** Construct a new [[EntitySource]] by using `f` to update every entity and
     * acset produced by this [[EntitySource]], while keeping the sprites the
     * same.
     */
-  def updateEntities(f: (Entity, ACSet) => (Entity, ACSet)) = {
-    EntitySource[A]((g, m) =>
-      entities(g, m).map((e, s, a) => { val (e1, a1) = f(e, a); (e1, s, a1) })
+  def updateEntities(f: (Part, D) => (Part, D)) =
+    EntitySource[D,A]( (a, em) =>
+      entities(a, em).map{ (part, spr, data) => 
+        val (newpart, newdata) = f(part, data)
+        (newpart, spr, newdata)
+      }
     )
-  }
+  
 }

@@ -75,7 +75,7 @@ case class DynSchema(
         val x = partMaps((ob, i + 1))
         for (f <- allhoms.filter(_.dom == ob)) {
           if (subparts contains f.name) {
-            buf.setSubpart(
+            buf.setProp(
               f,
               x,
               partMaps((f.codom, read[Int](subparts(f.name))))
@@ -84,7 +84,7 @@ case class DynSchema(
         }
         for (f <- allattrs.filter(_.dom == ob)) {
           if (subparts contains f.name) {
-            buf.setSubpart(f, x, read[f.Value](subparts(f.name)))
+            buf.setProp(f, x, read[f.Value](subparts(f.name)))
           }
         }
       }

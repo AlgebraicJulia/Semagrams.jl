@@ -4,7 +4,7 @@ import com.raquo.laminar.api.L.svg._
 import com.raquo.laminar.api._
 import semagrams.util._
 import semagrams._
-import semagrams.acsets._
+import semagrams.acsets.abstr._
 
 import upickle.default._
 import com.raquo.laminar.nodes.ReactiveSvgElement
@@ -24,33 +24,32 @@ export ShapeProp._
 
 
 /** A sprite with shape determined by the `props` **/
-case class ShapeNode(label:Property,val props: PropMap) extends Sprite {
+case class ShapeNode[D:PartData](label:Property,init: D) extends Sprite[D] {
 
-  def setLabel: PropMap => PropMap = Sprite.setContent(label)
+  def setLabel: D => D = Sprite.setContent(label)
   
-  def sprite(props:PropMap) = 
-    props.get(Shape) match
-    case Some(RectShape) | None => Rect(label,props)
-    case Some(DiscShape) => Disc(label,props)
+  def sprite(data:D) = 
+    data.tryProp(Shape) match
+    case Some(RectShape) | None => Rect(label,init)
+    case Some(DiscShape) => Disc(label,init)
    
 
 
 
 
   def present(
-      ent: Entity,
-      init: ACSet,
-      updates: L.Signal[ACSet],
+      ent: Part,
+      init: D,
+      updates: L.Signal[D],
       eventWriter: L.Observer[Event]
   ) = 
-
     val data = updates
-      .map(props ++ _.props)
+      .map(init.merge(_))
       .map(setLabel)
 
     val text = Sprite.innerText(data)
 
-    val eltSig = data.splitOne(props => props.get(Shape))(
+    val eltSig = data.splitOne(data => data.tryProp(Shape))(
       (shapeOpt,props,propSig) => shapeOpt match
         case Some(RectShape) | None =>
           rect(Rect.geomUpdater(data),Rect.styleUpdater(data))
@@ -104,17 +103,17 @@ case class ShapeNode(label:Property,val props: PropMap) extends Sprite {
 
   
     
-  override def boundaryPt(_subent: Entity, data: ACSet, dir: Complex) =
-    sprite(data.props).boundaryPt(_subent,data,dir)
+  override def boundaryPt(data: D, dir: Complex, subparts:Seq[Part] = Seq()) =
+    sprite(data).boundaryPt(data,dir,subparts)
 
-  override def bbox(_subent: Entity, data: ACSet) = 
-    sprite(data.props).bbox(_subent,data)
+  override def bbox(data: D, subparts:Seq[Part]) = 
+    sprite(data).bbox(data,subparts)
 
-  override def center(_subent: Entity, data: ACSet) = 
-    sprite(data.props).center(_subent,data)
+  override def center(data: D, subparts:Seq[Part]) = 
+    sprite(data).center(data,subparts)
 
-  override def toTikz(p: Part, data: ACSet, visible: Boolean = true) =
-    sprite(data.props).toTikz(p,data,visible)
+  override def toTikz(p: Part, data: D, visible: Boolean = true) =
+    sprite(data).toTikz(p,data,visible)
 }
 
 object ShapeNode {

@@ -41,8 +41,8 @@ object Graphs {
 
     def addEdge(s: Part, t: Part, props: PropMap): State[ACSet[S], Part] = for {
       e <- addPart(E, props)
-      _ <- setSubpart(Src, e, s)
-      _ <- setSubpart(Tgt, e, t)
+      _ <- setProp(Src, e, s)
+      _ <- setProp(Tgt, e, t)
     } yield e
 
     def addEdge(s: Part, t: Part): State[ACSet[S], Part] =

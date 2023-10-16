@@ -517,7 +517,7 @@
 // //   }
 
 // //   /** Set the property `f` of part `p` to `v` */
-// //   def setSubpart(p: Part, f: Property, v: f.Value): ACSet = {
+// //   def setProp(p: Part, f: Property, v: f.Value): ACSet = {
 // //     val sub = subacset(p)
 // //     val newSub = sub.copy(
 // //       props = sub.props.set(f, v)
@@ -552,7 +552,7 @@
     
 // //   /** Set the property `f` of parts `ps` to `v` if it is unset */
 // //   def softSetSubpart(p:Part,f:Property,v: f.Value) =
-// //     if hasSubpart(f,p) then this else setSubpart(p,f,v)
+// //     if hasSubpart(f,p) then this else setProp(p,f,v)
 
 // //   /** Set the property `f` of parts `ps` to `v` if it is unset */
 // //   def softSetSubpartProps(p:Part,pm:PropMap) =
@@ -739,9 +739,9 @@
 // //   /** `State` wrapper around ACSet.addPart */
 // //   def addPart(x: Ob): State[ACSet, Part] = State(_.addPart(x, PropMap()))
 
-// //   /** `State` wrapper around ACSet.setSubpart */
-// //   def setSubpart(p: Part, f: Property, v: f.Value): State[ACSet, Unit] =
-// //     State.modify(_.setSubpart(p, f, v))
+// //   /** `State` wrapper around ACSet.setProp */
+// //   def setProp(p: Part, f: Property, v: f.Value): State[ACSet, Unit] =
+// //     State.modify(_.setProp(p, f, v))
 
 // //   /** `State` wrapper around ACSet.remSubpart */
 // //   def remSubpart(p: Part, f: Property): State[ACSet, Unit] =
@@ -758,7 +758,7 @@
 
 // //   /** Returns a lens into the value of the property `f` for part `x` */
 // //   def subpartLens(f: Property, x: Part) =
-// //     Lens[ACSet, f.Value](_.subpart(f, x))(y => s => s.setSubpart(x, f, y))
+// //     Lens[ACSet, f.Value](_.subpart(f, x))(y => s => s.setProp(x, f, y))
 // // }
 
 
@@ -773,7 +773,7 @@
 // // }
 
 // // case class SetSubpartMsg(part:Part,prop:Property)(v:prop.Value) extends Message[ACSet] {
-// //   def execute(a:ACSet) = a.setSubpart(part,prop,v)
+// //   def execute(a:ACSet) = a.setProp(part,prop,v)
 // // }
 
 // // case class RemoveSubpartMsg(part:Part,prop:Property) extends Message[ACSet] {

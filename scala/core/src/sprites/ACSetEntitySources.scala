@@ -1,48 +1,45 @@
 package semagrams.sprites
 
 import semagrams._
-import semagrams.acsets._
+import semagrams.acsets.abstr._
 import semagrams.util._
 import com.raquo.laminar.api.L._
 
 /** An [[EntitySource]] that extracts all parts of type `ob` from an ACSet and
   * pairs them with `sprite` along with their subacset
   */
-def ACSetEntitySource(
+def ACSetEntitySource[D:PartData,A:ACSetWithData[D]](
     ob: Ob,
-    sprite: Sprite
-): EntitySource[ACSet] =
-  EntitySource[ACSet]((acs, _m) =>
-    acs
-      .parts(ROOT, ob)
-      .map({ case (i, acs) =>
-        (i, sprite, acs)
-      })
+    sprite: Sprite[D]
+): EntitySource[D,A] =
+  EntitySource[D,A]((acs, _m) =>
+    acs.getData(ob).toSeq
+      .map( (part, data) =>
+        (part, sprite, data)
+      )
   )
 
 /** Find the point on the boundary in direction `dir` of the sprite
   * corresponding to `p`, by looking up the sprite/data in `m`
   */
-def findBoundary(p: Part, m: EntityMap, dir: Complex): Option[Complex] = for {
-  ((sprite, acs), subp) <- p.path match {
-    case Nil             => None
-    case (x, id) :: rest => m.get(Part(Seq((x, id)))).map((_, Part(rest)))
-  }
-  bp <- sprite.boundaryPt(subp, acs, dir)
-} yield bp
+def findBoundary[D:PartData](p: Part, m: EntityMap[D], dir: Complex,
+  subparts:Seq[Part] = Seq()
+): Option[Complex] = m.get(p).flatMap( (spr,data) =>
+  spr.boundaryPt(data,dir,subparts)
+
+)
+  
 
 /** Find the center of the sprite corresponding to `p`, by looking up the
   * sprite/data in `m`
   */
-def findCenter(p: Part, m: EntityMap): Option[Complex] =
-  for {
-    ((sprite, acs), subp) <- p.path match {
-      case Nil => None
-      case (x, id) :: rest =>
-        m.get(Part(Seq((x, id)))).map((_, Part(rest)))
-    }
-    c <- sprite.center(subp, acs)
-  } yield c
+def findCenter[D:PartData](p: Part, m: EntityMap[D],
+  subparts:Seq[Part] = Seq()
+): Option[Complex] =
+  m.get(p).flatMap( (spr,data) =>
+    spr.center(data,subparts)  
+  )
+
 
 /** Compute the properties (i.e. Start and End) for an edge, using the top-level
   * properties in `acs` and the other sprites in `m`.
@@ -55,11 +52,11 @@ def findCenter(p: Part, m: EntityMap): Option[Complex] =
   * src/tgt, and then pass the rest of the path of the part into a method on
   * that sprite.
   */
-def edgeProps(
-    src: Hom,
-    tgt: Hom
-)(_e: Entity, acs: ACSet, m: EntityMap): PropMap = {
-  val p = acs.props
+def edgeProps[D:PartData](
+    src: PartProp,
+    tgt: PartProp
+)(_e: Part, data: D, m: EntityMap[D]): PropMap = {
+  val p = data.getProps()
   val s = p.get(src)
   val t = p.get(tgt)
   val spos = s.flatMap(findCenter(_, m)).getOrElse(p.get(Start).getOrElse(Complex(100,100)))
@@ -85,12 +82,14 @@ def edgeProps(
 /** Like [[ACSetEntitySource]], but then also computes the edge properties using
   * [[edgeProps]]
   */
-def ACSetEdgeSource(
+def ACSetEdgeSource[D:PartData,A:ACSetWithData[D]](
     ob: Ob,
-    src: Hom,
-    tgt: Hom,
-    sprite: Sprite
-) = ACSetEntitySource(ob, sprite).addPropsBy(edgeProps(src, tgt))
+    src: PartProp,
+    tgt: PartProp,
+    sprite: Sprite[D]
+) = ACSetEntitySource[D,A](ob, sprite).addPropsBy( (part,data,emap) =>
+  edgeProps[D](src, tgt)(part,data,emap)
+)
 
 /** Similar to [[edgeProps]]. Computes the position and direction for the ends
   * of a wire from the ports it is connected to, using the top-level properties
@@ -103,50 +102,42 @@ def ACSetEdgeSource(
   * to a variable background for zooming in and out.
   */
 
-def wireProps(
-    src: Hom,
-    tgt: Hom,
-    typeProps: (ACSet, Part) => PropMap,
-    dir: Part => Complex = _ => Complex(0, 0),
-    bg: => Part = ROOT
-)(_e: Entity, acs: ACSet, m: EntityMap): PropMap = {
+def wireProps[D:PartData](
+  e:Part,
+  src: PartProp,
+  tgt: PartProp,
+  // typeProps: (D, Part) => PropMap,
+  wireDir: Part => Complex = _ => Complex(0, 0),
+  // bg: => Part = ROOT
+)(_e: Part, data: D, m: EntityMap[D]): PropMap = 
 
   val defaultPos = Complex(50, 50)
 
-  val p = acs.props
+  val p = data.getProps()
 
-  val Seq(s, t) = Seq(src, tgt).map(p.get(_))
-
-  val sc = s
-    .flatMap(_.diffOption(bg))
-    .flatMap(findCenter(_, m))
-    .getOrElse(
-      p.get(Start)
-        .getOrElse(defaultPos)
-    )
-  val tc = t
-    .flatMap(_.diffOption(bg))
-    .flatMap(findCenter(_, m))
-    .getOrElse(
-      p.get(End)
-        .getOrElse(defaultPos)
-    )
-
-  val Seq(sd, td) =
-    Seq(s, t).map(_.flatMap(_.diffOption(bg)).map(dir).getOrElse(Complex(0, 0)))
-
-  val tikzProps = (s, t) match
-    case (Some(p), Some(q)) =>
+  val propOpt = for
+    s <- p.get(src)
+    t <- p.get(tgt)
+    sc <- findCenter(s,m)
+    tc <- findCenter(t,m)
+    (sspr,sdata) <- m.get(s)
+    (tspr,tdata) <- m.get(t)
+    sd = wireDir(s)
+    td = wireDir(t)
+  yield (
       PropMap()
-        .set(TikzStart, p.tikzName)
-        .set(TikzEnd, q.tikzName)
-    case _ => PropMap()
+        .set(Start, sc)
+        .set(End, tc)
+        .set(StartDir, sd)
+        .set(EndDir, td)
+        .set(TikzStart, s.tikzName)
+        .set(TikzEnd, t.tikzName)  
+    )
+    
+  propOpt.getOrElse(PropMap())
+  
+  
 
-  (acs.props ++ typeProps(acs, _e.asInstanceOf[Part]))
-    .set(Start, sc)
-    .set(StartDir, sd)
-    .set(End, tc)
-    .set(EndDir, td)
-    ++ tikzProps
 
-}
+
+

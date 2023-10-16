@@ -27,12 +27,12 @@ package object api {
     Arrow,
     Disc,
     Rect,
-    WireStub,
+    // WireStub,
     ACSetEntitySource,
     ACSetEdgeSource,
     findCenter,
     wireProps,
-    DPBox
+    // DPBox
   }
   export util.{
     Complex,

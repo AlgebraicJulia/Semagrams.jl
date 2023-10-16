@@ -1,4 +1,4 @@
-package semagrams.acsets
+package semagrams.acsets.nested
 
 import semagrams._
 import cats.data.State
@@ -9,25 +9,27 @@ import semagrams.util.msgError
 import semagrams.util.bijectiveRW
 import semagrams.util.Complex
 
-/** A trait marking objects in a [[Schema]] */
-trait Ob {
+import semagrams.acsets.abstr
+
+/** A trait marking objects in a [[NestedSchema]] */
+trait NestedOb extends abstr.Ob {
 
   /** The subschema for the subacsets on parts of this type.
     *
     * The value is lazy in case an object is included in its own schema.
     */
-  lazy val schema: Schema = SchEmpty
+  lazy val schema: NestedSchema = SchEmpty
 
   /** This object promoted to type for the domain/codomain of a morphism */
   def asDom() = Seq(partType)
 
   def partType: PartType = PartType(Seq(this))
 
-  def extend(x: Ob) = partType.extend(x)
+  def extend(x: NestedOb) = partType.extend(x)
 
 }
 
-/** A trait marking morphisms in a [[Schema]]
+/** A trait marking morphisms in a [[NestedSchema]]
   *
   * Unlike in typical categories, morphisms can have multiple domains and
   * multiple codomains. This is shorthand for a morphism for each pair of domain
@@ -77,7 +79,7 @@ trait Hom extends Property {
 
 }
 
-/** A trait marking attributes in a [[Schema]]
+/** A trait marking attributes in a [[NestedSchema]]
   *
   * Unlike in Julia ACSets, we do not have AttrTypes. Rather, attributes have
   * their associated scala type given by Property.Value.
@@ -106,19 +108,19 @@ trait Attr extends Property {
   * So `PartType(Seq())` is the type of the root acset part, and
   * `PartType(Seq(Box,InPort))` refers to the type of input ports on boxes.
   */
-case class PartType(path: Seq[Ob]) extends EntityType {
+case class PartType(path: Seq[NestedOb]) extends EntityType {
 
   /** Add an object to the end of the PartType */
-  def extend(x: Ob): PartType = PartType(path :+ x)
+  def extend(x: NestedOb): PartType = PartType(path :+ x)
 
   /** The first object in the PartType */
-  def head: Ob = path(0)
+  def head: NestedOb = path(0)
 
   /** The PartType relative to the first object */
   def tail: PartType = PartType(path.tail)
 
   /** The last object in the PartType */
-  def last: Ob = path.last
+  def last: NestedOb = path.last
 
   /** The initial segment of the PartType */
   def init: PartType = PartType(path.init)
@@ -146,8 +148,8 @@ case class PartType(path: Seq[Ob]) extends EntityType {
 }
 
 object PartType {
-  given obIsPartType: Conversion[Ob, PartType] = (ob: Ob) => PartType(Seq(ob))
-  given seqIsPartType: Conversion[Seq[Ob], PartType] = PartType(_)
+  given obIsPartType: Conversion[NestedOb, PartType] = (ob: NestedOb) => PartType(Seq(ob))
+  given seqIsPartType: Conversion[Seq[NestedOb], PartType] = PartType(_)
 
 }
 
@@ -164,13 +166,13 @@ object PartType {
   *   filesystem there are relative and absolute paths. I think that currently
   *   `Part` is used for both notions, which is very confusing.
   */
-case class Part(path: Seq[(Ob, Id)]) extends Entity {
+case class Part(path: Seq[(NestedOb, Id)]) extends Entity {
 
   /** All of the objects of the path */
   override val ty: PartType = PartType(path.map(_._1))
 
   /** Provide directions to go one acset deeper */
-  def extend(x: Ob, i: Id) = Part(path :+ (x, i))
+  def extend(x: NestedOb, i: Id) = Part(path :+ (x, i))
 
   /** Overload to return a Part rather than Entity */
   def extendPart(p: Part): Part = Part(path ++ p.path)
@@ -179,7 +181,7 @@ case class Part(path: Seq[(Ob, Id)]) extends Entity {
   def head: Part = Part(path.slice(0, 1))
 
   /** Returns the first object in the path */
-  def headOb: Ob = ty.path.head
+  def headOb: NestedOb = ty.path.head
 
   /** Returns the first id in the path */
   def headId: Id = path.head._2
@@ -191,7 +193,7 @@ case class Part(path: Seq[(Ob, Id)]) extends Entity {
   def last: Part = Part(Seq(path.last))
 
   /** Returns the last object in the path */
-  def lastOb: Ob = ty.path.last
+  def lastOb: NestedOb = ty.path.last
 
   /** Returns the last id in the path */
   def lastId: Id = path.last._2
@@ -246,20 +248,20 @@ case class Part(path: Seq[(Ob, Id)]) extends Entity {
 
 /** The schema for a nested acset.
   *
-  * The nested part comes in because anything that implements `Ob` has another
+  * The nested part comes in because anything that implements `NestedOb` has another
   * schema attached to it.
   *
   * @todo
   *   What does this correspond to categorically?
   */
-trait Schema {
-  val obs: Seq[Ob]
+trait NestedSchema {
+  val obs: Seq[NestedOb]
   val homs: Seq[Hom]
   val attrs: Seq[Attr]
   val props: Seq[Property] = Seq()
 
   /** Returns the subschema found by following the path in `ty`. */
-  def subschema(ty: PartType): Schema = ty.path match {
+  def subschema(ty: PartType): NestedSchema = ty.path match {
     case Nil => this
     case ob :: rest => {
       assert(obs contains ob)
@@ -268,7 +270,7 @@ trait Schema {
   }
 
   /** Returns all subschemas of the `schemas` */
-  def subschemas(schemas: Set[Schema] = Set()): Set[Schema] =
+  def subschemas(schemas: Set[NestedSchema] = Set()): Set[NestedSchema] =
     if schemas.contains(this)
     then schemas
     else
@@ -278,7 +280,7 @@ trait Schema {
   /** Returns all of the homs that go into the given part type Each hom is
     * prefixed by a path of objects needed to get to that hom
     */
-  def homsInto(ty: PartType): Seq[(Seq[Ob], Hom)] = ty.path match {
+  def homsInto(ty: PartType): Seq[(Seq[NestedOb], Hom)] = ty.path match {
     case Nil => Seq()
     case ob :: rest =>
       homs.filter(_.codoms contains ty).map((Seq(), _))
@@ -287,8 +289,8 @@ trait Schema {
           .map({ case (obs, f) => (ob +: obs, f) })
   }
 
-  /** Create an empty ACSet from this schema. */
-  def apply(): ACSet = ACSet(this)
+  /** Create an empty NestedACSet from this schema. */
+  def apply(): NestedACSet = NestedACSet(this)
 
   /** Serialization via upickle. This must live in the schema in order to know
     * which typesafe objects/homs/attrs are available.
@@ -296,11 +298,11 @@ trait Schema {
     * bijectiveRW(seq) serializes to String using the built-in toString
     *
     * macroRW is the built-in upickle creation for case classes, but requires
-    * access to a background ReadWriter[Ob]
+    * access to a background ReadWriter[NestedOb]
     */
 
-  /** Serialization of `Ob`s in the schema */
-  implicit def obRW: ReadWriter[Ob] = bijectiveRW(obs)
+  /** Serialization of `NestedOb`s in the schema */
+  implicit def obRW: ReadWriter[NestedOb] = bijectiveRW(obs)
 
   /** Serialization of `PartType`s in the schema */
   implicit def partTypeRW: ReadWriter[PartType] = macroRW
@@ -343,8 +345,8 @@ trait Schema {
         })
     )
 
-  /** Serialization of `Schema`s occuring in the schema */
-  implicit def schemaRW: ReadWriter[Schema] = bijectiveRW(this.subschemas())
+  /** Serialization of `NestedSchema`s occuring in the schema */
+  implicit def schemaRW: ReadWriter[NestedSchema] = bijectiveRW(this.subschemas())
 
   /** Serialization of `PartSet`s occuring in the schema. Note that this omits
     * the `nextID` and rebuilds it from the sequence of ids.
@@ -360,7 +362,7 @@ trait Schema {
         PartSet(
           seq.maxOption.map(_ + 1).getOrElse(0),
           seq.map(Id(_)),
-          dict.map((i, json) => Id(i) -> read[ACSet](json))
+          dict.map((i, json) => Id(i) -> read[NestedACSet](json))
         )
     )
 
@@ -370,7 +372,7 @@ trait Schema {
     */
 
   /** Serialization of `ACSets`s based on the schema */
-  implicit def acsetRW: ReadWriter[ACSet] =
+  implicit def acsetRW: ReadWriter[NestedACSet] =
     readwriter[Map[String, ujson.Value]].bimap(
       acset =>
         Map(
@@ -379,10 +381,10 @@ trait Schema {
           "partsMap" -> read[ujson.Value](write(acset.partsMap))
         ),
       jmap =>
-        ACSet(
-          read[Schema](jmap("schema")),
+        NestedACSet(
+          read[NestedSchema](jmap("schema")),
           read[PropMap](jmap("props")),
-          read[Map[Ob, PartSet]](jmap("partsMap"))
+          read[Map[NestedOb, PartSet]](jmap("partsMap"))
         )
     )
 
@@ -390,7 +392,7 @@ trait Schema {
   def runtimeSerializer[A: ReadWriter](
       key: String,
       a: A
-  ): ReadWriter[(ACSet, A)] =
+  ): ReadWriter[(NestedACSet, A)] =
     readwriter[Map[String, ujson.Value]].bimap(
       (acset, a) =>
         Map(
@@ -399,7 +401,7 @@ trait Schema {
         ),
       jmap =>
         (
-          read[ACSet](jmap("acset")),
+          read[NestedACSet](jmap("acset")),
           read[A](jmap(key))
         )
     )
@@ -415,7 +417,7 @@ object Id {
   )
 }
 
-/** Storage class for the parts corresponding to an `Ob` in a schema.
+/** Storage class for the parts corresponding to an `NestedOb` in a schema.
   *
   * This is immutable; methods that logically mutate simply return new objects.
   *
@@ -424,7 +426,7 @@ object Id {
   *
   * @param ids
   *   The ids of all the parts added so far. This is a `Seq` because we care
-  *   about the ordering; when the ACSet is displayed this ordering is used when
+  *   about the ordering; when the NestedACSet is displayed this ordering is used when
   *   two sprites overlap.
   *
   * @param acsets
@@ -433,14 +435,14 @@ object Id {
 case class PartSet(
     nextId: Int,
     ids: Seq[Id],
-    acsets: Map[Id, ACSet]
+    acsets: Map[Id, NestedACSet]
 ) {
 
   /** Add multiple new parts, with subacsets given in `partacsets`.
     *
     * Returns a sequence of the ids of the added parts.
     */
-  def addParts(partacsets: Seq[ACSet]): (PartSet, Seq[Id]) = {
+  def addParts(partacsets: Seq[NestedACSet]): (PartSet, Seq[Id]) = {
     val newIds = nextId.to(nextId + partacsets.length - 1).map(Id.apply)
     val newPd = PartSet(
       nextId + partacsets.length,
@@ -451,13 +453,13 @@ case class PartSet(
   }
 
   /** Adds a single part with subacset `acs`, returns its id. */
-  def addPart(acset: ACSet): (PartSet, Id) = {
+  def addPart(acset: NestedACSet): (PartSet, Id) = {
     val (p, newIds) = addParts(Seq(acset))
     (p, newIds(0))
   }
 
   /** Set the subacset corresponding to `i` to `acs` */
-  def setAcset(i: Id, acs: ACSet): PartSet = {
+  def setAcset(i: Id, acs: NestedACSet): PartSet = {
     this.copy(
       acsets = acsets + (i -> acs)
     )
@@ -495,11 +497,16 @@ case class PartSet(
 
 }
 
+object PartSet:
+  def apply() = new PartSet(0,Seq(), 
+    Map[Id,NestedACSet]()
+  )
+
 /** The part corresponding to the top-level acset itself. */
 val ROOT = Part(Seq())
 
 /** The empty schema. */
-case object SchEmpty extends Schema {
+case object SchEmpty extends NestedSchema {
   val obs = Seq()
   val homs = Seq()
   val attrs = Seq()
@@ -517,20 +524,20 @@ case object SchEmpty extends Schema {
   *   for an edge, then the source and target are stored here.
   *
   * @param partsMap
-  *   the `PartSet` object for each `Ob` in the schema. This is where the
+  *   the `PartSet` object for each `NestedOb` in the schema. This is where the
   *   subacsets are stored.
   */
-case class ACSet(
-    schema: Schema,
+case class NestedACSet(
+    schema: NestedSchema,
     props: PropMap,
-    partsMap: Map[Ob, PartSet]
+    partsMap: Map[NestedOb, PartSet]
 ) {
 
   /** Get the subacset corresponding to a nested part; error if invalid */
-  def subacset(p: Part): ACSet = trySubacset(p).get
+  def subacset(p: Part): NestedACSet = trySubacset(p).get
 
   /** Get the subacset corresponding to a nested part; return None if invalid */
-  def trySubacset(p: Part): Option[ACSet] = p.path match {
+  def trySubacset(p: Part): Option[NestedACSet] = p.path match {
     case Nil => Some(this)
     case (x, i) :: rest =>
       val g = partsMap.get(x)
@@ -540,7 +547,7 @@ case class ACSet(
       )
   }
 
-  /** Check if a nested part exists in the ACSet */
+  /** Check if a nested part exists in the NestedACSet */
   def hasPart(p: Part): Boolean = p.path match {
     case Nil => true
     case (x, i) :: rest =>
@@ -552,7 +559,7 @@ case class ACSet(
   }
 
   /** Set the subacset for a nested part */
-  def setSubacset(p: Part, acs: ACSet): ACSet = p.path match {
+  def setSubacset(p: Part, acs: NestedACSet): NestedACSet = p.path match {
     case Nil => {
       acs
     }
@@ -568,7 +575,7 @@ case class ACSet(
   /** Return all of the parts of the subacset at `i` with type `x`, along with
     * their corresponding subacsets.
     */
-  def parts(i: Part, x: Ob): Seq[(Part, ACSet)] = {
+  def parts(i: Part, x: NestedOb): Seq[(Part, NestedACSet)] = {
     val sub = subacset(i)
     val ps = sub.partsMap
       .get(x)
@@ -590,7 +597,7 @@ case class ACSet(
   /** Return all of the parts of the subacset at `i` with type `x`, without
     * subacsets
     */
-  def partsOnly(i: Part, x: Ob): Seq[Part] = {
+  def partsOnly(i: Part, x: NestedOb): Seq[Part] = {
     val ps = subacset(i).partsMap(x)
     ps.ids.map(id => i.extend(x, id))
   }
@@ -610,7 +617,7 @@ case class ACSet(
   /** Adds a part of type `x` to the subacset at `p` with initial subacset
     * `init`
     */
-  def addPart(p: Part, x: Ob, init: ACSet): (ACSet, Part) = {
+  def addPart(p: Part, x: NestedOb, init: NestedACSet): (NestedACSet, Part) = {
     val sub = subacset(p)
     val (newparts, i) = sub.partsMap(x).addPart(init)
     val newSub = sub.copy(
@@ -622,7 +629,7 @@ case class ACSet(
   /** Add several parts of type `x` to the subacset at `p` with initial
     * subacsets given by inits.
     */
-  def addParts(p: Part, x: Ob, inits: Seq[ACSet]): (ACSet, Seq[Part]) = {
+  def addParts(p: Part, x: NestedOb, inits: Seq[NestedACSet]): (NestedACSet, Seq[Part]) = {
     val sub = subacset(p)
     val (newparts, ids) = sub.partsMap(x).addParts(inits)
     val newSub = sub.copy(
@@ -632,33 +639,33 @@ case class ACSet(
   }
 
   /** Convenience overload of [[addParts]] */
-  def addPartsProps(p: Part, x: Ob, props: Seq[PropMap]): (ACSet, Seq[Part]) = {
+  def addPartsProps(p: Part, x: NestedOb, props: Seq[PropMap]): (NestedACSet, Seq[Part]) = {
     val subschema = schema.subschema(p.ty.extend(x))
-    addParts(p, x, props.map(p => ACSet(subschema, p)))
+    addParts(p, x, props.map(p => NestedACSet(subschema, p)))
   }
 
   /** Convenience overload of [[addPart]] */
-  def addPart(p: Part, x: Ob, props: PropMap): (ACSet, Part) = {
+  def addPart(p: Part, x: NestedOb, props: PropMap): (NestedACSet, Part) = {
     val subschema = schema.subschema(p.ty.extend(x))
-    addPart(p, x, ACSet(subschema, props))
+    addPart(p, x, NestedACSet(subschema, props))
   }
 
   /** Convenience overload of [[addPart]] */
-  def addPart(x: Ob, props: PropMap): (ACSet, Part) = addPart(ROOT, x, props)
+  def addPart(x: NestedOb, props: PropMap): (NestedACSet, Part) = addPart(ROOT, x, props)
 
   /** Convenience overload of [[addPart]] */
-  def addPart(x: Ob, init: ACSet): (ACSet, Part) = addPart(ROOT, x, init)
+  def addPart(x: NestedOb, init: NestedACSet): (NestedACSet, Part) = addPart(ROOT, x, init)
 
   /** Convenience overload of [[addPart]] */
-  def addPart(p: Part, x: Ob): (ACSet, Part) = addPart(p, x, PropMap())
+  def addPart(p: Part, x: NestedOb): (NestedACSet, Part) = addPart(p, x, PropMap())
 
   /** Convenience overload of [[addPart]] */
-  def addPart(x: Ob): (ACSet, Part) = addPart(ROOT, x, PropMap())
+  def addPart(x: NestedOb): (NestedACSet, Part) = addPart(ROOT, x, PropMap())
 
   /** Move the part `p` to the front of its parent `PartSet`. See
     * [[PartSet.moveFront]].
     */
-  def moveFront(p: Part): ACSet = {
+  def moveFront(p: Part): NestedACSet = {
     assert(p.path.length > 0)
     val (prefix, (x, i)) = (Part(p.path.dropRight(1)), p.path.last)
     val sub = subacset(prefix)
@@ -671,7 +678,7 @@ case class ACSet(
   /** Move the part `p` to the front of its parent `PartSet`. See
     * [[PartSet.moveFront]].
     */
-  def moveToIndex(p: Part, idx: Int): ACSet = {
+  def moveToIndex(p: Part, idx: Int): NestedACSet = {
     val sub = subacset(p.init)
     val newsub = sub.copy(
       partsMap = sub.partsMap + (p.lastOb -> sub
@@ -682,7 +689,7 @@ case class ACSet(
   }
 
   /** Set the property `f` of part `p` to `v` */
-  def setSubpart(p: Part, f: Property, v: f.Value): ACSet = {
+  def setProp(p: Part, f: Property, v: f.Value): NestedACSet = {
     val sub = subacset(p)
     val newSub = sub.copy(
       props = sub.props.set(f, v)
@@ -691,7 +698,7 @@ case class ACSet(
   }
 
   /** Set the property `f` of part `p` to `v` */
-  def setSubpartProps(p: Part, pm: PropMap): ACSet = {
+  def setSubpartProps(p: Part, pm: PropMap): NestedACSet = {
     val sub = subacset(p)
     val newSub = sub.copy(
       props = sub.props ++ pm
@@ -700,50 +707,50 @@ case class ACSet(
   }
 
   /** Set the property `f` of parts `ps` to `v` */
-  def setSubpartProps(ps: Seq[Part], pm: PropMap): ACSet = 
+  def setSubpartProps(ps: Seq[Part], pm: PropMap): NestedACSet = 
     ps match
       case Seq() => this
       case head +: tail => setSubpartProps(head,pm).setSubpartProps(tail,pm)
 
   /** Set the properties `pm` for all parts of type `ob` **/
-  def setGlobalProps(ob:Ob,pm:PropMap): ACSet =
+  def setGlobalProps(ob:NestedOb,pm:PropMap): NestedACSet =
     setSubpartProps(partsOnly(ROOT,ob),pm)
     
   /** Set properties `pm` on parts of type `ob` for (`ob`,`pm`) in `obProps` */
-  def setGlobalProps(obProps:Seq[(Ob,PropMap)]): ACSet =
+  def setGlobalProps(obProps:Seq[(NestedOb,PropMap)]): NestedACSet =
     obProps match
       case Seq() => this
       case (ob,props) +: tail => setGlobalProps(ob,props).setGlobalProps(tail)
     
   /** Set the property `f` of parts `ps` to `v` if it is unset */
   def softSetSubpart(p:Part,f:Property,v: f.Value) =
-    if hasSubpart(f,p) then this else setSubpart(p,f,v)
+    if hasSubpart(f,p) then this else setProp(p,f,v)
 
   /** Set the property `f` of parts `ps` to `v` if it is unset */
   def softSetSubpartProps(p:Part,pm:PropMap) =
     setSubpartProps(p,pm.filterKeys(f => !hasSubpart(f,p)))
 
   /** Set the properties `pm` on parts `ps` if they are unset */
-  def softSetSubpartProps(ps:Seq[Part],pm:PropMap): ACSet = ps match
+  def softSetSubpartProps(ps:Seq[Part],pm:PropMap): NestedACSet = ps match
     case Seq() => this
     case head +: tail => 
       softSetSubpartProps(head,pm)
         .softSetSubpartProps(tail,pm)
   
   /** Set the properties `pm` on parts of type `ob` if they are unset */
-  def softSetGlobalProps(ob:Ob,pm:PropMap): ACSet = 
+  def softSetGlobalProps(ob:NestedOb,pm:PropMap): NestedACSet = 
     softSetSubpartProps(partsOnly(ROOT,ob),pm)
 
   /** Set properties `pm` on parts of type `ob` for (`ob`,`pm`)
    *  in `obProps` if they are unset */
-  def softSetGlobalProps(obProps:Seq[(Ob,PropMap)]): ACSet = obProps match
+  def softSetGlobalProps(obProps:Seq[(NestedOb,PropMap)]): NestedACSet = obProps match
     case Seq() => this
     case (ob,props) +: tail => 
       softSetGlobalProps(ob,props)
         .softSetGlobalProps(tail)
 
   /** Unset the property `f` of `p` */
-  def remSubpart(p: Part, f: Property): ACSet = {
+  def remSubpart(p: Part, f: Property): NestedACSet = {
     val sub = subacset(p)
     val newSub = sub.copy(
       props = sub.props - f
@@ -760,7 +767,7 @@ case class ACSet(
     /** Essentially, we look at all parts with part type f.dom, and filter which
       * ones have a property f set to p
       */
-    def helper(acs: ACSet, part: Part, remaining: Seq[Ob]): Seq[Part] =
+    def helper(acs: NestedACSet, part: Part, remaining: Seq[NestedOb]): Seq[Part] =
       remaining match {
         case Nil => if acs.props.get(f) == Some(p) then Seq(part) else Seq()
         case ob :: rest =>
@@ -777,7 +784,7 @@ case class ACSet(
   }
 
   /** Remove a part, but not any of the other parts that might refer to it. */
-  def remPartOnly(p: Part): ACSet = {
+  def remPartOnly(p: Part): NestedACSet = {
     if hasPart(p) then {
       assert(p.path.length > 0)
       val (pre, (x, i)) = (p.path.dropRight(1), p.path.last)
@@ -792,7 +799,7 @@ case class ACSet(
   }
 
   /** Remove a part and all of the other parts that refer to it. */
-  def remPart(p: Part): ACSet = {
+  def remPart(p: Part): NestedACSet = {
     val visited = mutable.Set[Part]()
     val queue = mutable.Queue[Part](p)
     while (!queue.isEmpty) {
@@ -814,12 +821,12 @@ case class ACSet(
   }
 
   /** Remove all of the parts in `ps` */
-  def remParts(ps: Seq[Part]): ACSet = ps match
+  def remParts(ps: Seq[Part]): NestedACSet = ps match
     case Seq()             => this
     case Seq(p, rest @ _*) => this.remPart(p).remParts(rest)
 
   /** Add the properties in `newProps` to the top-level properties. */
-  def addProps(newProps: PropMap): ACSet = {
+  def addProps(newProps: PropMap): NestedACSet = {
     this.copy(props = props ++ newProps)
   }
 
@@ -837,7 +844,7 @@ case class ACSet(
       from: Complex,
       to: Complex,
       scaleProps: Seq[Property { type Value = Complex }] = Seq(Center)
-  ): ACSet =
+  ): NestedACSet =
     val oldProps = props.pmap.filter((k, _) => !scaleProps.contains(k))
 
     val newProps = scaleProps
@@ -861,87 +868,30 @@ case class ACSet(
 
 }
 
-/** This object contains the constructor method for ACSets and also a collection
-  * of wrappers around ACSet methods in the `State` monad that allow for a
-  * quasi-imperative API for modifying ACSets purely.
-  */
-object ACSet {
-
-  /** Construct a new ACSet with schema `s` */
-  def apply(s: Schema): ACSet = ACSet(s, PropMap())
+object NestedACSet:
+  /** Construct a new NestedACSet with schema `s` */
+  def apply(s: NestedSchema): NestedACSet = 
+    apply(s, PropMap())
 
   /** Construct a new ACSet with schema `s` and top-level parts `props` */
-  def apply(s: Schema, props: PropMap): ACSet =
-    val pm = s.obs.map(ob => ob -> PartSet(0, Seq(), Map())).toMap
-    new ACSet(s, props, pm)
+  def apply(s: NestedSchema, props: PropMap): NestedACSet =
+    NestedACSet(s,props,Map().withDefaultValue(PartSet()))
 
-  /** `State` wrapper around ACSet.addParts */
-  def addParts(p: Part, x: Ob, props: Seq[PropMap]): State[ACSet, Seq[Part]] =
-    State(_.addPartsProps(p, x, props))
 
-  /** `State` wrapper around ACSet.addPart */
-  def addPart(p: Part, x: Ob, props: PropMap): State[ACSet, Part] =
-    State(_.addPart(p, x, props))
 
-  /** `State` wrapper around ACSet.addPart */
-  def addPart(p: Part, x: Ob, init: ACSet): State[ACSet, Part] =
-    State(_.addPart(p, x, init))
-
-  /** `State` wrapper around ACSet.addPart */
-  def addPart(p: Part, x: Ob): State[ACSet, Part] =
-    State(_.addPart(p, x))
-
-  /** `State` wrapper around ACSet.addPart */
-  def addPart(x: Ob, props: PropMap): State[ACSet, Part] = State(
-    _.addPart(x, props)
-  )
-
-  /** `State` wrapper around ACSet.addPart */
-  def addPart(x: Ob, init: ACSet): State[ACSet, Part] = State(
-    _.addPart(x, init)
-  )
-
-  /** `State` wrapper around ACSet.addPart */
-  def addPart(x: Ob): State[ACSet, Part] = State(_.addPart(x, PropMap()))
-
-  /** `State` wrapper around ACSet.setSubpart */
-  def setSubpart(p: Part, f: Property, v: f.Value): State[ACSet, Unit] =
-    State.modify(_.setSubpart(p, f, v))
-
-  /** `State` wrapper around ACSet.remSubpart */
-  def remSubpart(p: Part, f: Property): State[ACSet, Unit] =
-    State.modify(_.remSubpart(p, f))
-
-  /** `State` wrapper around ACSet.remPart */
-  def remPart(p: Part): State[ACSet, Unit] = State.modify(_.remPart(p))
-
-  /** `State` wrapper around ACSet.remParts */
-  def remParts(ps: Seq[Part]): State[ACSet, Unit] = State.modify(_.remParts(ps))
-
-  /** `State` wrapper around ACSet.moveFront */
-  def moveFront(p: Part): State[ACSet, Unit] = State.modify(_.moveFront(p))
-
-  /** Returns a lens into the value of the property `f` for part `x` */
-  def subpartLens(f: Property, x: Part) =
-    Lens[ACSet, f.Value](_.subpart(f, x))(y => s => s.setSubpart(x, f, y))
+case class AddPartMsg(ob:NestedOb,props:PropMap = PropMap()) extends Message[NestedACSet] {
+  def execute(a:NestedACSet) = a.addPart(ob,props)._1
 }
 
-
-
-
-case class AddPartMsg(ob:Ob,props:PropMap = PropMap()) extends Message[ACSet] {
-  def execute(a:ACSet) = a.addPart(ob,props)._1
+case class RemovePartMsg(part:Part) extends Message[NestedACSet] {
+  def execute(a:NestedACSet) = a.remPart(part)
 }
 
-case class RemovePartMsg(part:Part) extends Message[ACSet] {
-  def execute(a:ACSet) = a.remPart(part)
+case class SetSubpartMsg(part:Part,prop:Property)(v:prop.Value) extends Message[NestedACSet] {
+  def execute(a:NestedACSet) = a.setProp(part,prop,v)
 }
 
-case class SetSubpartMsg(part:Part,prop:Property)(v:prop.Value) extends Message[ACSet] {
-  def execute(a:ACSet) = a.setSubpart(part,prop,v)
-}
-
-case class RemoveSubpartMsg(part:Part,prop:Property) extends Message[ACSet] {
-  def execute(a:ACSet) = a.remSubpart(part,prop)
+case class RemoveSubpartMsg(part:Part,prop:Property) extends Message[NestedACSet] {
+  def execute(a:NestedACSet) = a.remSubpart(part,prop)
 }
 

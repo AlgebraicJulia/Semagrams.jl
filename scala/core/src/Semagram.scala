@@ -6,18 +6,22 @@ import com.raquo.laminar.codecs.StringAsIsCodec
 import cats.effect._
 import cats.effect.std._
 
-import semagrams.acsets._
+// import semagrams.acsets._
 import semagrams.listeners._
 import semagrams.sprites._
 import semagrams.util._
 import semagrams.bindings.Binding
 import semagrams.bindings.Action
 import semagrams.widgets.PropTable
+import semagrams.acsets.abstr._
 
 
 /** A trait for generic semagrams with arbitrary `Model` types **/
-trait Semagram {
+trait Semagram[D:PartData] {
   type Model
+
+  type Data = D
+  // import dataIsPartData._
 
   /* Default svg element properties */
   def svgDefs(): Seq[SvgElement] =
@@ -48,7 +52,7 @@ trait Semagram {
 
   /** Extractors for the various entities in the Semagram
     */
-  val entitySources: Seq[EntitySource[Model]]
+  val entitySources: Seq[EntitySource[Data,Model]]
 
   /** Produces a list of sprites to be rendered.
     *
@@ -63,7 +67,7 @@ trait Semagram {
   def produceSprites(
       m: Model,
       eventWriter: Observer[Event]
-  ): Seq[(Entity, ACSet, Sprite)] = EntityCollector.collect(m, entitySources)
+  ): Seq[(Part, Data, Sprite[Data])] = EntityCollector.collect(m, entitySources)
 
   /** Creates the svg element ready to be inserted into a larger app. */
   def apply(mSig: Signal[Model], eventWriter: Observer[Event]): SvgElement = {
@@ -89,16 +93,18 @@ trait Semagram {
 /** A class packaging the laminar element of a semagram along with
  *  the schema and accessors/modifiers
  */
-case class SemagramElt(
+case class SemagramElt[S:Schema,D:PartData,
+  A:ACSetWithSchAndData2[S,D]
+](
   elt: Div,
-  schema: Schema,
-  readout: () => ACSet,
-  signal: Signal[ACSet],
-  messenger: Observer[Message[ACSet]]
+  schema: S,
+  readout: () => A,
+  signal: Signal[A],
+  messenger: Observer[Message[A]]
 ):
 
   /** A callback function for passing messages externally **/
-  def update(msg:Message[ACSet]) = messenger.onNext(msg)
+  def update(msg:Message[A]) = messenger.onNext(msg)
 
   /** Convenience method for constructing tables from semagrams **/
   def propTable(ob:Ob,cols:Seq[Property],keys:Seq[Property]) = 
@@ -111,8 +117,8 @@ case class SemagramElt(
     propTable(ob,cols,Seq())
 
   def propTable(ob:Ob): PropTable =
-    val cols = schema.homs.filter(_.doms.contains(PartType(Seq(ob))))
-      ++ schema.attrs.filter(_.doms.contains(PartType(Seq(ob))))
+    val cols = schema.homs.filter(_.dom == ob)
+      ++ schema.attrs.filter(_.dom == ob)
     propTable(ob,cols) 
 
 
@@ -125,22 +131,27 @@ case class SemagramElt(
   def laminarTable(ob:Ob) = propTable(ob)
 
 /** A specialized trait for semagrams with Model == ACSet **/
-trait ACSemagram extends Semagram {
-  type Model = ACSet
+trait ACSemagram[S:Schema,D:PartData,
+  A:(ACSetWithSchAndData2[S,D])
+] extends Semagram[D] {
+  type Model = A
 
-  val schema: Schema
+  val schema: S
+
+  type Data = D
 
   /** Construct a `SemagramElt` from a collection of `Binding` interactions
    *  and an optional initial value
    */ 
-  def apply(bindings: Seq[Binding[ACSet]],a:ACSet = ACSet(schema)): SemagramElt = {
+  def apply(bindings: Seq[Binding[A]],a:A): SemagramElt[S,D,A] = {
     
     /* Construct the ACSet variable */
-    val modelVar = if a.schema == schema 
-      then UndoableVar(a) 
-      else 
-        println(s"Bad input schema ${a.schema} != $schema")
-        UndoableVar(ACSet(schema))
+    val modelVar = UndoableVar(a) 
+      // if a.schema == schema 
+      // then UndoableVar(a) 
+      // else 
+      //   println(s"Bad input schema ${a.schema} != $schema")
+      //   UndoableVar(ACSet(schema))
 
     /* Construct state variable (attached to the element) and global
      *  state variable (attached to the window) */
@@ -177,7 +188,11 @@ trait ACSemagram extends Semagram {
       ),
       globalEventBus.events --> globalStateVar.updater[Event]((globalState, evt) => globalState.processEvent(evt)),
       globalEventBus.events --> eventBus.writer,
-      defaultAttrs
+      defaultAttrs,
+      eventBus.events --> Observer(x => x match
+        // case k:KeyDown => println(k)
+        case _ => ()
+      )
     )
     
 

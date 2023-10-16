@@ -1,6 +1,6 @@
 package semagrams
 
-import semagrams.acsets._
+import semagrams.acsets.abstr._
 import semagrams.util._
 import com.raquo.laminar.api.L._
 
@@ -21,12 +21,12 @@ case class EditorState(
 }
 
 object EditorState {
-  def modifyACSet(acsetSig: Signal[ACSet], stateSig: Signal[EditorState]) =
+  def modifyACSet[A:ACSet](acsetSig: Signal[A], stateSig: Signal[EditorState]) =
     acsetSig.combineWith(stateSig).map(
       (acset, state) => {
         state.hovered match {
           case Some(ent: Part) => 
-            acset.setSubpart(ent, Hovered, ())
+            acset.setProp(Hovered, ent,  ())
           case _ => 
             acset
         }

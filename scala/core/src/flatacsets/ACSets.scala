@@ -37,7 +37,7 @@ case class ACSet[S: IsSchema](
     )
   }
 
-  def setSubpart(f: Property, x: Part, y: f.Value): ACSet[S] =
+  def setProp(f: Property, x: Part, y: f.Value): ACSet[S] =
     this.copy(
       props = props + (x -> (props(x).set(f, y)))
     )
@@ -175,8 +175,8 @@ trait ACSetOps[S: IsSchema] {
   def moveFront(x: Part): State[ACSet[S], Unit] =
     State.modify(_.moveFront(x))
 
-  def setSubpart(f: Property, x: Part, y: f.Value): State[ACSet[S], Unit] =
-    State.modify(_.setSubpart(f, x, y))
+  def setProp(f: Property, x: Part, y: f.Value): State[ACSet[S], Unit] =
+    State.modify(_.setProp(f, x, y))
 
   def remSubpart(f: Property, x: Part): State[ACSet[S], Unit] =
     State.modify(_.remSubpart(f, x))
@@ -185,7 +185,7 @@ trait ACSetOps[S: IsSchema] {
     State.modify(_.remPart(x))
 
   def subpartLens(f: Property, x: Part) =
-    Lens[ACSet[S], f.Value](_.subpart(f, x))(y => s => s.setSubpart(f, x, y))
+    Lens[ACSet[S], f.Value](_.subpart(f, x))(y => s => s.setProp(f, x, y))
 
   val serializedLens =
     Lens[ACSet[S], String](acs => write(acs)(ACSet.rw[S]))(s =>

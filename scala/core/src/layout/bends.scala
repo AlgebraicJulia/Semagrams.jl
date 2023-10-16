@@ -1,7 +1,7 @@
 package semagrams.layout
 
 import semagrams._
-import semagrams.acsets._
+import semagrams.acsets.abstr._
 
 /** Evenly space the edges in an acset by assigning bends to them
   *
@@ -16,33 +16,37 @@ import semagrams.acsets._
   * @param a
   *   the acset to assign bends to.
   */
-def assignBends(edges: Map[Ob, (Hom, Hom)], spacing: Double)(
-    a: ACSet
-): ACSet = {
-  def ends(i: Part) = {
-    val (src, tgt) = edges(i.ty.path(0))
+def assignBends[A:ACSet](
+  edges: Map[Ob, (PartProp, PartProp)], 
+  spacing: Double)(
+  a: A
+): A = {
+  def ends(p: Part) = {
+    val (src, tgt) = edges(p.ob)
     for {
-      s <- a.trySubpart(src, i)
-      t <- a.trySubpart(tgt, i)
+      s <- a.tryProp(src, p)
+      t <- a.tryProp(tgt, p)
     } yield (s, t)
   }
 
-  def sortedEnds(i: Part) =
-    ends(i).map({
+  def sortedEnds(p: Part) =
+    ends(p).map({
       case (s, t) if s.hashCode() <= t.hashCode() => (s, t)
       case (s, t)                                 => (t, s)
     })
 
   val parts =
-    edges.keys.map(a.parts(ROOT, _).map(_._1)).foldLeft(Seq[Part]())(_ ++ _)
+    edges.keys.map(a.getParts(_))
+      .foldLeft(Seq[Part]())(_ ++ _)
+  
   val bends = FixedSpacing(spacing, true)
     .spaceBy(sortedEnds)(parts)
-    .map((i, bend) =>
-      ends(i) match {
-        case Some((s, t)) if s.hashCode() > t.hashCode() => (i, -bend)
-        case _                                           => (i, bend)
+    .map((p, bend) =>
+      ends(p) match {
+        case Some((s, t)) if s.hashCode() > t.hashCode() => (p, -bend)
+        case _                                           => (p, bend)
       }
     )
 
-  bends.foldLeft(a)({ case (b, (i, bend)) => b.setSubpart(i, Bend, bend) })
+  bends.foldLeft(a)({ case (b, (p, bend)) => b.setProp(Bend, p, bend) })
 }

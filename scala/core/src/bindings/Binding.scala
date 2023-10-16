@@ -8,6 +8,8 @@ import semagrams._
   * descriptions, an automatic help text can be generated for the binding.
   */
 trait Binding[Model] {
+
+  override def toString = s"Binding($hook,$action)"
   type EventData
 
   val hook: EventHook[EventData]
@@ -42,21 +44,31 @@ object Binding {
     import cats.implicits._
     for {
     globalState <- IO(r.globalStateVar.now())
-    _ <- bindings
-      .flatMap{
-        (b:Binding[Model]) => 
-          val a: Option[IO[Unit]] =
-            b.hook(evt,globalState).map(b.action(_,r))
-          a
-      }.parSequence_
+
+    _ = evt match
+      case KeyDown(k) =>
+        println(s"key = $k")
+        println(r.stateVar.now().hovered)
+      case _ => ()
+    
+    _ <- bindings.flatMap{ (b:Binding[Model]) =>
+      b.hook(evt,globalState)
+        .map(b.action(_,r))
+    }.parSequence_
   } yield ()
 
   def processAll[Model](r: Action.Resources[Model], bindings: Seq[Binding[Model]]): IO[Unit] = {
     Monad[IO].whileM_(IO(true)) {
       for {
         evt <- r.eventQueue.take
+        _ = evt match
+          case _ => ()        
         _ <- r.processEvent(evt)
+        _ = evt match
+          case _ => ()
         _ <- Binding.process(evt, r, bindings)
+        _ = evt match
+          case _ => ()
       } yield ()
     }
   }

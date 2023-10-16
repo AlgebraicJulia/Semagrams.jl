@@ -24,8 +24,8 @@ object NestedACSetSpec extends TestSuite {
         b1 <- addPart(ROOT, Box)
         p10 <- addPart(b1, InPort)
         w0 <- addPart(ROOT, Wire)
-        _ <- setSubpart(w0, Src, p00)
-        _ <- setSubpart(w0, Tgt, p10)
+        _ <- setProp(w0, Src, p00)
+        _ <- setProp(w0, Tgt, p10)
         _ <- State.modify[ACSet](
           wd => {
             assert(wd.hasPart(b0))
@@ -44,8 +44,8 @@ object NestedACSetSpec extends TestSuite {
         b00 <- addPart(b0, Box)
         p000 <- addPart(b00, OutPort)
         w00 <- addPart(b0, Wire)
-        _ <- setSubpart(w00, Src, p000)
-        _ <- setSubpart(w00, Tgt, p00)
+        _ <- setProp(w00, Src, p000)
+        _ <- setProp(w00, Tgt, p00)
         _ <- State.modify[ACSet](
           wd => {
             assert(p000.path.length == 3)

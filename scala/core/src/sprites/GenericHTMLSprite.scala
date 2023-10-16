@@ -3,7 +3,7 @@ package semagrams.sprites
 import com.raquo.laminar.api.L._
 import semagrams._
 import semagrams.util._
-import semagrams.acsets._
+import semagrams.acsets.abstr._
 
 /** A sprite that wraps an HTML element for use inside the SVG.
   *
@@ -16,14 +16,14 @@ import semagrams.acsets._
   * @param globalSize
   *   A reference to the size of the overall window
   */
-case class GenericHTMLSprite(
+case class GenericHTMLSprite[D:PartData](
     build: () => HtmlElement,
     globalSize: Signal[Complex]
-) extends Sprite {
+) extends Sprite[D] {
   def present(
-      ent: Entity,
-      init: ACSet,
-      updates: Signal[ACSet],
+      ent: Part,
+      init: D,
+      updates: Signal[D],
       eventWriter: Observer[Event]
   ): SvgElement = {
     val elt = build()
@@ -46,8 +46,8 @@ case class GenericHTMLSprite(
   }
 
   // Doesn't really make sense in this context
-  def boundaryPt(data: PropMap, dir: Complex): Complex = Complex(0, 0)
+  def boundaryPt(data: D, dir: Complex): Complex = Complex(0, 0)
 
-  def bbox(data: PropMap) = BoundingBox(0, 0)
+  def bbox(data: D) = BoundingBox(0, 0)
 
 }

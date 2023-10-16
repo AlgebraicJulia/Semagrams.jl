@@ -1,6 +1,6 @@
 package semagrams.sprites
 
-import semagrams.acsets._
+import semagrams.acsets.abstr._
 import com.raquo.laminar.api.L.svg._
 import com.raquo.laminar.api._
 import semagrams._
@@ -14,7 +14,7 @@ import semagrams.util._
   * for mouse events, because otherwise it would be very annoying to mouse over
   * the arrow.
   */
-case class Arrow(label:Property,props: PropMap) extends Sprite {
+case class Arrow[D:PartData](label:Property,props: PropMap) extends Sprite[D] {
 
   def blockPath(
       s: Complex,
@@ -52,12 +52,12 @@ case class Arrow(label:Property,props: PropMap) extends Sprite {
   )
 
   def present(
-      ent: Entity,
-      init: ACSet,
-      updates: L.Signal[ACSet],
+      ent: Part,
+      init: D,
+      updates: L.Signal[D],
       eventWriter: L.Observer[Event]
   ): L.SvgElement = {
-    val data = updates.map(Arrow.defaultProps ++ props ++ _.props)
+    val data = updates.map(Arrow.defaultProps ++ props ++ _.getProps())
 
     def ppath(p:PropMap) = curvedPath(p.get(Start), p.get(End), p.get(Bend))
     def hov(p:PropMap) = if p.contains(Hovered) then "lightgrey" else p.get(Stroke).getOrElse("black")
@@ -112,19 +112,20 @@ case class Arrow(label:Property,props: PropMap) extends Sprite {
     g(arrow, handle, text)
   }
 
-  override def toTikz(e: Part, data: ACSet, visible: Boolean = true) =
+  override def toTikz(e: Part, data: D, visible: Boolean = true) =
     if !visible
     then ""
     else
-      val s = data.props.get(TikzStart).getOrElse {
+      val p = data.getProps()
+      val s = p.get(TikzStart).getOrElse {
         println(s"Missing TikzStart")
         ""
       }
-      val t = data.props.get(TikzEnd).getOrElse {
+      val t = p.get(TikzEnd).getOrElse {
         println(s"Missing TikzEnd")
         ""
       }
-      val b = 40 * data.props.get(Bend).getOrElse(0.0)
+      val b = 40 * p.get(Bend).getOrElse(0.0)
 
       val endpts =
         s"\\path ($s) to[bend left={$b}] node[pos=00](a@$s){} node[pos=1](b@$t){} ($t);\n"

@@ -31,10 +31,12 @@ case class PropMap(pmap: Map[Property, Any]) {
     * Scala's type system doesn't have Sigma-types, so this only works with
     * [[GenericProperty]], not [[Property]]
     */
-  def +[T](kv: (PValue[T], T)): PropMap = {
+  def +[T](kv: (Property{ type Value = T}, T)): PropMap = {
     val (k, v) = kv
     this.copy(pmap = pmap + (k.asInstanceOf[Property] -> v.asInstanceOf[Any]))
   }
+
+  def keySeq = pmap.keys.toSeq
 
   def filterKeys(p: Property => Boolean) = PropMap(
     pmap.view.filterKeys(p).toMap

@@ -4,7 +4,7 @@ import com.raquo.laminar.api.L.svg._
 import com.raquo.laminar.api._
 import semagrams.util._
 import semagrams._
-import semagrams.acsets._
+import semagrams.acsets.abstr._
 
 import semagrams.util.Complex.{im}
 
@@ -14,7 +14,7 @@ import upickle.default.ReadWriter
   * where the beginning and the end are both horizontal, and it has no
   * arrowhead.
   */
-case class Wire() extends Sprite {
+case class Wire[D:PartData]() extends Sprite[D] {
 
   def exAt(p: Complex, d: Double = 5.0) = {
     import Path.Element._
@@ -64,108 +64,104 @@ case class Wire() extends Sprite {
   }
 
   def present(
-      ent: Entity,
-      init: ACSet,
-      updates: L.Signal[ACSet],
+      ent: Part,
+      init: D,
+      updates: L.Signal[D],
       eventWriter: L.Observer[Event]
   ): L.SvgElement = {
 
-    val data = updates.map(init.props ++ _.props)
-    def s(p: PropMap) = p
-      .get(Start)
-      .getOrElse(
-        throw msgError(s"present $ent missing `Start`")
+    val dataSig = updates.map(Wire.defaults.merge(init).merge(_))
+
+
+
+    def ppath(s:Complex,t:Complex,data:D) =
+      val Seq(ds,dt): Seq[Complex] = Seq(StartDir,EndDir).map(data.getProp(_))
+      val b = data.getProp(Bend)
+      curvedPath(s,t,ds,dt,b)
+
+    def textElt(s:Complex,t:Complex,data:D): L.SvgElement =  
+      val o = data.getProp(LabelOffset)
+      val a = data.getProp(LabelAnchor)
+      
+      val labelPos = {
+        val crv = ppath(s,t,data)(1)
+        crv.pos(s, a) + o * crv.dir(s, a)
+      }
+      val lines = data.getProp(Content).split('\n').zipWithIndex
+      val len = lines.length
+      def y0(lineNum:Int) = labelPos.y 
+            + data.getProp(FontSize) * (lineNum + 1 - len / 2.0)
+
+      def childNode(lineText:String,lineNum:Int) = L.svg.tspan(
+        L.textToTextNode(lineText),
+        textAnchor := "middle",
+        x := labelPos.x.toString(),
+        y := y0(lineNum).toString(),
+        style := "user-select: none"
       )
-    def t(p: PropMap) = p
-      .get(End)
-      .getOrElse(
-        throw msgError(s"present $ent missing `End`")
+            
+      L.svg.text(
+        xy := labelPos,
+        lines.map(childNode),
+        fontSize := data.getProp(FontSize).toString(),
+        pointerEvents := "none"
       )
-    def ds(p: PropMap): Complex = p.get(StartDir).getOrElse(-10.0)
-    def dt(p: PropMap): Complex = p.get(EndDir).getOrElse(-10.0)
-    def b(p: PropMap) = p.get(Bend).getOrElse(10.0)
+    
 
-    def ppath(p: PropMap) = curvedPath(s(p), t(p), ds(p), dt(p), b(p))
+    def wireElt(s:Complex,t:Complex,data:D): L.SvgElement = 
+      path(
+        pathElts := ppath(s,t,data),
+        stroke := (if data.hasProp(Hovered) 
+          then "lightgrey" 
+          else data.getProp(Stroke)
+        ),
+        fill := "none",
+        style := "user-select: none",
+        pointerEvents := "none"
+      )  
 
-    def anchor(p: PropMap) = p.get(LabelAnchor).getOrElse(.5)
-    def offset(p: PropMap) = p.get(LabelOffset).getOrElse(10 * im)
-
-    def labelPos(p: PropMap) = {
-      val crv = ppath(p)(1)
-      crv.pos(s(p), anchor(p)) + offset(p) * crv.dir(s(p), anchor(p))
-    }
-
-    def label(p: PropMap): String = p.get(Content).getOrElse("")
-    def fontsize(p: PropMap): Double = p.get(FontSize).getOrElse(16.0)
-    def pstroke(p: PropMap) = p.get(Stroke).getOrElse("black")
-
-    val text = L.svg.text(
-      xy <-- data.map(labelPos),
-      L.children <-- data.map { p =>
-        val splits = label(p).split('\n').zipWithIndex
-        val len = splits.length
-        splits.toSeq.map((str, line) =>
-          L.svg.tspan(
-            L.textToTextNode(str),
-            textAnchor := "middle",
-            x <-- data.map(p => labelPos(p).x.toString()),
-            y <-- data.map(p =>
-              (labelPos(p).y + fontsize(p) * (line + 1 - len / 2.0)).toString()
-            ),
-            style := "user-select: none"
-          )
+    def handleElt(s:Complex,t:Complex,data:D): L.SvgElement = 
+      val Seq(ds,dt) = Seq(StartDir,EndDir).map(data.getProp(_))
+      val b = data.getProp(Bend)
+      path(
+        pathElts := blockPath(s, t, ds, dt, 7, b),
+        fill := "blue",
+        opacity := ".1",
+        stroke := "none",
+        style := "user-select: none",
+        pointerEvents := (if data.tryProp(Interactable) != Some(false)
+          then "auto" else "none"
         )
-      },
-      fontSize <-- data.map(fontsize(_).toString()),
-      pointerEvents := "none"
+      )
+
+    def elts(s:Complex,t:Complex,data:D) = Seq(
+      wireElt(s,t,data),
+      handleElt(s,t,data),
+      textElt(s,t,data)
     )
 
-    val wire = path(
-      pathElts <-- data.map(ppath),
-      stroke <-- data.map(p =>
-        if p.get(Hovered).isDefined then "lightgrey" else pstroke(p)
-      ),
-      fill := "none",
-      style := "user-select: none",
-      pointerEvents := "none"
-    )
 
-    val handle = path(
-      pathElts <-- data.map(p => blockPath(s(p), t(p), ds(p), dt(p), 7, b(p))),
-      fill := "blue",
-      opacity := ".1",
-      stroke := "none",
-      style := "user-select: none",
-      pointerEvents <-- data.map(p =>
-        if p.get(Interactable) != Some(false) then "auto" else "none"
+    
+    
+    g(
+      L.children <-- dataSig.map(data =>
+        (data.tryProp(Start),data.tryProp(End)) match
+          case (Some(s0),Some(t0)) =>
+            elts(s0,t0,data)
+          case _ => Seq()
       )
     )
-
-    g(wire, handle, text)
   }
-
-  override def toTikz(w: Part, data: ACSet, visible: Boolean = true) =
-    if !visible
-    then ""
-    else
-      val s_str = data.props
-        .get(TikzStart)
-        .getOrElse(
-          throw msgError(s"missing property `TikzStart`")
-        )
-      val t_str = data.props
-        .get(TikzEnd)
-        .getOrElse(
-          throw msgError(s"missing property `TikzStart`")
-        )
-
-      val labelStr = data.props
-        .get(Content)
-        .map(label =>
-          s" node[above,midway,align=center]{${tikzLabel(label, "footnotesize")}}"
-        )
-        .getOrElse("")
-
-      s"\\draw ($s_str.center) to[out=0,in=180] $labelStr ($t_str.center);\n"
-
 }
+object Wire:
+  def defaults[D:PartData] = PartData[D](
+    PropMap() + (StartDir,-10)
+      + (EndDir,10)
+      + (Bend,10)
+      + (LabelAnchor,0.5)
+      + (LabelOffset,10 * im)
+      + (Content,"")
+      + (Stroke,"black")
+      + (FontSize,16)
+  )
+
