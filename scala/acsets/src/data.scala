@@ -1,17 +1,40 @@
 package acsets
 
-import upickle.default._
+import java.util.UUID
 
-trait Property {
-  type Val
+type EntId = UUID
 
-  val rw: ReadWriter[Val]
+type SortId = UUID
+
+type PropId = UUID
+
+opaque type PatchHash = Long
+
+opaque type SchemaRevisionHash = Long
+opaque type InstanceRevisionHash = Long
+
+enum Data {
+  case F(of: Double)
+  case I(of: Long)
+  case S(of: String)
+  case B(of: Boolean)
 }
 
-trait FinSet[A] {
-  type T <: A
+enum DataType {
+  case F
+  case I
+  case S
+  case B
+}
 
-  val rw: ReadWriter[A]
+enum Value {
+  case Reference(to: EntId)
+  case Constant(of: Data)
+  case Revision(hash: InstanceRevisionHash)
+}
 
-  def all: Seq[A]
+enum ValueType {
+  case Reference(ofsort: SortId)
+  case Constant(oftype: DataType)
+  case Revision(ofschema: SchemaRevisionHash)
 }

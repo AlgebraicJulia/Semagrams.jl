@@ -19,6 +19,7 @@ def defaultPomSettings(desc: String) = PomSettings(
 trait Defaults extends ScalaJSModule with PublishModule with ScalafmtModule {
   def scalaVersion = "3.3.0"
   def scalaJSVersion = "1.13.2"
+  def ammoniteVersion = "3.0.0-M0-53-084f7f4e"
 
   def scalacOptions = Seq("-deprecation", "-feature", "-Wunused:all")
 
@@ -35,11 +36,13 @@ trait Defaults extends ScalaJSModule with PublishModule with ScalafmtModule {
   def sonatypeSnapshotUri = "https://s01.oss.sonatype.org/content/repositories/snapshots"
 }
 
-object acsets extends  Defaults {
+object acsets extends Defaults {
   def desc = "A flexible category theoretic in-memory database"
 
   def ivyDeps = Agg(
-    ivy"com.lihaoyi::upickle::3.1.3"
+    ivy"com.lihaoyi::upickle::3.1.3",
+    ivy"org.typelevel::cats-core::2.10.0",
+    ivy"org.typelevel::cats-kernel::2.10.0",
   )
 
   def artifactName = "acsets"
