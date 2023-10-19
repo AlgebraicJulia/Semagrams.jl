@@ -73,8 +73,6 @@ object balloons extends Defaults {
       ivy"com.disneystreaming::weaver-cats::0.8.3"
     )
 
-    // def jsEnvConfig: T[JsEnvConfig] = T { JsEnvConfig.JsDom() }
-
     def testFramework = "weaver.framework.CatsEffect"
   }
 }
@@ -97,12 +95,14 @@ object core extends Defaults {
     ivy"dev.optics::monocle-macro::3.2.0"
   )
 
-  object test extends ScalaTests {
-    def jsEnvConfig = T(JsEnvConfig.JsDom())
+  def moduleDeps = Seq(acsets, balloons)
 
-    def ivyDeps = Agg(ivy"com.lihaoyi::utest::0.8.1")
+  object test extends ScalaJSTests {
+    def ivyDeps = Agg(
+      ivy"com.disneystreaming::weaver-cats::0.8.3"
+    )
 
-    def testFramework = "utest.runner.Framework"
+    def testFramework = "weaver.framework.CatsEffect"
   }
 }
 
