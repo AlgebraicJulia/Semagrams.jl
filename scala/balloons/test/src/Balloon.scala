@@ -32,6 +32,37 @@ case class ReverseCounter(state: Int) extends PureBalloon[CounterMsg, Int] {
   }
 }
 
+def reverso(helm: Helm[CounterMsg, Int]): IO[Unit] = async[IO] {
+  val (msg, state, update) = helm.nextWithState.await
+  msg match {
+    case Inc => update(state - 1).await
+    case Dec => update(state + 1).await
+    case Reverso => {
+      update(state).await
+      reverso(helm).await
+    }
+  }
+}
+
+/** Just apply reverso for one round when we get a reverso message */
+def processCounter(helm: Helm[CounterMsg, Int]): IO[Void] =
+  async[IO] {
+    val (msg, state, update) = helm.nextWithState.await
+    msg match {
+      case Inc => {
+        update(state + 1).await
+      }
+      case Dec => {
+        update(state - 1).await
+      }
+      case Reverso => {
+        update(state).await
+        reverso(helm).await
+      }
+    }
+    processCounter(helm).await
+  }
+
 object BalloonSuite extends SimpleIOSuite {
   test("basic counter") {
     async[IO] {
@@ -53,6 +84,18 @@ object BalloonSuite extends SimpleIOSuite {
       cable.send(Inc).await
       val s = cable.get.await
       expect(s == 0)
+    }
+  }
+
+  test("functional") {
+    async[IO] {
+      val cable = Balloon.run(processCounter, 0).await
+      cable.send(Inc).await
+      cable.send(Reverso).await
+      cable.send(Inc).await
+      cable.send(Inc).await
+      val s = cable.get.await
+      expect(s == 1)
     }
   }
 }

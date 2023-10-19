@@ -16,6 +16,8 @@ trait Cable[Msg, State] {
 trait Helm[Msg, State] {
   def next: IO[(Msg, State => IO[Unit])]
 
+  def nextWithState: IO[(Msg, State, State => IO[Unit])]
+
   def process[B](handler: Msg => IO[(B, State)]): IO[B] = async[IO] {
     val (msg, update) = next.await
     val (b, state) = handler(msg).await
@@ -35,7 +37,14 @@ object Balloon {
     val stateVar = Var(init)
     val stateCell = AtomicCell[IO].of(init).await
     val queue = Queue.unbounded[IO, (Msg, State => IO[Unit])].await
-    b(new Helm { def next = queue.take }).start.await
+    b(new Helm {
+      def nextWithState = async[IO] {
+        val (msg, update) = next.await
+        val state = stateCell.get.await
+        (msg, state, update)
+      }
+      def next = queue.take
+    }).start.await
     (Dispatcher.sequential[IO] use { dispatcher =>
       IO(new Cable[Msg, State] {
         val signal = stateVar.signal
