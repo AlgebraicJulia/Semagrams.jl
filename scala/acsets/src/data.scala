@@ -23,43 +23,85 @@ opaque type PatchHash = Long
 opaque type SchemaRevisionHash = Long
 opaque type InstanceRevisionHash = Long
 
-enum Data {
+enum Value {
   case F(of: Double)
   case I(of: Long)
   case S(of: String)
   case B(of: Boolean)
-}
-
-enum DataType {
-  case F
-  case I
-  case S
-  case B
-
-  def check(d: Data): Boolean = (this, d) match {
-    case (F, Data.F(_)) => true
-    case (I, Data.I(_)) => true
-    case (S, Data.S(_)) => true
-    case (B, Data.B(_)) => true
-    case _              => false
-  }
-}
-
-enum Value {
-  case Constant(of: Data)
-  case Revision(hash: InstanceRevisionHash)
   case Reference(to: Part)
+  case Revision(hash: InstanceRevisionHash)
 }
 
-enum ValueType {
-  case Reference(ofsort: SortId)
-  case Constant(oftype: DataType)
-  case Revision(ofschema: SchemaRevisionHash)
+sealed trait ValueType {
+  type T
 
-  def check(v: Value): Boolean = (this, v) match {
-    case (Constant(dtype), Value.Constant(d))  => dtype check d
-    case (Reference(sort), Value.Reference(p)) => p.sort == sort
-    case (Revision(_), Value.Revision(_))      => true
-    case _                                     => true
+  def coerce(v: Value): Option[T]
+
+  def produce(x: T): Value
+}
+
+object ValueType {
+  case object F extends ValueType {
+    type T = Double
+
+    def coerce(d: Value): Option[T] = d match {
+      case Value.F(x) => Some(x)
+      case _          => None
+    }
+
+    def produce(x: T) = Value.F(x)
+  }
+
+  case object I extends ValueType {
+    type T = Long
+
+    def coerce(d: Value): Option[T] = d match {
+      case Value.I(x) => Some(x)
+      case _          => None
+    }
+
+    def produce(x: T) = Value.I(x)
+  }
+
+  case object S extends ValueType {
+    type T = String
+
+    def coerce(d: Value): Option[T] = d match {
+      case Value.S(x) => Some(x)
+      case _          => None
+    }
+
+    def produce(x: T) = Value.S(x)
+  }
+
+  case object B extends ValueType {
+    type T = Boolean
+
+    def coerce(d: Value): Option[T] = d match {
+      case Value.B(x) => Some(x)
+      case _          => None
+    }
+
+    def produce(x: T) = Value.B(x)
+  }
+
+  case class Reference(ofsort: SortId) extends ValueType {
+    type T = Part
+
+    def coerce(v: Value): Option[T] = v match {
+      case Value.Reference(p) if p.sort == ofsort => Some(p)
+      case _                                      => None
+    }
+
+    def produce(x: T) = Value.Reference(x)
+  }
+  case class Revision(ofschema: SchemaRevisionHash) extends ValueType {
+    type T = InstanceRevisionHash
+    def coerce(v: Value): Option[T] = v match {
+      case Value.Revision(r) => Some(r)
+      case _                 => None
+    }
+
+    def produce(x: T) = Value.Revision(x)
   }
 }

@@ -25,6 +25,9 @@ trait Instance {
   def subpart(part: Part, prop: PropId): Option[Value] =
     subparts.get(MethodApp(part.id, prop))
 
+  def subpart(part: Part, prop: Property): Option[prop.T] =
+    subpart(part, prop.id).map(v => prop.coerce(v).get)
+
   def sort(ent: PartId): Option[SortId] = parts.get(ent)
 }
 
@@ -53,12 +56,15 @@ object Instance extends Delta[Instance] {
       }
     }
 
-    def setSubpart(clean: Clean, part: Part, prop: PropId, v: Value) = {
+    def setSubpart(clean: Clean, part: Part, prop: Property, x: prop.T): Patch =
+      setSubpart(clean, part, prop.id, prop produce x)
+
+    def setSubpart(clean: Clean, part: Part, prop: PropId, v: Value): Patch = {
       if (!(schema.props contains prop)) {
         throw (new Exception(s"schema does not contain property ${prop}"))
       }
       val ty = schema.props(prop)
-      if (!(ty check v)) {
+      if (!(ty coerce v).isDefined) {
         throw (new Exception(
           s"value ${v} does not match type for property ${prop}"
         ))
@@ -110,8 +116,11 @@ object Instance extends Delta[Instance] {
     def remPart(part: Part) =
       this.copy(patch = patch.remPart(clean, part))
 
-    def setSubpart(part: Part, prop: PropId, v: Value) =
+    def setSubpart(part: Part, prop: PropId, v: Value): Dirty =
       this.copy(patch = patch.setSubpart(clean, part, prop, v))
+
+    def setSubpart(part: Part, prop: Property, x: prop.T): Dirty =
+      this.copy(patch = patch.setSubpart(clean, part, prop, x))
   }
 
   object Dirty {

@@ -75,11 +75,16 @@ object Schema extends Delta[Schema] {
       MethodDelta.Dirty(clean.methods, patch.methods)
     def addSort(sort: SortId) = Dirty(clean, patch.addSort(clean, sort))
 
-    def addProp(prop: PropId, vtype: ValueType) =
-      Dirty(clean, patch.addProp(clean, prop, vtype))
+    def addProp(id: PropId, vtype: ValueType): Dirty =
+      Dirty(clean, patch.addProp(clean, id, vtype))
 
-    def addMethod(sort: SortId, prop: PropId) =
+    def addProp(prop: Property): Dirty = addProp(prop.id, prop.valueType)
+
+    def addMethod(sort: SortId, prop: PropId): Dirty =
       Dirty(clean, patch.addMethod(clean, sort, prop))
+
+    def addMethod(sort: SortId, prop: Property): Dirty =
+      addMethod(sort, prop.id)
 
     def applyPatch(): Option[Clean] = Schema.applyPatch(clean, patch)
   }
