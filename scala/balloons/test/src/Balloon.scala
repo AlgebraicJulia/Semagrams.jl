@@ -66,7 +66,7 @@ def processCounter(helm: Helm[CounterMsg, Int]): IO[Void] =
 object BalloonSuite extends SimpleIOSuite {
   test("basic counter") {
     async[IO] {
-      val cable = Counter(0).run.await
+      val cable = Counter(0).launch.await
       val s0 = cable.get.await
       cable.send(Inc).await
       val s1 = cable.get.await
@@ -78,7 +78,7 @@ object BalloonSuite extends SimpleIOSuite {
 
   test("reverso counter") {
     async[IO] {
-      val cable = Counter(0).run.await
+      val cable = Counter(0).launch.await
       cable.send(Inc).await
       cable.send(Reverso).await
       cable.send(Inc).await
@@ -89,7 +89,7 @@ object BalloonSuite extends SimpleIOSuite {
 
   test("functional") {
     async[IO] {
-      val cable = Balloon.run(processCounter, 0).await
+      val cable = Balloon.launch(processCounter, 0).await
       cable.send(Inc).await
       cable.send(Reverso).await
       cable.send(Inc).await

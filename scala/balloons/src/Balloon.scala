@@ -30,14 +30,14 @@ trait Helm[Msg, State] {
 }
 
 object Balloon {
-  def run[Msg, State](
-      b: Helm[Msg, State] => IO[Any],
+  def launch[Msg, State](
+      runner: Helm[Msg, State] => IO[Any],
       init: State
   ): IO[Cable[Msg, State]] = async[IO] {
     val stateVar = Var(init)
     val stateCell = AtomicCell[IO].of(init).await
     val queue = Queue.unbounded[IO, (Msg, State => IO[Unit])].await
-    b(new Helm {
+    runner(new Helm {
       def nextWithState = async[IO] {
         val (msg, update) = next.await
         val state = stateCell.get.await
@@ -81,7 +81,7 @@ trait PureBalloon[Msg, State] {
   def step(helm: Helm[Msg, State]): IO[PureBalloon[Msg, State]] =
     helm.process_(msg => { val b = next(msg); (b, b.current) })
 
-  def run: IO[Cable[Msg, State]] = async[IO] {
+  def launch: IO[Cable[Msg, State]] = async[IO] {
     val stateVar = Var(current)
     val stateCell = AtomicCell[IO].of(this).await
     (Dispatcher.sequential[IO] use { dispatcher =>
