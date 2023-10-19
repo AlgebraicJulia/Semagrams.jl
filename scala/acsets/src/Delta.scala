@@ -31,6 +31,10 @@ trait Delta[T] {
 trait MapDelta[K: Ordering, V] extends Delta[Map[K, V]] {
   type Patch = HashMapPatch[K, V]
 
+  object Patch {
+    def empty: Patch = HashMapPatch.empty
+  }
+
   type Clean = HashMap[K, V]
   val Clean = HashMap
 
@@ -48,10 +52,16 @@ trait MapDelta[K: Ordering, V] extends Delta[Map[K, V]] {
 trait SetDelta[K: Ordering] extends Delta[Set[K]] {
   type Patch = HashSetPatch[K]
 
+  object Patch {
+    def empty: Patch = HashSetPatch.empty
+  }
+
   type Clean = HashSet[K]
+
   val Clean = HashSet
 
   type Dirty = PatchedHashSet[K]
+
   val Dirty = PatchedHashSet
 
   def commit(state: Dirty) = Some(state.patch)

@@ -1,1 +1,1 @@
-package acsets
+package object acsets {}

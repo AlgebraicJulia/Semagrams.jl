@@ -5,7 +5,20 @@ import scala.collection.immutable.HashSet
 case class HashSetPatch[K](
     intros: HashSet[K],
     deletions: HashSet[K]
-)
+) {
+  def +(k: K) = HashSetPatch[K](intros + k, deletions - k)
+  def -(k: K) = HashSetPatch[K](intros - k, deletions + k)
+
+  def incl(clean: HashSet[K], elem: K) =
+    if clean contains elem then this else this + elem
+
+  def excl(clean: HashSet[K], elem: K) =
+    if clean contains elem then this - elem else this
+}
+
+object HashSetPatch {
+  def empty[K] = HashSetPatch[K](HashSet(), HashSet())
+}
 
 case class PatchedHashSet[K](
     clean: HashSet[K],
@@ -20,15 +33,12 @@ case class PatchedHashSet[K](
     .contains(elem)) && (patch.intros.contains(elem) || clean.contains(elem))
 
   def excl(elem: K) =
-    if patch.intros contains elem then
-      this.copy(patch = patch.copy(intros = patch.intros.excl(elem)))
-    else if clean contains elem then
-      this.copy(patch = patch.copy(deletions = patch.deletions + elem))
-    else this
+    this.copy(
+      patch = patch.incl(clean, elem)
+    )
 
   def incl(elem: K): PatchedHashSet[K] =
-    PatchedHashSet[K](
-      clean,
-      HashSetPatch(patch.intros.incl(elem), patch.deletions - elem)
+    this.copy(
+      patch = patch.excl(clean, elem)
     )
 }

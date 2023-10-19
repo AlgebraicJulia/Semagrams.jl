@@ -2,11 +2,21 @@ package acsets
 
 import java.util.UUID
 
-type EntId = UUID
+case class SortId(name: String)
 
-type SortId = UUID
+given Ordering[SortId] = new Ordering[SortId] {
+  def compare(x: SortId, y: SortId) = Ordering[String].compare(x.name, y.name)
+}
 
-type PropId = UUID
+case class PropId(name: String)
+
+given Ordering[PropId] = new Ordering[PropId] {
+  def compare(x: PropId, y: PropId) = Ordering[String].compare(x.name, y.name)
+}
+
+type PartId = UUID
+
+case class Part(id: PartId, sort: SortId)
 
 opaque type PatchHash = Long
 
@@ -25,16 +35,31 @@ enum DataType {
   case I
   case S
   case B
+
+  def check(d: Data): Boolean = (this, d) match {
+    case (F, Data.F(_)) => true
+    case (I, Data.I(_)) => true
+    case (S, Data.S(_)) => true
+    case (B, Data.B(_)) => true
+    case _              => false
+  }
 }
 
 enum Value {
-  case Reference(to: EntId)
   case Constant(of: Data)
   case Revision(hash: InstanceRevisionHash)
+  case Reference(to: Part)
 }
 
 enum ValueType {
   case Reference(ofsort: SortId)
   case Constant(oftype: DataType)
   case Revision(ofschema: SchemaRevisionHash)
+
+  def check(v: Value): Boolean = (this, v) match {
+    case (Constant(dtype), Value.Constant(d))  => dtype check d
+    case (Reference(sort), Value.Reference(p)) => p.sort == sort
+    case (Revision(_), Value.Revision(_))      => true
+    case _                                     => true
+  }
 }

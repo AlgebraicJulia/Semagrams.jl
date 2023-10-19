@@ -33,7 +33,8 @@ trait Defaults extends ScalaJSModule with PublishModule with ScalafmtModule {
 
   def sonatypeUri = "https://s01.oss.sonatype.org/service/local"
 
-  def sonatypeSnapshotUri = "https://s01.oss.sonatype.org/content/repositories/snapshots"
+  def sonatypeSnapshotUri =
+    "https://s01.oss.sonatype.org/content/repositories/snapshots"
 }
 
 object acsets extends Defaults {
@@ -42,7 +43,7 @@ object acsets extends Defaults {
   def ivyDeps = Agg(
     ivy"com.lihaoyi::upickle::3.1.3",
     ivy"org.typelevel::cats-core::2.10.0",
-    ivy"org.typelevel::cats-kernel::2.10.0",
+    ivy"org.typelevel::cats-kernel::2.10.0"
   )
 
   def artifactName = "acsets"
@@ -51,6 +52,30 @@ object acsets extends Defaults {
     def ivyDeps = Agg(ivy"com.lihaoyi::utest::0.8.1")
 
     def testFramework = "utest.runner.Framework"
+  }
+}
+
+object balloons extends Defaults {
+  def desc = "A library for state machines with cats-effect and laminar"
+
+  def ivyDeps = Agg(
+    ivy"com.raquo::laminar::16.0.0",
+    ivy"org.typelevel::cats-core::2.10.0",
+    ivy"org.typelevel::cats-kernel::2.10.0",
+    ivy"org.typelevel::cats-effect::3.5.1",
+    ivy"org.typelevel::cats-effect-cps::0.4.0"
+  )
+
+  def artifactName = "balloons"
+
+  object test extends ScalaJSTests {
+    def ivyDeps = Agg(
+      ivy"com.disneystreaming::weaver-cats::0.8.3"
+    )
+
+    // def jsEnvConfig: T[JsEnvConfig] = T { JsEnvConfig.JsDom() }
+
+    def testFramework = "weaver.framework.CatsEffect"
   }
 }
 
