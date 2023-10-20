@@ -38,9 +38,8 @@ jobs:
 
       - name: GitHub Pages action
         uses: peaceiris/actions-gh-pages@v3.7.3
+        if: ${{github.ref == 'refs/heads/dev'}}
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: dest
-        if github.ref == 'refs/heads/dev':
-        with:
           destination_dir: dev
