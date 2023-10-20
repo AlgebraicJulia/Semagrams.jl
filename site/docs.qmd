@@ -2,13 +2,19 @@
 title: "Documentation"
 ---
 
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/default.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/scala.min.js"></script>
+<script>
+  hljs.configure({
+    languages: ['scala']
+  });
+  hljs.highlightAll();
+</script>
+
 This is my attempt at writing "narrative" documentation for Semagrams. There is also the API docs, which is helpful for reference, but if you are just learning, you should start here.
 
 This documentation is primarily focused on new developers of Semagrams itself, not users of Semagrams, but hopefully should be interesting to anyone.
-
-## Setting up Semagrams
-
-(this has finally provided me with the impetus to have per-app vite projects)
 
 ## Fundamental Concepts
 
@@ -46,7 +52,7 @@ In Semagrams, we use a reactive programming library called [Laminar](https://lam
 
 Although Laminar does a very good job of keeping UI in sync with state, there is one thing that it does not help very much with. This is *state machines*.
 
-Consider which of the following code you would prefer to write (note this is pseudocode that happens to have Scala syntax).
+Consider which of the following code you would prefer to write (note this is pseudocode that happens to have scala3 syntax).
 
 ```scala
 enum State {
@@ -151,13 +157,95 @@ nextEvent(
 This is the well-known "callback hell". The modern solution to this is *asynchronous programming*. Conceptually, all asynchronous programming does is turn something that looks like
 
 ```scala
-evt <- nextEvent()
-// do something
-evt <- nextEvent()
-// do something
-evt <- nextEvent()
-// do something
-// ...
+async[IO] {
+  val evt = nextEvent.await
+  // do something
+  val evt = nextEvent.await
+  // do something
+  val evt = nextEvent.await
+  // do something
+  // ...
+}
 ```
 
-into callback-passing code. And now we can write clean-looking state machines that don't block the entire thread! Scala has an awesome library for asynchronous programming called [cats-effect](https://typelevel.org/cats-effect/). Fun fact: this library is used to write the servers that stream videos for Disney Plus; that's how efficient it is.
+into callback-passing code. And now we can write clean-looking state machines that don't block the entire thread! scala3 has an awesome library for asynchronous programming called [cats-effect](https://typelevel.org/cats-effect/). Fun fact: this library is used to write the servers that stream videos for Disney Plus; that's how efficient it is.
+
+This uses something called the "IO monad" under the hood. However, the IO monad in cats-effect is slightly different from the IO monad in Haskell. Normal scala code can have all kinds of side effects, so the point of the IO monad is not to allow side effects, but rather to express asynchrony. A value of type `IO[A]` is basically something that registers a callback `A => Unit` elsewhere. So in the above code, we have
+
+```scala
+def nextEvent: IO[Event]
+```
+
+This doesn't look typical monad code because we use a special code transformer [cats-effect-cps](https://github.com/typelevel/cats-effect-cps). This allows us to use `async/await` syntax familiar from other languages like Python, Rust, or even Javascript.
+
+## Balloons
+
+Now the question becomes: how do we integrate cats-effect with Laminar? The answer is something I call "balloons", a state-management framework that is interoperable with both Laminar and cats-effect. I named it balloons to fit with the theme of "airstream" and "laminar", and to evoke the idea that it is encapsulating something.
+
+![A Cat in a Balloon](catballoon.svg){fig-align="center" width=50%}
+
+Balloons have two type parameters: `Msg` and `State`. It manages some state of type `State`, and updates the state in response to messages of `Msg`. A balloon is contacted through a `Tether[Msg, State]`, which is a trait defined like
+
+```scala
+// TODO: support reeling in the balloon
+trait Tether[Msg, State] {
+  val signal: Signal[State]
+  val inbox: Observer[Msg]
+
+  def get: IO[State]
+  def send(msg: Msg): IO[Unit]
+}
+```
+
+A laminar component can listen to the `signal` and send messages to the `inbox`, while accessing via `cats-effect` can go through the `send/get` interface.
+
+Moreover, `send` blocks until the balloon has finished processing the sent message, so it is guaranteed that running `get` after `send` will get a version of the state *at least as* current as the state after processing the sent message. This is particularly important for automated testing; it means that we can test our state machines by sending them a series of messages and then reading out their state.
+
+Balloons are only interacted with via their tethers, so a balloon is really just something that can be "launched" to create a tether.
+
+There are currently two ways of doing that: explicit state machines and non-explicit state machines. An explicit state machine looks like this:
+
+```scala
+trait PureBalloon[Msg, State] {
+  def current: State
+
+  def next(msg: Msg): PureBalloon[Msg, State]
+
+  def launch: IO[Tether[Msg, State]] = {
+    val balloonState: Var[PureBalloon[Msg, State]] = Var(this)
+    val signal: Signal[State] = balloonState.signal.map(_.current)
+    // implementation omitted
+  }
+}
+```
+
+Basically, when we launch `PureBalloon` we store the current balloon in a variable and every time we get a new message, we update the balloon, and the state derived from that balloon.
+
+For those who are familiar with polynomial functors, an element of `PureBalloon[Msg, State]` is essentially a position of the cofree coalgebra on the polynomial $p = \mathtt{State} \; y^{\,\mathtt{Msg}}$.
+
+However, we also want to support the "imperative" style of state machines as explained in the previous section on cats-effect. We do this in an extremely lightweight manner. We first declare a trait `Helm` as follows:
+
+```scala
+trait Helm[Msg, State] {
+  def next: IO[(Msg, State => IO[Unit])]
+}
+```
+
+The idea is that a `Helm` is the controls for a balloon.
+
+Then an imperative balloon is simply a function `Helm[Msg, State] => IO[Void]`. This is something that takes in a `Helm` and then loops forever, producing side effects.
+
+A very basic example of this might look like
+
+```scala
+def counter(state: Int)(helm: Helm[Unit, Boolean]): IO[Void] = async[IO] {
+  val ((), update) = helm.next.await
+  val nextState = state + 1
+  update(nextState % 2 == 0).await
+  counter(nextState)(helm).await
+}
+```
+
+This counts the number of messages sent, and exposes the state of whether that number is even or odd.
+
+The key to this is that when we poll for a message, we also poll for somewhere to send the updated state when we've finished processing the message. This allows for clients (i.e., other bits of code that have a `Tether` to this balloon) to wait until the balloon is finished processing before continuing on. It is the responsibility of an imperative balloon to call every `update` that it receives precisely once. If Scala had linear types, we could enforce this on the type level, but unfortunately it does not.
