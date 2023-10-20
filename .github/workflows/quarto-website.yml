@@ -1,8 +1,9 @@
 on:
   push:
     branches:
-      - next
       - main
+      - dev
+  pull_request:
 
 name: Render and Publish
 
@@ -40,3 +41,6 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: dest
+        if github.ref == 'refs/heads/dev':
+        with:
+          destination_dir: dev
