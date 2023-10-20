@@ -15,7 +15,7 @@ jobs:
       - name: Set up Mill
         uses: jodersky/setup-mill@master
         with:
-          mill-version: '0.10.5'
+          mill-version: '0.11.5'
 
       - name: Set up NPM
         uses: actions/setup-node@v3
@@ -26,6 +26,8 @@ jobs:
         run: |
           cd scala
           npm install
+          mill acsets.test
+          mill balloons.test
           mill core.test
 
   checkFormat:
@@ -37,11 +39,13 @@ jobs:
       - name: Set up Mill
         uses: jodersky/setup-mill@master
         with:
-          mill-version: '0.10.5'
+          mill-version: '0.11.5'
 
       - name: Check formatting
         run: |
           cd scala
+          mill acsets.checkFormat
+          mill balloons.checkFormat
           mill core.checkFormat
           for app in $(mill resolve apps._)
           do
@@ -57,7 +61,7 @@ jobs:
       - name: Set up Mill
         uses: jodersky/setup-mill@master
         with:
-          mill-version: '0.10.11'
+          mill-version: '0.11.5'
 
       - name: Build compiled javascript
         run: |
