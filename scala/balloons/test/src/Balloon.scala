@@ -66,35 +66,35 @@ def processCounter(helm: Helm[CounterMsg, Int]): IO[Void] =
 object BalloonSuite extends SimpleIOSuite {
   test("basic counter") {
     async[IO] {
-      val cable = Counter(0).launch.await
-      val s0 = cable.get.await
-      cable.send(Inc).await
-      val s1 = cable.get.await
-      cable.send(Dec).await
-      val s2 = cable.get.await
+      val tether = Counter(0).launch.await
+      val s0 = tether.get.await
+      tether.send(Inc).await
+      val s1 = tether.get.await
+      tether.send(Dec).await
+      val s2 = tether.get.await
       expect.all(s0 == 0, s1 == 1, s2 == 0)
     }
   }
 
   test("reverso counter") {
     async[IO] {
-      val cable = Counter(0).launch.await
-      cable.send(Inc).await
-      cable.send(Reverso).await
-      cable.send(Inc).await
-      val s = cable.get.await
+      val tether = Counter(0).launch.await
+      tether.send(Inc).await
+      tether.send(Reverso).await
+      tether.send(Inc).await
+      val s = tether.get.await
       expect(s == 0)
     }
   }
 
   test("functional") {
     async[IO] {
-      val cable = Balloon.launch(processCounter, 0).await
-      cable.send(Inc).await
-      cable.send(Reverso).await
-      cable.send(Inc).await
-      cable.send(Inc).await
-      val s = cable.get.await
+      val tether = Balloon.launch(processCounter, 0).await
+      tether.send(Inc).await
+      tether.send(Reverso).await
+      tether.send(Inc).await
+      tether.send(Inc).await
+      val s = tether.get.await
       expect(s == 1)
     }
   }

@@ -5,7 +5,7 @@ import com.raquo.laminar.api.L._
 import cats.effect.std._
 import cats.effect.cps._
 
-trait Cable[Msg, State] {
+trait Tether[Msg, State] {
   def signal: StrictSignal[State]
   def inbox: Observer[Msg]
 
@@ -33,7 +33,7 @@ object Balloon {
   def launch[Msg, State](
       runner: Helm[Msg, State] => IO[Any],
       init: State
-  ): IO[Cable[Msg, State]] = async[IO] {
+  ): IO[Tether[Msg, State]] = async[IO] {
     val stateVar = Var(init)
     val stateCell = AtomicCell[IO].of(init).await
     val queue = Queue.unbounded[IO, (Msg, State => IO[Unit])].await
@@ -46,7 +46,7 @@ object Balloon {
       def next = queue.take
     }).start.await
     (Dispatcher.sequential[IO] use { dispatcher =>
-      IO(new Cable[Msg, State] {
+      IO(new Tether[Msg, State] {
         val signal = stateVar.signal
         val inbox =
           Observer[Msg](msg => dispatcher.unsafeRunAndForget(sendAsync(msg)))
@@ -81,11 +81,11 @@ trait PureBalloon[Msg, State] {
   def step(helm: Helm[Msg, State]): IO[PureBalloon[Msg, State]] =
     helm.process_(msg => { val b = next(msg); (b, b.current) })
 
-  def launch: IO[Cable[Msg, State]] = async[IO] {
+  def launch: IO[Tether[Msg, State]] = async[IO] {
     val stateVar = Var(current)
     val stateCell = AtomicCell[IO].of(this).await
     (Dispatcher.sequential[IO] use { dispatcher =>
-      IO(new Cable[Msg, State] {
+      IO(new Tether[Msg, State] {
         val signal = stateVar.signal
         val inbox =
           Observer[Msg](msg => dispatcher.unsafeRunAndForget(send(msg)))
