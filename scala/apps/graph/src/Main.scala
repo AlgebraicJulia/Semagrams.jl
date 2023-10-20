@@ -26,29 +26,36 @@ object GraphDisplay extends Semagram {
 
   val entitySources = Seq(
     ACSetEntitySource(V, Disc()),
-    ACSetEdgeSource(E, Src, Tgt, Arrow()),
+    ACSetEdgeSource(E, Src, Tgt, Arrow())
   )
 }
 
 val bindings = Seq[Binding[ACSet]](
   Binding(KeyDownHook("a"), AddAtMouse(V)),
   Binding(KeyDownHook("d"), DeleteHovered()),
-  Binding(ClickOnPartHook(MouseButton.Left, Set(KeyModifier.Shift)), AddEdgeViaDrag(E, Src, Tgt)),
-  Binding(ClickOnPartHook(MouseButton.Left), MoveViaDrag()),
+  Binding(
+    ClickOnPartHook(MouseButton.Left, Set(KeyModifier.Shift)),
+    AddEdgeViaDrag(E, Src, Tgt)
+  ),
+  Binding(ClickOnPartHook(MouseButton.Left), MoveViaDrag())
 )
 
 class DisplayProperty(val f: Property, val serializer: f.Value => String)
 
 case class Table(ob: Ob, props: Seq[(String, DisplayProperty)]) {
   def rows(acset: ACSet): Seq[Element] =
-    acset.parts(ROOT, ob).map(
-      { case (p,_) => tr(
-         td(partid(p)),
-         props.map({ case (_, dp) => td(dp.serializer(acset.subpart(dp.f, p))) })
-       )
-      }
-    )
-
+    acset
+      .parts(ROOT, ob)
+      .map(
+        { case (p, _) =>
+          tr(
+            td(partid(p)),
+            props.map({ case (_, dp) =>
+              td(dp.serializer(acset.subpart(dp.f, p)))
+            })
+          )
+        }
+      )
 
   def apply(acsetSig: Signal[ACSet]) = table(
     tr(th("id"), props.map({ case (label, _) => th(label) })),
@@ -64,7 +71,7 @@ object Main {
     @JSExport
     def main(mountInto: dom.Element, init: js.UndefOr[String]) = {
       val graphVar = UndoableVar(Graph())
-      val stateVar = Var(EditorState(None, Complex(0,0)))
+      val stateVar = Var(EditorState(None, Complex(0, 0)))
       val globalStateVar = Var(GlobalState(Set()))
       val eventBus = EventBus[Event]()
       val globalEventBus = EventBus[Event]()
@@ -74,12 +81,15 @@ object Main {
       def display() = GraphDisplay(graphSig, eventBus.writer).amend(
         svg.height := "400px",
         svg.width := "100%",
-        svg.style := "border: black; border-style: solid; background-color: white; box-sizing: border-box",
+        svg.style := "border: black; border-style: solid; background-color: white; box-sizing: border-box"
       )
 
       val mainDiv = div(
         display(),
-        Table(V, Seq(("pos", DisplayProperty(Center, z => s"${z.x} + ${z.y}i"))))(graphSig),
+        Table(
+          V,
+          Seq(("pos", DisplayProperty(Center, z => s"${z.x} + ${z.y}i")))
+        )(graphSig),
         Table(
           E,
           Seq(
@@ -87,7 +97,9 @@ object Main {
             ("tgt", DisplayProperty(Tgt, partid))
           )
         )(graphSig),
-        globalEventBus.events --> globalStateVar.updater[Event]((globalState, evt) => globalState.processEvent(evt)),
+        globalEventBus.events --> globalStateVar.updater[Event](
+          (globalState, evt) => globalState.processEvent(evt)
+        ),
         globalEventBus.events --> eventBus.writer
       )
 
@@ -103,7 +115,16 @@ object Main {
               dispatcher.unsafeRunAndForget(eventQueue.offer(evt))
             )
           )
-          Binding.processAll(Action.Resources(graphVar, stateVar, globalStateVar.signal, eventQueue, outbox.writer), bindings)
+          Binding.processAll(
+            Action.Resources(
+              graphVar,
+              stateVar,
+              globalStateVar.signal,
+              eventQueue,
+              outbox.writer
+            ),
+            bindings
+          )
         }
       } yield ()
 
