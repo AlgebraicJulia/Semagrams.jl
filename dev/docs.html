@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.3.450">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Semagrams - Documentation</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<link rel="stylesheet" href="styles.css">
+</head>
+
+<body class="nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand navbar-dark ">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">Semagrams</span>
+    </a>
+  </div>
+          <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="./index.html" rel="" target="">
+ <span class="menu-text">Home</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link active" href="./docs.html" rel="" target="" aria-current="page">
+ <span class="menu-text">Documentation</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./scaladoc/" rel="" target="">
+ <span class="menu-text">API</span></a>
+  </li>  
+</ul>
+          <div class="quarto-navbar-tools ms-auto">
+</div>
+            <div id="quarto-search" class="" title="Search"></div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#fundamental-concepts" id="toc-fundamental-concepts" class="nav-link active" data-scroll-target="#fundamental-concepts">Fundamental Concepts</a>
+  <ul class="collapse">
+  <li><a href="#reactive-programming-laminar" id="toc-reactive-programming-laminar" class="nav-link" data-scroll-target="#reactive-programming-laminar">Reactive Programming (Laminar)</a></li>
+  <li><a href="#asynchronous-programming-cats-effect" id="toc-asynchronous-programming-cats-effect" class="nav-link" data-scroll-target="#asynchronous-programming-cats-effect">Asynchronous Programming (cats-effect)</a></li>
+  </ul></li>
+  <li><a href="#balloons" id="toc-balloons" class="nav-link" data-scroll-target="#balloons">Balloons</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Documentation</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+</header>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/default.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/scala.min.js"></script>
+<script>
+  hljs.configure({
+    languages: ['scala']
+  });
+  hljs.highlightAll();
+</script>
+<p>This is my attempt at writing “narrative” documentation for Semagrams. There is also the API docs, which is helpful for reference, but if you are just learning, you should start here.</p>
+<p>This documentation is primarily focused on new developers of Semagrams itself, not users of Semagrams, but hopefully should be interesting to anyone.</p>
+<section id="fundamental-concepts" class="level2">
+<h2 class="anchored" data-anchor-id="fundamental-concepts">Fundamental Concepts</h2>
+<p>There is a fundamental difference between interactive programs and programs which are only meant to compute things. In a program meant simply to compute things, the author of the program decides how the state of the program changes over time. In an interactive program, the state changes in response to user input.</p>
+<p>Semagrams integrates cats-effect and Laminar to tame the complexities of interactivity. In brief, Laminar is used to draw the display and to source events, and cats-effect is used to process events.</p>
+<p>In the next two sections, I explain why and how each of these work.</p>
+<section id="reactive-programming-laminar" class="level3">
+<h3 class="anchored" data-anchor-id="reactive-programming-laminar">Reactive Programming (Laminar)</h3>
+<p>The conceptually easiest way of dealing with drawing state is the way that video games work. Namely, you have some state. You can mutate that state at will, and then the state is drawn from scratch every frame.</p>
+<p>However, in the browser this doesn’t work so well. This is because reconstructing the html of the UI sixty times a second would be far too slow. We could do a render loop if we worked in a <code>&lt;canvas&gt;</code> or used webGL, but there are actually a lot of very non-trivial features that browsers have for stuff like event handling and text-rendering that would require a lot of work to duplicate. The browser is an extremely advanced rendering engine that <em>does</em> work on the principles above, but interfacing with the browser rendering engine takes a different shape than simply redrawing every frame.</p>
+<p>Namely, interfacing with the browser rendering engine takes the form of <em>mutating the DOM</em>, which is the data structure that HTML is parsed into. But the state of your application is not the state of the DOM. So somehow, you have to keep the state of your application in sync with the state of the DOM, in a way that is not “recreate the DOM from scratch 60 times a second”.</p>
+<p>There are several ways of doing this. The first way, popular in the late 2000s and early 2010s, was to manually write functions that would update the DOM. This had the advantage of being fast, but was extremely hard to architect at a large scale.</p>
+<p>This gave way in the early 2010s to another approach, pioneered by frameworks like React, which was to render your entire application state into what was called <em>virtual DOM</em>, which was supposed to be a lightweight data structure, figure out the difference between your virtual DOM and the actual DOM, and then apply the smallest mutation to get them back in sync. Although this sounds kind of silly, it actually works quite well.</p>
+<p>However, there are still some drawbacks. First of all, unlike when you were manually updating the DOM, you have no guarantee that elements would be reused by the syncing. This is a problem because DOM elements have state, for instance whatever you have typed into a textbox. So if you redraw your app and your diffing algorithm isn’t smart enough to know that it should just mutate your textbox instead of replacing it, you can get bugs. Secondly, even though virtual DOM is <em>pretty</em> fast, it never is as fast as simply applying the mutations directly.</p>
+<p>So recently, a third approach has started to gain traction: reactive programming. The history of reactive programming is actually quite long; there have been FRP libraries in the Haskell world for quite a while. But for reasons I’m not so familiar with, it took a while to catch on for web development.</p>
+<p>The idea behind reactive programming is that values should know what depends on them. So for instance, if you have a variable that stores a color, you use that color in various parts of your application, and then you update that color, the variable knows what downstream things to update. You can think of this like a “publish/subscribe” system; your UI elements “subscribe” to changes in your application state, and when you make a change, that change is “published” to all of its subscribers.</p>
+<p>But the neat thing is that you can have as many levels of publishers/subscribers. I.e., you can have one big variable, which is the state of your whole application, and then have values which are derived from that variable, and have values which are derived from those values, etc. This serves to “filter out” updates, so that only the part of your state that has changed ends up actually notifying a UI element. The upshot of this is that instead of diffing your “virtual DOM”, you diff your application state!</p>
+<p>Additionally, you have much finer control over when UI elements are created/destroyed, so you don’t have to worry about DOM state being forgotten when you update your state. When you drag something in Semagrams, you want to be sure that the element is just having its position updated and not being fully recreated.</p>
+<p>In Semagrams, we use a reactive programming library called <a href="https://laminar.dev">Laminar</a> that has had a lot of work and thought put into it. It also has excellent documentation, and some great video presentations that I encourage the reader to check out.</p>
+</section>
+<section id="asynchronous-programming-cats-effect" class="level3">
+<h3 class="anchored" data-anchor-id="asynchronous-programming-cats-effect">Asynchronous Programming (cats-effect)</h3>
+<p>Although Laminar does a very good job of keeping UI in sync with state, there is one thing that it does not help very much with. This is <em>state machines</em>.</p>
+<p>Consider which of the following code you would prefer to write (note this is pseudocode that happens to have scala3 syntax).</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode scala code-with-copy"><code class="sourceCode scala"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>enum <span class="ex">State</span> <span class="op">{</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">case</span> Default</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">case</span> Receiving</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">case</span> Sending</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="ex">State</span><span class="op">.</span>_</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> <span class="fu">mainLoop</span><span class="op">()</span> <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>  <span class="kw">var</span> state <span class="op">=</span> Default</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>  <span class="cf">while</span> <span class="kw">true</span> <span class="op">{</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    evt <span class="op">=</span> <span class="fu">nextEvent</span><span class="op">()</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    state <span class="op">=</span> <span class="fu">handleEvent</span><span class="op">(</span>evt<span class="op">,</span> state<span class="op">)</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> <span class="fu">handleEvent</span><span class="op">(</span>evt<span class="op">:</span> <span class="ex">Event</span><span class="op">,</span> state<span class="op">:</span> <span class="ex">State</span><span class="op">)</span> <span class="op">=</span> state <span class="cf">match</span> <span class="op">{</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>  <span class="cf">case</span> Default <span class="op">=&gt;</span> <span class="op">{</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> evt<span class="op">.</span>isInitiation <span class="op">{</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>      <span class="co">// do something to initiate a connection</span></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>      Receiving</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span> <span class="cf">else</span> <span class="op">{</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>      state</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>  <span class="cf">case</span> Receiving <span class="op">=&gt;</span> <span class="op">{</span></span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> evt<span class="op">.</span>isPacket <span class="op">{</span></span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>      <span class="co">// process packet</span></span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>      Receiving</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span> <span class="cf">else</span> <span class="cf">if</span> evt<span class="op">.</span>isFinished <span class="op">{</span></span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>      Sending</span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span> <span class="cf">else</span> <span class="op">{</span></span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>      state</span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>  <span class="cf">case</span> Sending <span class="op">=&gt;</span> <span class="op">{</span></span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> evt<span class="op">.</span>isRequest <span class="op">{</span></span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>      <span class="co">// send something to the requester</span></span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>      Default</span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span> <span class="cf">else</span> <span class="op">{</span></span>
+<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a>      state</span>
+<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode scala code-with-copy"><code class="sourceCode scala"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> <span class="fu">mainLoop</span><span class="op">()</span> <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">while</span> <span class="kw">true</span> <span class="op">{</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">waitForInitialization</span><span class="op">()</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> done <span class="op">=</span> <span class="kw">false</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">while</span> <span class="op">(!</span>done<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>      evt <span class="op">=</span> <span class="fu">nextEvent</span><span class="op">()</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> evt<span class="op">.</span>isPacket <span class="op">{</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>        <span class="co">// process packet</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>      <span class="op">}</span> <span class="cf">else</span> <span class="cf">if</span> evt<span class="op">.</span>isFinished <span class="op">{</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>        done <span class="op">=</span> <span class="kw">true</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>      <span class="op">}</span> </span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    done <span class="op">=</span> <span class="kw">false</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    <span class="cf">while</span> <span class="op">(!</span>done<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>      evt <span class="op">=</span> <span class="fu">nextEvent</span><span class="op">()</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> evt<span class="op">.</span>isRequest <span class="op">{</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>        <span class="co">// send something to the requester</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>        done <span class="op">=</span> <span class="kw">true</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>      <span class="op">}</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>In the first example, the state machine is <em>explicit</em>. That is, each state we can be is represented by concrete date. In contrast, in the second example, the state machine is implicit in the control flow.</p>
+<p>Explicit state machines are a huge pain to maintain. You have to write out every possible state that your program could be in. It makes much more sense to use the control flow tools that we are familiar with as programmers to structure our code.</p>
+<p>The trouble is that Javascript is single-threaded. So if the <code>nextEvent</code> call blocks the program, nothing else can happen until the new event comes in. In fact, as written, nothing else could <em>ever</em> happen while <code>mainLoop</code> was running, including drawing our program!</p>
+<p>In classical Javascript, the solution to this was that instead of having <code>nextEvent</code> event return something, you’d pass in a <em>callback</em> to <code>nextEvent</code> describing what to do with the event. Then you’d return from your function and allow other functions to run. When there was an event, your callback would be called, and that would continue on.</p>
+<p>The problem with this is that you get code that runs off the side of the screen:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode scala code-with-copy"><code class="sourceCode scala"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">nextEvent</span><span class="op">(</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  evt <span class="op">=&gt;</span> <span class="op">{</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">// do something</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">nextEvent</span><span class="op">(</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>      evt <span class="op">=&gt;</span> <span class="op">{</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>        <span class="co">// do something</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>        <span class="fu">nextEvent</span><span class="op">(</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>          evt <span class="op">=&gt;</span> <span class="op">{</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>            <span class="co">// do something</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>            <span class="co">// ...</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>          <span class="op">}</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>        <span class="op">)</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>      <span class="op">}</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>    <span class="op">)</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>  <span class="op">})</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>This is the well-known “callback hell”. The modern solution to this is <em>asynchronous programming</em>. Conceptually, all asynchronous programming does is turn something that looks like</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode scala code-with-copy"><code class="sourceCode scala"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>async<span class="op">[</span>IO<span class="op">]</span> <span class="op">{</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">val</span> evt <span class="op">=</span> nextEvent<span class="op">.</span>await</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="co">// do something</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">val</span> evt <span class="op">=</span> nextEvent<span class="op">.</span>await</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="co">// do something</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="kw">val</span> evt <span class="op">=</span> nextEvent<span class="op">.</span>await</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  <span class="co">// do something</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>  <span class="co">// ...</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>into callback-passing code. And now we can write clean-looking state machines that don’t block the entire thread! scala3 has an awesome library for asynchronous programming called <a href="https://typelevel.org/cats-effect/">cats-effect</a>. Fun fact: this library is used to write the servers that stream videos for Disney Plus; that’s how efficient it is.</p>
+<p>This uses something called the “IO monad” under the hood. However, the IO monad in cats-effect is slightly different from the IO monad in Haskell. Normal scala code can have all kinds of side effects, so the point of the IO monad is not to allow side effects, but rather to express asynchrony. A value of type <code>IO[A]</code> is basically something that registers a callback <code>A =&gt; Unit</code> elsewhere. So in the above code, we have</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode scala code-with-copy"><code class="sourceCode scala"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> nextEvent<span class="op">:</span> IO<span class="op">[</span><span class="ex">Event</span><span class="op">]</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>This doesn’t look typical monad code because we use a special code transformer <a href="https://github.com/typelevel/cats-effect-cps">cats-effect-cps</a>. This allows us to use <code>async/await</code> syntax familiar from other languages like Python, Rust, or even Javascript.</p>
+</section>
+</section>
+<section id="balloons" class="level2">
+<h2 class="anchored" data-anchor-id="balloons">Balloons</h2>
+<p>Now the question becomes: how do we integrate cats-effect with Laminar? The answer is something I call “balloons”, a state-management framework that is interoperable with both Laminar and cats-effect. I named it balloons to fit with the theme of “airstream” and “laminar”, and to evoke the idea that it is encapsulating something.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="catballoon.svg" class="img-fluid figure-img" style="width:50.0%"></p>
+<figcaption class="figure-caption">A Cat in a Balloon</figcaption>
+</figure>
+</div>
+<p>Balloons have two type parameters: <code>Msg</code> and <code>State</code>. It manages some state of type <code>State</code>, and updates the state in response to messages of <code>Msg</code>. A balloon is contacted through a <code>Tether[Msg, State]</code>, which is a trait defined like</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode scala code-with-copy"><code class="sourceCode scala"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co">// </span><span class="al">TODO</span><span class="co">: support reeling in the balloon</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="kw">trait</span> Tether<span class="op">[</span>Msg<span class="op">,</span> <span class="ex">State</span><span class="op">]</span> <span class="op">{</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">val</span> signal<span class="op">:</span> Signal<span class="op">[</span><span class="ex">State</span><span class="op">]</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">val</span> inbox<span class="op">:</span> <span class="ex">Observer</span><span class="op">[</span>Msg<span class="op">]</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> get<span class="op">:</span> IO<span class="op">[</span><span class="ex">State</span><span class="op">]</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> <span class="fu">send</span><span class="op">(</span>msg<span class="op">:</span> Msg<span class="op">):</span> IO<span class="op">[</span><span class="bu">Unit</span><span class="op">]</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>A laminar component can listen to the <code>signal</code> and send messages to the <code>inbox</code>, while accessing via <code>cats-effect</code> can go through the <code>send/get</code> interface.</p>
+<p>Moreover, <code>send</code> blocks until the balloon has finished processing the sent message, so it is guaranteed that running <code>get</code> after <code>send</code> will get a version of the state <em>at least as</em> current as the state after processing the sent message. This is particularly important for automated testing; it means that we can test our state machines by sending them a series of messages and then reading out their state.</p>
+<p>Balloons are only interacted with via their tethers, so a balloon is really just something that can be “launched” to create a tether.</p>
+<p>There are currently two ways of doing that: explicit state machines and non-explicit state machines. An explicit state machine looks like this:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode scala code-with-copy"><code class="sourceCode scala"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">trait</span> PureBalloon<span class="op">[</span>Msg<span class="op">,</span> <span class="ex">State</span><span class="op">]</span> <span class="op">{</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> current<span class="op">:</span> <span class="ex">State</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> <span class="fu">next</span><span class="op">(</span>msg<span class="op">:</span> Msg<span class="op">):</span> PureBalloon<span class="op">[</span>Msg<span class="op">,</span> <span class="ex">State</span><span class="op">]</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> launch<span class="op">:</span> IO<span class="op">[</span>Tether<span class="op">[</span>Msg<span class="op">,</span> <span class="ex">State</span><span class="op">]]</span> <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">val</span> balloonState<span class="op">:</span> Var<span class="op">[</span>PureBalloon<span class="op">[</span>Msg<span class="op">,</span> <span class="ex">State</span><span class="op">]]</span> <span class="op">=</span> <span class="fu">Var</span><span class="op">(</span><span class="kw">this</span><span class="op">)</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">val</span> signal<span class="op">:</span> Signal<span class="op">[</span><span class="ex">State</span><span class="op">]</span> <span class="op">=</span> balloonState<span class="op">.</span>signal<span class="op">.</span><span class="fu">map</span><span class="op">(</span>_<span class="op">.</span>current<span class="op">)</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    <span class="co">// implementation omitted</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Basically, when we launch <code>PureBalloon</code> we store the current balloon in a variable and every time we get a new message, we update the balloon, and the state derived from that balloon.</p>
+<p>For those who are familiar with polynomial functors, an element of <code>PureBalloon[Msg, State]</code> is essentially a position of the cofree coalgebra on the polynomial <span class="math inline">\(p = \mathtt{State} \; y^{\,\mathtt{Msg}}\)</span>.</p>
+<p>However, we also want to support the “imperative” style of state machines as explained in the previous section on cats-effect. We do this in an extremely lightweight manner. We first declare a trait <code>Helm</code> as follows:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode scala code-with-copy"><code class="sourceCode scala"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">trait</span> Helm<span class="op">[</span>Msg<span class="op">,</span> <span class="ex">State</span><span class="op">]</span> <span class="op">{</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> next<span class="op">:</span> IO<span class="op">[(</span>Msg<span class="op">,</span> <span class="ex">State</span> <span class="op">=&gt;</span> IO<span class="op">[</span><span class="bu">Unit</span><span class="op">])]</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The idea is that a <code>Helm</code> is the controls for a balloon.</p>
+<p>Then an imperative balloon is simply a function <code>Helm[Msg, State] =&gt; IO[Void]</code>. This is something that takes in a <code>Helm</code> and then loops forever, producing side effects.</p>
+<p>A very basic example of this might look like</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode scala code-with-copy"><code class="sourceCode scala"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> <span class="fu">counter</span><span class="op">(</span>state<span class="op">:</span> <span class="bu">Int</span><span class="op">)(</span>helm<span class="op">:</span> Helm<span class="op">[</span><span class="bu">Unit</span><span class="op">,</span> <span class="ex">Boolean</span><span class="op">]):</span> IO<span class="op">[</span><span class="ex">Void</span><span class="op">]</span> <span class="op">=</span> async<span class="op">[</span>IO<span class="op">]</span> <span class="op">{</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">val</span> <span class="op">((),</span> update<span class="op">)</span> <span class="op">=</span> helm<span class="op">.</span>next<span class="op">.</span>await</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">val</span> nextState <span class="op">=</span> state <span class="op">+</span> <span class="dv">1</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">update</span><span class="op">(</span>nextState <span class="op">%</span> <span class="dv">2</span> <span class="op">==</span> <span class="dv">0</span><span class="op">).</span>await</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">counter</span><span class="op">(</span>nextState<span class="op">)(</span>helm<span class="op">).</span>await</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>This counts the number of messages sent, and exposes the state of whether that number is even or odd.</p>
+<p>The key to this is that when we poll for a message, we also poll for somewhere to send the updated state when we’ve finished processing the message. This allows for clients (i.e., other bits of code that have a <code>Tether</code> to this balloon) to wait until the balloon is finished processing before continuing on. It is the responsibility of an imperative balloon to call every <code>update</code> that it receives precisely once. If Scala had linear types, we could enforce this on the type level, but sadly it does not.</p>
+<p>So the imperative state machine is less safe than the pure one, and also it seems to generally be slower, at least in some very basic testing. The good news is that the implementation of a balloon is totally obscured from consumers of its tether. This means we can use pure state machines for the simple cases, and break out more complicated imperative state machines only when needed.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>

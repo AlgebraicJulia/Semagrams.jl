@@ -1,0 +1,1386 @@
+<html data-pathToRoot="../"><head><meta charset="utf-8"></meta><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"></meta><title>semagrams.util</title><link rel="shortcut icon" type="image/x-icon" href="../favicon.ico"></link><script type="text/javascript" src="../scripts/theme.js"></script><script type="text/javascript" src="../scripts/searchData.js" defer="true"></script><script type="text/javascript" src="../scripts/scastieConfiguration.js" defer="true"></script><link rel="stylesheet" href="../styles/theme/bundle.css"></link><link rel="stylesheet" href="../styles/theme/components/bundle.css"></link><link rel="stylesheet" href="../styles/theme/components/button/bundle.css"></link><link rel="stylesheet" href="../styles/theme/layout/bundle.css"></link><link rel="stylesheet" href="../styles/nord-light.css"></link><link rel="stylesheet" href="../styles/dotty-icons.css"></link><link rel="stylesheet" href="../styles/filter-bar.css"></link><link rel="stylesheet" href="../styles/code-snippets.css"></link><link rel="stylesheet" href="../styles/searchbar.css"></link><link rel="stylesheet" href="../styles/social-links.css"></link><link rel="stylesheet" href="../styles/versions-dropdown.css"></link><link rel="stylesheet" href="../styles/content-contributors.css"></link><link rel="stylesheet" href="../styles/fontawesome.css"></link><script type="text/javascript" src="../hljs/highlight.pack.js" defer="true"></script><script type="text/javascript" src="../scripts/hljs-scala3.js" defer="true"></script><script type="text/javascript" src="../scripts/ux.js" defer="true"></script><script type="text/javascript" src="../scripts/common/component.js" defer="true"></script><script type="text/javascript" src="../scripts/common/utils.js" defer="true"></script><script type="text/javascript" src="../scripts/components/FilterBar.js" defer="true"></script><script type="text/javascript" src="../scripts/components/DocumentableList.js" defer="true"></script><script type="text/javascript" src="../scripts/components/Input.js" defer="true"></script><script type="text/javascript" src="../scripts/components/FilterGroup.js" defer="true"></script><script type="text/javascript" src="../scripts/components/Filter.js" defer="true"></script><script type="text/javascript" src="../scripts/scaladoc-scalajs.js" defer="true"></script><script type="text/javascript" src="../scripts/contributors.js" defer="true"></script><script type="text/javascript" src="https://code.jquery.com/jquery-3.5.1.min.js" defer="true"></script><script type="text/javascript" src="https://d3js.org/d3.v6.min.js" defer="true"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/graphlib-dot@0.6.2/dist/graphlib-dot.min.js" defer="true"></script><script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/dagre-d3/0.6.1/dagre-d3.min.js" defer="true"></script><script type="text/javascript" src="https://scastie.scala-lang.org/embedded.js" defer="true"></script><script type="text/javascript" src="../scripts/data.js" defer="true"></script><link rel="stylesheet" href="../styles/apistyles.css"></link><script>var pathToRoot = "../";</script></head><body><div id=""><div id="header" class="body-small"><div class="header-container-left"><a href="../" class="logo-container"><span class="project-name h300">semagrams</span></a><span onclick="dropdownHandler(event)" class="text-button with-arrow" id="dropdown-trigger"><a></a></span><div id="version-dropdown" class="dropdown-menu"></div></div><div class="header-container-right"><button id="search-toggle" class="icon-button"></button><span id="theme-toggle" class="icon-button"></span><span id="mobile-menu-toggle" class="icon-button hamburger"></span></div></div><div id="mobile-menu"><div class="mobile-menu-header body-small"><span class="mobile-menu-logo"><span class="project-name h300">semagrams</span></span><button id="mobile-menu-close" class="icon-button close"></button></div><div class="mobile-menu-container body-medium"><input id="mobile-scaladoc-searchbar-input" class="scaladoc-searchbar-input" type="search" placeholder="Find anything"></input><span id="mobile-theme-toggle" class="mobile-menu-item mode"></span></div></div><span id="mobile-sidebar-toggle" class="floating-button"></span><div id="leftColumn" class="body-small"><div class="switcher-container"><a id="api-nav-button" class="switcher h100 selected" href="../index.html">API</a></div><nav id="api-nav" class="side-menu"><div class="ni n0 expanded"><span class="nh h100 expanded cs"><button class="ar icon-button expanded"></button><a href="../semagrams.html"><span class="micon pa"></span><span>semagrams</span></a></span><div class="ni n1 expanded"><span class="nh h100 selected"><button class="ar icon-button expanded"></button><a href="#"><span class="micon pa"></span><span>util</span></a></span><div class="ni n2 "><span class="nh "><a href="util/Complex.html"><span class="micon cl"></span><span>Complex</span></a></span></div><div class="ni n2 "><span class="nh "><a href="util/Complex$.html"><span class="micon ob"></span><span>Complex</span></a></span></div><div class="ni n2"><span class="nh "><button class="ar icon-button "></button><a href="util/CustomAttr$.html"><span class="micon ob"></span><span>CustomAttr</span></a></span><div class="ni n3 "><span class="nh "><a href="util/CustomAttr$$CustomSvgAttr.html"><span class="micon tr"></span><span>CustomSvgAttr</span></a></span></div><div class="ni n3 "><span class="nh "><a href="util/CustomAttr$$ReactiveSvgBinder.html"><span class="micon cl"></span><span>ReactiveSvgBinder</span></a></span></div><div class="ni n3 "><span class="nh "><a href="util/CustomAttr$$StaticSvgBinder.html"><span class="micon cl"></span><span>StaticSvgBinder</span></a></span></div><div class="ni n3 "><span class="nh "><a href="util/CustomAttr$$SvgBinder.html"><span class="micon tr"></span><span>SvgBinder</span></a></span></div></div><div class="ni n2 "><span class="nh "><a href="util/Described.html"><span class="micon tr"></span><span>Described</span></a></span></div><div class="ni n2 "><span class="nh "><a href="util/LensedVar.html"><span class="micon cl"></span><span>LensedVar</span></a></span></div><div class="ni n2 "><span class="nh "><a href="util/NoneError$.html"><span class="micon ob"></span><span>NoneError</span></a></span></div><div class="ni n2"><span class="nh "><button class="ar icon-button "></button><a href="util/Path$.html"><span class="micon ob"></span><span>Path</span></a></span><div class="ni n3"><span class="nh "><button class="ar icon-button "></button><a href="util/Path$$Element.html"><span class="micon en"></span><span>Element</span></a></span><div class="ni n4 "><span class="nh "><a href="util/Path$$Element$$MoveTo.html"><span class="micon ca"></span><span>MoveTo</span></a></span></div><div class="ni n4 "><span class="nh "><a href="util/Path$$Element$$LineTo.html"><span class="micon ca"></span><span>LineTo</span></a></span></div><div class="ni n4 "><span class="nh "><a href="util/Path$$Element$$Cubic.html"><span class="micon ca"></span><span>Cubic</span></a></span></div></div></div><div class="ni n2 "><span class="nh "><a href="util/Transform.html"><span class="micon cl"></span><span>Transform</span></a></span></div><div class="ni n2 "><span class="nh "><a href="util/Transform$.html"><span class="micon ob"></span><span>Transform</span></a></span></div><div class="ni n2 "><span class="nh "><a href="util/UndoState.html"><span class="micon cl"></span><span>UndoState</span></a></span></div><div class="ni n2 "><span class="nh "><a href="util/UndoableVar.html"><span class="micon cl"></span><span>UndoableVar</span></a></span></div><div class="ni n2 "><span class="nh "><a href="util/complexattrs$.html"><span class="micon ob"></span><span>complexattrs</span></a></span></div></div><div class="ni n1 "><span class="nh "><a href="EditorState.html"><span class="micon cl"></span><span>EditorState</span></a></span></div><div class="ni n1"><span class="nh "><button class="ar icon-button "></button><a href="GlobalEvent.html"><span class="micon en"></span><span>GlobalEvent</span></a></span><div class="ni n2 "><span class="nh "><a href="GlobalEvent$$KeyDown.html"><span class="micon ca"></span><span>KeyDown</span></a></span></div><div class="ni n2 "><span class="nh "><a href="GlobalEvent$$KeyUp.html"><span class="micon ca"></span><span>KeyUp</span></a></span></div></div><div class="ni n1 "><span class="nh "><a href="GlobalState.html"><span class="micon cl"></span><span>GlobalState</span></a></span></div><div class="ni n1 "><span class="nh "><a href="KeyModifier.html"><span class="micon en"></span><span>KeyModifier</span></a></span></div><div class="ni n1 "><span class="nh "><a href="KeyModifier$.html"><span class="micon ob"></span><span>KeyModifier</span></a></span></div><div class="ni n1"><span class="nh "><button class="ar icon-button "></button><a href="LocalEvent.html"><span class="micon en"></span><span>LocalEvent</span></a></span><div class="ni n2 "><span class="nh "><a href="LocalEvent$$MouseEnter.html"><span class="micon ca"></span><span>MouseEnter</span></a></span></div><div class="ni n2 "><span class="nh "><a href="LocalEvent$$MouseLeave.html"><span class="micon ca"></span><span>MouseLeave</span></a></span></div><div class="ni n2 "><span class="nh "><a href="LocalEvent$$MouseDown.html"><span class="micon ca"></span><span>MouseDown</span></a></span></div><div class="ni n2 "><span class="nh "><a href="LocalEvent$$MouseUp.html"><span class="micon ca"></span><span>MouseUp</span></a></span></div><div class="ni n2 "><span class="nh "><a href="LocalEvent$$Click.html"><span class="micon ca"></span><span>Click</span></a></span></div><div class="ni n2 "><span class="nh "><a href="LocalEvent$$DoubleClick.html"><span class="micon ca"></span><span>DoubleClick</span></a></span></div><div class="ni n2 "><span class="nh "><a href="LocalEvent$$MouseLeaveBox.html"><span class="micon ca"></span><span>MouseLeaveBox</span></a></span></div><div class="ni n2 "><span class="nh "><a href="LocalEvent$$MouseMove.html"><span class="micon ca"></span><span>MouseMove</span></a></span></div><div class="ni n2 "><span class="nh "><a href="LocalEvent$$ContextMenu.html"><span class="micon ca"></span><span>ContextMenu</span></a></span></div></div><div class="ni n1 "><span class="nh "><a href="MouseButton.html"><span class="micon en"></span><span>MouseButton</span></a></span></div><div class="ni n1 "><span class="nh "><a href="MouseButton$.html"><span class="micon ob"></span><span>MouseButton</span></a></span></div></div></nav></div><div id="footer" class="body-small"><div class="left-container">Generated with</div><div class="right-container"><div class="text"></div></div><div class="text-mobile"></div></div><div id="scaladoc-searchBar"></div><div id="main"><div class="breadcrumbs container"><a href="../index.html">semagrams</a>/<a href="../semagrams.html">semagrams</a>/<a href="util.html">semagrams.util</a></div><div id="content" class="body-medium"><div><div class="cover-header">
+ <span class="icon"><span class="micon pa"></span></span>
+ <h1 class="h600 single">semagrams.util</h1>
+</div>
+<div class="fqname body-large">
+ <span></span>
+</div>
+<div class="main-signature mono-small-block">
+ <div class="signature">
+  <span class="modifiers"></span><span class="kind"><span t="k">package </span></span><a href="util.html" t="n" class="documentableName ">semagrams.util</a>
+ </div>
+</div>
+<div class="cover">
+ <div class="doc">
+  <p>Useful non-Semagrams-specific functionality</p> 
+ </div>
+ <section id="attributes">
+  <h2 class="h500">Attributes</h2>
+  <dl class="attributes"></dl>
+ </section>
+</div>
+<section id="members-list">
+ <h2 class="h500">Members list</h2>
+ <div class="documentableFilter">
+  <div class="filtersContainer"></div>
+  <input class="filterableInput" placeholder="Filter by any phrase" data-test-id="filterBarInput" type="search"><button class="clearButton label-only-button" data-test-id="filterBarClearButton">Clear all</button>
+ </div>
+ <div class="membersList expand">
+  <div class="tabs">
+   <div class="contents">
+    <section id="Type-members">
+     <div data-togglable="Type members" class="tab expand">
+      <div class="member-group-header">
+       <h3 data-togglable="Type members" class="h400">Type members</h3>
+      </div>
+      <section id="Classlikes">
+       <div class="documentableList expand">
+        <div class="documentableList-expander">
+         <button class="icon-button show-content expand"></button>
+         <h4 class="groupHeader h200">Classlikes</h4>
+        </div>
+        <div class="documentableElement" data-f-keywords="case">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"><span t="k">case </span></span><span class="kind"><span t="k">class </span></span><a href="util/Complex.html" t="n" class="documentableName ">Complex</a>(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">x</span>: <span data-unresolved-link="" t="t">Double</span>, <span t="k"></span><span data-unresolved-link="" t="n">y</span>: <span data-unresolved-link="" t="t">Double</span>)
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="documentableBrief doc">
+             <p>A class representing a complex number</p> 
+            </div>
+            <div class="cover">
+             <div class="doc">
+              <p>A class representing a complex number</p> 
+              <p>We use complex numbers for two-dimensional geometry because they can represent either:</p> 
+              <ul> 
+               <li>A point</li> 
+               <li>A vector</li> 
+               <li>A translation</li> 
+               <li>A rotation/scaling</li> 
+              </ul> 
+              <p>Instead of having to remember APIs for all of these, you can just use familiar arithmetic operations.</p> 
+              <p>The operations here are the standard mathematical ones for the complex numbers.</p> 
+             </div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">
+               Companion
+              </dt>
+              <dd class="body-medium">
+               <a href="util/Complex$.html">object</a>
+              </dd>
+              <dt class="body-small">
+               Supertypes
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block supertypes">
+                <div>
+                 trait <span data-unresolved-link="" t="n">Serializable</span>
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">Product</span>
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">Equals</span>
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Object</span>
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">Matchable</span>
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Any</span>
+                </div><span class="show-all-code show-content text-button h100">Show all</span>
+               </div>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"></span><span class="kind"><span t="k">object </span></span><a href="util/Complex$.html" t="n" class="documentableName ">Complex</a>
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="cover">
+             <div class="doc"></div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">
+               Companion
+              </dt>
+              <dd class="body-medium">
+               <a href="util/Complex.html">class</a>
+              </dd>
+              <dt class="body-small">
+               Supertypes
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block supertypes">
+                <div>
+                 trait <span data-unresolved-link="" t="n">Product</span>
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">Mirror</span>
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Object</span>
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">Matchable</span>
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Any</span>
+                </div><span></span>
+               </div>
+              </dd>
+              <dt class="body-small">
+               Self type
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block supertypes">
+                <span></span>
+                <div>
+                 <a href="util/Complex$.html" t="n">Complex</a>.type
+                </div>
+               </div>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"></span><span class="kind"><span t="k">object </span></span><a href="util/CustomAttr$.html" t="n" class="documentableName ">CustomAttr</a>
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="cover">
+             <div class="doc"></div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">
+               Supertypes
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block supertypes">
+                <div>
+                 class <span data-unresolved-link="" t="n">Object</span>
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">Matchable</span>
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Any</span>
+                </div><span></span>
+               </div>
+              </dd>
+              <dt class="body-small">
+               Self type
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block supertypes">
+                <span></span>
+                <div>
+                 <a href="util/CustomAttr$.html" t="n">CustomAttr</a>.type
+                </div>
+               </div>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"></span><span class="kind"><span t="k">trait </span></span><a href="util/Described.html" t="n" class="documentableName ">Described</a>[<span t="k"></span><span data-unresolved-link="" t="t">T</span>]
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="cover">
+             <div class="doc"></div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">
+               Supertypes
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block supertypes">
+                <div>
+                 class <span data-unresolved-link="" t="n">Object</span>
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">Matchable</span>
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Any</span>
+                </div><span></span>
+               </div>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"></span><span class="kind"><span t="k">class </span></span><a href="util/LensedVar.html" t="n" class="documentableName ">LensedVar</a>[<span t="k"></span><span data-unresolved-link="" t="t">A</span>, <span t="k"></span><span data-unresolved-link="" t="t">B</span>](<span t="k"></span><span t="k">val </span><span data-unresolved-link="" t="n">v</span>: <a href="util/UndoableVar.html" t="t">UndoableVar</a>[<span data-unresolved-link="" t="t">A</span>], <span t="k">val </span><span data-unresolved-link="" t="n">l</span>: <span data-unresolved-link="" t="t">Lens</span>[<span data-unresolved-link="" t="t">A</span>, <span data-unresolved-link="" t="t">B</span>])
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="documentableBrief doc">
+             <p>A view of a variable. Uses a lens to forward gets and sets to an underlying <code>UndoableVar</code>.</p> 
+            </div>
+            <div class="cover">
+             <div class="doc">
+              <p>A view of a variable. Uses a lens to forward gets and sets to an underlying <code>UndoableVar</code>.</p> 
+              <p>Note: this is specialized to <code>UndoableVar</code> right now because there isn't an informative superclass of both <code>UndoableVar</code> and <code>Var</code>. At some point we should fix this.</p> 
+              <p>Maybe we should send a PR with <code>UndoableVar</code> and <code>LensedVar</code> to Laminar?</p> 
+             </div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">
+               Todo
+              </dt>
+              <dd class="body-medium">
+               <div>
+                <div>
+                 <p>implement more of the <code>Var</code> api.</p> 
+                </div>
+               </div>
+              </dd>
+              <dt class="body-small">
+               Supertypes
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block supertypes">
+                <div>
+                 class <span data-unresolved-link="" t="n">Object</span>
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">Matchable</span>
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Any</span>
+                </div><span></span>
+               </div>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement" data-f-keywords="case">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="signature-short"><span class="modifiers"><span t="k">case </span></span><span class="kind"><span t="k">object </span></span><a href="util/NoneError$.html" t="n" class="documentableName ">NoneError</a><span t="k"> extends </span><span data-unresolved-link="" t="t">Exception</span></span><span class="signature-long"></span>
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="cover">
+             <div class="doc"></div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">
+               Supertypes
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block supertypes">
+                <div>
+                 trait <span data-unresolved-link="" t="n">Singleton</span>
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">Product</span>
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">Mirror</span>
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">Product</span>
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">Equals</span>
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Exception</span>
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Throwable</span>
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">Serializable</span>
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Object</span>
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">Matchable</span>
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Any</span>
+                </div><span class="show-all-code show-content text-button h100">Show all</span>
+               </div>
+              </dd>
+              <dt class="body-small">
+               Self type
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block supertypes">
+                <span></span>
+                <div>
+                 <a href="util/NoneError$.html" t="n">NoneError</a>.type
+                </div>
+               </div>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"></span><span class="kind"><span t="k">object </span></span><a href="util/Path$.html" t="n" class="documentableName ">Path</a>
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="cover">
+             <div class="doc"></div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">
+               Supertypes
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block supertypes">
+                <div>
+                 class <span data-unresolved-link="" t="n">Object</span>
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">Matchable</span>
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Any</span>
+                </div><span></span>
+               </div>
+              </dd>
+              <dt class="body-small">
+               Self type
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block supertypes">
+                <span></span>
+                <div>
+                 <a href="util/Path$.html" t="n">Path</a>.type
+                </div>
+               </div>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement" data-f-keywords="case">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"><span t="k">case </span></span><span class="kind"><span t="k">class </span></span><a href="util/Transform.html" t="n" class="documentableName ">Transform</a>(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">z</span>: <a href="util/Complex.html" t="t">Complex</a>, <span t="k"></span><span data-unresolved-link="" t="n">w</span>: <a href="util/Complex.html" t="t">Complex</a>)
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="documentableBrief doc">
+             <p>Represents an affine transformation of the 2d plane</p> 
+            </div>
+            <div class="cover">
+             <div class="doc">
+              <p>Represents an affine transformation of the 2d plane</p> 
+             </div>
+             <h2 class="h200">Value parameters</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">
+               w
+              </dt>
+              <dd class="body-medium">
+               <p>the translation factor Note: scaling is applied before translation.</p> 
+              </dd>
+              <dt class="body-small">
+               z
+              </dt>
+              <dd class="body-medium">
+               <p>the scaling/twisting factor</p> 
+              </dd>
+             </dl>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">
+               Companion
+              </dt>
+              <dd class="body-medium">
+               <a href="util/Transform$.html">object</a>
+              </dd>
+              <dt class="body-small">
+               Supertypes
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block supertypes">
+                <div>
+                 trait <span data-unresolved-link="" t="n">Serializable</span>
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">Product</span>
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">Equals</span>
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Object</span>
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">Matchable</span>
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Any</span>
+                </div><span class="show-all-code show-content text-button h100">Show all</span>
+               </div>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"></span><span class="kind"><span t="k">object </span></span><a href="util/Transform$.html" t="n" class="documentableName ">Transform</a>
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="cover">
+             <div class="doc"></div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">
+               Companion
+              </dt>
+              <dd class="body-medium">
+               <a href="util/Transform.html">class</a>
+              </dd>
+              <dt class="body-small">
+               Supertypes
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block supertypes">
+                <div>
+                 trait <span data-unresolved-link="" t="n">Product</span>
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">Mirror</span>
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Object</span>
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">Matchable</span>
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Any</span>
+                </div><span></span>
+               </div>
+              </dd>
+              <dt class="body-small">
+               Self type
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block supertypes">
+                <span></span>
+                <div>
+                 <a href="util/Transform$.html" t="n">Transform</a>.type
+                </div>
+               </div>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement" data-f-keywords="case">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"><span t="k">case </span></span><span class="kind"><span t="k">class </span></span><a href="util/UndoState.html" t="n" class="documentableName ">UndoState</a>[<span t="k"></span><span data-unresolved-link="" t="t">A</span>](<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">recording</span>: <span data-unresolved-link="" t="t">Boolean</span>, <span t="k"></span><span data-unresolved-link="" t="n">past</span>: <span data-unresolved-link="" t="t">List</span>[<span data-unresolved-link="" t="t">A</span>], <span t="k"></span><span data-unresolved-link="" t="n">present</span>: <span data-unresolved-link="" t="t">A</span>, <span t="k"></span><span data-unresolved-link="" t="n">future</span>: <span data-unresolved-link="" t="t">List</span>[<span data-unresolved-link="" t="t">A</span>])
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="documentableBrief doc">
+             <p>The internal state of an <a href="util/UndoableVar.html">UndoableVar</a>, implemented as a cursor into a list.</p> 
+            </div>
+            <div class="cover">
+             <div class="doc">
+              <p>The internal state of an <a href="util/UndoableVar.html">UndoableVar</a>, implemented as a cursor into a list.</p> 
+             </div>
+             <h2 class="h200">Value parameters</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">
+               future
+              </dt>
+              <dd class="body-medium">
+               <p>states that we have undone (for redo). This goes away once you start editing from a state in the past; we don't have undo trees yet.</p> 
+              </dd>
+              <dt class="body-small">
+               past
+              </dt>
+              <dd class="body-medium">
+               <p>previous states (for undoing)</p> 
+              </dd>
+              <dt class="body-small">
+               present
+              </dt>
+              <dd class="body-medium">
+               <p>current state</p> 
+              </dd>
+              <dt class="body-small">
+               recording
+              </dt>
+              <dd class="body-medium">
+               <p>indicator for whether we should record updates or not</p> 
+              </dd>
+             </dl>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">
+               Supertypes
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block supertypes">
+                <div>
+                 trait <span data-unresolved-link="" t="n">Serializable</span>
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">Product</span>
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">Equals</span>
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Object</span>
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">Matchable</span>
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Any</span>
+                </div><span class="show-all-code show-content text-button h100">Show all</span>
+               </div>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="signature-short"><span class="modifiers"></span><span class="kind"><span t="k">class </span></span><a href="util/UndoableVar.html" t="n" class="documentableName ">UndoableVar</a>[<span t="k"></span><span data-unresolved-link="" t="t">A</span>](<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">init</span>: <span data-unresolved-link="" t="t">A</span>)<span t="k"> extends </span><span data-unresolved-link="" t="t">SignalSource</span>[<span t="t">A</span>]<span t="k">, </span></span><span class="signature-long"><span data-unresolved-link="" t="t">Sink</span>[<span t="t">A</span>]</span>
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="documentableBrief doc">
+             <p>A class similar to <code>Var</code> but with support for undo and redo.</p> 
+            </div>
+            <div class="cover">
+             <div class="doc">
+              <p>A class similar to <code>Var</code> but with support for undo and redo.</p> 
+             </div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">
+               Supertypes
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block supertypes">
+                <div>
+                 trait <span data-unresolved-link="" t="n">Sink</span>[<span t="t">A</span>]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">SignalSource</span>[<span t="t">A</span>]
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">Source</span>[<span t="t">A</span>]
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Object</span>
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">Matchable</span>
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Any</span>
+                </div><span class="show-all-code show-content text-button h100">Show all</span>
+               </div>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"></span><span class="kind"><span t="k">object </span></span><a href="util/complexattrs$.html" t="n" class="documentableName ">complexattrs</a>
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="documentableBrief doc">
+             <p>Custom laminar attributes for using complex numbers with svg more easily</p> 
+            </div>
+            <div class="cover">
+             <div class="doc">
+              <p>Custom laminar attributes for using complex numbers with svg more easily</p> 
+              <p>These can be used both</p> 
+              <ul> 
+               <li>with signals, i.e. <code>xy &lt;-- z</code>,</li> 
+               <li>with values, i.e. <code>xy := z</code>.</li> 
+              </ul> 
+             </div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">
+               Supertypes
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block supertypes">
+                <div>
+                 class <span data-unresolved-link="" t="n">Object</span>
+                </div>
+                <div>
+                 trait <span data-unresolved-link="" t="n">Matchable</span>
+                </div>
+                <div>
+                 class <span data-unresolved-link="" t="n">Any</span>
+                </div><span></span>
+               </div>
+              </dd>
+              <dt class="body-small">
+               Self type
+              </dt>
+              <dd class="body-medium">
+               <div class="mono-small-block supertypes">
+                <span></span>
+                <div>
+                 <a href="util/complexattrs$.html" t="n">complexattrs</a>.type
+                </div>
+               </div>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+       </div>
+      </section>
+     </div>
+    </section>
+    <section id="Value-members">
+     <div data-togglable="Value members" class="tab expand">
+      <div class="member-group-header">
+       <h3 data-togglable="Value members" class="h400">Value members</h3>
+      </div>
+      <section id="Concrete-methods">
+       <div class="documentableList expand">
+        <div class="documentableList-expander">
+         <button class="icon-button show-content expand"></button>
+         <h4 class="groupHeader h200">Concrete methods</h4>
+        </div>
+        <div class="documentableElement" id="bijectiveRW-fffff0c5">
+         <div class="documentableElement-expander">
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="util.html#bijectiveRW-fffff0c5" t="n" class="documentableName ">bijectiveRW</a>[<span t="k"></span><span data-unresolved-link="" t="t">A</span>](<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">as</span>: <span data-unresolved-link="" t="t">Iterable</span>[<span t="t">A</span>]): <span data-unresolved-link="" t="t">ReadWriter</span>[<span data-unresolved-link="" t="t">A</span>]
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement" id="boxSize-e3a">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="util.html#boxSize-e3a" t="n" class="documentableName ">boxSize</a>(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">text</span>: <span data-unresolved-link="" t="t">String</span>, <span t="k"></span><span data-unresolved-link="" t="n">fontSize</span>: <span data-unresolved-link="" t="t">Double</span>): <a href="util/Complex.html" t="t">Complex</a>
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="documentableBrief doc">
+             <p>Returns the dimensions of the bounding box for <code>text</code> at <code>fontSize</code></p> 
+            </div>
+            <div class="cover">
+             <div class="doc">
+              <p>Returns the dimensions of the bounding box for <code>text</code> at <code>fontSize</code></p> 
+              <p>This caches computations, so that repeated queries are fast.</p> 
+             </div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small">
+              <dt class="body-small">
+               Todo
+              </dt>
+              <dd class="body-medium">
+               <div>
+                <div>
+                 <p>we hardcode most of the style for this; we should make this more flexible.</p> 
+                </div>
+               </div>
+              </dd>
+             </dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement" id="fromMaybe-456">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="util.html#fromMaybe-456" t="n" class="documentableName ">fromMaybe</a>[<span t="k"></span><span data-unresolved-link="" t="t">Model</span>, <span t="k"></span><span data-unresolved-link="" t="t">A</span>](<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">a</span>: <span data-unresolved-link="" t="t">IO</span>[<span data-unresolved-link="" t="t">Option</span>[<span t="t">A</span>]]): <span data-unresolved-link="" t="t">IO</span>[<span data-unresolved-link="" t="t">A</span>]
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="documentableBrief doc">
+             <p>A convenience wrapper around calling <a href="util.html#unwrap-69a">unwrap</a> for IO</p> 
+            </div>
+            <div class="cover">
+             <div class="doc">
+              <p>A convenience wrapper around calling <a href="util.html#unwrap-69a">unwrap</a> for IO</p> 
+             </div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small"></dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement" id="msgError-fffff2d0">
+         <div class="documentableElement-expander">
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="util.html#msgError-fffff2d0" t="n" class="documentableName ">msgError</a>(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">msg</span>: <span data-unresolved-link="" t="t">String</span>): <span data-unresolved-link="" t="t">RuntimeException</span>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement" id="wrappedHtml-fffffd94">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="util.html#wrappedHtml-fffffd94" t="n" class="documentableName ">wrappedHtml</a>(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">el</span>: <span data-unresolved-link="" t="t">Element</span>, <span t="k"></span><span data-unresolved-link="" t="n">pos</span>: <span data-unresolved-link="" t="t">Signal</span>[<a href="util/Complex.html" t="t">Complex</a>], <span t="k"></span><span data-unresolved-link="" t="n">dims</span>: <span data-unresolved-link="" t="t">Signal</span>[<a href="util/Complex.html" t="t">Complex</a>]): <span data-unresolved-link="" t="t">ReactiveSvgElement</span>[<span data-unresolved-link="" t="t">SVGElement</span>]
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo"></div>
+           <div class="memberDocumentation">
+            <div class="documentableBrief doc">
+             <p>Make an SVG element containing the html object.</p> 
+            </div>
+            <div class="cover">
+             <div class="doc">
+              <p>Make an SVG element containing the html object.</p> 
+              <p>We have to specify manually the dimensions and position of the html, because SVG does not have automatic layout (unlike html).</p> 
+              <p>One way of getting "automatic layout" is to make an html element which takes up the entire semagrams window but is transparent and doesn't intercept mouse actions, and then doing layout within that.</p> 
+             </div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small"></dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+       </div>
+      </section>
+     </div>
+    </section>
+    <section id="Extensions">
+     <div data-togglable="Extensions" class="tab expand">
+      <div class="member-group-header">
+       <h3 data-togglable="Extensions" class="h400">Extensions</h3>
+      </div>
+      <section id="Extensions">
+       <div class="documentableList expand">
+        <div class="documentableList-expander">
+         <button class="icon-button show-content expand"></button>
+         <h4 class="groupHeader h200">Extensions</h4>
+        </div>
+        <div>
+         <span class="groupHeader"><span t="k">extension </span>[<span t="k"></span><span data-unresolved-link="" t="t">A</span>](action: <span data-unresolved-link="" t="t">IO</span>[<span data-unresolved-link="" t="t">A</span>])(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">action</span>: <span data-unresolved-link="" t="t">IO</span>[<span t="t">A</span>])</span>
+         <div class="documentableElement" id="onCancelOrError-fffffc67">
+          <div class="documentableElement-expander">
+           <button class="icon-button ar show-content"></button>
+           <div class="header monospace mono-medium">
+            <div class="signature">
+             <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="util.html#onCancelOrError-fffffc67" t="n" class="documentableName ">onCancelOrError</a>(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">fin</span>: <span data-unresolved-link="" t="t">IO</span>[<span data-unresolved-link="" t="t">A</span>]): <span data-unresolved-link="" t="t">IO</span>[<span data-unresolved-link="" t="t">A</span>]
+            </div>
+           </div>
+          </div>
+          <div class="docs">
+           <span class="modifiers"></span>
+           <div>
+            <div class="originInfo"></div>
+            <div class="memberDocumentation">
+             <div class="documentableBrief doc">
+              <p>Perform <code>fin</code> if the action is cancelled or errors.</p> 
+             </div>
+             <div class="cover">
+              <div class="doc">
+               <p>Perform <code>fin</code> if the action is cancelled or errors.</p> 
+               <p>Note that if the action is cancelled, it never returns, so we only get the result of <code>fin</code> if it errors.</p> 
+              </div>
+              <h2 class="h200">Attributes</h2>
+              <dl class="attributes attributes-small"></dl>
+             </div>
+            </div>
+           </div>
+          </div>
+         </div>
+         <div class="documentableElement" id="toOption-fd5">
+          <div class="documentableElement-expander">
+           <button class="icon-button ar show-content"></button>
+           <div class="header monospace mono-medium">
+            <div class="signature">
+             <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="util.html#toOption-fd5" t="n" class="documentableName ">toOption</a>: <span data-unresolved-link="" t="t">IO</span>[<span data-unresolved-link="" t="t">Option</span>[<span data-unresolved-link="" t="t">A</span>]]
+            </div>
+           </div>
+          </div>
+          <div class="docs">
+           <span class="modifiers"></span>
+           <div>
+            <div class="originInfo"></div>
+            <div class="memberDocumentation">
+             <div class="documentableBrief doc">
+              <p>Convert a possibly erroring IO action to one that safely returns an Option</p> 
+             </div>
+             <div class="cover">
+              <div class="doc">
+               <p>Convert a possibly erroring IO action to one that safely returns an Option</p> 
+              </div>
+              <h2 class="h200">Attributes</h2>
+              <dl class="attributes attributes-small"></dl>
+             </div>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div>
+         <span class="groupHeader"><span t="k">extension </span>(elts: <span data-unresolved-link="" t="t">Seq</span>[<a href="util/Path$$Element.html" t="t">Element</a>])(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">elts</span>: <span data-unresolved-link="" t="t">Seq</span>[<a href="util/Path$$Element.html" t="t">Element</a>])</span>
+         <div class="documentableElement" id="toSvg-a90">
+          <div class="documentableElement-expander">
+           <button class="icon-button ar show-content"></button>
+           <div class="header monospace mono-medium">
+            <div class="signature">
+             <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="util.html#toSvg-a90" t="n" class="documentableName ">toSvg</a>: <span data-unresolved-link="" t="t">String</span>
+            </div>
+           </div>
+          </div>
+          <div class="docs">
+           <span class="modifiers"></span>
+           <div>
+            <div class="originInfo"></div>
+            <div class="memberDocumentation">
+             <div class="documentableBrief doc">
+              <p>Produce an SVG string representing a whole path. Used in the <code>d</code> attribute.</p> 
+             </div>
+             <div class="cover">
+              <div class="doc">
+               <p>Produce an SVG string representing a whole path. Used in the <code>d</code> attribute.</p> 
+              </div>
+              <h2 class="h200">Attributes</h2>
+              <dl class="attributes attributes-small"></dl>
+             </div>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div>
+         <span class="groupHeader"><span t="k">extension </span>[<span t="k"></span><span data-unresolved-link="" t="t">A</span>, <span t="k"></span><span data-unresolved-link="" t="t">B</span>](s: <span data-unresolved-link="" t="t">Signal</span>[(<span data-unresolved-link="" t="t">A</span>, <span data-unresolved-link="" t="t">B</span>)])(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">s</span>: <span data-unresolved-link="" t="t">Signal</span>[(<span t="t">A</span>, <span t="t">B</span>)])</span>
+         <div class="documentableElement" id="splitTuple-9f4">
+          <div class="documentableElement-expander">
+           <div class="header monospace mono-medium">
+            <div class="signature">
+             <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="util.html#splitTuple-9f4" t="n" class="documentableName ">splitTuple</a>: (<span data-unresolved-link="" t="t">Signal</span>[<span data-unresolved-link="" t="t">A</span>], <span data-unresolved-link="" t="t">Signal</span>[<span data-unresolved-link="" t="t">B</span>])
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div>
+         <span class="groupHeader"><span t="k">extension </span>(t: <span data-unresolved-link="" t="t">Double</span>)(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">t</span>: <span data-unresolved-link="" t="t">Double</span>)</span>
+         <div class="documentableElement" id="*-391">
+          <div class="documentableElement-expander">
+           <button class="icon-button ar show-content"></button>
+           <div class="header monospace mono-medium">
+            <div class="signature">
+             <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="util.html#*-391" t="n" class="documentableName ">*</a>(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">z</span>: <a href="util/Complex.html" t="t">Complex</a>): <a href="util/Complex.html" t="t">Complex</a>
+            </div>
+           </div>
+          </div>
+          <div class="docs">
+           <span class="modifiers"></span>
+           <div>
+            <div class="originInfo"></div>
+            <div class="memberDocumentation">
+             <div class="documentableBrief doc">
+              <p>Multiplication by a complex implictly converts to complex</p> 
+             </div>
+             <div class="cover">
+              <div class="doc">
+               <p>Multiplication by a complex implictly converts to complex</p> 
+              </div>
+              <h2 class="h200">Attributes</h2>
+              <dl class="attributes attributes-small"></dl>
+             </div>
+            </div>
+           </div>
+          </div>
+         </div>
+         <div class="documentableElement" id="^-44b">
+          <div class="documentableElement-expander">
+           <button class="icon-button ar show-content"></button>
+           <div class="header monospace mono-medium">
+            <div class="signature">
+             <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="util.html#^-44b" t="n" class="documentableName ">^</a>(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">x</span>: <span data-unresolved-link="" t="t">Double</span>): <span data-unresolved-link="" t="t">Double</span>
+            </div>
+           </div>
+          </div>
+          <div class="docs">
+           <span class="modifiers"></span>
+           <div>
+            <div class="originInfo"></div>
+            <div class="memberDocumentation">
+             <div class="documentableBrief doc">
+              <p>Exponentiation as an infix operator</p> 
+             </div>
+             <div class="cover">
+              <div class="doc">
+               <p>Exponentiation as an infix operator</p> 
+              </div>
+              <h2 class="h200">Attributes</h2>
+              <dl class="attributes attributes-small"></dl>
+             </div>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div>
+         <span class="groupHeader"><span t="k">extension </span>[<span t="k"></span><span data-unresolved-link="" t="t">A</span>](x: <span data-unresolved-link="" t="t">Option</span>[<span data-unresolved-link="" t="t">A</span>])(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">x</span>: <span data-unresolved-link="" t="t">Option</span>[<span t="t">A</span>])</span>
+         <div class="documentableElement" id="unwrap-69a">
+          <div class="documentableElement-expander">
+           <button class="icon-button ar show-content"></button>
+           <div class="header monospace mono-medium">
+            <div class="signature">
+             <span class="modifiers"></span><span class="kind"><span t="k">def </span></span><a href="util.html#unwrap-69a" t="n" class="documentableName ">unwrap</a>[<span t="k"></span><span data-unresolved-link="" t="t">F</span>[<span t="t">_</span>]](<span t="k">implicit </span><span t="k"></span><span data-unresolved-link="" t="n">F</span>: <span data-unresolved-link="" t="t">MonadError</span>[<span data-unresolved-link="" t="t">F</span>, <span data-unresolved-link="" t="t">Throwable</span>]): <span data-unresolved-link="" t="t">F</span>[<span data-unresolved-link="" t="t">A</span>]
+            </div>
+           </div>
+          </div>
+          <div class="docs">
+           <span class="modifiers"></span>
+           <div>
+            <div class="originInfo"></div>
+            <div class="memberDocumentation">
+             <div class="documentableBrief doc">
+              <p>Get the value of an option, throwing an error in a monad if the option is None. The advantage of throwing the error in the monad is that its more easily catchable.</p> 
+             </div>
+             <div class="cover">
+              <div class="doc">
+               <p>Get the value of an option, throwing an error in a monad if the option is None. The advantage of throwing the error in the monad is that its more easily catchable.</p> 
+              </div>
+              <h2 class="h200">Attributes</h2>
+              <dl class="attributes attributes-small"></dl>
+             </div>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+       </div>
+      </section>
+     </div>
+    </section>
+    <section id="Implicits">
+     <div data-togglable="Implicits" class="tab expand">
+      <div class="member-group-header">
+       <h3 data-togglable="Implicits" class="h400">Implicits</h3>
+      </div>
+      <section id="Implicits">
+       <div class="documentableList expand">
+        <div class="documentableList-expander">
+         <button class="icon-button show-content expand"></button>
+         <h4 class="groupHeader h200">Implicits</h4>
+        </div>
+        <div class="documentableElement" id="intToComplex-fffff823" data-f-keywords="implicit">
+         <div class="documentableElement-expander">
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"><span t="k">implicit </span></span><span class="kind"><span t="k">def </span></span><a href="util.html#intToComplex-fffff823" t="n" class="documentableName ">intToComplex</a>(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">n</span>: <span data-unresolved-link="" t="t">Int</span>): <a href="util/Complex.html" t="t">Complex</a>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement" id="realToComplex-115" data-f-keywords="implicit">
+         <div class="documentableElement-expander">
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"><span t="k">implicit </span></span><span class="kind"><span t="k">def </span></span><a href="util.html#realToComplex-115" t="n" class="documentableName ">realToComplex</a>(<span t="k"></span><span t="k"></span><span data-unresolved-link="" t="n">x</span>: <span data-unresolved-link="" t="t">Double</span>): <a href="util/Complex.html" t="t">Complex</a>
+           </div>
+          </div>
+         </div>
+        </div>
+       </div>
+      </section>
+     </div>
+    </section>
+    <section id="Exports">
+     <div data-togglable="Exports" class="tab expand">
+      <div class="member-group-header">
+       <h3 data-togglable="Exports" class="h400">Exports</h3>
+      </div>
+      <section id="Defined-exports">
+       <div class="documentableList expand">
+        <div class="documentableList-expander">
+         <button class="icon-button show-content expand"></button>
+         <h4 class="groupHeader h200">Defined exports</h4>
+        </div>
+        <div class="documentableElement" id="cxy-0" data-f-export="from complexattrs}">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"></span><span class="kind"><span t="k">val </span></span><a href="util.html#cxy-0" t="n" class="documentableName ">cxy</a>: <a href="util/CustomAttr$$CustomSvgAttr.html" t="t">CustomSvgAttr</a>[<a href="util/Complex.html" t="t">Complex</a>]
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo">
+            Exported from <a href="util/complexattrs$.html">complexattrs</a>
+           </div>
+           <div class="memberDocumentation">
+            <div class="documentableBrief doc">
+             <p>A custom svg attribute for setting <code>cx</code> and <code>cy</code> from one complex number</p> 
+            </div>
+            <div class="cover">
+             <div class="doc">
+              <p>A custom svg attribute for setting <code>cx</code> and <code>cy</code> from one complex number</p> 
+             </div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small"></dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement" id="pathElts-0" data-f-export="from complexattrs}">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"></span><span class="kind"><span t="k">val </span></span><a href="util.html#pathElts-0" t="n" class="documentableName ">pathElts</a>: <a href="util/CustomAttr$$CustomSvgAttr.html" t="t">CustomSvgAttr</a>[<span data-unresolved-link="" t="t">Seq</span>[<a href="util/Path$$Element.html" t="t">Element</a>]]
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo">
+            Exported from <a href="util/complexattrs$.html">complexattrs</a>
+           </div>
+           <div class="memberDocumentation">
+            <div class="documentableBrief doc">
+             <p>A custom svg attribute for setting <code>d</code> (the svg element for describing a path) from a sequence of <a href="util/Path$$Element.html">Path.Element</a>.</p> 
+            </div>
+            <div class="cover">
+             <div class="doc">
+              <p>A custom svg attribute for setting <code>d</code> (the svg element for describing a path) from a sequence of <a href="util/Path$$Element.html">Path.Element</a>.</p> 
+             </div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small"></dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement" id="pointsC-0" data-f-export="from complexattrs}">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"></span><span class="kind"><span t="k">val </span></span><a href="util.html#pointsC-0" t="n" class="documentableName ">pointsC</a>: <a href="util/CustomAttr$$CustomSvgAttr.html" t="t">CustomSvgAttr</a>[<span data-unresolved-link="" t="t">Seq</span>[<a href="util/Complex.html" t="t">Complex</a>]]
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo">
+            Exported from <a href="util/complexattrs$.html">complexattrs</a>
+           </div>
+           <div class="memberDocumentation">
+            <div class="documentableBrief doc">
+             <p>A custom svg attribute for setting <code>points</code> from a sequence of complex numbers</p> 
+            </div>
+            <div class="cover">
+             <div class="doc">
+              <p>A custom svg attribute for setting <code>points</code> from a sequence of complex numbers</p> 
+             </div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small"></dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement" id="wh-0" data-f-export="from complexattrs}">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"></span><span class="kind"><span t="k">val </span></span><a href="util.html#wh-0" t="n" class="documentableName ">wh</a>: <a href="util/CustomAttr$$CustomSvgAttr.html" t="t">CustomSvgAttr</a>[<a href="util/Complex.html" t="t">Complex</a>]
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo">
+            Exported from <a href="util/complexattrs$.html">complexattrs</a>
+           </div>
+           <div class="memberDocumentation">
+            <div class="documentableBrief doc">
+             <p>A custom svg attribute for setting <code>w</code> and <code>h</code> from one complex number</p> 
+            </div>
+            <div class="cover">
+             <div class="doc">
+              <p>A custom svg attribute for setting <code>w</code> and <code>h</code> from one complex number</p> 
+             </div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small"></dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement" id="xy-0" data-f-export="from complexattrs}">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"></span><span class="kind"><span t="k">val </span></span><a href="util.html#xy-0" t="n" class="documentableName ">xy</a>: <a href="util/CustomAttr$$CustomSvgAttr.html" t="t">CustomSvgAttr</a>[<a href="util/Complex.html" t="t">Complex</a>]
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo">
+            Exported from <a href="util/complexattrs$.html">complexattrs</a>
+           </div>
+           <div class="memberDocumentation">
+            <div class="documentableBrief doc">
+             <p>A custom svg attribute for setting <code>x</code> and <code>y</code> from one complex number</p> 
+            </div>
+            <div class="cover">
+             <div class="doc">
+              <p>A custom svg attribute for setting <code>x</code> and <code>y</code> from one complex number</p> 
+             </div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small"></dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement" id="z1-0" data-f-export="from complexattrs}">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"></span><span class="kind"><span t="k">val </span></span><a href="util.html#z1-0" t="n" class="documentableName ">z1</a>: <a href="util/CustomAttr$$CustomSvgAttr.html" t="t">CustomSvgAttr</a>[<a href="util/Complex.html" t="t">Complex</a>]
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo">
+            Exported from <a href="util/complexattrs$.html">complexattrs</a>
+           </div>
+           <div class="memberDocumentation">
+            <div class="documentableBrief doc">
+             <p>A custom svg attribute for setting <code>x1</code> and <code>y1</code> from a complex number</p> 
+            </div>
+            <div class="cover">
+             <div class="doc">
+              <p>A custom svg attribute for setting <code>x1</code> and <code>y1</code> from a complex number</p> 
+             </div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small"></dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="documentableElement" id="z2-0" data-f-export="from complexattrs}">
+         <div class="documentableElement-expander">
+          <button class="icon-button ar show-content"></button>
+          <div class="header monospace mono-medium">
+           <div class="signature">
+            <span class="modifiers"></span><span class="kind"><span t="k">val </span></span><a href="util.html#z2-0" t="n" class="documentableName ">z2</a>: <a href="util/CustomAttr$$CustomSvgAttr.html" t="t">CustomSvgAttr</a>[<a href="util/Complex.html" t="t">Complex</a>]
+           </div>
+          </div>
+         </div>
+         <div class="docs">
+          <span class="modifiers"></span>
+          <div>
+           <div class="originInfo">
+            Exported from <a href="util/complexattrs$.html">complexattrs</a>
+           </div>
+           <div class="memberDocumentation">
+            <div class="documentableBrief doc">
+             <p>A custom svg attribute for setting <code>x2</code> and <code>y2</code> from a complex number</p> 
+            </div>
+            <div class="cover">
+             <div class="doc">
+              <p>A custom svg attribute for setting <code>x2</code> and <code>y2</code> from a complex number</p> 
+             </div>
+             <h2 class="h200">Attributes</h2>
+             <dl class="attributes attributes-small"></dl>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+       </div>
+      </section>
+     </div>
+    </section>
+   </div>
+  </div>
+ </div>
+</section></div><div id="toc" class="body-small"><div id="toc-container"><span class="toc-title h200">In this article</span><nav class="toc-nav"><ul class="toc-list"><li><a href="#attributes">Attributes</a></li><li><a href="#members-list">Members list</a><ul><li><a href="#Type-members">Type members</a><ul><li><a href="#Classlikes">Classlikes</a></li></ul></li><li><a href="#Value-members">Value members</a><ul><li><a href="#Concrete-methods">Concrete methods</a></li></ul></li><li><a href="#Extensions">Extensions</a><ul><li><a href="#Extensions">Extensions</a></li></ul></li><li><a href="#Implicits">Implicits</a><ul><li><a href="#Implicits">Implicits</a></li></ul></li><li><a href="#Exports">Exports</a><ul><li><a href="#Defined-exports">Defined exports</a></li></ul></li></ul></li></ul></nav></div></div></div><div id="footer" class="body-small mobile-footer"><div class="left-container">Generated with</div><div class="right-container"><a href="https://github.com/lampepfl/dotty"><button class="icon-button gh"></button></a><a href="https://twitter.com/scala_lang"><button class="icon-button twitter"></button></a><a href="https://discord.com/invite/scala"><button class="icon-button discord"></button></a><a href="https://gitter.im/scala/scala"><button class="icon-button gitter"></button></a><div class="text"></div></div><div class="text-mobile"></div></div></div></div></body></html>
