@@ -1,14 +1,13 @@
 package semagrams.acsets.abstr
 
-import semagrams.acsets._
-
-// package semagrams.acsets2.abstr
-
 import semagrams._
+import semagrams.acsets._
+import semagrams.util._
+
 
 import upickle.default._
-// import scala.annotation.targetName
-// import javax.xml.validation.Schema
+import semagrams.acsets.simple.SimpleSchema
+import semagrams.acsets.simple.simpleSchemaIsSchema
 
 
 
@@ -16,16 +15,18 @@ import upickle.default._
 trait Elt:
   def generators: Seq[Generator]
   def label:String
-  override def toString(): String = label
+  override def toString(): String = if label != ""
+    then label
+    else s"AnonOb(${generators.map(_.id).mkString(",")})"
 
 
 
 trait Ob extends Elt with EntityType
 
-case object UnitOb extends Ob:
-  def generators = Seq()
-  def label = "UnitOb"
-val backgroundPart = Part(UnitOb,0)
+// case object UnitOb extends Ob:
+//   def generators = Seq()
+//   def label = "UnitOb"
+// val backgroundPart = Part(UnitOb,0)
 
 
 trait Arrow[+X<:Ob] extends Elt:
@@ -58,13 +59,19 @@ trait Attr[+X<:Ob,Y<:TypeOb] extends Arrow[X]:
 // type AAttr[SchOb<:AOb,Y[_]<:AType[_]] = AbstractAttr[SchOb,Y[_]]
 
 /* Generating categorical entities */
-trait Generator:
+trait Generator extends Elt:
+  val id:UUID
   def generators = Seq(this)
-  def name: String// = toString
+  def name: String
   def label = name
 
+  override def toString = if name != ""
+    then name
+    else id.toString
+
 trait GenOb extends Ob with Generator
-trait GenType[T:ReadWriter] extends TypeOb with Generator
+
+trait GenType[T:ReadWriter] extends TypeOb with GenOb
  
 trait GenArrow[+X<:Ob] extends Arrow[X] with Generator with Property:
   def path = Seq(this)
@@ -82,26 +89,29 @@ trait GenAttr[+X<:Ob,T:ReadWriter] extends GenArrow[X]
 
 
   
-case class Part(ob:Ob,id:Id) 
-  extends Entity:
+case class Part(id:UUID,ob:Ob) extends Entity:
 
-  def idNum = id.id
   val ty = ob
+
+  override def toString = if ob.label == ""
+    then "Part" + id.rand
+    else ob.label + id.rand
 
 
   /** Transform to an name that is usable in tikz */
-  def tikzName: String = ob.label + idNum.toString
+  def tikzName: String = ob.label + id.toString
 
 
 object Part:
-  def apply(x:Ob,idNum:Int) = new Part(x,Id(idNum))
+  def apply(x:Ob) = new Part(UUID("Part"),x)
+  def apply(id:UUID,x:Ob) = new Part(id,x)
   def rw[X<:Ob:ReadWriter]: ReadWriter[Part] = 
-    readwriter[(String,Int)].bimap[Part](
+    readwriter[(String,UUID)].bimap[Part](
       part => (part.ob match
-        case ob:X => (write(ob),part.id.id)
+        case ob:X => (write(ob),part.id)
         case ob => throw util.msgError(s"Bad ob read $ob")
         ),
-      (obstr,i) => Part(read[X](obstr),Id(i))
+      (obstr,id) => Part(id,read[X](obstr))
     )
 
 
@@ -121,9 +131,20 @@ trait Schema[S]:
   val name:String
   override def toString = name
 
+  val emptySchema: S
+
   extension (s:S)
 
     def obs: Seq[SchOb]
+    def homs: Seq[SchHom]
+    def attrs: Seq[SchAttr]
+    def globalProps: Seq[Property] = Seq()
+
+
+    def _addElts(elts:Seq[Generator]): S
+    def addProps(prop:Seq[Property]): S
+
+
     def display = "Schema(" + 
       (if s.obs.isEmpty then "" else 
         "\n  SchOb:   " + s.obs.mkString(", ")
@@ -137,22 +158,28 @@ trait Schema[S]:
         then ")\n" else "\n)\n"
       )
 
-    def homs: Seq[SchHom]
-    def attrs: Seq[SchAttr]
-    def globalProps: Seq[Property] = Seq()
 
     def generators: Seq[Generator] = (obs ++ homs ++ attrs).flatMap(_.generators)
 
+    def contains(ob:Ob): Boolean = obs.contains(ob)
 
-type DynSchemaWithOb[X<:Ob] = [S] =>> DynSchema[S] & SchemaWithOb[X][S]
-trait DynSchema[S] extends Schema[S]:
+    
+    def addElts(elts:Seq[Elt]): S = 
+      _addElts(elts.flatMap(_.generators))
 
-  extension (s:S)
-    def addElts(elts:Seq[Generator]): S
-    def addProps(prop:Seq[Property]): S
+    def addElt(elt:Elt): S = 
+      _addElts(elt.generators)
+    def addProp(prop:Property): S = 
+      addProps(Seq(prop))
+    
+    def +(elt:Elt) = s.addElt(elt)
+    def +(prop:Property) = s.addProp(prop)
+    def ++(elts:Seq[Elt]) = s.addElts(elts)
+    def ++[SS:Schema](other:SS) = 
+      s.addElts(other.generators)
 
-    def +(elt:Elt) = s.addElts(elt.generators)
-    def +(prop:Property) = s.addProps(Seq(prop))
+    def --(elts:Seq[Elt]): Seq[Generator] = s.generators.diff(elts)
+    def --(that:S): Seq[Generator] = --(that.generators)
 
 
     // def ++(stuff:Seq[AElt | Property]): S = addElts(
@@ -161,6 +188,11 @@ trait DynSchema[S] extends Schema[S]:
     //   ).addProps(stuff.collect{ case p:Property => p})
 
     // def ++(s:S): S = ++(s.generators) ++ s.props
+
+
+object Schema:
+  def apply[S:Schema](): S = summon[Schema[S]].emptySchema
+  def apply(): SimpleSchema = apply[SimpleSchema]()(simpleSchemaIsSchema)
 
 trait PartData[Data]:
   def toData(props:PropMap): Data
@@ -176,6 +208,9 @@ trait PartData[Data]:
     def hasProp(f:Property): Boolean = d.getProps().contains(f)
     def tryProp(f:Property): Option[f.Value] = d.getProps().get(f)
     def getProp(f:Property): f.Value = d.getProps()(f)
+    
+    def hasProps(fs:Seq[Property]): Boolean = d.getProps().contains(fs)
+    def getProps(fs:Iterator[Property]): PropMap = d.getProps().filterKeys(fs.contains)
     
     def setProps(props:PropMap): Data =
       props.pmap.keys.toSeq match

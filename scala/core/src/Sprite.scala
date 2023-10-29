@@ -63,6 +63,8 @@ trait Sprite[D:PartData] {
     *   This is used by [[MiddleWare]] to inject event handlers into the sprite.
     *   This should be called on the svg element that the mouse interacts with
     *   (which may be different from the top-level svg element).
+    * 
+    * @param
     */
   def present(
       p: Part,
@@ -70,6 +72,9 @@ trait Sprite[D:PartData] {
       updates: Signal[D],
       eventWriter: Observer[Event]
   ): SvgElement
+
+  def defaultProps: PropMap
+  def requiredProps: Seq[Property]
 
   /** Compute a point on the geometrical boundary of the sprite
     *
@@ -146,7 +151,7 @@ object Sprite:
             (data.tryProp(Center).getOrElse(Complex(100, 100)).y 
               + data.tryProp(FontSize).getOrElse(12.0) * (i + 1 - l / 2.0)).toString()
           ),
-          svg.style := "user-select: none"
+          svg.style := "user-select: none",
         )
       })
     ),

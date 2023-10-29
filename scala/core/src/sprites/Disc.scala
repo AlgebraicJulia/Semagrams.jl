@@ -13,6 +13,10 @@ import semagrams.acsets.abstr._
 case class Disc[D:PartData](label:Property,init: D) extends Sprite[D] {
   import Disc._
 
+  def requiredProps = Seq(Center)
+  def defaultProps = Disc.defaultProps
+
+
   def setLabel: D => D = Sprite.setContent(label)
 
 
@@ -49,7 +53,9 @@ case class Disc[D:PartData](label:Property,init: D) extends Sprite[D] {
       href <-- data.map(_.getProp(ImageURL)),
       clipPathAttr := "inset(0% round 50%)",
       pointerEvents := "none",
-      Rect.geomUpdater(data)
+      Rect.geomUpdater(data),
+      /* Prevent selection outside semagram window (on double click) */
+      L.svg.style := "user-select:none"
     )
 
     g(
@@ -61,9 +67,9 @@ case class Disc[D:PartData](label:Property,init: D) extends Sprite[D] {
   }
 
   override def boundaryPt(init: D, dir: Complex, subparts: Seq[Part] = Seq()) = {
-    val data = init.merge(init)
+    val data = init.softSetProps(defaultProps)
     val rad = radius(data) + data.tryProp(OuterSep)
-      .getOrElse(Disc.defaults(OuterSep))
+      .getOrElse(Disc.defaultProps(OuterSep))
     
     data.tryProp(Center).map(dir.normalize * rad + _)
   }
@@ -94,10 +100,10 @@ object Disc {
 
   def radius[D:PartData](data: D): Double = {
     val textBox = boxSize(data.tryProp(Content), data.tryProp(FontSize),split = true)
-    val innerSep = data.tryProp(InnerSep).getOrElse(defaults(InnerSep))
+    val innerSep = data.tryProp(InnerSep).getOrElse(defaultProps(InnerSep))
     val d = data
       .tryProp(MinimumWidth)
-      .getOrElse(defaults(MinimumWidth))
+      .getOrElse(defaultProps(MinimumWidth))
       .max(textBox.x + innerSep)
       .max(textBox.y + innerSep)
     val r = d / 2
@@ -106,42 +112,41 @@ object Disc {
 
   def geomUpdater[D:PartData](data: L.Signal[D]) = {
     List(
-      cxy <-- data.map(_.tryProp(Center).getOrElse(defaults(Center))),
+      cxy <-- data.map(_.tryProp(Center).getOrElse(defaultProps(Center))),
       r <-- data.map(radius(_).toString)
     )
   }
 
   def styleUpdater[D:PartData](data: L.Signal[D]) = {
     List(
-      fill <-- data.map(d =>
-        if d.tryProp(Hovered).isDefined then "lightgrey" else 
-          d.tryProp(Fill).getOrElse("white")
-      ),
-      stroke <-- data.map(_.tryProp(Stroke).getOrElse(defaults(Stroke))),
-      style <-- data.map(_.tryProp(Style).getOrElse(defaults(Style)))
+      fill <-- data.map(_.getProp(Fill).toString),
+      opacity <-- data.map(d => if d.tryProp(Hovered).isDefined then ".8" else "1"),
+      stroke <-- data.map(_.tryProp(Stroke).getOrElse(defaultProps(Stroke)).toString),
+      style <-- data.map(_.tryProp(Style).getOrElse(defaultProps(Style)))
     )
   }
 
 
 
 
-  val defaults = PropMap()
-    + (Center, Complex(100,100))
+  val defaultProps = PropMap()
+    // + (Center, Complex(100,100))
     + (Content, "")
     + (ImageURL, "")
     + (FontSize, 14)
-    + (Fill, "white")
-    + (Stroke, "black")
+    + (Fill, RGB(0,0,0))
+    + (Stroke, RGB("black"))
     + (InnerSep, 10)
     + (OuterSep, 5)
     + (MinimumWidth, 40)
     + (MinimumHeight, 40)
     + (Style,"")
 
-  def apply() = new Disc(Content,defaults)
-  def apply(props:PropMap) = new Disc(Content,defaults ++ props)
-  def apply(label:Property) = new Disc(label,defaults)
-  def apply(label:Property,props: PropMap) = new Disc(label,defaults ++ props)
+
+  def apply() = new Disc(Content,defaultProps)
+  def apply(props:PropMap) = new Disc(Content,defaultProps ++ props)
+  def apply(label:Property) = new Disc(label,defaultProps)
+  def apply(label:Property,props: PropMap) = new Disc(label,defaultProps ++ props)
 
   def boundaryNormal(data: PropMap, dir: Complex) = dir.normalize
 

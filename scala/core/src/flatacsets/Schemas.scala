@@ -7,7 +7,9 @@ export semagrams.{Entity, Property}
 
 trait Ob extends EntityType
 
-case class Part(id: Int, ob: Ob) extends Entity {
+case class Part(pid: Int, ob: Ob) extends Entity {
+  val id = util.UUID("Part")
+    
   def asElt(x: Ob) = if (x == ob) Some(this) else None
 
   val ty = ob
@@ -17,7 +19,7 @@ trait Hom extends Property {
   type Value = Part
   val codom: Ob
 
-  val rw = summon[ReadWriter[Int]].bimap(_.id, Part(_, codom))
+  val rw = summon[ReadWriter[Int]].bimap(_.pid, Part(_, codom))
 }
 
 trait HomWithDom extends Hom {

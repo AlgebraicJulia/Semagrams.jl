@@ -3,10 +3,12 @@ package semagrams
 import upickle.default._
 
 
-import semagrams.util.Complex
+import semagrams.util._
 
 import upickle.default.ReadWriter
 import semagrams.acsets.abstr.Part
+import org.scalajs.dom
+import scala.language.implicitConversions
 
 /** An attribute that can be attached to an Entity. */
 
@@ -31,8 +33,27 @@ trait Property {
 
 }
 
+// type Color = dom.ext.Color
+
+// val rw:ReadWriter[Color] = readwriter[String].bimap(
+//   (c:Color) => c.,
+//   str:String => Color.
+// )
+
 type PartProp = Property { type Value = Part }
 
+case class PropVal[T](prop:Property{type Value = T},value:Option[T])
+
+object PropVal:
+  def apply(prop:Property,v:prop.Value) = new PropVal[prop.Value](prop,Some(v))
+
+case class PropChange[T](prop:Property{type Value = T},oldVal:Option[T],newVal:Option[T])
+object PropChange:
+  def apply(prop:Property,oldVal:prop.Value,newVal:prop.Value) = new PropChange[prop.Value](prop,Some(oldVal),Some(newVal))
+  def apply(prop:Property,oldVal:Option[prop.Value],newVal:prop.Value) = new PropChange[prop.Value](prop,oldVal,Some(newVal))
+  def apply(prop:Property,oldVal:prop.Value,newVal:Option[prop.Value]) = new PropChange[prop.Value](prop,Some(oldVal),newVal)
+
+  
 /** A subtrait of `Property` that is simpler to implement when there's an
   * implicit ReadWriter for your value type in scope
   */
@@ -42,9 +63,11 @@ trait PValue[T: ReadWriter] extends Property {
   val rw = summon[ReadWriter[T]]
 }
 
+
 enum GenericProperty[T: ReadWriter] extends PValue[T] {
-  case Fill extends GenericProperty[String]
-  case Stroke extends GenericProperty[String]
+  case Fill extends GenericProperty[RGB]
+  case Stroke extends GenericProperty[RGB]
+  case StrokeWidth extends GenericProperty[Double]
   case StrokeDasharray extends GenericProperty[String]
   case InnerSep extends GenericProperty[Double]
   case OuterSep extends GenericProperty[Double]
@@ -65,12 +88,14 @@ enum GenericProperty[T: ReadWriter] extends PValue[T] {
   case Style extends GenericProperty[String]
   case Interactable extends GenericProperty[Boolean]
   case Hovered extends GenericProperty[Unit]
+  case Selected extends GenericProperty[Unit]
   case Editing extends GenericProperty[Unit]
 
   type Value = T
 
   // val rw = summon[ReadWriter[T]]
 }
+
 
 
 enum PathProp[T: ReadWriter] extends PValue[T] {

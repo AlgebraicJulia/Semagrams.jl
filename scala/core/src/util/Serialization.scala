@@ -4,6 +4,8 @@ import upickle.default._
 import scala.util._
 import scala.math.pow
 
+import scalajs.js
+
 /** Helper method with special handling for Value = String */ 
 def fromStr[T:ReadWriter](s:String): Option[T] =
   Try(read[T](s)) match
@@ -19,5 +21,15 @@ def toStr[T:ReadWriter](t:T): String = t match
   case t:String => t
   case t => write(t)
 
-def makeId(prefix:String,n:Int = 5) = 
-  prefix + Random.nextInt(pow(10,n).toInt).toString
+
+
+
+case class UUID(stem:String,timestamp:Double,rand:Int) derives ReadWriter:
+  override def toString = Seq(stem,timestamp,rand).mkString("_")
+
+object UUID:
+  def apply(stem:String) =
+    val timestamp = js.Date.now()
+    val rand = (Math.random() * 100000).toInt
+    new UUID(stem,timestamp,rand)
+

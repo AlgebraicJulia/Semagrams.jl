@@ -43,7 +43,7 @@ case class MassActionEquation(
 def escapeUnderscores(s: String) = s.replaceAll("_", "\\\\_")
 
 def variable(petri: ACSet, s: Part, default: String): Variable = {
-  petri.trySubpart(Content, s) match {
+  petri.tryProp(Content, s) match {
     case Some("") | None => Variable(s"${default}_{${s.path(0)._2.id + 1}}")
     case Some(name) if name.length > 1 =>
       Variable(s"\\mathrm{${escapeUnderscores(name)}}")
@@ -60,7 +60,7 @@ def massActionEquations(petri: ACSet): String = {
         .map(s =>
           (s -> petri
             .incident(s, IS)
-            .filter(petri.trySubpart(IT, _) == Some(t))
+            .filter(petri.tryProp(IT, _) == Some(t))
             .length)
         )
         .toMap)
@@ -72,7 +72,7 @@ def massActionEquations(petri: ACSet): String = {
         .map(s =>
           (s -> petri
             .incident(s, OS)
-            .filter(petri.trySubpart(OT, _) == Some(t))
+            .filter(petri.tryProp(OT, _) == Some(t))
             .length)
         )
         .toMap)

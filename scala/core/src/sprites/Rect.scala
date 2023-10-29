@@ -14,8 +14,11 @@ extension [A, B](s: L.Signal[Tuple2[A, B]])
   *
   * Resizes automatically corresponding to its content.
   */
-case class Rect[D:PartData](label:Property,val init: D) extends Sprite[D] {
+case class Rect[D:PartData](label:Property,val rectInit: D) extends Sprite[D] {
   import Rect._
+
+  def defaultProps = Rect.defaultProps
+  def requiredProps = Seq(Center)
 
   def setLabel: D => D = Sprite.setContent(label)
   def present(
@@ -24,18 +27,22 @@ case class Rect[D:PartData](label:Property,val init: D) extends Sprite[D] {
       updates: L.Signal[D],
       eventWriter: L.Observer[Event]
   ): L.SvgElement = {
+
+    val initData = rectInit.merge(init)
     val data = updates
-      .map(init.merge(_))
+      .map(initData.merge(_))
       .map(setLabel)
 
     val text = Sprite.innerText(data)
     
     val box = rect(
+      cls := "rect-box",
       geomUpdater(data),
       styleUpdater(data),
     )
 
     val bg = image(
+      cls := "rect-bg",
       Rect.geomUpdater(data),
       Rect.bgUpdater(data)
     )
@@ -43,10 +50,13 @@ case class Rect[D:PartData](label:Property,val init: D) extends Sprite[D] {
 
 
     val root = g(
+      cls := "rect-root",
       box,
       text,
       bg,
       MouseEvents.handlers(ent, eventWriter),
+      /* Prevent selection outside semagram window (on double click) */
+      L.svg.style := "user-select:none"
     )
 
     root
@@ -54,7 +64,7 @@ case class Rect[D:PartData](label:Property,val init: D) extends Sprite[D] {
 
   override def boundaryPt(data: D, dir: Complex, subparts:Seq[Part] = Seq()) = {
     // Normalize to first quadrant
-    val pm = init.merge(data)
+    val pm = rectInit.merge(data)
     val (_, boxdims) = geom(pm)
     val os = pm.getProp(OuterSep)
     val dims = Complex(boxdims.x + 2 * os, boxdims.y + 2 * os)
@@ -82,7 +92,7 @@ case class Rect[D:PartData](label:Property,val init: D) extends Sprite[D] {
   }
 
   override def bbox(data: D, subparts: Seq[Part] = Seq()) = {
-    val (pos, dims) = geom(init.merge(data))
+    val (pos, dims) = geom(rectInit.merge(data))
     Some(BoundingBox(pos, dims))
   }
 
@@ -105,7 +115,7 @@ case class Rect[D:PartData](label:Property,val init: D) extends Sprite[D] {
 
 object Rect {
   def geom[D:PartData](data: D): (Complex, Complex) = {
-    val props = defaults.merge(data)
+    val props = data.softSetProps(defaultProps)
     val textRect = boxSize(
       props.getProp(Content), 
       props.getProp(FontSize),
@@ -126,17 +136,26 @@ object Rect {
   }
 
   def styleUpdater[D:PartData](data: L.Signal[D]) = {
-    val props = data.map(defaults.merge(_))
+    val props = data.map(_.softSetProps(defaultProps))
+    
     List(
+      // fill <-- props.map(_.getProp(Fill).toString),
       fill <-- props.map(d =>
-        if d.hasProp(Hovered) then "lightgrey" else d.getProp(Fill)
+        if d.hasProp(Hovered) 
+        then d.getProp(Fill).lighten(.5).toString
+        else d.getProp(Fill).toString
       ),
-      stroke <-- props.map(_.getProp(Stroke)),
+      strokeWidth <-- props.map(d =>
+        if d.hasProp(Selected) 
+        then "3"
+        else "1"
+      ),
+      stroke <-- props.map(_.getProp(Stroke).toString),
       style <-- props.map(_.getProp(Style))
     )
   }
   def bgUpdater[D:PartData](data: L.Signal[D]) = {
-    val props = data.map(defaults.merge(_))
+    val props = data.map(_.softSetProps(defaultProps))
     List(
       cls := "disc-bg",
       href <-- props.map(_.getProp(ImageURL)),
@@ -145,23 +164,21 @@ object Rect {
     )
   }
 
-  def defaults[D:PartData] = PartData[D](
-    PropMap()
-      + (Content, "")
-      + (ImageURL, "")
-      + (FontSize, 14)
-      + (Fill, "white")
-      + (Stroke, "black")
-      + (InnerSep, 10)
-      + (OuterSep, 5)
-      + (MinimumWidth, 40)
-      + (MinimumHeight, 40)
-      + (Style,"")
-  )
+  val defaultProps = PropMap()
+    + (Content, "")
+    + (ImageURL, "")
+    + (FontSize, 14)
+    + (Fill, RGB("white"))
+    + (Stroke, RGB("black"))
+    + (InnerSep, 0)
+    + (OuterSep, 0)
+    + (MinimumWidth, 40)
+    + (MinimumHeight, 40)
+    + (Style,"")
 
-  def apply() = new Rect(Content,defaults)
-  def apply(props:PropMap) = new Rect(Content,defaults ++ props)
-  def apply(label:Property) = new Rect(label,defaults)
-  def apply(label:Property,props: PropMap) = new Rect(label,defaults ++ props)
+  def apply() = new Rect(Content,defaultProps)
+  def apply(props:PropMap) = new Rect(Content,defaultProps ++ props)
+  def apply(label:Property) = new Rect(label,defaultProps)
+  def apply(label:Property,props: PropMap) = new Rect(label,defaultProps ++ props)
 
 }

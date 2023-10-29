@@ -8,13 +8,15 @@ import semagrams.acsets.abstr._
 
 import semagrams.util.Complex.{im}
 
-import upickle.default.ReadWriter
 
 /** A sprite used for wires. Similar to [[Arrow]], except this one is a spline
   * where the beginning and the end are both horizontal, and it has no
   * arrowhead.
   */
 case class Wire[D:PartData]() extends Sprite[D] {
+
+  def requiredProps = Seq(Start,End)
+  def defaultProps = Wire.defaultProps
 
   def exAt(p: Complex, d: Double = 5.0) = {
     import Path.Element._
@@ -70,7 +72,7 @@ case class Wire[D:PartData]() extends Sprite[D] {
       eventWriter: L.Observer[Event]
   ): L.SvgElement = {
 
-    val dataSig = updates.map(Wire.defaults.merge(init).merge(_))
+    val dataSig = updates.map(init.softSetProps(defaultProps).merge(_))
 
 
 
@@ -113,7 +115,7 @@ case class Wire[D:PartData]() extends Sprite[D] {
         pathElts := ppath(s,t,data),
         stroke := (if data.hasProp(Hovered) 
           then "lightgrey" 
-          else data.getProp(Stroke)
+          else data.getProp(Stroke).toString
         ),
         fill := "none",
         style := "user-select: none",
@@ -154,14 +156,13 @@ case class Wire[D:PartData]() extends Sprite[D] {
   }
 }
 object Wire:
-  def defaults[D:PartData] = PartData[D](
-    PropMap() + (StartDir,-10)
-      + (EndDir,10)
-      + (Bend,10)
-      + (LabelAnchor,0.5)
-      + (LabelOffset,10 * im)
-      + (Content,"")
-      + (Stroke,"black")
-      + (FontSize,16)
-  )
+  def defaultProps = PropMap()
+    + (StartDir,-10)
+    + (EndDir,10)
+    + (Bend,10)
+    + (LabelAnchor,0.5)
+    + (LabelOffset,10 * im)
+    + (Content,"")
+    + (Stroke,RGB("black"))
+    + (FontSize,16)
 

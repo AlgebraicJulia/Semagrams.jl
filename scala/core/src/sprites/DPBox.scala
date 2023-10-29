@@ -65,7 +65,7 @@
 //     for (pt, acs) <- pts
 //     yield
 //       val typeProps = style(mod.subacset(pt), pt)
-//       mod = mod.setSubpartProps(pt, typeProps)
+//       mod = mod.setPropProps(pt, typeProps)
 //     mod
 
 //   def present(
@@ -122,7 +122,7 @@
 //     subent match {
 //       case Part(Nil) => data.props.get(Center)
 //       case Part((ob, i) :: Nil) if ob == inPort || ob == outPort => {
-//         computePortCenters(data).trySubpart(Center, subent.asInstanceOf[Part])
+//         computePortCenters(data).tryProp(Center, subent.asInstanceOf[Part])
 //       }
 //       case _ => None
 //     }

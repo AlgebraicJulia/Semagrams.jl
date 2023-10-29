@@ -16,6 +16,10 @@ import semagrams.util._
   */
 case class Arrow[D:PartData](label:Property,props: PropMap) extends Sprite[D] {
 
+  val defaultProps = Arrow.defaultProps
+  val requiredProps = Seq(Start,End)
+
+
   def blockPath(
       s: Complex,
       e: Complex,
@@ -57,10 +61,18 @@ case class Arrow[D:PartData](label:Property,props: PropMap) extends Sprite[D] {
       updates: L.Signal[D],
       eventWriter: L.Observer[Event]
   ): L.SvgElement = {
-    val data = updates.map(Arrow.defaultProps ++ props ++ _.getProps())
+    val data = updates.map(d =>
+      println(s"present Arrow")
+      val p = Arrow.defaultProps ++ props ++ d.getProps()
+      println(s"props = $p")
+      p
+    )
 
+    
     def ppath(p:PropMap) = curvedPath(p.get(Start), p.get(End), p.get(Bend))
-    def hov(p:PropMap) = if p.contains(Hovered) then "lightgrey" else p.get(Stroke).getOrElse("black")
+    def hov(p:PropMap) = 
+      val stroke = p.get(Stroke).getOrElse(RGB("black"))
+      if p.contains(Hovered) then stroke.lighten(.25).toString else stroke.toString
     def labelStr(p:PropMap) = if p.contains(label) then p(label).toString else p(PathLabel)
     def labelPos(p:PropMap) = 
       val pathElt = ppath(p)((ppath(p).length * p(LabelAnchor)).toInt)
@@ -138,12 +150,12 @@ case class Arrow[D:PartData](label:Property,props: PropMap) extends Sprite[D] {
 
 object Arrow {
   val defaultProps = PropMap()
-    + (Stroke, "black")
+    + (Stroke, RGB("black"))
     + (Bend, 0)
     + (StrokeDasharray, "none")
     + (Interactable, true)
-    + (Start,Complex(100,100))
-    + (End,Complex(200,200))
+    // + (Start,Complex(100,100))
+    // + (End,Complex(200,200))
     + (LabelAnchor,0.5)
     + (LabelOffset,10.0)
     + (PathLabel,"")

@@ -5,12 +5,12 @@ import com.raquo.laminar.keys.SvgAttr
 
 object CustomAttr {
   trait SvgBinder[Data] {
-    def apply[Subpart](attr: SvgAttr[Subpart], f: Data => Subpart): Unit
+    def apply[Prop](attr: SvgAttr[Prop], f: Data => Prop): Unit
   }
 
   case class StaticSvgBinder[Data](el: SvgElement, x: Data)
       extends SvgBinder[Data] {
-    def apply[Subpart](attr: SvgAttr[Subpart], f: Data => Subpart) = {
+    def apply[Prop](attr: SvgAttr[Prop], f: Data => Prop) = {
       el.amend(
         attr := f(x)
       )
@@ -19,7 +19,7 @@ object CustomAttr {
 
   case class ReactiveSvgBinder[Data](el: SvgElement, $x: Source[Data])
       extends SvgBinder[Data] {
-    def apply[Subpart](attr: SvgAttr[Subpart], f: Data => Subpart) = {
+    def apply[Prop](attr: SvgAttr[Prop], f: Data => Prop) = {
       val x = $x.toObservable
       el.amend(
         attr <-- x.map(f)

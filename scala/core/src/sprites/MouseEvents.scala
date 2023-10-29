@@ -2,10 +2,11 @@ package semagrams.sprites
 
 import semagrams._
 import com.raquo.laminar.api.L._
+import semagrams.acsets.abstr.Part
 
 object MouseEvents {
   def hoverHandlers(
-      ent: Entity,
+      ent: Part,
       eventWriter: Observer[Event]
   ): Seq[Mod[SvgElement]] =
     Seq(
@@ -14,7 +15,7 @@ object MouseEvents {
     )
 
   def clickHandlers(
-      ent: Entity,
+      ent: Part,
       eventWriter: Observer[Event]
   ): Seq[Mod[SvgElement]] =
     Seq(
@@ -27,13 +28,13 @@ object MouseEvents {
       onMouseUp.stopPropagation.map(evt =>
         MouseUp(Some(ent), MouseButton.fromJS(evt.button))
       ) --> eventWriter,
-      onDblClick.stopPropagation.map(evt =>
+      onDblClick.preventDefault.stopPropagation.map(evt =>
         DoubleClick(Some(ent), MouseButton.fromJS(evt.button))
       ) --> eventWriter
     )
 
   def handlers(
-      ent: Entity,
+      ent: Part,
       eventWriter: Observer[Event]
   ): Seq[Mod[SvgElement]] =
     Seq(

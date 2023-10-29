@@ -110,7 +110,7 @@
 
 // object Table:
 //   def apply(ob:acsets.Ob) = new Table(ob.toString())
-//   def apply() = new Table(makeId("Table"))
+//   def apply() = new Table(UUID("Table"))
 //   def apply(ob:Option[acsets.Ob| String]): Table = ob match
 //     case Some(s:String) => new Table(s)
 //     case Some(ob:acsets.Ob) => Table(ob)
@@ -118,7 +118,7 @@
 
   
 
-// def makeId(prefix:String) = prefix + Random.nextInt(10000).toString
+// def UUID(prefix:String) = prefix + Random.nextInt(10000).toString
 
 // case class ValType[T:ReadWriter](name:String) extends TypeOb[T] with SimpleElt:
 //   def generators: Seq[ValType[_]] = Seq(this)
@@ -742,7 +742,7 @@
 //   def setProp(f: Property, p: Part, v: f.Value): State[ACSet, Unit] =
 //     State.modify(_.setProp(f, p, v))
 
-//   /** `State` wrapper around ACSet.remSubpart */
+//   /** `State` wrapper around ACSet.remProp */
 //   def remProp(f: Property, p: Part): State[ACSet, Unit] =
 //     State.modify(_.remProp(f,p))
 
@@ -771,11 +771,11 @@
 // //   def execute(a:ACSet) = a.remPart(part)
 // // }
 
-// // case class SetSubpartMsg(part:Part,prop:Property)(v:prop.Value) extends Message[ACSet] {
+// // case class SetPropMsg(part:Part,prop:Property)(v:prop.Value) extends Message[ACSet] {
 // //   def execute(a:ACSet) = a.setProp(part,prop,v)
 // // }
 
-// // case class RemoveSubpartMsg(part:Part,prop:Property) extends Message[ACSet] {
-// //   def execute(a:ACSet) = a.remSubpart(part,prop)
+// // case class RemovePropMsg(part:Part,prop:Property) extends Message[ACSet] {
+// //   def execute(a:ACSet) = a.remProp(part,prop)
 // // }
 

@@ -18,7 +18,8 @@ import semagrams.acsets.abstr._
   */
 def assignBends[A:ACSet](
   edges: Map[Ob, (PartProp, PartProp)], 
-  spacing: Double)(
+  spacing: Double
+)(
   a: A
 ): A = {
   def ends(p: Part) = {

@@ -43,16 +43,9 @@ object Binding {
   ): IO[Unit] = 
     import cats.implicits._
     for {
-    globalState <- IO(r.globalStateVar.now())
-
-    _ = evt match
-      case KeyDown(k) =>
-        println(s"key = $k")
-        println(r.stateVar.now().hovered)
-      case _ => ()
-    
+    state <- IO(r.stateVar.now())
     _ <- bindings.flatMap{ (b:Binding[Model]) =>
-      b.hook(evt,globalState)
+      b.hook(evt,state)
         .map(b.action(_,r))
     }.parSequence_
   } yield ()

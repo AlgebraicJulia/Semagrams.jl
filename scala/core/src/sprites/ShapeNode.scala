@@ -25,6 +25,8 @@ export ShapeProp._
 
 /** A sprite with shape determined by the `props` **/
 case class ShapeNode[D:PartData](label:Property,init: D) extends Sprite[D] {
+  def defaultProps = PropMap().set(Shape,RectShape)
+  def requiredProps = Seq(Center)
 
   def setLabel: D => D = Sprite.setContent(label)
   

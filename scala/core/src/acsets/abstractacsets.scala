@@ -6,10 +6,7 @@ import semagrams._
 import semagrams.acsets._
 
 import upickle.default._
-import cats.data.State
-import monocle.Lens
-// import scala.annotation.targetName
-// import javax.xml.validation.Schema
+import semagrams.util.UUID
 
 
 
@@ -29,13 +26,9 @@ type ACSetWithData[D] = [A] =>> ACSet[A]{ type Data = D }
 //   type ACSetOb >: X
 // }
 
-type ACSetWithSch[S] = [A] =>> ACSet[A]{ type Sch = S }
-type ACSetWithSchAndData[D] = [S] =>> [A] =>> ACSet[A] {  
-  type Sch = S 
-  type Data = D
-}
+type ACSetWithSchema[S] = [A] =>> ACSet[A]{ type Sch = S }
 
-type ACSetWithSchAndData2[S,D] = [A] =>> ACSetWithSch[S][A] & ACSetWithData[D][A]
+type ACSetWithSchemaAndData[S,D] = [A] =>> ACSetWithSchema[S][A] & ACSetWithData[D][A]
 
 
 
@@ -49,12 +42,13 @@ trait ACSet[A] {
   type Data
   implicit val dataIsPartData:PartData[Data]
 
-  type ACSetOb <: Ob
+  type _ACSetOb <: Ob
+  type ACSetOb = _ACSetOb & Matchable
   type Sch
   // val schemaIsSchema: SchemaWithOb[ACSetOb][Sch]
   implicit val schemaIsSchema: Schema[Sch]
 
-  def fromSchema(s:Sch,props:PropMap): A
+  def fromSchema(s:Sch): A
 
   // def data(props:PropMap = PropMap()) = dataIsPartData.toData(props)
   // import schemaIsSchema._
@@ -81,16 +75,22 @@ trait ACSet[A] {
     def globalData: Data
     def setGlobalProp(f:Property,v:f.Value): A
     def remGlobalProp(f:Property): A
-
+    def addSchemaElts(elts:Seq[Elt]): A
+    
     /* Manipulating parts */
-    def _getParts(ob:ACSetOb): Seq[Part]
+    def getParts(ob:Ob): Seq[Part]
     def getData(part:Part): Data
 
     /* Manipulating parts */
-    def _addParts(ob:ACSetOb,data:Seq[Data]): (A,Seq[Part])  
+    def _addParts(data:Seq[(Part,Data)]): (A,Seq[Part])  
     def remParts(ps:Seq[Part]): A
     def moveToIndex(p:Part,i:Int): A
     def setData(kvs:Seq[(Part,Data)]): A
+
+    def addSchemaElt(elt:Elt): A = a.addSchemaElts(Seq(elt))
+    def +(elt:Elt) = a.addSchemaElt(elt)
+    def ++(elts:Seq[Elt]) = a.addSchemaElts(elts)
+    def ++(s:Sch) = a.addSchemaElts(s.generators)
 
 
 
@@ -109,33 +109,55 @@ trait ACSet[A] {
         a.setGlobalProp(f,props(f)).setGlobalProps(props - f)
         
     def softSetGlobalProps(props:PropMap): A =
-      setGlobalProps(props ++ globalProps)
+      a.setGlobalProps(props ++ globalProps)
 
     /* Manipulating parts */
 
-    def getParts(ob:Ob): Seq[Part] = ob match
-      case ob:(ACSetOb & Matchable) => _getParts(ob)
-      case _ => Seq()
-    
+    // def getParts(ob:Ob): Seq[Part] = ob match
+    //   case ob:ACSetOb => _getParts(ob)
+    //   case _ => Seq()
+    def allParts() = a.schema.obs
+      .flatMap(a.getParts(_))
+
+    def allProps() = a.schema.obs
+      .flatMap(a.getProps(_))
+
+    def selectedProps() = a.allProps()
+      .filter((_,props) => props.contains(Selected))
+
+    def selected() = a.selectedProps().map(_._1) 
+
     def hasPart(part:Part) =
         a.getParts(part.ob).contains(part)
 
-    def addParts(ob:Ob,data:Seq[Data | PropMap]): (A,Seq[Part]) = ob match
-      case ob:ACSetOb => a._addParts(ob,data.map{
-        case props:PropMap => dataIsPartData.toData(props)
-        case d:Data => d
+    def addParts(ob:Ob,data:Seq[Data | PropMap]): (A,Seq[Part]) = 
+      a._addParts(data.map{ _ match
+        case props:PropMap => Part(ob) -> PartData[Data](props)
+        case d:Data => Part(ob) -> d
+        // case (part:Part,props:PropMap) => part -> PartData[Data](props)
+        // case (part:Part,d:Data) => part -> d
       })
-      case _ => 
-        println(s"bad ob $ob")
-        (a,Seq())
+    
+    def addParts(kvs:Seq[(Part,Data | PropMap)]): (A,Seq[Part]) =
+      a._addParts(kvs.map((part,data) => data match
+        case props:PropMap => part -> PartData[Data](props)
+        case d:Data => part -> d  
+      ))
+ 
+    def addPart(part:Part,data:Data | PropMap): (A,Part) =
+      val (acset,ps) = a.addParts(Seq(part -> data))
+      
+      (acset,ps.head)
+
 
     def addPart(ob:Ob,data:Data | PropMap = PropMap()): (A,Part) =
-      val (acset,ps) = addParts(ob,Seq(data))
+      val (acset,ps) = a.addParts(ob,Seq(data))
       (acset,ps.head)
 
     def addParts(ob:Ob,n:Int,data: Data | PropMap = PropMap()): (A,Seq[Part]) =
-      addParts(ob,Seq.fill(n)(data))
+      a.addParts(ob,Seq.fill(n)(data))
 
+      
     // def remParts(ps:Seq[Part]) = a.remParts(ps.collect{
     //   case p:Part => p
     // })
@@ -193,23 +215,40 @@ trait ACSet[A] {
     def tryProp(f:Property,part:Part): Option[f.Value] =
       a.getProps(part).get(f)
 
-    def collectProps(f:Property,ps:Seq[Part]): Map[Part,f.Value] =
+    def tryProp(f:Property,ps:Seq[Part]): Map[Part,Option[f.Value]] =
+      ps.map(p =>
+        p -> a.tryProp(f,p)    
+      ).toMap
+
+    def tryProp(f:Property,ob:Ob): Map[Part,Option[f.Value]] =
+      a.tryProp(f,getParts(ob))
+
+    def collectProp(f:Property,ps:Seq[Part]): Map[Part,f.Value] =
       ps.filter(hasProp(f,_)).map(p =>
         p -> a.getProp(f,p)    
       ).toMap
 
-    def collectProps(f:Property,ob:ACSetOb): Map[Part,f.Value] =
-      a.collectProps(f,getParts(ob))
+    def collectProp(f:Property,ob:Ob): Map[Part,f.Value] =
+      a.collectProp(f,getParts(ob))
 
 
     def getProp(f:Property,p:Part): f.Value =
       tryProp(f,p).get
 
-    def getProps(f:Property,ps:Seq[Part]): Map[Part,f.Value] =
+    def getProp(f:Property,ps:Seq[Part]): Map[Part,f.Value] =
       ps.map(p => p -> a.getProp(f,p)).toMap
 
-    def getProps(f:Property,ob:ACSetOb): Map[Part,f.Value] =
-      a.getProps(f,a.getParts(ob))
+    def getProp(f:Property,ob:Ob): Map[Part,f.Value] =
+      a.getProp(f,a.getParts(ob))
+
+    def getProp(f:Property,p:Part,default:f.Value): f.Value =
+      tryProp(f,p).getOrElse(default)
+
+    def getProp(f:Property,ps:Seq[Part],default:f.Value): Map[Part,f.Value] =
+      ps.map(p => p -> a.getProp(f,p,default)).toMap
+
+    def getProp(f:Property,ob:Ob,default:f.Value): Map[Part,f.Value] =
+      a.getProp(f,a.getParts(ob),default)
 
 
     /* Property setters */
@@ -219,7 +258,7 @@ trait ACSet[A] {
       a.setData(p,a.getData(p).setProp(f,v))
 
     /* Set a single property on many parts */
-    def setProps(f:Property,kvs:Seq[(Part,f.Value)]): A =
+    def setProp(f:Property,kvs:Seq[(Part,f.Value)]): A =
       a.setData(kvs.map( (part,fval) => 
         part -> a.getData(part).setProp(f,fval)  
       )) 
@@ -242,8 +281,8 @@ trait ACSet[A] {
       if a.hasProp(f,p) then a else a.setProp(f,p,v)
       
     /* Set a single property on many parts if unset */
-    def softSetProps(f:Property,kvs:Seq[(Part,f.Value)]): A =
-      a.setProps(f,kvs.filterNot( (p,_) => a.hasProp(f,p) ))
+    def softSetProp(f:Property,kvs:Seq[(Part,f.Value)]): A =
+      a.setProp(f,kvs.filterNot( (p,_) => a.hasProp(f,p) ))
       
     /* Set many properties on a single part if unset */
     def softSetProps(p:Part,props:PropMap): A = 
@@ -255,7 +294,7 @@ trait ACSet[A] {
         part -> (props ++ a.getProps(part))
       ))
     
-    def softSetObProps(kvs:Seq[(ACSetOb,PropMap)]): A =
+    def softSetObProps(kvs:Seq[(Ob,PropMap)]): A =
       a.softSetProps(kvs.flatMap((ob,props) =>
         a.getParts(ob).map(_ -> props)  
       ))
@@ -278,52 +317,49 @@ trait ACSet[A] {
   */
 object ACSet {
 
-  /** Construct a new NestedACSet with schema `s` */
-  def apply[S:Schema,A:ACSetWithSch[S]](s: S): A = 
-    apply[S,A](s, PropMap())
 
   /** Construct a new ACSet with schema `s` and top-level parts `props` */
-  def apply[S:Schema,A:ACSetWithSch[S]](s: S, props: PropMap): A =
-    summon[ACSet[A]].fromSchema(s, props)
+  def apply[S:Schema,A:ACSetWithSchema[S]](s: S): A =
+    summon[ACSet[A]].fromSchema(s)
 
-  /** `State` wrapper around ACSet.addParts */
-  def addParts[A:ACSet](ob: Ob, props: Seq[PropMap]): State[A, Seq[Part]] =
-    State(_.addParts(ob, props))
+  // /** `State` wrapper around ACSet.addParts */
+  // def addParts[A:ACSet](ob: Ob, props: Seq[PropMap]): State[A, Seq[Part]] =
+  //   State(_.addParts(ob, props))
 
-  /** `State` wrapper around ACSet.addPart */
-  def addPart[A:ACSet](ob: Ob, props: PropMap): State[A, Part] =
-    State(_.addPart(ob, props))
+  // /** `State` wrapper around ACSet.addPart */
+  // def addPart[A:ACSet](ob: Ob, props: PropMap): State[A, Part] =
+  //   State(_.addPart(ob, props))
 
-  /** `State` wrapper around ACSet.addPart */
-  def addPart[D:PartData,A:ACSetWithData[D]](ob: Ob, init: D): State[A, Part] =
-    State(_.addPart(ob, init))
+  // /** `State` wrapper around ACSet.addPart */
+  // def addPart[D:PartData,A:ACSetWithData[D]](ob: Ob, init: D): State[A, Part] =
+  //   State(_.addPart(ob, init))
 
-  /** `State` wrapper around ACSet.addPart */
-  def addPart[A:ACSet](ob: Ob): State[A, Part] =
-    State(_.addPart(ob))
+  // /** `State` wrapper around ACSet.addPart */
+  // def addPart[A:ACSet](ob: Ob): State[A, Part] =
+  //   State(_.addPart(ob))
 
-  /** `State` wrapper around ACSet.setProp */
-  def setProp[A:ACSet](f: Property, p: Part, v: f.Value): State[A, Unit] =
-    State.modify(_.setProp(f, p, v))
+  // /** `State` wrapper around ACSet.setProp */
+  // def setProp[A:ACSet](f: Property, p: Part, v: f.Value): State[A, Unit] =
+  //   State.modify(_.setProp(f, p, v))
   
-  /** `State` wrapper around ACSet.remSubpart */
-  def remProp[A:ACSet](f: Property, p: Part): State[A, Unit] =
-    State.modify(_.remProp(f, p))
+  // /** `State` wrapper around ACSet.remProp */
+  // def remProp[A:ACSet](f: Property, p: Part): State[A, Unit] =
+  //   State.modify(_.remProp(f, p))
 
-  /** `State` wrapper around ACSet.remPart */
-  def remPart[A:ACSet](p: Part): State[A, Unit] = 
-    State.modify({a =>
-      a.remPart(p)})
+  // /** `State` wrapper around ACSet.remPart */
+  // def remPart[A:ACSet](p: Part): State[A, Unit] = 
+  //   State.modify({a =>
+  //     a.remPart(p)})
 
-  /** `State` wrapper around ACSet.remParts */
-  def remParts[A:ACSet](ps: Seq[Part]): State[A, Unit] = State.modify(_.remParts(ps))
+  // /** `State` wrapper around ACSet.remParts */
+  // def remParts[A:ACSet](ps: Seq[Part]): State[A, Unit] = State.modify(_.remParts(ps))
 
-  /** `State` wrapper around ACSet.moveFront */
-  def moveToFront[A:ACSet](p: Part): State[A, Unit] = State.modify(_.moveToFront(p))
+  // /** `State` wrapper around ACSet.moveFront */
+  // def moveToFront[A:ACSet](p: Part): State[A, Unit] = State.modify(_.moveToFront(p))
 
-  /** Returns a lens into the value of the property `f` for part `x` */
-  def subpartLens[A:ACSet](f: Property, x: Part) =
-    Lens[A, f.Value](_.getProp(f, x))(y => s => s.setProp(f, x, y))
+  // /** Returns a lens into the value of the property `f` for part `x` */
+  // def subpartLens[A:ACSet](f: Property, x: Part) =
+  //   Lens[A, f.Value](_.getProp(f, x))(y => s => s.setProp(f, x, y))
 }
 
 
@@ -461,20 +497,45 @@ object ACSet {
 
 
 
-sealed trait ACSetMsg[A:ACSet] extends Message[A]
+sealed trait ACSetMsg[A:ACSet] extends Message[A]:
+  val msgs: Seq[ACSetMsg[A]] = Seq(this)
+  def *(that:ACSetMsg[A]) = ACSetMsg(this.msgs ++ that.msgs)
 
-case class AddPartMsg[A:ACSet](ob:Ob,props:PropMap = PropMap()) extends ACSetMsg[A]:
-  def execute(a:A) = a.addPart(ob,props)._1
+object ACSetMsg:
+  def apply[A:ACSet](msgs:Seq[ACSetMsg[A]]): ACSetMsg[A] = msgs match
+    case Seq(msg) => msg
+    case _ => MsgSeq(msgs)
+   
+
+case class AddPartMsg[A:ACSet](ob:Ob,props:PropMap = PropMap(),idOpt:Option[UUID] = None) extends ACSetMsg[A]:
+  def execute(a:A) = idOpt match
+    case Some(id) => a.addPart(Part(id,ob),props)._1
+    case None => a.addPart(ob,props)._1
+
+object AddPartMsg:
+  def apply[A:ACSet](ob:Ob,props:PropMap,id:UUID) =
+    new AddPartMsg[A](ob,props,Some(id))
 
 case class RemovePartMsg[A:ACSet](part:Part) extends ACSetMsg[A]:
   def execute(a:A) = a.remPart(part)
 
-case class SetSubpartMsg[A:ACSet](prop:Property,part:Part)(v:prop.Value) extends ACSetMsg[A]:
-  def execute(a:A) = a.setProp(prop,part,v)
+case class ChangePropMsg[A:ACSet](part:Part,pval:PropChange[_]) extends ACSetMsg[A]:
+  def execute(a:A) = pval match
+    case PropChange(f,_,Some(v)) => a.setProp(f,part,v)
+    case PropChange(f,_,None) => a.remProp(f,part)
 
+object ChangePropMsg:
+  def apply[A:ACSet](part:Part,f:Property,oldVal:f.Value,newVal:f.Value) = new ChangePropMsg(part,PropChange(f,oldVal,newVal))
 
-case class RemoveSubpartMsg[A:ACSet](prop:Property,part:Part) extends ACSetMsg[A]:
-  def execute(a:A) = a.remProp(prop,part)
+// def RemPropMsg[A:ACSet](part:Part,f:Property) = SetPropMsg(part,PropVal(f,None))
+
+case class MsgSeq[A:ACSet](override val msgs:Seq[ACSetMsg[A]]) extends ACSetMsg[A]:
+  def execute(a:A) = msgs.foldLeft(a)((acset,msg) => msg.execute(acset))
+  
+object MsgSeq:
+  def apply[A:ACSet]() = new MsgSeq[A](Seq())
+// case class RemovePropMsg[A:ACSet](prop:Property,part:Part) extends ACSetMsg[A]:
+//   def execute(a:A) = a.remProp(prop,part)
 
 
 

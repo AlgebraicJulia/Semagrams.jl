@@ -20,6 +20,9 @@ case class GenericHTMLSprite[D:PartData](
     build: () => HtmlElement,
     globalSize: Signal[Complex]
 ) extends Sprite[D] {
+
+  def requiredProps = Seq()
+  def defaultProps = PropMap()
   def present(
       ent: Part,
       init: D,

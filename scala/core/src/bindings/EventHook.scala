@@ -14,19 +14,32 @@ trait EventHook[A] {
 
   /** Determine whether or not this is triggered, and if it is triggered
     */
-  def apply(evt: Event, globalState: GlobalState): Option[A]
+  def apply(evt: Event, editorState: EditorState): Option[A]
 
   /** A brief description of what conditions trigger the eventhook, for use in
     * auto-generated help messages.
     */
   def description: String
 
-  def filter(pred:A=>Boolean) = FilterHook(this,pred)
-
+  def filter(pred:A=>Boolean) = FilterMap(this,a => if pred(a) then Some(a) else None)
+  def map[B](f:A => B) = FilterMap(this,a => Some(f(a)))
+  def mapTo[B](b: () => B) = map(_ => b())
+  def mapToValue[B](b:B) = map(_ => b)
+  def collect[B](f:A => Option[B]) = FilterMap(this,f)
+  def andThen(effect:A => Unit) = FilterMap(this, a =>
+    effect(a)
+    Some(a)
+  )
 }
 
-case class FilterHook[A](base:EventHook[A],pred:A=>Boolean) extends EventHook[A] {
-  def apply(evt:Event,gs:GlobalState) = base.apply(evt,gs).filter(pred)
+case class FilterMap[A,B](base:EventHook[A],f:A=>Option[B]) extends EventHook[B] {
+  def apply(evt:Event,es:EditorState) = 
+    base.apply(evt,es).flatMap(f)
+  val description = s"Optionally map an `EventHook[A]` by f:A => Option[B]"
+}
+
+case class MapHook[A,B](base:EventHook[A],f:A => B) extends EventHook[B] {
+  def apply(evt:Event,es:EditorState) = base.apply(evt,es).map(f)
   val description = "Filter an `EventHook` by some property of its return value"
 }
 
@@ -37,7 +50,7 @@ case class FilterHook[A](base:EventHook[A],pred:A=>Boolean) extends EventHook[A]
   *   the key that we are listening for
   */
 case class KeyDownHook(key: String) extends EventHook[Unit] {
-  def apply(evt: Event, _globalState: GlobalState) = evt match 
+  def apply(evt: Event, es: EditorState) = evt match 
     case KeyDown(`key`) => Some(())
     case _              => None
 
@@ -52,8 +65,8 @@ case class KeyDownHook(key: String) extends EventHook[Unit] {
   */
 case class ClickOnPartHook(button: MouseButton, modifiers: Set[KeyModifier])
     extends EventHook[Part] {
-  def apply(evt: Event, globalState: GlobalState) = evt match {
-    case MouseDown(Some(ent: Part), `button`) if modifiers == globalState.modifiers =>
+  def apply(evt: Event, es: EditorState) = evt match {
+    case MouseDown(Some(ent: Part), `button`) if modifiers == es.modifiers =>
       Some(ent)
     case _                                    => None
   }
@@ -71,11 +84,11 @@ object ClickOnPartHook {
 extension (hook:EventHook[Part])
   def filter(obs:Ob*) = hook.filter(part => obs.contains(part.ty))
 
-case class DoubleClickOnPartHook(button: MouseButton = MouseButton.Left, modifiers: Set[KeyModifier] = Set()) extends EventHook[Entity]:
+case class DoubleClickOnPartHook(button: MouseButton = MouseButton.Left, modifiers: Set[KeyModifier] = Set()) extends EventHook[Part]:
 
-  def apply(evt:Event, globalState: GlobalState) = evt match {
-    case DoubleClick(ent,button) if modifiers == globalState.modifiers =>
-      ent
+  def apply(evt:Event, es: EditorState) = evt match {
+    case DoubleClick(part,button) if modifiers == es.modifiers =>
+      part
     case _ => None 
   }
 
@@ -86,7 +99,7 @@ case class DoubleClickOnPartHook(button: MouseButton = MouseButton.Left, modifie
 case class MsgHook[Model]() extends EventHook[Message[Model]] {
 
 
-  def apply(evt: Event, globalState: GlobalState) = evt match {
+  def apply(evt: Event, es: EditorState) = evt match {
     case MsgEvent(msg) => Some(msg.asInstanceOf[Message[Model]])
     case _ => None
   }

@@ -8,7 +8,7 @@ package object api {
     Message,
     Property,
     EntityCollector,
-    GlobalState,
+    // GlobalState,
     Semagram,
     Sprite,
     MouseButton,

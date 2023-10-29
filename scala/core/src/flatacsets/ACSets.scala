@@ -42,25 +42,25 @@ case class ACSet[S: IsSchema](
       props = props + (x -> (props(x).set(f, y)))
     )
 
-  def setSubparts(x: Part, pm: PropMap): ACSet[S] =
+  def setProps(x: Part, pm: PropMap): ACSet[S] =
     this.copy(
       props = props + (x -> (props(x) ++ pm))
     )
 
-  def setSubparts(pms: Iterable[(Part, PropMap)]): ACSet[S] =
-    pms.foldLeft(this)({ case (acs, (x, pm)) => acs.setSubparts(x, pm) })
+  def setProps(pms: Iterable[(Part, PropMap)]): ACSet[S] =
+    pms.foldLeft(this)({ case (acs, (x, pm)) => acs.setProps(x, pm) })
 
-  def remSubpart(f: Property, x: Part): ACSet[S] =
+  def remProp(f: Property, x: Part): ACSet[S] =
     this.copy(
       props = props + (x -> (props(x) - f))
     )
 
   def subpart(f: Property, x: Part): f.Value = props(x)(f)
 
-  def trySubpart(f: Property, x: Part): Option[f.Value] = props(x).get(f)
+  def tryProp(f: Property, x: Part): Option[f.Value] = props(x).get(f)
 
   def incident(f: Property, dom: Ob, y: f.Value): Seq[Part] =
-    parts(dom).filter(trySubpart(f, _) == Some(y))
+    parts(dom).filter(tryProp(f, _) == Some(y))
 
   def incident(f: HomWithDom, y: Part): Seq[Part] = incident(f, f.dom, y)
 
@@ -90,10 +90,10 @@ case class ACSet[S: IsSchema](
     SerializableACSet(
       sInstance.rw.transform(schema, ujson.Value),
       counter,
-      parts.map((ob, t) => (ob.toString(), t.map((e: Part) => BarePart(e.id)))),
+      parts.map((ob, t) => (ob.toString(), t.map((e: Part) => BarePart(e.pid)))),
       props.map((x, m) =>
         (
-          BarePart(x.id),
+          BarePart(x.pid),
           m.toJson()
         )
       )
@@ -178,8 +178,8 @@ trait ACSetOps[S: IsSchema] {
   def setProp(f: Property, x: Part, y: f.Value): State[ACSet[S], Unit] =
     State.modify(_.setProp(f, x, y))
 
-  def remSubpart(f: Property, x: Part): State[ACSet[S], Unit] =
-    State.modify(_.remSubpart(f, x))
+  def remProp(f: Property, x: Part): State[ACSet[S], Unit] =
+    State.modify(_.remProp(f, x))
 
   def remPart(x: Part): State[ACSet[S], Unit] =
     State.modify(_.remPart(x))

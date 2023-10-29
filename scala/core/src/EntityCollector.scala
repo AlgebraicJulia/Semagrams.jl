@@ -21,7 +21,7 @@ case class EntityCollection[D:PartData,Model](
     * `source`
     */
   def addSource(m: Model, source: EntitySource[D,Model]): EntityCollection[D,Model] = {
-    val xs = source.entities(m, em)
+    val xs = source.entities(m, em).filter((_,sprite,data) => data.hasProps(sprite.requiredProps))
     val xsMap = xs.map((part, spr, data) => (part, (spr, data))).toMap
     EntityCollection(em ++ xsMap, ordering ++ xs.map(_._1))
   }

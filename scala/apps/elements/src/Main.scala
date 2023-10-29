@@ -205,7 +205,7 @@ def handleCommand(state: DynACSet, c: Command) = {
           PropMap() + (Center, p * scale + offset) + (Content, s"$s: $i")
         )
       })
-      acs.setSubparts(posProps)
+      acs.setProps(posProps)
     }
   }
 }

@@ -3,21 +3,26 @@ package semagrams.sprites
 import semagrams._
 import semagrams.acsets.abstr._
 import semagrams.util._
-import com.raquo.laminar.api.L._
+import semagrams.acsets.simple.SimpleSchema
 
 /** An [[EntitySource]] that extracts all parts of type `ob` from an ACSet and
   * pairs them with `sprite` along with their subacset
   */
 def ACSetEntitySource[D:PartData,A:ACSetWithData[D]](
-    ob: Ob,
-    sprite: Sprite[D]
+    sprite: Sprite[D],
+    test: Ob => Boolean
 ): EntitySource[D,A] =
   EntitySource[D,A]((acs, _m) =>
-    acs.getData(ob).toSeq
+    acs.schema.obs.filter(test)
+      .flatMap(ob => acs.getData(ob).toSeq)
       .map( (part, data) =>
         (part, sprite, data)
       )
   )
+
+def ACSetEntitySource[D:PartData,A:ACSetWithData[D]](sprite: Sprite[D],obs: Ob*): EntitySource[D,A] =
+  ACSetEntitySource[D,A](sprite,obs.contains)
+
 
 /** Find the point on the boundary in direction `dir` of the sprite
   * corresponding to `p`, by looking up the sprite/data in `m`
@@ -83,13 +88,24 @@ def edgeProps[D:PartData](
   * [[edgeProps]]
   */
 def ACSetEdgeSource[D:PartData,A:ACSetWithData[D]](
-    ob: Ob,
-    src: PartProp,
-    tgt: PartProp,
-    sprite: Sprite[D]
-) = ACSetEntitySource[D,A](ob, sprite).addPropsBy( (part,data,emap) =>
-  edgeProps[D](src, tgt)(part,data,emap)
-)
+    sprite: Sprite[D],
+    edef: PartialFunction[Ob,(PartProp,PartProp)]
+): EntitySource[D,A] = 
+  ACSetEntitySource[D,A](sprite,edef.isDefinedAt)
+    .addPropsBy( (part,data,emap) =>
+      edgeProps[D].tupled(edef(part.ob))(part,data,emap)
+    )
+  
+
+def ACSetEdgeSource[D:PartData,A:ACSetWithData[D]](sprite: Sprite[D],ob: Ob,src: PartProp,tgt: PartProp): EntitySource[D,A] =
+  ACSetEdgeSource[D,A](sprite,ob -> (src,tgt))
+
+def ACSetEdgeSource[D:PartData,A:ACSetWithData[D]](sprite: Sprite[D],es:(Ob,(PartProp,PartProp))*): EntitySource[D,A] =
+  ACSetEdgeSource[D,A](sprite,es.toMap)
+
+def ACSetEdgeSource[D:PartData,A:ACSetWithData[D]](sprite: Sprite[D],edef:(Ob => Option[(PartProp,PartProp)])): EntitySource[D,A] =
+  ACSetEdgeSource[D,A](sprite,edef.unlift)
+
 
 /** Similar to [[edgeProps]]. Computes the position and direction for the ends
   * of a wire from the ports it is connected to, using the top-level properties

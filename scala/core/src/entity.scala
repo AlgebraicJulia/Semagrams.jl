@@ -1,5 +1,6 @@
 package semagrams
 
+import semagrams.util._
 import semagrams.acsets.abstr._
 import com.raquo.laminar.api.L._
 
@@ -10,7 +11,7 @@ trait EntityType
   * vertex, an edge, a ui element, etc.
   */
 trait Entity {
-
+  val id: UUID// = UUID()
   /** We use a type tag so that we can compare the types of entities at runtime
     * without having to mess with scala introspection. Additionally, different
     * entities might have the same type, but different EntityTypes, a notable
@@ -30,6 +31,7 @@ trait Entity {
   */
 case class SubEntity(parent: Entity, child: Entity) extends Entity {
   val ty = SubEntityType(parent.ty, child.ty)
+  val id = UUID("SubEntity")
 }
 
 /** The [[EntityType]] for [[SubEntity]]s */
@@ -40,12 +42,12 @@ case class SubEntityType(parentTy: EntityType, childTy: EntityType)
   *
   * Used as the source entity for click events on the background.
   */
-case class Background() extends Entity {
-  val ty = Background
-}
+val backgroundPart = Part(BackgroundOb)
 
 /** The [[EntityType]] for Background */
-object Background extends EntityType
+object BackgroundOb extends Ob:
+  def generators = Seq()
+  def label = "BackgroundOb"
 
 /** A map associating a [[Sprite[D]]] and an [[ACSet]] to the entities alive in the
   * Semagram.
@@ -86,12 +88,31 @@ case class EntitySource[D:PartData,A:ACSetWithData[D]](
     entities(_, _).map((part, spr, data) => (part, spr, data.setProps(props)))
   )
 
+  def withSoftProps(props: PropMap) = EntitySource[D,A](
+    entities(_, _).map((part, spr, data) => (part, spr, data.softSetProps(props)))
+  )
+
   /** Construct a new [[EntitySource]] which uses `f` to make new properties to
     * add to every acset produced by this [[EntitySource]].
     */
   def addPropsBy(f: (Part, D, EntityMap[D]) => PropMap) =
     EntitySource[D,A]((a, em) =>
       entities(a, em).map((part, spr, data) => (part, spr, data.setProps(f(part, data, em))))
+    )
+
+  def softAddPropsBy(f: (Part, D, EntityMap[D]) => PropMap) =
+    EntitySource[D,A]((a, em) =>
+      entities(a, em).map((part, spr, data) => (part, spr, data.softSetProps(f(part, data, em))))
+    )
+
+  def addDataBy(f: (Part, D, EntityMap[D]) => D) =
+    EntitySource[D,A]((a, em) =>
+      entities(a, em).map((part, spr, data) => (part, spr, data.merge(f(part, data, em))))
+    )
+
+  def softAddDataBy(f: (Part, D, EntityMap[D]) => D) =
+    EntitySource[D,A]((a, em) =>
+      entities(a, em).map((part, spr, data) => (part, spr, f(part,data,em).merge(data)))
     )
 
   /** Construct a new [[EntitySource]] by using `f` to update every entity and

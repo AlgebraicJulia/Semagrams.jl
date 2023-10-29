@@ -10,10 +10,15 @@ object WiringDiagrams {
   sealed trait SrcPort extends Entity
 
   object SrcPort extends EntityType {
+    val id = util.UUID("SrcPort")
     case class Box(box: Int, slot: Int) extends SrcPort {
+      val id = util.UUID("Box")
+      
       val ty = SrcPort
     }
     case class Diagram(slot: Int) extends SrcPort {
+      val id = util.UUID("DIagram")
+    
       val ty = SrcPort
     }
 
@@ -32,9 +37,13 @@ object WiringDiagrams {
 
   object TgtPort extends EntityType {
     case class Box(box: Int, slot: Int) extends TgtPort {
+      val id = util.UUID("Box")
+    
       val ty = TgtPort
     }
     case class Diagram(slot: Int) extends TgtPort {
+      val id = util.UUID("Diagram")
+    
       val ty = TgtPort
     }
 

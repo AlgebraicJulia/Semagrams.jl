@@ -11,28 +11,46 @@ import cats.effect.std._
 import upickle.default._
 
 import semagrams.acsets.abstr._
-import semagrams.acsets.abstr.ACSet
+import scala.annotation.targetName
+import cats.data.OptionT
+// import semagrams.acsets.abstr.ACSet
 
 /** A trait for actions which perform some effect on the Semagram. Actions are
   * paired with [[EventHook]]s in [[Binding]]s, and can use the data extracted
   * from the event in the [[Binding]].
   */
-trait Action[Param, Model] {
+trait Action[Param, Model] {self => 
   def apply(p: Param, r: Action.Resources[Model]): IO[Unit]
 
   def description: String
+
+  def andThen(post:Param => IO[Unit]) = new Action[Param,Model] {
+    def apply(p: Param, r:Action.Resources[Model]): IO[Unit] = for
+      _ <- self.apply(p,r)
+      _ <- post(p)
+    yield ()
+
+    def description = "add a postaction"    
+  }
+
+
 }
 
 object Action {
   case class Resources[Model](
       modelVar: UndoableVar[Model],
       stateVar: Var[EditorState],
-      globalStateVar: StrictSignal[GlobalState],
+      // globalStateVar: StrictSignal[GlobalState],
       eventQueue: Queue[IO, Event],
       outbox: Observer[Message[Model]]
   ) {
     def processEvent(evt: Event): IO[Unit] =
       IO(stateVar.update(_.processEvent(evt)))
+
+    def mousePos: Option[Complex] = stateVar.now().hovered.map(_ =>
+      stateVar.now().mousePos
+    )
+
 
   }
 
@@ -49,23 +67,40 @@ object Action {
     }
 }
 
-case class AddAtMouse[A:ACSet](ob: Ob) extends Action[Unit, A] {
-  def apply(_p: Unit, r: Action.Resources[A]) = 
-    r.stateVar.now().hovered match
-    case Some(ent) => 
-      val pos = r.stateVar.now().mousePos match
-        case Complex(0,0) => r.stateVar.now().dims/2.0
-        case z => z
-      
-      IO(r.modelVar.update(
-        _.addPart(ob, PropMap() + (Center -> pos))._1
-      ))
+case class AddAtMouse[A:ACSet](getPartProps: IO[Option[(Part,PropMap)]],select:Boolean = true) extends Action[Unit, A] {
+  def apply(_p: Unit, r: Action.Resources[A]) = r.mousePos match
+    case Some(z) =>
+      getPartProps.map( _ match
+        case Some((newPart,props)) => r.modelVar.update(acset =>
+          val (next,addedPart) = acset.addPart(newPart, props + (Center -> z))
+          assert(newPart == addedPart)
+          if select then r.stateVar.update(_.copy(selected = Seq(newPart)))
+          next
+        )
+        case None => 
+          println("No part props")
+          ()
+      )
+    case None =>
+      println("No mousePos")
+      IO(())
     
-    case None => IO(())
   
 
-  def description = s"add a new part of type $ob at current mouse position"
+  def description = s"add a new part at current mouse position"
 }
+object AddAtMouse:
+
+  def apply[A:ACSet](ob:Ob) = new AddAtMouse[A](IO{
+    Some(Part(ob) -> PropMap())
+  })
+  def apply[A:ACSet](obIO:IO[Ob]) = new AddAtMouse[A](obIO.map(ob =>
+    Some(Part(ob) -> PropMap())  
+  ))
+  @targetName("AddAtMouseConvenience")
+  def apply[A:ACSet](partIO:IO[(Part,PropMap)]) = 
+    new AddAtMouse[A](partIO.map(Some.apply))
+
 
 case class Add[A:ACSet](ob: Ob,props:PropMap = PropMap()) extends Action[Unit, A] {
   def apply(_p: Unit, r: Action.Resources[A]) = IO(
@@ -97,7 +132,8 @@ case class DeleteHovered[A:ACSet](cascade:Boolean = true) extends Action[Unit, A
   def description = "remove hovered part"
 }
 
-def takeUntil[A,B](eventQueue: Queue[IO, A])(f: A => IO[Option[B]]): IO[B] = for {
+def takeUntil[A,B](eventQueue: Queue[IO, A])(f: A => IO[Option[B]]): IO[B] = 
+  for {
   a <- eventQueue.take
   mb <- f(a)
   b <- mb match {
@@ -107,17 +143,21 @@ def takeUntil[A,B](eventQueue: Queue[IO, A])(f: A => IO[Option[B]]): IO[B] = for
 } yield b
 
 case class MoveViaDrag[A:ACSet]() extends Action[Part, A] {
-  def apply(p: Part, r: Action.Resources[A]): IO[Unit] = for {
-    offset <- IO(r.stateVar.now().mousePos - r.modelVar.now().getProp(Center, p))
-    _ <- takeUntil(r.eventQueue)(
-      evt => evt match {
-        case Event.MouseMove(pos) =>
-          IO(r.modelVar.update(_.setProp(Center, p, pos - offset))) >> IO(None)
-        case Event.MouseUp(_, _) => IO(Some(()))
-        case Event.MouseLeave(Background()) => IO(Some(()))
-        case _                   => IO(None)
-      })
-  } yield ()
+  def apply(p: Part, r: Action.Resources[A]): IO[Unit] = 
+    if r.modelVar.now().tryProp(Center,p).isEmpty
+    then IO(())
+    else for {
+      ctr <- IO(r.modelVar.now().tryProp(Center,p))
+      offset <- IO(r.stateVar.now().mousePos - r.modelVar.now().getProp(Center, p))
+      _ <- takeUntil(r.eventQueue)(
+        evt => evt match {
+          case Event.MouseMove(pos) =>
+            IO(r.modelVar.update(_.setProp(Center, p, pos - offset))) >> IO(None)
+          case Event.MouseUp(_, _) => IO(Some(()))
+          case Event.MouseLeave(backgroundPart) => IO(Some(()))
+          case _                   => IO(None)
+        })
+    } yield ()
 
   def description = "move part by dragging"
 }
@@ -127,15 +167,23 @@ case class AddEdgeViaDrag[A:ACSet](tgtObs: Map[Ob,(Ob,GenHom[_],GenHom[_])]) ext
   def apply(srcPart: Part, r: Action.Resources[A]): IO[Unit] = 
     for {
         initpos <- IO(r.stateVar.now().mousePos)
+        _ = println("AddEdgeViaDrag apply")
         /* Create temporary part */
         (tempTgt,(tempOb,tempSrc,_)) = tgtObs.toSeq.head
-        tempPart <- r.modelVar.updateS(
-          ACSet.addPart[A](tempOb, PropMap().set(tempSrc, srcPart).set(End, initpos).set(Interactable, false)))
+        tempPart <- r.modelVar.updateIO(a => a.addPart(tempOb, 
+          PropMap().set(tempSrc, srcPart).set(End, initpos).set(Interactable, false)
+        ))
         /* Drag loop */
         _ <- takeUntil(r.eventQueue)(
           evt => r.processEvent(evt) >> (evt match {
             /* During drag */
-            case Event.MouseMove(pos) => r.modelVar.updateS_(ACSet.setProp(End, tempPart, pos)) >> IO(None)
+            case Event.MouseMove(pos) => 
+              println("move")
+
+              IO {
+              r.modelVar.update(_.setProp(End, tempPart, pos))
+              None
+            }
             /* End of drag: Good drop target */
             case Event.MouseUp(Some(tgtPart:Part), _) if 
               tgtObs.keySet.contains(tgtPart.ob) => {
@@ -187,28 +235,37 @@ case class ProcessMsg[Model]() extends Action[Message[Model],Model] {
 
 }
 
-case class PartCallback[A:ACSet](cb:Entity => Unit) extends Action[Entity,A] {
 
-  def apply(ent:Entity,r: Action.Resources[A]): IO[Unit] = IO {
-    cb(ent)
+
+
+case class Callback[X,A:ACSet](cb:X => Unit) extends Action[X,A] {
+
+  def apply(x:X,r: Action.Resources[A]): IO[Unit] = IO {
+    cb(x)
   }
 
-  def description = "process a message from outside the semagram"
+  def description = "execute a callback function"
 
 
 
 }
 
-case class PrintModel[Model]() extends Action[Unit,Model]:
+case class PrintModel[Model](hoverRequired:Boolean=true) extends Action[Unit,Model]:
   def apply(u:Unit,r:Action.Resources[Model]) = 
-    val acset = r.modelVar.now()
-    val gs = r.stateVar.now()
-    val ogs = r.globalStateVar.now()
-    IO {
-      println(acset.toString())
-      println(gs.toString())
-      println(ogs.toString())
-    }
+    if hoverRequired & r.stateVar.now().hovered.isEmpty
+    then IO(())
+    else
+      val acset = r.modelVar.now()
+      val gs = r.stateVar.now()
+      // val ogs = r.globalStateVar.now()
+      IO {
+        println(acset.toString())
+        println(gs.toString())
+        // println(ogs.toString())
+      }
   def description = "print a value to the console"
 
 
+case class Die[X,Model]() extends Action[X,Model]:
+  def apply(x:X,r:Action.Resources[Model]) = IO(())
+  def description = "no op"

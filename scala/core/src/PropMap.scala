@@ -1,6 +1,7 @@
 package semagrams
 
 import semagrams.util.Complex
+import scala.annotation.targetName
 
 /** A dependently-typed, persistent mapping from properties to values; the type
   * of the value stored for a given property depends on the property.
@@ -25,6 +26,9 @@ case class PropMap(pmap: Map[Property, Any]) {
   def set(k: Property, v: k.Value): PropMap = {
     this.copy(pmap = pmap + (k -> v.asInstanceOf[Any]))
   }
+
+  /** Removes property `k` from the new PropMap */
+  def rem(k: Property): PropMap = this - k
 
   /** Returns a new PropMap with `kv(1)` set to `kv(2)`
     *
@@ -97,6 +101,12 @@ object PropMap {
 
   def apply(kvs:(Property,Any)*) = new PropMap(kvs.toMap)
 
+  @targetName("PropMapConvenienceConstructor")
+  def apply(pvals:PropVal[_]*) = new PropMap(
+    pvals.flatMap(pval =>
+      pval.value.map(v => pval.prop -> v)
+    ).toMap
+  )
   /** Deserialize a PropMap, using a supplied map which says how to interpret
     * strings as properties
     */

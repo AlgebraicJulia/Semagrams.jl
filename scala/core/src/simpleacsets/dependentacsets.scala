@@ -434,11 +434,11 @@
 // //   def subpart(f: Property, i: Part): f.Value = subacset(i).props(f)
 
 // //   /** Get the value of `f` at the part `i`; returns `None` if unset. */
-// //   def trySubpart(f: Property, i: Part): Option[f.Value] =
+// //   def tryProp(f: Property, i: Part): Option[f.Value] =
 // //     trySubacset(i).flatMap(_.props.get(f))
 
 // //   /** Check if the part `i` has property `f` */
-// //   def hasSubpart(f: Property, i: Part) = trySubpart(f, i) match
+// //   def hasProp(f: Property, i: Part) = tryProp(f, i) match
 // //     case Some(j) => true
 // //     case None    => false
 
@@ -526,7 +526,7 @@
 // //   }
 
 // //   /** Set the property `f` of part `p` to `v` */
-// //   def setSubpartProps(p: Part, pm: PropMap): ACSet = {
+// //   def setPropProps(p: Part, pm: PropMap): ACSet = {
 // //     val sub = subacset(p)
 // //     val newSub = sub.copy(
 // //       props = sub.props ++ pm
@@ -535,14 +535,14 @@
 // //   }
 
 // //   /** Set the property `f` of parts `ps` to `v` */
-// //   def setSubpartProps(ps: Seq[Part], pm: PropMap): ACSet = 
+// //   def setPropProps(ps: Seq[Part], pm: PropMap): ACSet = 
 // //     ps match
 // //       case Seq() => this
-// //       case head +: tail => setSubpartProps(head,pm).setSubpartProps(tail,pm)
+// //       case head +: tail => setPropProps(head,pm).setPropProps(tail,pm)
 
 // //   /** Set the properties `pm` for all parts of type `ob` **/
 // //   def setGlobalProps(ob:Ob,pm:PropMap): ACSet =
-// //     setSubpartProps(partsOnly(ROOT,ob),pm)
+// //     setPropProps(partsOnly(ROOT,ob),pm)
     
 // //   /** Set properties `pm` on parts of type `ob` for (`ob`,`pm`) in `obProps` */
 // //   def setGlobalProps(obProps:Seq[(Ob,PropMap)]): ACSet =
@@ -551,23 +551,23 @@
 // //       case (ob,props) +: tail => setGlobalProps(ob,props).setGlobalProps(tail)
     
 // //   /** Set the property `f` of parts `ps` to `v` if it is unset */
-// //   def softSetSubpart(p:Part,f:Property,v: f.Value) =
-// //     if hasSubpart(f,p) then this else setProp(p,f,v)
+// //   def softSetProp(p:Part,f:Property,v: f.Value) =
+// //     if hasProp(f,p) then this else setProp(p,f,v)
 
 // //   /** Set the property `f` of parts `ps` to `v` if it is unset */
-// //   def softSetSubpartProps(p:Part,pm:PropMap) =
-// //     setSubpartProps(p,pm.filterKeys(f => !hasSubpart(f,p)))
+// //   def softSetPropProps(p:Part,pm:PropMap) =
+// //     setPropProps(p,pm.filterKeys(f => !hasProp(f,p)))
 
 // //   /** Set the properties `pm` on parts `ps` if they are unset */
-// //   def softSetSubpartProps(ps:Seq[Part],pm:PropMap): ACSet = ps match
+// //   def softSetPropProps(ps:Seq[Part],pm:PropMap): ACSet = ps match
 // //     case Seq() => this
 // //     case head +: tail => 
-// //       softSetSubpartProps(head,pm)
-// //         .softSetSubpartProps(tail,pm)
+// //       softSetPropProps(head,pm)
+// //         .softSetPropProps(tail,pm)
   
 // //   /** Set the properties `pm` on parts of type `ob` if they are unset */
 // //   def softSetGlobalProps(ob:Ob,pm:PropMap): ACSet = 
-// //     softSetSubpartProps(partsOnly(ROOT,ob),pm)
+// //     softSetPropProps(partsOnly(ROOT,ob),pm)
 
 // //   /** Set properties `pm` on parts of type `ob` for (`ob`,`pm`)
 // //    *  in `obProps` if they are unset */
@@ -578,7 +578,7 @@
 // //         .softSetGlobalProps(tail)
 
 // //   /** Unset the property `f` of `p` */
-// //   def remSubpart(p: Part, f: Property): ACSet = {
+// //   def remProp(p: Part, f: Property): ACSet = {
 // //     val sub = subacset(p)
 // //     val newSub = sub.copy(
 // //       props = sub.props - f
@@ -743,9 +743,9 @@
 // //   def setProp(p: Part, f: Property, v: f.Value): State[ACSet, Unit] =
 // //     State.modify(_.setProp(p, f, v))
 
-// //   /** `State` wrapper around ACSet.remSubpart */
-// //   def remSubpart(p: Part, f: Property): State[ACSet, Unit] =
-// //     State.modify(_.remSubpart(p, f))
+// //   /** `State` wrapper around ACSet.remProp */
+// //   def remProp(p: Part, f: Property): State[ACSet, Unit] =
+// //     State.modify(_.remProp(p, f))
 
 // //   /** `State` wrapper around ACSet.remPart */
 // //   def remPart(p: Part): State[ACSet, Unit] = State.modify(_.remPart(p))
@@ -772,11 +772,11 @@
 // //   def execute(a:ACSet) = a.remPart(part)
 // // }
 
-// // case class SetSubpartMsg(part:Part,prop:Property)(v:prop.Value) extends Message[ACSet] {
+// // case class SetPropMsg(part:Part,prop:Property)(v:prop.Value) extends Message[ACSet] {
 // //   def execute(a:ACSet) = a.setProp(part,prop,v)
 // // }
 
-// // case class RemoveSubpartMsg(part:Part,prop:Property) extends Message[ACSet] {
-// //   def execute(a:ACSet) = a.remSubpart(part,prop)
+// // case class RemovePropMsg(part:Part,prop:Property) extends Message[ACSet] {
+// //   def execute(a:ACSet) = a.remProp(part,prop)
 // // }
 

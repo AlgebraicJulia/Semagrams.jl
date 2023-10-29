@@ -1,6 +1,7 @@
 package semagrams.graph
 
 import semagrams._
+import semagrams.util._
 import semagrams.acsets.abstr._
 import semagrams.acsets.simple._
 import semagrams.bindings._
@@ -21,15 +22,8 @@ implicit val schIsSchema: Schema[SchGraph.type] =
   schGraphIsSchema
 implicit val propsAreData: PartData[PropMap] = 
   PartData.propsAreData
-implicit val acsetIsACSet: ACSetWithSchAndData2[SchGraph.type,PropMap][SimpleACSet[SchGraph.type]] =
+implicit val acsetIsACSet: ACSetWithSchemaAndData[SchGraph.type,PropMap][SimpleACSet[SchGraph.type]] =
   simpleACSetIsACSet[SchGraph.type]
-// implicit val acsetIsACSet: ACSetWithSch[
-//   SchGraph.type,
-//   // PropMap
-//   ][
-//   SimpleACSet[SchGraph.type]
-// ] = 
-//   SimpleACSet.simpleACSetIsACSet(SchGraph)
 
 val bindings = Seq[Binding[SimpleACSet[SchGraph.type]]](
   Binding(KeyDownHook("a"), AddAtMouse(V)),
@@ -40,25 +34,22 @@ val bindings = Seq[Binding[SimpleACSet[SchGraph.type]]](
     AddEdgeViaDrag(E, Src, Tgt)
   ),
   Binding(MsgHook(),ProcessMsg()),
-  // Binding(DoubleClickOnPartHook(),PartCallback(
-  //   part => pTable.edit(part,Content)
-  // )),
-  Binding(KeyDownHook("?"), PrintModel())
+  Binding(DoubleClickOnPartHook(),Callback(part => 
+      pTable.edit(part,Content)
+  )),
+  Binding(KeyDownHook("?"), PrintModel()),
 )
 
 
 
-val graphdisplay = GraphDisplay[SchGraph.type,PropMap,SimpleACSet[SchGraph.type]](
-  SchGraph,
-  Seq(VertexDef(V,Rect(Content),PropMap() + (Fill,"red") + (Content,"Hi"))),
-  Seq(EdgeDef(E,Src,Tgt,Arrow(Content),PropMap() + (Stroke,"purple")))
+val graphdisplay = GraphDisplay[PropMap](
+  Seq(VertexDef(Rect(Content),PropMap() + (Fill,RGB("green")) + (Content,"Hi"),V)),
+  Seq(EdgeDef(Arrow(Content),PropMap().set(Stroke,RGB("purple")), E -> (Src,Tgt)))
 )
 
-val sema1: SemagramElt[SchGraph.type,PropMap,SimpleACSet[SchGraph.type]] = 
+val sema: SemagramElt[PropMap,SimpleACSet[SchGraph.type]] = 
   graphdisplay(bindings,SimpleACSet(SchGraph))
 
-val sema2: SemagramElt[SchGraph.type,PropMap,SimpleACSet[SchGraph.type]] = 
-  graphdisplay(bindings,SimpleACSet(SchGraph))
 
 
 val semaAttrs = Seq(
@@ -71,13 +62,9 @@ val semaAttrs = Seq(
   boxSizing := "border-box",
 )
 
-val messenger = Observer(
-  (m:Message[SimpleACSet[SchGraph.type]]) =>
-    sema1.update(a => m.execute(a))
-)
 
 
-// val pTable = sema.propTable(V,Seq(Content,Center,Fill,Content))
+val pTable = sema.propTable(V,Content,Fill)
 
 
 
@@ -90,13 +77,10 @@ object Main {
 
       val mainDiv: Div = div( 
         idAttr := "mainDiv",
-        sema1.elt.amend(
+        sema.elt.amend(
           semaAttrs,
         ),
-        sema2.elt.amend(
-          semaAttrs,
-        ),
-        // pTable.laminarElt(sema.signal,messenger),
+        pTable.elt,
       )
         
       render(mountInto, mainDiv)

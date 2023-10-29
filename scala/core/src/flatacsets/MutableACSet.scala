@@ -23,18 +23,18 @@ class MutableACSet[S: IsSchema](
   def setProp(f: Property, x: Part, y: f.Value): Unit =
     props.put(x, props(x).set(f, y))
 
-  def setSubparts(pm: PropMap, x: Part): Unit =
+  def setProps(pm: PropMap, x: Part): Unit =
     props.put(x, props(x) ++ pm)
 
-  def remSubpart(f: Property, x: Part): Unit =
+  def remProp(f: Property, x: Part): Unit =
     props.put(x, props(x) - f)
 
   def subpart(f: Property, x: Part): f.Value = props(x)(f)
 
-  def trySubpart(f: Property, x: Part): Option[f.Value] = props(x).get(f)
+  def tryProp(f: Property, x: Part): Option[f.Value] = props(x).get(f)
 
   def incident(f: Property, dom: Ob, y: f.Value): Seq[Part] =
-    parts(dom).filter(trySubpart(f, _) == Some(y)).toSeq
+    parts(dom).filter(tryProp(f, _) == Some(y)).toSeq
 
   def incident(f: HomWithDom, y: Part): Seq[Part] = incident(f, f.dom, y)
 

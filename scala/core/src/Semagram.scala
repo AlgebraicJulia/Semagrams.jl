@@ -3,6 +3,8 @@ package semagrams
 import com.raquo.laminar.api.L._
 import com.raquo.laminar.codecs.StringAsIsCodec
 
+import org.scalajs.dom
+
 import cats.effect._
 import cats.effect.std._
 
@@ -10,6 +12,7 @@ import cats.effect.std._
 import semagrams.listeners._
 import semagrams.sprites._
 import semagrams.util._
+import semagrams.widgets._
 import semagrams.bindings.Binding
 import semagrams.bindings.Action
 import semagrams.widgets.PropTable
@@ -67,8 +70,9 @@ trait Semagram[D:PartData] {
   def produceSprites(
       m: Model,
       eventWriter: Observer[Event]
-  ): Seq[(Part, Data, Sprite[Data])] = EntityCollector.collect(m, entitySources)
-
+  ): Seq[(Part, Data, Sprite[Data])] = 
+    EntityCollector.collect(m, entitySources)
+    
   /** Creates the svg element ready to be inserted into a larger app. */
   def apply(mSig: Signal[Model], eventWriter: Observer[Event]): SvgElement = {
     svg.svg(
@@ -82,81 +86,101 @@ trait Semagram[D:PartData] {
           sprite.present(ent, initAcset, updates.map(_._2), eventWriter)
         }),
       mouseMoveListener(eventWriter),
-      MouseEvents.handlers(Background(), eventWriter)
+      MouseEvents.handlers(backgroundPart, eventWriter),
     )
   }
 
 }
 
 
-
 /** A class packaging the laminar element of a semagram along with
  *  the schema and accessors/modifiers
  */
-case class SemagramElt[S:Schema,D:PartData,
-  A:ACSetWithSchAndData2[S,D]
-](
+case class SemagramElt[D:PartData,A:ACSetWithData[D]](
   elt: Div,
-  schema: S,
-  readout: () => A,
-  signal: Signal[A],
-  messenger: Observer[Message[A]]
+  readout: () => (A,EditorState),
+  signal: Signal[(A,EditorState)],
+  messageBus: EventBus[Either[Message[A],Message[EditorState]]]
 ):
 
-  /** A callback function for passing messages externally **/
-  def update(msg:Message[A]) = messenger.onNext(msg)
+  val modelSig = signal.map(_._1)
+  val stateSig = signal.map(_._2)
+
+  def getModel() = readout()._1
+  def getState() = readout()._2
+
+  def modelEvents: EventStream[Message[A]] = messageBus.events.collect {
+    case Left(msg) => msg
+  }
+  def modelObs: Observer[Message[A]] = messageBus.writer.contramap(
+    msg => Left(msg)
+  )
+
+  def stateEvents: EventStream[Message[EditorState]] = messageBus.events.collect {
+    case Right(msg) => msg
+  }
+  def stateObs: Observer[Message[EditorState]] = messageBus.writer.contramap {
+    case msg => Right(msg)
+  }
+
+  case class SemaTable(ob:Ob,cols:Seq[Property],keys:Seq[Property] = Seq()):
+    def table = PropTable[Part](ob.label,cols,keys)
+    val (elt,edit) = table.laminarEltWithCallback(
+      modelSig.map(_.getProps(ob).toSeq),
+      modelObs.contramap(acsetMsg)
+    )
+
+  def acsetMsg(msg:ChangeMsg[Part]): Message[A] = 
+    msg match
+    case SetValue(p,change) => ChangePropMsg(p,change)
+    case Highlight(p,highlighted) => if highlighted 
+      then ChangePropMsg(p,PropChange(Hovered,None,()))
+      else ChangePropMsg(p,PropChange(Hovered,(),None))
+
+  // /** A callback function for passing messages externally **/
+  // def update(msg:Message[A]) = events.writer.onNext(msg)
 
   /** Convenience method for constructing tables from semagrams **/
   def propTable(ob:Ob,cols:Seq[Property],keys:Seq[Property]) = 
-    PropTable(ob,cols,keys)
+    SemaTable(ob,cols,keys)
 
-  def propTable(ob:Ob,cols:Seq[Property],key:Property): PropTable =
+  def propTable(ob:Ob,cols:Seq[Property],key:Property): SemaTable =
     propTable(ob,cols,Seq(key))
   
-  def propTable(ob:Ob,cols:Seq[Property]): PropTable =
+  def propTable(ob:Ob,cols:Property*): SemaTable =
     propTable(ob,cols,Seq())
 
-  def propTable(ob:Ob): PropTable =
-    val cols = schema.homs.filter(_.dom == ob)
-      ++ schema.attrs.filter(_.dom == ob)
-    propTable(ob,cols) 
+  def propTable(ob:Ob): SemaTable =
+    val sch = getModel().schema
+    val cols = sch.homs.filter(_.dom == ob)
+      ++ sch.attrs.filter(_.dom == ob)
+    propTable(ob,cols:_*)
 
 
-  /** Convenience method for constructing a laminar table element
-   *  directly from a Semagram
-   */
-  def laminarTable(ob:Ob,cols:Seq[Property],keys:Seq[Property] = Seq()) =
-    propTable(ob,cols,keys).laminarElt(signal,messenger)
-
-  def laminarTable(ob:Ob) = propTable(ob)
 
 /** A specialized trait for semagrams with Model == ACSet **/
-trait ACSemagram[S:Schema,D:PartData,
-  A:(ACSetWithSchAndData2[S,D])
-] extends Semagram[D] {
+trait ACSemagram[D:PartData,A:ACSetWithData[D]] extends Semagram[D] {
   type Model = A
-
-  val schema: S
 
   type Data = D
 
   /** Construct a `SemagramElt` from a collection of `Binding` interactions
    *  and an optional initial value
    */ 
-  def apply(bindings: Seq[Binding[A]],a:A): SemagramElt[S,D,A] = {
+  def apply(bindings: Seq[Binding[A]],a:A): SemagramElt[D,A] = {
     
-    /* Construct the ACSet variable */
+    /* Construct the state variables */
     val modelVar = UndoableVar(a) 
-      // if a.schema == schema 
-      // then UndoableVar(a) 
-      // else 
-      //   println(s"Bad input schema ${a.schema} != $schema")
-      //   UndoableVar(ACSet(schema))
+    val stateVar = Var(EditorState(None,Complex(1,1),Complex(0,0),Seq(),Set())) 
+    val msgBus: EventBus[Either[Message[Model],Message[EditorState]]] = EventBus()
+    val msgObs = Observer[Either[Message[Model],Message[EditorState]]](_ match
+      case Left(msg) => modelVar.update(msg.execute)
+      case Right(msg) => stateVar.update(msg.execute)
+    )
 
     /* Construct state variable (attached to the element) and global
      *  state variable (attached to the window) */
-    val stateVar = Var(EditorState(Some(Background()), Complex(0,0),Complex(1,1)))
-    val globalStateVar = Var(GlobalState(Set()))
+    // val globalStateVar = Var(GlobalState(Set(),Seq()))
         
     /* Construct event buses to manipulate state variables */
     val eventBus = EventBus[Event]()
@@ -186,18 +210,27 @@ trait ACSemagram[S:Schema,D:PartData,
         svg.height := "100%",
         svg.width := "100%",
       ),
-      globalEventBus.events --> globalStateVar.updater[Event]((globalState, evt) => globalState.processEvent(evt)),
+      globalEventBus.events --> stateVar.updater[Event]((state, evt) => state.processEvent(evt)),
       globalEventBus.events --> eventBus.writer,
       defaultAttrs,
-      eventBus.events --> Observer(x => x match
-        // case k:KeyDown => println(k)
-        case _ => ()
-      )
+      msgBus --> msgObs,
+      inContext(thisNode =>  
+        onMountCallback(_ => stateVar.update(_.copy(
+          dims = Complex(thisNode.ref.clientWidth,thisNode.ref.clientHeight)
+        ))
+      )),
     )
+
+    dom.window.addEventListener("resize",_ => stateVar.update{state => 
+      state.copy(
+        dims = Complex(semaElt.ref.clientWidth,semaElt.ref.clientHeight)
+      )
+    })
+
     
 
     /* Attach global (keyboard) listeners */
-    GlobalState.listen(globalEventBus.writer)
+    EditorState.listen(globalEventBus.writer)
 
     /* Start cats.io event queue */
     val main = for {
@@ -208,7 +241,7 @@ trait ACSemagram[S:Schema,D:PartData,
             dispatcher.unsafeRunAndForget(eventQueue.offer(evt))
           )
         )
-        Binding.processAll(Action.Resources(modelVar, stateVar, globalStateVar.signal, eventQueue, outbox.writer), bindings)
+        Binding.processAll(Action.Resources(modelVar, stateVar, eventQueue, outbox.writer), bindings)
       }
     } yield ()
 
@@ -217,12 +250,9 @@ trait ACSemagram[S:Schema,D:PartData,
     /* Return associated `SemagramElt` */
     SemagramElt(
       semaElt,
-      schema,
-      () => modelVar.now(),
-      modelSig,
-      modelVar.writer.contramap(
-        msg => msg.execute(modelVar.now())
-      )
+      () => (modelVar.now(),stateVar.now()),
+      modelSig.combineWith(stateVar.signal),
+      msgBus
     )
   }
 
