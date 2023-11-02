@@ -167,6 +167,9 @@ trait ACSet[A] {
     def moveToFront(p:Part): A = 
       moveToIndex(p,0)
 
+    def moveToEnd(p:Part): A = 
+      moveToIndex(p,a.getParts(p.ob).length - 1)
+
 
     /* PartData getters & setters */
 
@@ -179,6 +182,12 @@ trait ACSet[A] {
 
     def getData(ob:Ob): Map[Part,Data] =
       a.getData(a.getParts(ob))
+      
+    def getDataSeq(ps:Seq[Part]): Seq[(Part,Data)] =
+      ps.map(p => p -> a.getData(p))
+
+    def getDataSeq(ob:Ob): Seq[(Part,Data)] =
+      a.getDataSeq(a.getParts(ob))
       
 
     // def setData(kvs:Seq[(Part,Any)]): A =
@@ -198,6 +207,12 @@ trait ACSet[A] {
 
     def getProps(ob:Ob): Map[Part,PropMap] =
       a.getProps(a.getParts(ob))
+
+    def getPropSeq(ps:Seq[Part]): Seq[(Part,PropMap)] =
+      ps.map(p => p -> a.getProps(p))
+
+    def getPropSeq(ob:Ob): Seq[(Part,PropMap)] =
+      a.getPropSeq(a.getParts(ob))
 
     /* Check if an individual property is defined */
     def hasProp(f:Property,part:Part): Boolean =

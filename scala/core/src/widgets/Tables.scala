@@ -100,9 +100,7 @@ class PropTable[K<:Matchable](name:String,cols:Seq[Property],keys:Seq[Property])
       
 
     val msgObs: Observer[TableMsg[K]] = Observer(_ match
-      case msg:HighlightMsg[K] =>
-        println(s"Table msgObs $msg")
-        messenger.onNext(SetValue(msg.key,msg.change))
+      case msg:HighlightMsg[K] => messenger.onNext(SetValue(msg.key,msg.change))
       case msg:EditMsg[K] =>
         editingVar.set(msg.newEdit)
         msg.change match

@@ -18,20 +18,16 @@ case class EditorState(
   import MouseButton._
 
   def eventMsg(evt:Event): Message[EditorState] = evt match
-    case MouseEnter(ent) =>
-      // println(s"MouseEnter $ent")
-      HoverMsg(hovered,Some(ent))
-    case MouseLeave(ent) =>
-      // println(s"MouseLeave $ent")
-      HoverMsg(hovered, if ent == backgroundPart then None else Some(backgroundPart))
-    case MouseMove(pos) => 
-      FreeMsg(_.copy(mousePos = pos))
+    /* Mouse events */
+    case MouseEnter(ent) => HoverMsg(hovered,Some(ent))
+    case MouseLeave(ent) => HoverMsg(hovered, 
+      if ent == backgroundPart then None else Some(backgroundPart)
+    )
+    case MouseMove(pos) => FreeMsg(_.copy(mousePos = pos))
     /* Dimension events */
-    case Resize(newsize) => 
-      FreeMsg(_.copy(dims = newsize))
+    case Resize(newsize) => FreeMsg(_.copy(dims = newsize))
     /* Keyboard events */    
-    case KeyDown("Escape") => 
-      FreeMsg(_.copy(selected = Seq()))
+    case KeyDown("Escape") => FreeMsg(_.copy(selected = Seq()))
     case KeyDown(key) => KeyModifier.fromString.get(key) match
       case Some(mod) => ModMsg(modifiers,modifiers + mod)
       case None => Message()

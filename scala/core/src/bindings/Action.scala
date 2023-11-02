@@ -15,6 +15,8 @@ import scala.annotation.targetName
 import cats.data.OptionT
 // import semagrams.acsets.abstr.ACSet
 
+import scala.concurrent.duration._
+
 /** A trait for actions which perform some effect on the Semagram. Actions are
   * paired with [[EventHook]]s in [[Binding]]s, and can use the data extracted
   * from the event in the [[Binding]].
@@ -161,9 +163,7 @@ case class MoveViaDrag[A:ACSet]() extends Action[Part, A] {
     else for {
       ctr <- IO(r.modelVar.now().tryProp(Center,p))
       offset <- IO(r.stateVar.now().mousePos - r.modelVar.now().getProp(Center, p))
-      _ = println("before: " + r.modelVar.now().getParts(p.ob))
-      _ <- IO(r.modelVar.now().moveToFront(p))
-      _ = println("after: " + r.modelVar.now().getParts(p.ob))
+      _ <- IO(r.modelVar.update(_.moveToFront(p)))
       _ <- takeUntil(r.eventQueue)(
         evt => evt match {
           case Event.MouseMove(pos) =>

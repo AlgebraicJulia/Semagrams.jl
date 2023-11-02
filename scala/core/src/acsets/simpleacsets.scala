@@ -167,14 +167,17 @@ object SimpleACSet:
             )
         )
 
-        def moveToIndex(p: Part, idx: Int) = 
-          // println(s"moveToIndex $p $idx")
-          // println(a.partStore(p.ob).ids)
-          a.copy(
-          partStore = a.partStore + (
-            p.ob -> a.partStore(p.ob).moveToIndex(p.id,idx)
+        def moveToIndex(p: Part, idx: Int) =
+          val ids = a.partStore(p.ob).ids
+          println(s"moveToIndex $p:${ids.indexOf(p.id)} -> $idx")
+          println(s"before: " + a.partStore(p.ob).ids)
+          val ret = a.copy(
+            partStore = a.partStore + (
+              p.ob -> a.partStore(p.ob).moveToIndex(p.id,idx)
+            )
           )
-        )
+          println(s"after moveToIndex: " + ret.partStore(p.ob).ids)
+          ret
         
         def setData(kvs:Seq[(Part,PropMap)]) = a.copy(
           partStore = a.partStore ++ 

@@ -60,14 +60,14 @@ val schemaBindings: Seq[Binding[AS]] = Seq(
     MoveViaDrag()
   ),
   Binding[Part,AS](
-    ClickOnPartHook(MouseButton.Left, KeyModifier.Shift).filter(TableOb), 
+    ClickOnPartHook(MouseButton.Left, KeyModifier.Shift)
+      .filter(TableOb), 
     AddEdgeViaDrag[AS](
       TableOb -> (FKeyOb,FKeySrc,FKeyTgt),
       // TableOb -> (ColumnOb,ColumnSrc,ColumnTgt),
       ValTypeOb -> (ColumnOb,ColumnSrc,ColumnTgt)
     )
   ),
-
   Binding(
     DoubleClickOnPartHook(MouseButton.Left).filter(TableOb),
     Callback(schTable.edit(_,Content))
@@ -275,14 +275,6 @@ def acsetTableSig(cols:Property*) = schSema.stateSig
   )
 
 def acsetTables = acsetTableSig(Content,Fill,Selected,Highlight,Hovered)
-  // .
-  // .combineWith(acsetSema.modelSig)
-  //   .map( (schState,acset) => 
-  //     println(s"acsetTableSig")
-  //     for
-  //     id0 <- schState.selected.map(_.id)
-  //     table <- acset.schema.obs.find(_.id == id0)
-  //   yield acsetSema.propTable(table,cols:_*))
   
 
 val changeSig = schSema.modelEvents.collect{ 

@@ -56,9 +56,8 @@ case class PartSet(
   def addParts(parts: Seq[(UUID,PropMap)]): (PartSet, Seq[UUID]) = {
     val newIds = parts.map(_._1)
     val newParts = PartSet(
-      // nextId + parts.length,
-      ids ++ newIds,
-      propStore ++ parts
+      newIds ++ ids,
+      parts.toMap ++ propStore
     )
     (newParts, newIds)
   }
@@ -150,14 +149,14 @@ case class PartSet(
     * This is used, for instance, when setting the position of a port.
     */
   def moveToIndex(i: UUID, j: Int) = {
-    println(s"move $i to $j")
+    println(s"PartSet moveToIndex $i:${ids.indexOf(i)} -> $j")
     println(s"before: $ids")
     val (seg1, seg2) = ids.filterNot(_ == i).splitAt(j)
     println(s"seg1 = $seg1, seg2 = $seg2")
     val ret = this.copy(
       ids = (seg1 :+ i) ++ seg2
     )
-    println(s"after: ${ret.ids}")
+    println(s"after partset: ${ret.ids}")
     ret
   }
 

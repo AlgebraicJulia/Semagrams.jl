@@ -82,16 +82,17 @@ sealed trait GraphEltDef[D:PartData]:
 
 object GraphEltDef:
   def makeEntitySource[D:PartData,A:ACSetWithData[D]](defn:GraphEltDef[D]): EntitySource[D,A] = 
-    EntitySource[D,A]( (acset,emap) => for
-      ob <- acset.schema.obs
-      if defn.test(ob)
-      // _ = if ob == SchObs.FKeyOb
-      //   then 
-      //     println(s"makeEntitySource $ob")
-      //     println(s"parts = ${acset.getData(ob)}")
-      (part,data) <- acset.getData(ob)
-      newData = defn.init(ob).merge(data)
-    yield (part,defn.sprite,newData))
+    EntitySource[D,A]( (acset,emap) => 
+      val triples = for
+        ob <- acset.schema.obs
+        if defn.test(ob)
+        (part,data) <- acset.getData(ob)
+        newData = defn.init(ob).merge(data)
+      yield (part,defn.sprite,newData)
+
+      triples.reverse
+    )
+
     
     // baseES.softAddDataBy( (part,_,_) => 
     //   defn.init.applyOrElse(part.ob,(_ => PartData[D]()))

@@ -17,6 +17,7 @@ import semagrams.bindings.Binding
 import semagrams.bindings.Action
 import semagrams.widgets.PropTable
 import semagrams.acsets.abstr._
+import scala.annotation.targetName
 
 
 /** A trait for generic semagrams with arbitrary `Model` types **/
@@ -112,14 +113,10 @@ case class SemagramElt[D:PartData,A:ACSetWithData[D]](
   def getState() = readout()._2
 
   def modelEvents: EventStream[Message[A]] = messageBus.events.collect {
-    case Left(msg) => 
-      println(s"modelEvents $msg")
-      msg
+    case Left(msg) => msg
   }
   def modelObs: Observer[Message[A]] = messageBus.writer.contramap(
-    msg => 
-      println(s"modelObs $msg")
-      Left(msg)
+    msg => Left(msg)
   )
 
   def stateEvents: EventStream[Message[EditorState]] = messageBus.events.collect {
@@ -132,7 +129,7 @@ case class SemagramElt[D:PartData,A:ACSetWithData[D]](
   case class SemaTable(ob:Ob,cols:Seq[Property],keys:Seq[Property] = Seq()):
     def table = PropTable[Part](ob.label,cols,keys)
     val (elt,edit) = table.laminarEltWithCallback(
-      modelSig.map(_.getProps(ob).toSeq),
+      modelSig.map(_.getPropSeq(ob)),
       modelObs.contramap(acsetMsg)
     )
 
@@ -144,7 +141,9 @@ case class SemagramElt[D:PartData,A:ACSetWithData[D]](
       else ChangePropMsg(p,PropChange(Highlight,(),None))
 
   // /** A callback function for passing messages externally **/
-  // def update(msg:Message[A]) = events.writer.onNext(msg)
+  def update(msg:Message[A]) = modelObs.onNext(msg)
+  @targetName("updateState")
+  def update(msg:Message[EditorState]) = stateObs.onNext(msg)
 
   /** Convenience method for constructing tables from semagrams **/
   def propTable(ob:Ob,cols:Seq[Property],keys:Seq[Property]) = 
@@ -182,14 +181,9 @@ trait ACSemagram[D:PartData,A:ACSetWithData[D]] extends Semagram[D] {
     val modelVar = UndoableVar(a) 
     val stateVar = Var(EditorState(None,Complex(1,1),Complex(0,0),Seq(),Set())) 
     val messageBus: EventBus[Either[Message[Model],Message[EditorState]]] = EventBus()
-    val msgObs = Observer[Either[Message[Model],Message[EditorState]]](_ match
-      case Left(msg) => 
-        println()
-        println(s"msgObs Left $msg")
-        modelVar.update(msg.execute)
-      case Right(msg) => 
-        // println(s"stateVar $msg")
-        stateVar.update(msg.execute)
+    val messageObs = Observer[Either[Message[Model],Message[EditorState]]](_ match
+      case Left(msg) => modelVar.update(msg.execute)
+      case Right(msg) => stateVar.update(msg.execute)
     )
 
     /* Construct state variable (attached to the element) and global
@@ -227,10 +221,9 @@ trait ACSemagram[D:PartData,A:ACSetWithData[D]] extends Semagram[D] {
         svg.width := "100%",
       ),
 
-      messageBus.events.map(m => {println(s"semaElt $m");m}) --> msgObs,
+      messageBus --> messageObs,
       globalEventBus.events --> eventBus.writer,
       defaultAttrs,
-      // msgBus --> msgObs,
       inContext(thisNode =>  
         onMountCallback(_ => stateVar.update(_.copy(
           dims = Complex(thisNode.ref.clientWidth,thisNode.ref.clientHeight)

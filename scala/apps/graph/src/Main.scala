@@ -28,12 +28,12 @@ implicit val acsetIsACSet: ACSetWithSchemaAndData[SchGraph.type,PropMap][SimpleA
 val bindings = Seq[Binding[SimpleACSet[SchGraph.type]]](
   Binding(KeyDownHook("a"), AddAtMouse(V)),
   Binding(KeyDownHook("d"), DeleteHovered()),
-  Binding(ClickOnPartHook(MouseButton.Left), MoveViaDrag()),
+  Binding(ClickOnPartHook(MouseButton.Left).filter(V), MoveViaDrag()),
   Binding(
     ClickOnPartHook(MouseButton.Left, KeyModifier.Shift), 
     AddEdgeViaDrag(E, Src, Tgt)
   ),
-  Binding(MsgHook(),ProcessMsg()),
+  // Binding(MsgHook(),ProcessMsg()),
   Binding(DoubleClickOnPartHook(),Callback(part => 
       pTable.edit(part,Content)
   )),
