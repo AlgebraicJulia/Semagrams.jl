@@ -5,9 +5,12 @@ import semagrams.acsets._
 import semagrams.util._
 
 
-import upickle.default._
 import semagrams.acsets.simple.SimpleSchema
 import semagrams.acsets.simple.simpleSchemaIsSchema
+
+import scala.language.implicitConversions
+
+import upickle.default._
 
 
 
@@ -65,9 +68,18 @@ trait Generator extends Elt:
   def name: String
   def label = name
 
+
   override def toString = if name != ""
     then name
     else id.toString
+
+
+def genMap[G<:Generator](iter:Iterable[G]): Map[UUID,G] =
+  iter.map(g => g.id -> g).toMap
+
+
+object Generator:
+  implicit def genIsPair[G<:Generator](g:G): (UUID,G) = g.id -> g
 
 trait GenOb extends Ob with Generator
 
@@ -135,14 +147,25 @@ trait Schema[S]:
 
   extension (s:S)
 
-    def obs: Seq[SchOb]
-    def homs: Seq[SchHom]
-    def attrs: Seq[SchAttr]
+    def obMap: Map[UUID,SchOb]
+    def homMap: Map[UUID,SchHom]
+    def attrMap: Map[UUID,SchAttr]
     def globalProps: Seq[Property] = Seq()
 
 
-    def _addElts(elts:Seq[Generator]): S
+    def _addElts(gens:Seq[Generator]): S
     def addProps(prop:Seq[Property]): S
+
+    def _remElts(gens:Seq[Generator]): S
+    def remProps(props:Seq[Property]): S
+
+
+    def eltMap: Map[UUID,Elt] = obMap ++ homMap ++ attrMap
+
+    def obs: Seq[SchOb] = obMap.values.toSeq
+    def homs: Seq[SchHom] = homMap.values.toSeq
+    def attrs: Seq[SchAttr] = attrMap.values.toSeq
+    def elts: Seq[Elt] = eltMap.values.toSeq
 
 
     def display = "Schema(" + 
@@ -162,6 +185,8 @@ trait Schema[S]:
     def generators: Seq[Generator] = (obs ++ homs ++ attrs).flatMap(_.generators)
 
     def contains(ob:Ob): Boolean = obs.contains(ob)
+    def tryOb(id0:UUID): Option[SchOb] = obs.find(_.id == id0)
+    def getOb(id0:UUID): SchOb = tryOb(id0).get
 
     
     def addElts(elts:Seq[Elt]): S = 
@@ -171,14 +196,20 @@ trait Schema[S]:
       _addElts(elt.generators)
     def addProp(prop:Property): S = 
       addProps(Seq(prop))
-    
+
+
+    def remElt(elt:Elt) = s._remElts(elt.generators)
+    def remElts(elts:Seq[Elt]) = s._remElts(elts.flatMap(_.generators))
+
+
+
     def +(elt:Elt) = s.addElt(elt)
     def +(prop:Property) = s.addProp(prop)
     def ++(elts:Seq[Elt]) = s.addElts(elts)
     def ++[SS:Schema](other:SS) = 
       s.addElts(other.generators)
 
-    def --(elts:Seq[Elt]): Seq[Generator] = s.generators.diff(elts)
+    def --(elts:Seq[Elt]): Seq[Generator] = generators.diff(elts)
     def --(that:S): Seq[Generator] = --(that.generators)
 
 

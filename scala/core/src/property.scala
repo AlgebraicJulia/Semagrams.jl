@@ -66,6 +66,7 @@ trait PValue[T: ReadWriter] extends Property {
 
 enum GenericProperty[T: ReadWriter] extends PValue[T] {
   case Fill extends GenericProperty[RGB]
+  case Alpha extends GenericProperty[Double]
   case Stroke extends GenericProperty[RGB]
   case StrokeWidth extends GenericProperty[Double]
   case StrokeDasharray extends GenericProperty[String]
@@ -88,6 +89,7 @@ enum GenericProperty[T: ReadWriter] extends PValue[T] {
   case Style extends GenericProperty[String]
   case Interactable extends GenericProperty[Boolean]
   case Hovered extends GenericProperty[Unit]
+  case Highlight extends GenericProperty[Unit]
   case Selected extends GenericProperty[Unit]
   case Editing extends GenericProperty[Unit]
 

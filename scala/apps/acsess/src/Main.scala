@@ -37,89 +37,99 @@ implicit val acsetDef: ACSetWithSchema[SimpleSchema][AA] & ACSetWithData[PropMap
 
 
 
+def makeName() = scala.util.Random.alphanumeric.dropWhile(_.isDigit).head.toString
+def makeProps() = 
+  val color = if math.random() > .5 then RGB("red") else RGB("blue")
+  PropMap(Content -> makeName(),Fill -> color)
+
 
 
 val schemaBindings: Seq[Binding[AS]] = Seq(
   Binding(
     KeyDownHook("a"),
-    AddAtMouse[AS](IO {
-      val part = Part(UUID("SchemaTable"),TableOb)
-      val props = PropMap()
-        .set(Fill,if math.random() > .5 then RGB("red") else RGB("blue"))
-        .set(Content,scala.util.Random.alphanumeric.dropWhile(_.isDigit).head.toString)
-      part -> props
-    })
+    AddAtMouse(TableOb,IO(makeProps()))
+  ),
+  Binding(
+    KeyDownHook("t"),
+    AddAtMouse(ValTypeOb,IO{PropMap(Content -> makeName())})
   ),
   Binding(KeyDownHook("d"), DeleteHovered()),
   Binding(KeyDownHook("?"),PrintModel()),
   Binding(
-    ClickOnPartHook(MouseButton.Left).filter(TableOb),
+    ClickOnPartHook(MouseButton.Left).filter(TableOb,ValTypeOb),
     MoveViaDrag()
   ),
   Binding[Part,AS](
     ClickOnPartHook(MouseButton.Left, KeyModifier.Shift).filter(TableOb), 
-    AddEdgeViaDrag[AS](FKeyOb,FKeySrc,FKeyTgt)
+    AddEdgeViaDrag[AS](
+      TableOb -> (FKeyOb,FKeySrc,FKeyTgt),
+      // TableOb -> (ColumnOb,ColumnSrc,ColumnTgt),
+      ValTypeOb -> (ColumnOb,ColumnSrc,ColumnTgt)
+    )
   ),
 
   Binding(
     DoubleClickOnPartHook(MouseButton.Left).filter(TableOb),
-    Callback(part =>
-      println(s"callback $part")
-      schTable.edit(part,Content)
-    )
-  ),
+    Callback(schTable.edit(_,Content))
+  )
 )
 
 
+val schHoverProps = Map[Ob,PropMap](
+  TableOb -> PropMap(Hovered -> (), Highlight -> ()),
+  ValTypeOb -> PropMap(Hovered -> (),Highlight -> ())
+).withDefaultValue(PropMap())
+
+val schSelectProps = Map[Ob,PropMap](
+  TableOb -> PropMap(StrokeWidth -> 3,Selected -> ()),
+  FKeyOb -> PropMap(StrokeWidth -> 3, Selected -> ())
+).withDefaultValue(PropMap())
+
+  
+def schStateMsg(es:EditorState,schACSet:AS): Message[AS] =
+  val hovMsg = es.hovered.collect{ 
+    case part:Part if part != backgroundPart => SetPropsMsg[AS](part,schHoverProps(part.ob))
+  }
+  val selectMsgs = es.selected.map(part =>
+    SetPropsMsg[AS](part,schSelectProps(part.ob))  
+  )
+  MsgSeq(hovMsg.toSeq ++ selectMsgs)
 
 
-val schemaDisplay = GraphDisplay(
+val schemaDisplay = GraphDisplay[PropMap,AS](
   Seq(
-    VertexDef(
+    VertexDef[PropMap](
       Rect(Content),
-      TableOb -> PropMap().set(Fill,RGB("green"))
+      TableOb -> PropMap()
+    ),
+    VertexDef[PropMap](
+      Disc(Content),
+      ValTypeOb -> PropMap().set(Fill,RGB("white")).set(Stroke,RGB("white"))
     )
   ),
-  // Seq()
   Seq(
     EdgeDef(
       Arrow(Content),
       PropMap() + (Stroke,RGB("purple")),
       FKeyOb -> (FKeySrc,FKeyTgt)
-    )
-  )
+    ),
+    EdgeDef(
+      Arrow(Content),
+      PropMap() + (Stroke,RGB("cyan")),
+      ColumnOb -> (ColumnSrc,ColumnTgt)
+    ),
+  ),
+  schStateMsg
 )
+
 
 
 val schSema = schemaDisplay(
   schemaBindings,
-  SimpleSchema().toACSet(SchemaDisplay())
+  SimpleSchema().toACSet(SchemaDisplay()),
 )
 
-val schTable = schSema.propTable(TableOb,Content,Fill,Selected,Hovered)
-
-
-// def tables[A:ACSetWithSchema[SchSchema.type]](acset:A,tableIds:Seq[UUID] = Seq()): Seq[Table] = 
-//   val ids = if tableIds.nonEmpty then tableIds else acset.getParts(TableOb).map(_.id)
-
-//   acset.tryProp(Content,TableOb).toSeq
-//     .filter( (part,_) => ids.contains(part.id))
-//     .map( (part,nameOpt) =>
-//       Table(part.id,nameOpt.getOrElse(""))
-//     )
-
-
-// def table[A:ACSetWithSchema[SchSchema.type]](acset:A,id:UUID): Table =
-//   tables(acset,Seq(id)).head
-
-// def tables[A:ACSetWithSchema[SchSchema.type]](acset:A,state:EditorState): Seq[Table] =
-//   tables(acset,state.selected.map(_.id)) 
-
-// def tableProps[A:ACSetWithSchema[SchSchema.type]](acset:A,tableIds:Seq[UUID] = Seq()): Map[Table,PropMap] =
-//   tables(acset,tableIds).map(table => table -> acset.getProps(table.asPart())).toMap
-
-// def tableProps[A:ACSetWithSchema[SchSchema.type]](acset:A,state:EditorState): Map[Table,PropMap] =
-//   tableProps(acset,state.selected.map(_.id)) 
+val schTable = schSema.propTable(TableOb,Content,Fill,Selected,Highlight,Hovered)
 
 def propSig: Signal[Map[UUID,PropMap]] = schSema.signal.map( (acset,state) =>
   acset.getProps(state.selected).map((part,props) => (part.id,props))
@@ -128,9 +138,7 @@ def propSig: Signal[Map[UUID,PropMap]] = schSema.signal.map( (acset,state) =>
 
 def propsObs(cols:Property*): Observer[(UUID,PropChange[_])] = Observer((id0,change) => 
   if !cols.contains(change.prop)
-  then
-    println("miss")
-    ()
+  then ()
   else  
     val a = acsetSema.getModel()
     val msg = MsgSeq(for
@@ -145,12 +153,59 @@ def propsObs(cols:Property*): Observer[(UUID,PropChange[_])] = Observer((id0,cha
 )
 
 
-val selectIO: IO[Option[(Part,PropMap)]] = IO {
+
+
+// val stateMsgSig  = 
+//   schSema.stateEvents.collect{ case msg: (HoverMsg | SelectMsg) => msg}
+
+
+
+def tableParts[A:ACSet](tableId:UUID,acset:A): Seq[Part] = 
+  acset.schema.obs.find(_.id == tableId).toSeq
+    .flatMap(table => acset.getParts(table))
+
+
+def getParts[A:ACSet](eOpt:Option[Entity],a:A): Seq[Part] =
+  eOpt.collect{ case part:Part => part.id }
+    .flatMap(tableId => a.schema.obs.find(_.id == tableId)).toSeq
+    .flatMap(table => a.getParts(table))
+
+def getTable[A:ACSet](eOpt:Option[Entity],a:A): Option[Ob] =
+  eOpt.collect{ case part:Part => part.id }
+    .flatMap(tableId => a.schema.obs.find(_.id == tableId))
+
+
+def stateUpdate(msg:Message[EditorState]): Message[AA] = msg match
+  case msg:HoverMsg =>  
+    def remHighlight(a:AA) = getTable(msg.prev,a)
+      .map(table => a.remProp(Highlight,table))
+      .getOrElse(a)
+
+    def addHighlight(a:AA) = getTable(msg.next,a)
+      .map(table => a.setProp(Highlight,table,()))
+      .getOrElse(a)
+    
+    FreeMsg(acset => addHighlight(remHighlight(acset)))
+
+  case _ => 
+    Message()
+
+
+lazy val stateStream = schSema.stateEvents
+    // .map((state,acset) => (state,acset.schema))
+
+lazy val stateObs: Observer[Message[EditorState]] = acsetSema.messageBus.writer
+    .contramap(edMsg =>
+      Left(stateUpdate(edMsg))
+    )
+
+
+val selectIO: IO[Option[(Ob,PropMap)]] = IO {
   schSema.getState().selected.map(_.id) match
     case Seq(id0) => 
       val props = schSema.getModel().getProps(Part(id0,TableOb))
       val table = Table(id0,props.get(Content).getOrElse("")) 
-      Some(Part(table) -> props)          
+      Some(table -> props)          
     case _ => None
 }
 
@@ -161,10 +216,14 @@ val acsetBindings: Seq[Binding[AA]] =
     AddAtMouse(selectIO,select = false)
   ),
   Binding(KeyDownHook("d"), DeleteHovered()),
-  Binding(ClickOnPartHook(MouseButton.Left),MoveViaDrag())
+  Binding(ClickOnPartHook(MouseButton.Left),MoveViaDrag()),
+  Binding(KeyDownHook("?"), PrintModel()),
 )
 
-val acsetDisplay = GraphDisplay(
+
+
+
+val acsetDisplay = GraphDisplay[PropMap,AA](
   Seq(VertexDef(
     Rect(Content,PropMap() + (MinimumWidth,20) + (MinimumHeight,20)),
     {case t:Table => PropMap().set(Fill,RGB("pink"))}
@@ -174,17 +233,7 @@ val acsetDisplay = GraphDisplay(
 
 val acsetSema = acsetDisplay(
   acsetBindings,
-  SimpleACSet(),
-  // acset => 
-  //   // println("transforming")
-  //   acset.setProps(Selected,
-  //     getSelection().flatMap(table =>
-  //       println(s"table $table")
-  //       acset.getParts(table).map(_ -> ())
-        
-  //     )
-  //   )
-
+  SimpleACSet()
 )
 
 
@@ -203,20 +252,43 @@ val semaAttrs = Seq(
   boxSizing := "border-box",
 )
 
-// val selectSig1 = schSema.stateSig.map(_.selected.map(_.id))
 
-def acsetTableSig(cols:Property*) = 
-  schSema.stateSig.combineWith(acsetSema.modelSig)
-    .map( (schState,acset) => for
-      id0 <- schState.selected.map(_.id)
-      table <- acset.schema.obs.find(_.id == id0)
-    yield acsetSema.propTable(table,cols:_*))
+def tableFromId(cols:Property*)(id0:UUID): Signal[Option[Element]] = 
+  acsetSema.modelSig.map(acset =>
+    acset.schema.tryOb(id0).map(table => 
+      acsetSema.propTable(table,cols:_*).elt
+    )     
+  )
+
+def tablesFromIds(cols:Property*)(ids:Seq[UUID]): Signal[Seq[Element]] =
+  acsetSema.modelSig.map(acset => ids.flatMap(id0 =>
+    acset.schema.tryOb(id0).map(table =>
+      acsetSema.propTable(table,cols:_*).elt
+    ) 
+  ))
+
+
+def acsetTableSig(cols:Property*) = schSema.stateSig
+  .map(_.selected.flatMap(part => acsetSema.getModel().schema.tryOb(part.id)))
+  .split(x => x)((table,_,_) =>
+    acsetSema.propTable(table,cols:_*).elt
+  )
+
+def acsetTables = acsetTableSig(Content,Fill,Selected,Highlight,Hovered)
+  // .
+  // .combineWith(acsetSema.modelSig)
+  //   .map( (schState,acset) => 
+  //     println(s"acsetTableSig")
+  //     for
+  //     id0 <- schState.selected.map(_.id)
+  //     table <- acset.schema.obs.find(_.id == id0)
+  //   yield acsetSema.propTable(table,cols:_*))
   
 
 val changeSig = schSema.modelEvents.collect{ 
   case ChangePropMsg(part,change) => part.id -> change
 }
-val changeObs = propsObs(Content,Fill)
+val changeObs = propsObs(Content,Fill,Highlight,Selected)
 
 
 object Main {
@@ -230,7 +302,8 @@ object Main {
       val mainDiv: Div = div(
         idAttr := "mainDiv",
         div(
-          div(cls := "schemaDiv",
+          div(
+            cls := "schemaDiv",
             display := "flex",
             schSema.elt.amend(
               flex := "1",
@@ -239,32 +312,24 @@ object Main {
             schTable.elt.amend(
               flex := "1",
             ),
-          )
+          ),
+          child <-- schSema.stateEvents
+            .collect{ case hov:HoverMsg => hov.toString},
+          child <-- schSema.stateEvents
+            .collect{ case hov:SelectMsg => hov.toString}
         ),
         div(
           "ACSet",
           acsetSema.elt,
           changeSig --> changeObs,
-          // child <-- acsetSig.map(_.elt),
-          // acsetSig.signal.flatMap(_.signal) --> acsetVar.writer
-          // child <-- acsetSemaSig.map(_.elt.amend(
-          //   semaAttrs,
-          // )),
-          // tickStream.mapTo(currentTable.now()) --> Observer(println)
+          stateStream --> stateObs
+          // stateModifier
+          // child <-- schSema.
         ),
-        children <-- acsetTableSig(Content,Fill,Selected,Hovered)
-          .map(_.map(_.elt)),
-
-        // p(child <-- selectSig1.map(
-        //   "selectVar: " + _.mkString(", ")
-        // )),
-        // p(child <-- schSema.signal.map("Schema: " + SimpleSchema.fromACSet(_)._1.toString)),
-        // p(child <-- schSema.signal.map("SchemaDisplay: " + SimpleSchema.fromACSet(_)._2.toString)),
-        // p(child <-- schSema.signal.map("SchemaACSet: " + _)),
-        // asSignal.changes --> Observer(println).contramap(
-        //   (sch:SimpleSchema) => sch.toACSet(schemaVar.now()).getParts(TableOb)
-        // )
-
+        children <-- acsetTables
+        // .map(tables =>
+        //   tables.map()
+        //   _.map(_.elt)),
       )
         
       render(mountInto, mainDiv)
@@ -272,645 +337,4 @@ object Main {
   }
 }
 
-
-
-
-// val acsetVar = Var(SimpleACSet[SimpleSchema]())
-// val t1 = 
-//   val t = Table("T1")
-//   println(s"t1 def ${t.id}")
-//   nameVar.update(_ + (t.id -> t.name))
-//   selectVar.set(Seq(t.id))
-//   acsetVar.update(_.addSchemaElt(t))
-//   schSema.messenger.onNext(AddPartMsg(
-//     TableOb,
-//     PropMap().set(Content,t.name).set(Center,Complex(100,100)),
-//     t.id
-//   ))
-//   t
-
-
-
-
-// val acsetSema = nameSig.map(names =>
-
-//   val tables = names.toSeq.map(Table.apply.tupled)
-//   val gd = GraphDisplay(
-//     tables.map(VertexDef(_,Rect(Content),PropMap())),
-//     Seq()
-//   )
-
-//   val init = SimpleACSet(SimpleSchema()).addSchemaElts(tables)
-
-//   gd(acsetBindings,init)
-
-// )
-
-
-
-// val acsetVar = Var(SimpleACSet[SimpleSchema]())
-// val t1 = 
-//   val t = Table("T1")
-//   println(s"t1 def ${t.id}")
-//   nameVar.update(_ + (t.id -> t.name))
-//   selectVar.set(Seq(t.id))
-//   acsetVar.update(_.addSchemaElt(t))
-//   schSema.messenger.onNext(AddPartMsg(
-//     TableOb,
-//     PropMap().set(Content,t.name).set(Center,Complex(100,100)),
-//     t.id
-//   ))
-//   t
-
-
-
-
-
-// val acsetDispSig = selectVar.signal
-//   .combineWith(nameVar.signal)
-//   .map( pair => 
-//     val (select,names) = pair
-//     println(s"acsetDispSig")
-//     for (id,name) <- names 
-//     yield println(s"$id -> $name") 
-    
-//     val tables = names.toSeq.map(Table.apply.tupled)
-//     GraphDisplay(
-//       Seq(VertexDef(
-//         tables,
-//         Rect(Content),
-//         PropMap() + (Fill,"red") + (Content,"Hi")
-//       )),
-//       Seq()
-//     )
-//   )
-
-// val acsetSemaSig = acsetVar.signal
-//   .combineWith(selectVar.signal)
-//   .combineWith(nameVar.signal)
-//   .map( triple => 
-//     val (acset,select,names) = triple
-//     // println(s"acsetDispSig")
-//     // for (id,name) <- names 
-//     // yield println(s"$id -> $name") 
-    
-//     val vdefs = names.toSeq.map( (id,name) => VertexDef(
-//       Table(id,name),
-//       Rect(Content),
-//       PropMap() + (Fill,"red") + (Content,"Hi")
-//     ))
-
-//     val gd = GraphDisplay(
-//       vdefs,
-//       Seq()
-//     )
-//     gd(acsetBindings,acset)
-//   )
-
-// val acsetVar = Var(acsetInit)
-
-// val acsetSig = acsetVar.signal 
-//   .combineWith(nameVar.signal)
-//   .combineWith(selectVar.signal)
-//   .map((acset,names,select) =>
-
-//     println(
-//       s"acsetSig: names = $names, select = $select"
-//     )
-
-//     val bs = if names.isEmpty
-//     then Seq()
-//     else 
-//       val (id,name) = names.toSeq.head
-//       println(s"acsetSig $id -> $name")
-//       Seq(
-//       Binding(
-//         KeyDownHook("b"),
-//         AddAtMouse(
-//           Table(id,name)
-//         //   IO{
-//         //   println("binding IO")
-//         //   selectVar.now() match
-//         //     case Seq(id) =>
-//         //       val ret = Some(Table(id,nameVar.now()(id)))
-//         //       println(ret)
-//         //       ret
-//         //     case _ =>
-//         //       None
-//         // }
-//         )(acsetDef)
-//       ),
-//     )
-//     val tables = names.map((id,name) => Table(id,name)).toSeq
-//     val vdefs = tables.map(t =>
-//       VertexDef(t,Rect(Content),PropMap())
-//     )
-//     println(s"tables = ${vdefs.length}")
-//     val gd = GraphDisplay(
-//       vdefs,
-//       Seq()
-//     )
-
-//     gd(bs,acset)
-
-//   )
-
-// val acsetSig = acsetDisplaySig.map(acsetDisp =>
-//   acsetDisp(acsetBindings,acsetInit)  
-// )
-
-//   sch
-// )
-  
-  
-//   Binding(KeyDownHook("b"), schemaVar.now().selected.toSeq match
-//     case Seq(id:UUID) => 
-//       case Some(ob) => 
-        
-//         AddAtMouse(ob)(acsetDef)
-//       case None => 
-//         println("Missing object ")
-        
-//         Die()
-//     case _ => 
-//       println("No selected table")
-//       Die()  
-//   ),
-//   // Binding(
-//   //   KeyDownHook("?"),
-//   //   PrintModel()  
-//   // ),
-// )
-
-
-
-
-
-// val currentTable: Var[Option[Table]] = Var(None)
-
-// case class AddTableElt[A:ACSet]() extends Action[Unit, A] {
-//   def apply(_p: Unit, r: Action.Resources[A]) = 
-//     r.stateVar.now().hovered match
-//     case Some(ent) => 
-//       val pos = r.stateVar.now().mousePos match
-//         case Complex(0,0) => r.stateVar.now().dims/2.0
-//         case z => z
-//       currentTable.now() match
-//         case Some(table) =>      
-//           IO(r.modelVar.update(
-//             _.addPart(table, PropMap() + (Center -> pos))._1
-//           ))
-//         case None => IO(())
-    
-//     case None => IO(())
-  
-
-//   def description = s"add acset new part of selected type at current mouse position"
-// }
-
-// case class SetCurrentTable[A:ACSet]() extends Action[Part,A] {
-//   def apply(p:Part,r:Action.Resources[A]) = 
-//     println(s"SetCurrentTable $p")
-//     val nm = r.modelVar.now().tryProp(Content,p)
-//     val ob = nm match
-//       case Some(s) => Table(s)
-//       case None => Table()
-//     println(nm)
-//     currentTable.set(nm.map(Table.apply))
-//     IO(
-//       currentTable.set(nm.map(Table.apply))
-//     )
-//     // case Part(tableOb,id) => IO(currentTable.set(Some(tableOb)))
-//     // case _ => IO(())
-//   def description = s"select"
-// }
-
-
-// val acsetSemaSig = acsetVar.signal.map( acset =>
-
-//     val acsetDisplay = GraphDisplay(
-//       acset.schema.obs.map(ob =>
-        
-//         val tableParts = schemaSema.readout().getParts(tableOb)
-
-//         val props = schemaSema.readout().getProps(tableOb).get(ob.id)
-//         println(s"props = $props")
-//         VertexDef(ob,Rect(Content),PropMap())),
-//       Seq()
-//     )
-
-//     acsetDisplay(acsetBindings,acset)
-
-// ) 
-
-
-
-
-
-
-// val schemaBus = EventBus[SchemaMsg[_]]()
-
-// sealed trait SchemaMsg[X]
-// case class AddTable() extends SchemaMsg[Unit]
-// case class DragTable() extends SchemaMsg[Part]
-
-
-
-  
-// case class SendMsg[X](msg:SchemaMsg[X]) extends Action[X,AS]:
-//   def apply(x:X,r:Action.Resources[AS]) = (x,msg) match
-//     case (_,AddTable()) => r.mousePos match 
-//       case None => IO(())
-//       case Some(z) => 
-//         IO {
-//           edStateVar.update((acset,b) =>
-//             val id = UUID("SchemaTable")
-//             val newTable = Table(id,"")
-
-
-//             (acset.addSchemaElt(newTable),b.setProps(newTable,PropMap().set(Center,z)))
-//           )
-//         }
-//     case (part:Part,DragTable()) => 
-//       val t = Table(part.id,r.modelVar.now().getProp(Content,part)) 
-//       for {
-//         _ <- IO(println(s"DragTable $t"))
-//         ctr <- IO(r.modelVar.now().tryProp(Center,part))
-//         offset <- IO(r.stateVar.now().mousePos - r.modelVar.now().getProp(Center, part))
-//         _ = println(s"offset = $offset")
-//         _ <- takeUntil(r.eventQueue)(
-//           evt => 
-//             println(s"takeUntil Main $evt")
-            
-//             evt match {
-//             case Event.MouseMove(pos) => 
-//               edStateVar.updateRight(disp => disp.setProp(t,Center,pos - offset))
-//               IO(None)
-//               // r.modelVar.update(_.setProp(Center, p, pos - offset))
-            
-//             case Event.MouseUp(_, _) => 
-//               println("MouseUp")
-//               IO(Some(()))
-//             case Event.MouseLeave(backgroundPart) => 
-//               println("MouseLeave")
-//               IO(Some(()))
-//             case x                   => 
-//               println(s"missed $x")
-//               IO(None)
-//           })
-//       } yield ()
-//     case x =>
-//       IO(println(s"missed $x"))
-
-
-    //   for {
-    //     ctr <- IO(edStateVar.now()._2.props(table).
-      
-    //   )
-    //   offset <- IO(r.stateVar.now().mousePos - r.modelVar.now().getProp(Center, p))
-    //   _ <- takeUntil(r.eventQueue)(
-    //     evt => evt match {
-    //       case Event.MouseMove(pos) =>
-    //         IO(r.modelVar.update(_.setProp(Center, p, pos - offset))) >> IO(None)
-    //       case Event.MouseUp(_, _) => IO(Some(()))
-    //       case Event.MouseLeave(backgroundPart) => IO(Some(()))
-    //       case _                   => IO(None)
-    //     })
-    // } yield ()
-
-  // def description = "Custom messenger for Schema updates"
-
-
-
-
-
-
-
-
-// Msg[A:ACSet](id:UUID,z:Complex,name:String = "",props:PropMap = PropMap())
-
-// def addTableMsg(): AddTableMsg[AA] =
-//   val id = UUID("SchemaTable")
-//   val newTable = Table(id,"")
-//   val newPart = Part(TableOb,id)
-//   AddTable(id,)
-
-
-// case class AddTable[A:ACSet](name:String = "") extends SchemaAction[A] with Action[Unit,A]:
-//   def apply(p:Unit,r:Action.Resources[A]) = r.mousePos.map { z =>
-//     val id = UUID("SchemaTable")
-//     val newTable = Table(id,name)
-//     val newPart = Part(TableOb,id)
-//     val newProps = PropMap() + (Center,z) + (Content,name)
-  
-//   }.getOrElse(IO(()))
-  
-// (id:UUID,z:Complex,props:PropMap = PropMap())
-//   extends SchemaMsg[A]:
-//   def updateDisplay(disp:SchemaDisplay) = disp.copy(
-//     props = disp.props + (newTable -> (newPart -> props.set(Center,z))),
-//     selected = Seq(newTable)
-//   )
-//   def updateACSet(acset:A) = 
-//     acset.addSchemaElt(newTable)
-
-
-// val schACSetSig: Signal[Element] = acsetVar.signal
-//   .combineWith(schemaVar.signal)
-//   .splitOne( (acset,disp) => 
-//     println(s"splitOne1 ${acset.schema.obs} // ${disp.props.keys}")
-//     acset.schema.toACSet(disp))
-//   ( (schACSet,pair,pairSig) => 
-//     println(s"splitOne2 ${schACSet.getParts(TableOb)}")
-//     div(
-//       schemaDisplay(schemaBindings,schACSet).elt,
-//       div(
-//         schACSet.toString
-//       )
-//     )
-//   )
-
-
-// val schemaSig = acsetVar.signal.map(_.schema)
-//   .combineWith(schemaVar.signal)
-//   .splitOne( (sch:SimpleSchema,schDisplay:SchemaDisplay) =>
-//     sch.toACSet(schDisplay)
-//   )( (acset,pair,pairSig) =>
-//     schemaDisplay(schemaBindings,acset)  
-//   )
-
-// case class SendMsg[S:Schema]() extends Action[Unit,A]:
-
-//   /* Activated from within the schema semagram */
-//   def apply(_p:Unit,r:Action.Resources[A]) = r.mousePos match
-//     case None => IO(())
-//     case Some(z) =>
-//       IO{
-//         val newTable = Table("")
-//         // println(s"newTable $newTable")
-//         // println(acsetVar.now().schema.obs)
-//         // println(schemaVar.now().props)
-//         schemaVar.update(schDisp => schDisp.copy(
-//           props = schDisp.props + (newTable -> (
-//             Part(TableOb,newTable.id) -> PropMap().set(Center,z)
-//           ))
-//         ))
-//         acsetVar.update(_.addSchemaElt(newTable))
-//       }
-
-//   def description = "Add schema table"
-
-  
-
-
-// val acsetBindings = Seq(
-//   Binding(KeyDownHook("b"), schemaVar.now().selected.toSeq match
-//     case Seq(t:Table) => AddAtMouse(t)(acsetDef)
-//     case _ => 
-//       println("No selected table")
-//       Die()  
-//   ),
-//   // Binding(
-//   //   KeyDownHook("?"),
-//   //   PrintModel()  
-//   // ),
-// )
-
-
-
-
-
-
-// val currentTable: Var[Option[Table]] = Var(None)
-
-// case class AddTableElt[A:ACSet]() extends Action[Unit, A] {
-//   def apply(_p: Unit, r: Action.Resources[A]) = 
-//     r.stateVar.now().hovered match
-//     case Some(ent) => 
-//       val pos = r.stateVar.now().mousePos match
-//         case Complex(0,0) => r.stateVar.now().dims/2.0
-//         case z => z
-//       currentTable.now() match
-//         case Some(table) =>      
-//           IO(r.modelVar.update(
-//             _.addPart(table, PropMap() + (Center -> pos))._1
-//           ))
-//         case None => IO(())
-    
-//     case None => IO(())
-  
-
-//   def description = s"add acset new part of selected type at current mouse position"
-// }
-
-// case class SetCurrentTable[A:ACSet]() extends Action[Part,A] {
-//   def apply(p:Part,r:Action.Resources[A]) = 
-//     println(s"SetCurrentTable $p")
-//     val nm = r.modelVar.now().tryProp(Content,p)
-//     val ob = nm match
-//       case Some(s) => Table(s)
-//       case None => Table()
-//     println(nm)
-//     currentTable.set(nm.map(Table.apply))
-//     IO(
-//       currentTable.set(nm.map(Table.apply))
-//     )
-//     // case Part(tableOb,id) => IO(currentTable.set(Some(tableOb)))
-//     // case _ => IO(())
-//   def description = s"select"
-// }
-
-
-// val acsetSemaSig = acsetVar.signal.map( acset =>
-
-//     val acsetDisplay = GraphDisplay(
-//       acset.schema.obs.map(ob =>
-        
-//         val tableParts = schemaSema.readout().getParts(tableOb)
-
-//         val props = schemaSema.readout().getProps(tableOb).get(ob.id)
-//         println(s"props = $props")
-//         VertexDef(ob,Rect(Content),PropMap())),
-//       Seq()
-//     )
-
-//     acsetDisplay(acsetBindings,acset)
-
-// ) 
-
-
-// val messenger = Observer(
-//   (m:Message[SimpleACSet[SimpleSchema]]) =>
-//     acset.set(m.execute(acset.now()))
-// )
-
-
-
-
-// val schemaBindings = Seq[Binding[SimpleACSet[SimpleSchema]]](
-//   Binding(KeyDownHook("acset"), AddAtMouse(tableOb)),
-//   Binding(
-//     ClickOnPartHook(MouseButton.Left).filter(tableOb), 
-//     MoveViaDrag()
-//   ),
-//   Binding(
-//     ClickOnPartHook(MouseButton.Left, KeyModifier.Shift)
-//       .filter(tableOb), 
-//     AddEdgeViaDrag(fkeyOb, fkeySrc, fkeyTgt)
-//   ),
-
-//   Binding(KeyDownHook("A"), AddAtMouse(Schemas.v)),
-//   Binding(KeyDownHook("d"), DeleteHovered()),
-//   Binding(
-//     ClickOnPartHook(Schemas.t,Left,Shift),
-//     AddEdgeViaDrag(
-//       Schemas.t -> (Schemas.f,Schemas.fsrc,Schemas.ftgt),
-//       Schemas.v -> (Schemas.acset,Schemas.asrc,Schemas.atgt)
-//     )
-//   ),
-//   Binding(
-//     ClickOnPartHook(MouseButton.Left).filter(Schemas.t,Schemas.v), 
-//     MoveViaDrag()
-//   ),
-//   Binding(MsgHook(),ProcessMsg()),
-//   Binding(DoubleClickOnPartHook(),PartCallback(
-//     ent => ent match
-//       case p:Part => p.ty.path.head match
-//         case Schemas.t => tableTable.edit(p,Schemas.tname)
-//         case Schemas.v => typeTable.edit(p,Schemas.vname)
-//         case Schemas.f => fkeyTable.edit(p,Schemas.fname)
-//         case Schemas.acset => attrTable.edit(p,Schemas.aname)
-//       case _ => ()
-//   )),
-//   Binding(KeyDownHook("?"), PrintModel()),
-// )
-
-
-// val acsetdisplaySig = acset.signal.map(acset =>
-//   GraphDisplay(
-//     implicitly[ACSet[SimpleACSet[SimpleSchema]]](acset).sch,
-//     s
-//   )  
-// )
-
-
-
-
-// object Schemas:
-//   // val Seq(T,V,F,A) = Seq("Table","ValType","FKey","Attr").map(SimpleTable.apply)
-//   val Seq(t,v,f,acset) = Seq("Table","ValType","FKey","Attr").map(SimpleTable.apply)
-//   val tables = Seq(t,v,f,acset)
-
-//   val Seq(fsrc,ftgt,asrc,atgt) = Seq(
-//     ("fkeySrc",f,t),
-//     ("fkeyTgt",f,t),
-//     ("attrSrc",acset,t),
-//     ("attrTgt",acset,v)
-//   ).map(simpleacsets.FKey.apply)
-//   val fkeys = Seq(fsrc,ftgt,asrc,atgt)
-
-//   val valTypes = Seq(
-//     simpleacsets.ValType[String]("Str")
-//   )
-//   val str = valTypes.head 
-
-//   val Seq(tname,vname,fname,aname) = Seq(
-//     ("tableName",t,str),
-//     ("typeName",v,str),
-//     ("fkeyName",f,str),
-//     ("attrName",acset,str)
-//   ).map(simpleacsets.Attr.apply)
-//   val attrs = Seq(tname,vname,fname,aname)
-//   val elts = tables ++ fkeys
-
-//   val S = SimpleSchema(
-//     tables ++ fkeys ++ attrs:_*
-//   )
-
-// val schSchema = Schemas.S
-
-
-// case object SchSchema extends Schema {
-
-//   val obs = Seq(SchemaOb.values*)
-//   val homs = Seq(SchemaHom.values*)
-//   val attrs = Seq(SchemaAttr.values*)
-
-//   enum SchemaOb extends Ob:
-//     override lazy val schema = SchEmpty
-//     case AttrType, Table, FKey, Attr, Comp, Input
-//   import SchemaOb._
-
-//   enum SchemaHom(val dom: SchemaOb, val codom: SchemaOb) extends Hom:
-//     val doms = Seq(PartType(Seq(dom)))
-//     val codoms = Seq(PartType(Seq(codom)))
-    
-//     case FKeySrc extends SchemaHom(FKey,Table)
-//     case FKeyTgt extends SchemaHom(FKey,Table)
-
-//     case AttrSrc extends SchemaHom(Attr,Table)
-//     case AttrTgt extends SchemaHom(Attr,AttrType)
-
-//     case CompTgt extends SchemaHom(Comp,AttrType)
-//     case CompInput extends SchemaHom(Input,Comp)
-//     case InputType extends SchemaHom(Input,AttrType)
-//   import SchemaHom._
-
-//   enum SchemaAttr(val _doms: Seq[SchemaOb]) extends Attr:
-//     val doms = _doms.map(x => PartType(Seq(x)))
-
-//     case Name extends SchemaAttr(Seq(Table,AttrType,FKey,Attr,Comp,Input)) with PValue[String]
-//   import SchemaAttr._
-
-//   def toSimpleSchema(sch:ACSet): SimpleSchema = if sch.schema != this
-//     then throw msgError(s"Bad schema read $sch:${sch.schema} != ${this}")
-//     else 
-//       val obMap = sch.parts(ROOT,Table).map((part,acset) =>
-//         part -> SimpleTable(acset.props.get(Name) )
-//       ).toMap
-
-//       val fkeys = sch.parts(ROOT,FKey).map( (part,acset) =>
-//         val fname = acset.props.get(Name).getOrElse(UUID("FKey"))
-//         val src = acset.props.get(FKeySrc) match
-//           case Some(part) => obMap(part)
-//           case None => throw msgError(
-//             s"Missing FKeySrc or Name for $part in ${sch.partsOnly(ROOT,Table)}"
-//           )
-        
-//         val tgt = acset.props.get(FKeyTgt) match
-//           case Some(part) => obMap(part)
-//           case None => throw msgError(
-//             s"Missing FKeyTgt for $part in ${sch.partsOnly(ROOT,Table)}"
-//           )
-//         simpleacsets.FKey(fname,src,tgt)
-//       )
-//       SimpleSchema(
-//         obMap.values.toSeq ++ fkeys:_*
-//       )
-
-//       // SimpleSchema(
-//       //   sch.partsOnly(Table),
-//       //   sch.partsOnly(FKey),
-//       //   sch.partsOnly(Attr)
-//       // )
-// }
-
-// import SchSchema._
-// import SchemaOb._
-// import SchemaHom._
-// import SchemaAttr._
-
-
-// val (Table,ValType,FKey,Attr) = (SchemaStuff.t,SchemaStuff.v,SchemaStuff.f,SchemaStuff.acset)
-
-
-// val schemaDisplay = GraphDisplay(
-//   schSchema,  
-//   Seq(
-//     Schemas.t -> ShapeNode(Schemas.tname,PropMap(Schemas.tname -> "Hi")),
-//     Schemas.v -> (ShapeNode(Schemas.vname),PropMap(ShapeProp.Shape -> ShapeOption.DiscShape,Fill -> "blue")),
-//     Schemas.f -> (Schemas.fsrc,Schemas.ftgt,Arrow(Schemas.fname)),
-//     Schemas.acset -> (Schemas.asrc,Schemas.atgt,Arrow(Schemas.aname),PropMap() + (Stroke,"purple")),
-//   )
-// )
 

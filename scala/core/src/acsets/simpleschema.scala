@@ -290,15 +290,23 @@ val schSchemaIsSchema: Schema[SchSchema.type] = new Schema[SchSchema.type] {
 
 
   extension (s:SchSchema.type)
-    def obs = SchObs.values.toSeq
-    def homs = SchHoms.values.toSeq
-    def attrs = Seq()
+    def obMap = SchObs.values.map(ob => ob.id -> ob).toMap
+    def homMap = SchHoms.values.map(f => f.id -> f).toMap
+    def attrMap = Map()
 
     def _addElts(elts:Seq[Generator]) = 
       println("SchSchema is static")
       s
 
     def addProps(newProps:Seq[Property]) = 
+      println("SchSchema is static")
+      s
+
+    def _remElts(elts:Seq[Generator]) = 
+      println("SchSchema is static")
+      s
+
+    def remProps(oldProps:Seq[Property]) = 
       println("SchSchema is static")
       s
 
@@ -356,9 +364,9 @@ object SchemaDisplay:
 
 
 case class SimpleSchema(
-  obs:Seq[Table] = Seq(),
-  homs:Seq[FKey] = Seq(),
-  attrs:Seq[Column[_]] = Seq(),
+  obMap:Map[UUID,Table] = Map(),
+  homMap:Map[UUID,FKey] = Map(),
+  attrMap:Map[UUID,Column[_]] = Map(),
   globalProps: Seq[Property] = Seq()
 ):
 
@@ -370,28 +378,29 @@ case class SimpleSchema(
     type _A = SimpleACSet[_S]
     implicit val schSchemaDef: Schema[_S] = schSchemaIsSchema
     implicit val acsetDef: ACSetWithSchema[_S][_A] = simpleACSetIsACSet(SchSchema)
-    val ts = obs.map(table =>
+    val ts = obMap.values.map(table =>
       Part(table.id,TableOb) -> displayData.props(table.id).set(Content,table.name)
-    )
-    val vs = attrs.map(_.codom).distinct.map(vtype =>
+    ).toSeq
+    val vs = attrMap.values.toSeq.map(_.codom).distinct.map(vtype =>
       Part(vtype.id,ValTypeOb) -> displayData.props(vtype.id).set(Content,vtype.name)
     )
-    val fs = homs.map(fkey =>
+    val fs = homMap.values.map(fkey =>
       Part(fkey.id,FKeyOb) -> displayData.props(fkey.id)
         .set(FKeySrc,Part(fkey.dom.id,TableOb))
         .set(FKeyTgt,Part(fkey.codom.id,TableOb))
-    )
-    val as = attrs.map(column => 
+    ).toSeq
+    val as = attrMap.values.map(column => 
       Part(column.id,ColumnOb) -> displayData.props(column.id)
         .set(ColumnSrc,Part(column.dom.id,TableOb))
         .set(ColumnTgt,Part(column.codom.id,ValTypeOb))
-    )
+    ).toSeq
 
     ACSet[_S,_A](SchSchema).addParts(ts ++ vs ++ fs ++ as)._1
     
 
 
-val schTables = Seq("Table","ValType","FKey","Column").map(Table.apply)
+val schTables = Seq("Table","ValType","FKey","Column")
+  .map(Table.apply)
 val Seq(tableOb,valtypeOb,fkeyOb,columnOb) = schTables
 
 val schFKeys = Seq(
@@ -402,8 +411,8 @@ val schFKeys = Seq(
 ).map(FKey.apply)
 val Seq(fkeySrc,fkeyTgt,columnSrc,columnTgt) = schFKeys
 val schSchema = SimpleSchema(
-  schTables,
-  schFKeys
+  schTables.map(table => table.id -> table).toMap,
+  schFKeys.map(fkey => fkey.id -> fkey).toMap
 )
 
 
@@ -426,19 +435,28 @@ val simpleSchemaIsSchema: Schema[SimpleSchema] =
 
 
     extension (s:SimpleSchema)
-      def obs = s.obs
-      def homs = s.homs
-      def attrs = s.attrs
+      def obMap = s.obMap
+      def homMap = s.homMap
+      def attrMap = s.attrMap
       def _addElts(elts:Seq[Generator]) = s.copy(
-        obs = s.obs ++ elts.collect{ case x:Table => x},
-        homs = s.homs ++ elts.collect{ case f:FKey => f},
-        attrs = s.attrs ++ elts.collect{ case a:Column[_] => a}
+        obMap = s.obMap ++ elts.collect{ case x:Table => x.id -> x},
+        homMap = s.homMap ++ elts.collect{ case f:FKey => f.id -> f},
+        attrMap = s.attrMap ++ elts.collect{ case a:Column[_] => a.id -> a}
       )
 
       def addProps(newProps:Seq[Property]) = s.copy(
         globalProps = (s.globalProps ++ newProps).distinct
       )
 
+      def _remElts(elts:Seq[Generator]) = s.copy(
+        obMap = s.obMap -- elts.collect{ case x:Table => x.id},
+        homMap = s.homMap -- elts.collect{ case f:FKey => f.id},
+        attrMap = s.attrMap -- elts.collect{ case a:Column[_] => a.id}
+      )
+
+      def remProps(oldProps:Seq[Property]) = s.copy(
+        globalProps = (s.globalProps diff oldProps).distinct
+      )
 
 
       // def generators = obs ++ homs ++ columns
@@ -451,9 +469,9 @@ object SimpleSchema:
   def apply(elts:SchemaElt*): SimpleSchema = 
       
     SimpleSchema(
-      elts.collect{case t:Table => t},
-      elts.collect{case f:FKey => f},
-      elts.collect{case a:Column[_] => a},
+      elts.collect{case t:Table => t.id -> t}.toMap,
+      elts.collect{case f:FKey => f.id -> f}.toMap,
+      elts.collect{case a:Column[_] => a.id -> a}.toMap,
       Seq()
     )
     

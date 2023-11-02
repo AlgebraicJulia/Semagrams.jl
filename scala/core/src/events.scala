@@ -35,8 +35,34 @@ enum Event {
 }
 
 
-trait Message[Model]:
+sealed trait Message[Model]:
   def execute(m:Model): Model
+  val msgs: Seq[Message[Model]]
+  def *(that:Message[Model]) = Message(this.msgs ++ that.msgs:_*)
+
+object Message:
+  def apply[Model](msgs:Message[Model]*): Message[Model] = msgs match
+    case Seq(msg) => msg
+    case _ => MsgSeq(msgs)
+   
+
+
+trait AtomicMessage[Model] extends Message[Model]:
+  def execute(m:Model): Model
+  val msgs = Seq(this)
+
+case class FreeMsg[Model](exec:Model => Model) extends AtomicMessage[Model]:
+  def execute(m:Model) = exec(m)
+
+case class MsgSeq[A](msgs:Seq[Message[A]]) extends Message[A]:
+  def execute(a:A) = msgs.foldLeft(a)((acset,msg) => msg.execute(acset))
+  
+object MsgSeq:
+  def apply[A]() = new MsgSeq[A](Seq())
+
+
+
+
 
 
 

@@ -42,7 +42,7 @@ val bindings = Seq[Binding[SimpleACSet[SchGraph.type]]](
 
 
 
-val graphdisplay = GraphDisplay[PropMap](
+val graphdisplay = GraphDisplay[PropMap,SimpleACSet[SchGraph.type]](
   Seq(VertexDef(Rect(Content),PropMap() + (Fill,RGB("green")) + (Content,"Hi"),V)),
   Seq(EdgeDef(Arrow(Content),PropMap().set(Stroke,RGB("purple")), E -> (Src,Tgt)))
 )

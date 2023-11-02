@@ -61,18 +61,14 @@ case class Arrow[D:PartData](label:Property,props: PropMap) extends Sprite[D] {
       updates: L.Signal[D],
       eventWriter: L.Observer[Event]
   ): L.SvgElement = {
-    val data = updates.map(d =>
-      println(s"present Arrow")
-      val p = Arrow.defaultProps ++ props ++ d.getProps()
-      println(s"props = $p")
-      p
+    val data = updates.map(d => Arrow.defaultProps ++ props ++ d.getProps()
     )
 
     
     def ppath(p:PropMap) = curvedPath(p.get(Start), p.get(End), p.get(Bend))
     def hov(p:PropMap) = 
       val stroke = p.get(Stroke).getOrElse(RGB("black"))
-      if p.contains(Hovered) then stroke.lighten(.25).toString else stroke.toString
+      if p.contains(Highlight) then stroke.lighten(.25).toString else stroke.toString
     def labelStr(p:PropMap) = if p.contains(label) then p(label).toString else p(PathLabel)
     def labelPos(p:PropMap) = 
       val pathElt = ppath(p)((ppath(p).length * p(LabelAnchor)).toInt)

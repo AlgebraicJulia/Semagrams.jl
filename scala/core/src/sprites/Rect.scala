@@ -141,7 +141,7 @@ object Rect {
     List(
       // fill <-- props.map(_.getProp(Fill).toString),
       fill <-- props.map(d =>
-        if d.hasProp(Hovered) 
+        if d.hasProp(Highlight) 
         then d.getProp(Fill).lighten(.5).toString
         else d.getProp(Fill).toString
       ),

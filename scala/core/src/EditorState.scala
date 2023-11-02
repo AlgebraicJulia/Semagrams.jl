@@ -17,47 +17,50 @@ case class EditorState(
   import KeyModifier._
   import MouseButton._
 
-  def processEvent(evt: Event): EditorState = evt match {
-    /* Mouse events */
-    case MouseEnter(ent) => 
-      this.copy(hovered = Some(ent))
+  def eventMsg(evt:Event): Message[EditorState] = evt match
+    case MouseEnter(ent) =>
+      // println(s"MouseEnter $ent")
+      HoverMsg(hovered,Some(ent))
     case MouseLeave(ent) =>
-      this.copy(hovered = if ent == backgroundPart then None else Some(backgroundPart))
-    case MouseMove(pos) => this.copy(mousePos = pos)
+      // println(s"MouseLeave $ent")
+      HoverMsg(hovered, if ent == backgroundPart then None else Some(backgroundPart))
+    case MouseMove(pos) => 
+      FreeMsg(_.copy(mousePos = pos))
     /* Dimension events */
     case Resize(newsize) => 
-      println("resize")
-      this.copy(dims = newsize)
+      FreeMsg(_.copy(dims = newsize))
     /* Keyboard events */    
-    case KeyDown("Escape") => this.copy(selected = Seq())
+    case KeyDown("Escape") => 
+      FreeMsg(_.copy(selected = Seq()))
     case KeyDown(key) => KeyModifier.fromString.get(key) match
-      case Some(mod) => this.copy(modifiers = modifiers + mod)
-      case None => this
+      case Some(mod) => ModMsg(modifiers,modifiers + mod)
+      case None => Message()
     case KeyUp(key) => KeyModifier.fromString.get(key) match
-      case Some(mod) => this.copy(modifiers = modifiers - mod)
-      case None => this
+      case Some(mod) => ModMsg(modifiers,modifiers - mod)
+      case None => Message()
     /* Clear key modifiers when focus is lost */
-    case Blur() => this.copy(modifiers = Set())
+    case Blur() => ModMsg(modifiers,Set())
     /* Selection events */
     case MouseDown(Some(part),Left) if modifiers.contains(Ctrl) => 
       if selected.contains(part)
-      then this.copy(selected = selected diff Seq(part))
-      else this.copy(selected = selected :+ part)
-    case MouseDown(Some(part),Left) => 
-      this.copy(selected = Seq(part))
-    case DoubleClick(Some(part),Left) => this.copy(selected = Seq(part))
-    case _              => this
-  }
+      then SelectMsg(selected,selected.filter(_ == part))
+      else SelectMsg(selected,selected :+ part)
+    case MouseDown(Some(part),Left) if part == backgroundPart & selected.nonEmpty =>
+      SelectMsg(selected,Seq())
+    case MouseDown(Some(part),Left) if part != backgroundPart =>
+      SelectMsg(selected,Seq(part))
+ 
+    case _ => Message()
+  
+
+  def processEvent(evt: Event): EditorState = 
+    eventMsg(evt).execute(this)
+
+
 }
 
 object EditorState {
-  def modifyACSet[A:ACSet](acsetSig: Signal[A], stateSig: Signal[EditorState]) =
-    acsetSig.combineWith(stateSig).map( (acset, state) => 
-      state.hovered.collect{case p:Part => p}
-        .map(ent => acset.setProp(Hovered, ent,  ()))
-        .getOrElse(acset)
-        .setProp(Selected,state.selected.map(_ -> ()))
-    )
+
 
   def listen(into: Observer[Event]) = {
     dom.document.addEventListener("keydown",(ev:KeyboardEvent) => into.onNext(KeyDown(ev.key)))
@@ -68,9 +71,27 @@ object EditorState {
 }
 
 
-sealed trait EditorMsg extends Message[EditorState]
+sealed trait EditorMsg extends AtomicMessage[EditorState]
 
 case class ResizeMsg(z:Complex) extends EditorMsg:
   def execute(es:EditorState) = es.copy(
     dims = z
   )
+
+case class HoverMsg(prev:Option[Entity],next:Option[Entity]) extends EditorMsg:
+  def execute(es:EditorState) = es.copy(
+    hovered = next
+  )
+
+
+
+case class SelectMsg(prev:Seq[Part],next:Seq[Part]) extends EditorMsg:
+  def execute(es:EditorState) = es.copy(
+    selected = next
+  )
+
+case class ModMsg(prev:Set[KeyModifier],next:Set[KeyModifier]) extends EditorMsg:
+  def execute(es:EditorState) = es.copy(
+    modifiers = next
+  )
+

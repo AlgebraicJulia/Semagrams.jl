@@ -167,7 +167,10 @@ object SimpleACSet:
             )
         )
 
-        def moveToIndex(p: Part, idx: Int) = a.copy(
+        def moveToIndex(p: Part, idx: Int) = 
+          // println(s"moveToIndex $p $idx")
+          // println(a.partStore(p.ob).ids)
+          a.copy(
           partStore = a.partStore + (
             p.ob -> a.partStore(p.ob).moveToIndex(p.id,idx)
           )

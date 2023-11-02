@@ -59,10 +59,10 @@ case class EditMsg[K<:Matchable](
 ) extends TableMsg[K]
 
 case class SetValue[K](key:K,change:PropChange[_]) extends ChangeMsg[K]
-case class Highlight[K<:Matchable](key:K,highlighted:Boolean = true) extends ChangeMsg[K] with TableMsg[K]:
+case class HighlightMsg[K<:Matchable](key:K,highlighted:Boolean = true) extends ChangeMsg[K] with TableMsg[K]:
   def change = if highlighted
-    then PropChange(Hovered,None,())
-    else PropChange(Hovered,(),None)
+    then PropChange(Highlight,None,())
+    else PropChange(Highlight,(),None)
   
 
 
@@ -76,7 +76,7 @@ class PropTable[K<:Matchable](name:String,cols:Seq[Property],keys:Seq[Property])
    * within `laminarElt`. */
   def editUpdate(msg:TableMsg[K]) = msg match
     case msg:EditMsg[_] => editingVar.set(msg.newEdit)
-    case msg:Highlight[_] => ()
+    case msg:HighlightMsg[_] => ()
 
   def headerRow = tr(
     th(name) +: cols.map(prop => th(prop.toString()))
@@ -100,7 +100,8 @@ class PropTable[K<:Matchable](name:String,cols:Seq[Property],keys:Seq[Property])
       
 
     val msgObs: Observer[TableMsg[K]] = Observer(_ match
-      case msg:Highlight[K] =>        
+      case msg:HighlightMsg[K] =>
+        println(s"Table msgObs $msg")
         messenger.onNext(SetValue(msg.key,msg.change))
       case msg:EditMsg[K] =>
         editingVar.set(msg.newEdit)
@@ -219,12 +220,12 @@ case class PropRow[K<:Matchable](key:K,cols:Seq[Property],prv:Option[K],nxt:Opti
       cellMods,
       backgroundColor <-- 
       
-      rowSig.map(_._1.get(Hovered) match
+      rowSig.map(_._1.get(Highlight) match
         case Some(_) => "lightblue"
         case None => "white"
       ),
-      onMouseEnter.mapTo(Highlight(key)) --> tableObs,
-      onMouseLeave.mapTo(Highlight(key,false)) --> tableObs,
+      onMouseEnter.mapTo(HighlightMsg(key)) --> tableObs,
+      onMouseLeave.mapTo(HighlightMsg(key,false)) --> tableObs,
     )
 
 

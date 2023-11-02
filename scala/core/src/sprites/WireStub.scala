@@ -20,7 +20,7 @@
 //       z1 <-- data.map(_(Center)),
 //       z2 <-- data.map(_(Center) + dir),
 //       stroke <-- data.map(d =>
-//         if d.get(Hovered).isDefined then "lightgrey" else d(Stroke)
+//         if d.get(Highlight).isDefined then "lightgrey" else d(Stroke)
 //       )
 //     )
 //     val offset = (dir * Complex(0, 1)).normalize * 5

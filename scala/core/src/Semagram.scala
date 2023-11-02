@@ -103,6 +103,8 @@ case class SemagramElt[D:PartData,A:ACSetWithData[D]](
   messageBus: EventBus[Either[Message[A],Message[EditorState]]]
 ):
 
+
+
   val modelSig = signal.map(_._1)
   val stateSig = signal.map(_._2)
 
@@ -110,10 +112,14 @@ case class SemagramElt[D:PartData,A:ACSetWithData[D]](
   def getState() = readout()._2
 
   def modelEvents: EventStream[Message[A]] = messageBus.events.collect {
-    case Left(msg) => msg
+    case Left(msg) => 
+      println(s"modelEvents $msg")
+      msg
   }
   def modelObs: Observer[Message[A]] = messageBus.writer.contramap(
-    msg => Left(msg)
+    msg => 
+      println(s"modelObs $msg")
+      Left(msg)
   )
 
   def stateEvents: EventStream[Message[EditorState]] = messageBus.events.collect {
@@ -133,9 +139,9 @@ case class SemagramElt[D:PartData,A:ACSetWithData[D]](
   def acsetMsg(msg:ChangeMsg[Part]): Message[A] = 
     msg match
     case SetValue(p,change) => ChangePropMsg(p,change)
-    case Highlight(p,highlighted) => if highlighted 
-      then ChangePropMsg(p,PropChange(Hovered,None,()))
-      else ChangePropMsg(p,PropChange(Hovered,(),None))
+    case HighlightMsg(p,highlighted) => if highlighted 
+      then ChangePropMsg(p,PropChange(Highlight,None,()))
+      else ChangePropMsg(p,PropChange(Highlight,(),None))
 
   // /** A callback function for passing messages externally **/
   // def update(msg:Message[A]) = events.writer.onNext(msg)
@@ -164,6 +170,9 @@ trait ACSemagram[D:PartData,A:ACSetWithData[D]] extends Semagram[D] {
 
   type Data = D
 
+
+  def stateMsg(es:EditorState,a:A): Message[A] = Message()
+
   /** Construct a `SemagramElt` from a collection of `Binding` interactions
    *  and an optional initial value
    */ 
@@ -172,10 +181,15 @@ trait ACSemagram[D:PartData,A:ACSetWithData[D]] extends Semagram[D] {
     /* Construct the state variables */
     val modelVar = UndoableVar(a) 
     val stateVar = Var(EditorState(None,Complex(1,1),Complex(0,0),Seq(),Set())) 
-    val msgBus: EventBus[Either[Message[Model],Message[EditorState]]] = EventBus()
+    val messageBus: EventBus[Either[Message[Model],Message[EditorState]]] = EventBus()
     val msgObs = Observer[Either[Message[Model],Message[EditorState]]](_ match
-      case Left(msg) => modelVar.update(msg.execute)
-      case Right(msg) => stateVar.update(msg.execute)
+      case Left(msg) => 
+        println()
+        println(s"msgObs Left $msg")
+        modelVar.update(msg.execute)
+      case Right(msg) => 
+        // println(s"stateVar $msg")
+        stateVar.update(msg.execute)
     )
 
     /* Construct state variable (attached to the element) and global
@@ -186,13 +200,15 @@ trait ACSemagram[D:PartData,A:ACSetWithData[D]] extends Semagram[D] {
     val eventBus = EventBus[Event]()
     val globalEventBus = EventBus[Event]()
     
+
     /* Modify model to account for local state (e.g., hover) */ 
-    val modelSig = EditorState.modifyACSet(modelVar.signal, stateVar.signal)
+    val modelSig = stateVar.signal.combineWith(modelVar.signal)
+      .map((es,m) => stateMsg(es,m).execute(m))
 
     // I built messages into the `Event` structure (`MsgEvent`) before I 
     // really understood the laminar API with a `MsgEvent`.
     // Refactor to use it or remove?
-    val outbox = EventBus[Message[Model]]()
+    // val outbox = EventBus[Either[Message[Model],Message[EditorState]]]()
 
     val defaultAttrs = Seq(
       backgroundColor := "lightblue",
@@ -210,10 +226,11 @@ trait ACSemagram[D:PartData,A:ACSetWithData[D]] extends Semagram[D] {
         svg.height := "100%",
         svg.width := "100%",
       ),
-      globalEventBus.events --> stateVar.updater[Event]((state, evt) => state.processEvent(evt)),
+
+      messageBus.events.map(m => {println(s"semaElt $m");m}) --> msgObs,
       globalEventBus.events --> eventBus.writer,
       defaultAttrs,
-      msgBus --> msgObs,
+      // msgBus --> msgObs,
       inContext(thisNode =>  
         onMountCallback(_ => stateVar.update(_.copy(
           dims = Complex(thisNode.ref.clientWidth,thisNode.ref.clientHeight)
@@ -241,7 +258,7 @@ trait ACSemagram[D:PartData,A:ACSetWithData[D]] extends Semagram[D] {
             dispatcher.unsafeRunAndForget(eventQueue.offer(evt))
           )
         )
-        Binding.processAll(Action.Resources(modelVar, stateVar, eventQueue, outbox.writer), bindings)
+        Binding.processAll(Action.Resources(modelVar, stateVar, eventQueue, messageBus.writer), bindings)
       }
     } yield ()
 
@@ -252,7 +269,7 @@ trait ACSemagram[D:PartData,A:ACSetWithData[D]] extends Semagram[D] {
       semaElt,
       () => (modelVar.now(),stateVar.now()),
       modelSig.combineWith(stateVar.signal),
-      msgBus
+      messageBus
     )
   }
 

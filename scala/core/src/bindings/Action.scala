@@ -42,10 +42,13 @@ object Action {
       stateVar: Var[EditorState],
       // globalStateVar: StrictSignal[GlobalState],
       eventQueue: Queue[IO, Event],
-      outbox: Observer[Message[Model]]
+      outbox: Observer[Either[Message[Model],Message[EditorState]]]
   ) {
-    def processEvent(evt: Event): IO[Unit] =
-      IO(stateVar.update(_.processEvent(evt)))
+    def processEvent(evt: Event): IO[Unit] = IO(stateVar.update( editorState =>
+      val msg = editorState.eventMsg(evt)
+      outbox.onNext(Right(msg))
+      msg.execute(editorState)
+    ))
 
     def mousePos: Option[Complex] = stateVar.now().hovered.map(_ =>
       stateVar.now().mousePos
@@ -67,13 +70,12 @@ object Action {
     }
 }
 
-case class AddAtMouse[A:ACSet](getPartProps: IO[Option[(Part,PropMap)]],select:Boolean = true) extends Action[Unit, A] {
+case class AddAtMouse[D:PartData,A:ACSetWithData[D]](getPartProps: IO[Option[(Ob,D)]],select:Boolean = true) extends Action[Unit, A] {
   def apply(_p: Unit, r: Action.Resources[A]) = r.mousePos match
     case Some(z) =>
       getPartProps.map( _ match
-        case Some((newPart,props)) => r.modelVar.update(acset =>
-          val (next,addedPart) = acset.addPart(newPart, props + (Center -> z))
-          assert(newPart == addedPart)
+        case Some((ob,data)) => r.modelVar.update(acset =>
+          val (next,newPart) = acset.addPart(ob, data.setProp(Center,z))
           if select then r.stateVar.update(_.copy(selected = Seq(newPart)))
           next
         )
@@ -91,15 +93,25 @@ case class AddAtMouse[A:ACSet](getPartProps: IO[Option[(Part,PropMap)]],select:B
 }
 object AddAtMouse:
 
-  def apply[A:ACSet](ob:Ob) = new AddAtMouse[A](IO{
-    Some(Part(ob) -> PropMap())
-  })
-  def apply[A:ACSet](obIO:IO[Ob]) = new AddAtMouse[A](obIO.map(ob =>
-    Some(Part(ob) -> PropMap())  
-  ))
-  @targetName("AddAtMouseConvenience")
-  def apply[A:ACSet](partIO:IO[(Part,PropMap)]) = 
-    new AddAtMouse[A](partIO.map(Some.apply))
+  /* Static objects */
+  def apply[D:PartData,A:ACSetWithData[D]](ob:Ob): AddAtMouse[D,A] = 
+    AddAtMouse[D,A](ob,PartData[D]())
+  def apply[D:PartData,A:ACSetWithData[D]](ob:Ob,data:D): AddAtMouse[D,A] = 
+    AddAtMouse[D,A](IO(ob -> data))
+  def apply[D:PartData,A:ACSetWithData[D]](ob:Ob,dataIO:IO[D]): AddAtMouse[D,A] = 
+    AddAtMouse[D,A](dataIO.map(ob -> _))
+
+  /* Unfailing IO */
+  def apply[D:PartData,A:ACSetWithData[D]](obIO:IO[Ob]): AddAtMouse[D,A] = 
+    AddAtMouse[D,A](obIO.map(_ -> PartData[D]()))
+  @targetName("AddAtMouseObData")
+  def apply[D:PartData,A:ACSetWithData[D]](obDataIO:IO[(Ob,D)]): AddAtMouse[D,A] = 
+    AddAtMouse[D,A](obDataIO.map(pair => Some(pair)))
+
+  /* IO with failure */
+  @targetName("AddAtMouseObOption")
+  def apply[D:PartData,A:ACSetWithData[D]](optIO:IO[Option[Ob]]): AddAtMouse[D,A] = 
+    AddAtMouse[D,A](optIO.map(_.map(_ -> PartData[D]())))
 
 
 case class Add[A:ACSet](ob: Ob,props:PropMap = PropMap()) extends Action[Unit, A] {
@@ -149,6 +161,9 @@ case class MoveViaDrag[A:ACSet]() extends Action[Part, A] {
     else for {
       ctr <- IO(r.modelVar.now().tryProp(Center,p))
       offset <- IO(r.stateVar.now().mousePos - r.modelVar.now().getProp(Center, p))
+      _ = println("before: " + r.modelVar.now().getParts(p.ob))
+      _ <- IO(r.modelVar.now().moveToFront(p))
+      _ = println("after: " + r.modelVar.now().getParts(p.ob))
       _ <- takeUntil(r.eventQueue)(
         evt => evt match {
           case Event.MouseMove(pos) =>
@@ -167,7 +182,6 @@ case class AddEdgeViaDrag[A:ACSet](tgtObs: Map[Ob,(Ob,GenHom[_],GenHom[_])]) ext
   def apply(srcPart: Part, r: Action.Resources[A]): IO[Unit] = 
     for {
         initpos <- IO(r.stateVar.now().mousePos)
-        _ = println("AddEdgeViaDrag apply")
         /* Create temporary part */
         (tempTgt,(tempOb,tempSrc,_)) = tgtObs.toSeq.head
         tempPart <- r.modelVar.updateIO(a => a.addPart(tempOb, 
@@ -177,10 +191,7 @@ case class AddEdgeViaDrag[A:ACSet](tgtObs: Map[Ob,(Ob,GenHom[_],GenHom[_])]) ext
         _ <- takeUntil(r.eventQueue)(
           evt => r.processEvent(evt) >> (evt match {
             /* During drag */
-            case Event.MouseMove(pos) => 
-              println("move")
-
-              IO {
+            case Event.MouseMove(pos) => IO {
               r.modelVar.update(_.setProp(End, tempPart, pos))
               None
             }
@@ -188,14 +199,17 @@ case class AddEdgeViaDrag[A:ACSet](tgtObs: Map[Ob,(Ob,GenHom[_],GenHom[_])]) ext
             case Event.MouseUp(Some(tgtPart:Part), _) if 
               tgtObs.keySet.contains(tgtPart.ob) => {
                 val (dragOb,dragSrc,dragTgt) = tgtObs(tgtPart.ob)
-                
+
                 r.modelVar.update{ a =>
                   val a0 = a.remPart(tempPart)
 
                   if dragSrc.codom != srcPart.ty 
                     | dragTgt.codom != tgtPart.ty
-                  then a0
-                  else a0.addPart(dragOb,PropMap()
+                  then 
+                    a0
+                  else 
+
+                    a0.addPart(dragOb,PropMap()
                     .set(dragSrc, srcPart).set(dragTgt, tgtPart)
                     .set(Interactable, true)
                   )._1

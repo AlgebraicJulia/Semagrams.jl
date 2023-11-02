@@ -164,7 +164,8 @@ trait ACSet[A] {
     def remPart(p:Part) = a.remParts(Seq(p))
     
     /* Setting order & properties */
-    def moveToFront(p:Part): A = moveToIndex(p,0)
+    def moveToFront(p:Part): A = 
+      moveToIndex(p,0)
 
 
     /* PartData getters & setters */
@@ -263,6 +264,14 @@ trait ACSet[A] {
         part -> a.getData(part).setProp(f,fval)  
       )) 
     
+    /* Set a single property on many parts */
+    def setProp(f:Property,ps:Seq[Part],v:f.Value): A =
+      a.setProp(f,ps.map(_ -> v))
+      
+    /* Set a single property on many parts */
+    def setProp(f:Property,ob:Ob,v:f.Value): A =
+      a.setProp(f,a.getParts(ob),v)
+      
     /* Set many properties on a single part */
     def setProps(p:Part,props:PropMap): A = 
       a.setData(p,a.getData(p).setProps(props))
@@ -302,6 +311,13 @@ trait ACSet[A] {
     def remProp(f:Property,p:Part): A = 
       a.setData(p,a.getData(p).remProp(f))
 
+    def remProp(f:Property,ps:Seq[Part]): A =
+      a.setData(ps.map(p => p -> a.getData(p).remProp(f)))
+      
+    def remProp(f:Property,ob:Ob): A =
+      a.remProp(f,a.getParts(ob))
+      
+
     def remProps(fs:Seq[Property],p:Part): A = 
       a.setProps(p,a.getProps(p) -- fs)
 
@@ -322,44 +338,6 @@ object ACSet {
   def apply[S:Schema,A:ACSetWithSchema[S]](s: S): A =
     summon[ACSet[A]].fromSchema(s)
 
-  // /** `State` wrapper around ACSet.addParts */
-  // def addParts[A:ACSet](ob: Ob, props: Seq[PropMap]): State[A, Seq[Part]] =
-  //   State(_.addParts(ob, props))
-
-  // /** `State` wrapper around ACSet.addPart */
-  // def addPart[A:ACSet](ob: Ob, props: PropMap): State[A, Part] =
-  //   State(_.addPart(ob, props))
-
-  // /** `State` wrapper around ACSet.addPart */
-  // def addPart[D:PartData,A:ACSetWithData[D]](ob: Ob, init: D): State[A, Part] =
-  //   State(_.addPart(ob, init))
-
-  // /** `State` wrapper around ACSet.addPart */
-  // def addPart[A:ACSet](ob: Ob): State[A, Part] =
-  //   State(_.addPart(ob))
-
-  // /** `State` wrapper around ACSet.setProp */
-  // def setProp[A:ACSet](f: Property, p: Part, v: f.Value): State[A, Unit] =
-  //   State.modify(_.setProp(f, p, v))
-  
-  // /** `State` wrapper around ACSet.remProp */
-  // def remProp[A:ACSet](f: Property, p: Part): State[A, Unit] =
-  //   State.modify(_.remProp(f, p))
-
-  // /** `State` wrapper around ACSet.remPart */
-  // def remPart[A:ACSet](p: Part): State[A, Unit] = 
-  //   State.modify({a =>
-  //     a.remPart(p)})
-
-  // /** `State` wrapper around ACSet.remParts */
-  // def remParts[A:ACSet](ps: Seq[Part]): State[A, Unit] = State.modify(_.remParts(ps))
-
-  // /** `State` wrapper around ACSet.moveFront */
-  // def moveToFront[A:ACSet](p: Part): State[A, Unit] = State.modify(_.moveToFront(p))
-
-  // /** Returns a lens into the value of the property `f` for part `x` */
-  // def subpartLens[A:ACSet](f: Property, x: Part) =
-  //   Lens[A, f.Value](_.getProp(f, x))(y => s => s.setProp(f, x, y))
 }
 
 
@@ -497,15 +475,7 @@ object ACSet {
 
 
 
-sealed trait ACSetMsg[A:ACSet] extends Message[A]:
-  val msgs: Seq[ACSetMsg[A]] = Seq(this)
-  def *(that:ACSetMsg[A]) = ACSetMsg(this.msgs ++ that.msgs)
-
-object ACSetMsg:
-  def apply[A:ACSet](msgs:Seq[ACSetMsg[A]]): ACSetMsg[A] = msgs match
-    case Seq(msg) => msg
-    case _ => MsgSeq(msgs)
-   
+sealed trait ACSetMsg[A:ACSet] extends AtomicMessage[A]
 
 case class AddPartMsg[A:ACSet](ob:Ob,props:PropMap = PropMap(),idOpt:Option[UUID] = None) extends ACSetMsg[A]:
   def execute(a:A) = idOpt match
@@ -527,13 +497,24 @@ case class ChangePropMsg[A:ACSet](part:Part,pval:PropChange[_]) extends ACSetMsg
 object ChangePropMsg:
   def apply[A:ACSet](part:Part,f:Property,oldVal:f.Value,newVal:f.Value) = new ChangePropMsg(part,PropChange(f,oldVal,newVal))
 
-// def RemPropMsg[A:ACSet](part:Part,f:Property) = SetPropMsg(part,PropVal(f,None))
+case class SetPropsMsg[A:ACSet](part:Part,props:PropMap) extends ACSetMsg[A]:
+  def execute(a:A) = a.setProps(part,props)
 
-case class MsgSeq[A:ACSet](override val msgs:Seq[ACSetMsg[A]]) extends ACSetMsg[A]:
-  def execute(a:A) = msgs.foldLeft(a)((acset,msg) => msg.execute(acset))
+case class SetPropMsg[A:ACSet](part:Part,pval:PropVal[_]) extends ACSetMsg[A]:
+  def execute(a:A) = pval match
+    case PropVal(f,Some(v)) => a.setProp(f,part,v)
+    case PropVal(f,None) => a.remProp(f,part)
+
+object SetPropMsg:
+  def apply[A:ACSet](part:Part,f:Property,newVal:f.Value) = new SetPropMsg(part,PropVal(f,newVal))
+
+
+
+// case class MsgSeq[A](override val msgs:Seq[ACSetMsg[A]]) extends ACSetMsg[A]:
+//   def execute(a:A) = msgs.foldLeft(a)((acset,msg) => msg.execute(acset))
   
-object MsgSeq:
-  def apply[A:ACSet]() = new MsgSeq[A](Seq())
+// object MsgSeq:
+//   def apply[A:ACSet]() = new MsgSeq[A](Seq())
 // case class RemovePropMsg[A:ACSet](prop:Property,part:Part) extends ACSetMsg[A]:
 //   def execute(a:A) = a.remProp(prop,part)
 

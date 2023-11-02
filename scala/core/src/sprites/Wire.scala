@@ -113,7 +113,7 @@ case class Wire[D:PartData]() extends Sprite[D] {
     def wireElt(s:Complex,t:Complex,data:D): L.SvgElement = 
       path(
         pathElts := ppath(s,t,data),
-        stroke := (if data.hasProp(Hovered) 
+        stroke := (if data.hasProp(Highlight) 
           then "lightgrey" 
           else data.getProp(Stroke).toString
         ),

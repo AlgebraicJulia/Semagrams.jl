@@ -28,7 +28,7 @@ case class Disc[D:PartData](label:Property,init: D) extends Sprite[D] {
       eventWriter: L.Observer[Event]
   ): L.SvgElement = {
     val data = updates
-      .map(init.merge(_))
+      .map(init.softSetProps(defaultProps).merge(_))
       .map(setLabel)
     
     val box = circle(
@@ -120,7 +120,7 @@ object Disc {
   def styleUpdater[D:PartData](data: L.Signal[D]) = {
     List(
       fill <-- data.map(_.getProp(Fill).toString),
-      opacity <-- data.map(d => if d.tryProp(Hovered).isDefined then ".8" else "1"),
+      opacity <-- data.map(d => if d.tryProp(Highlight).isDefined then ".8" else "1"),
       stroke <-- data.map(_.tryProp(Stroke).getOrElse(defaultProps(Stroke)).toString),
       style <-- data.map(_.tryProp(Style).getOrElse(defaultProps(Style)))
     )

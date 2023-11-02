@@ -38,15 +38,23 @@ val schGraphIsSchema: Schema[SchGraph.type] = new Schema[SchGraph.type] {
   type SchHom = GraphHom
 
   extension (s:SchGraph.type)
-    def obs = GraphOb.values.toSeq
-    def homs = GraphHom.values.toSeq
-    def attrs = Seq()
+    def obMap = genMap(GraphOb.values)
+    def homMap = genMap(GraphHom.values)
+    def attrMap = Map()
 
     def _addElts(elts:Seq[Generator]) = 
       println("SchGraph is static")
       s
 
     def addProps(newProps:Seq[Property]) = 
+      println("SchGraph is static")
+      s
+
+    def _remElts(elts:Seq[Generator]) = 
+      println("SchGraph is static")
+      s
+
+    def remProps(oldProps:Seq[Property]) = 
       println("SchGraph is static")
       s
 
@@ -69,11 +77,18 @@ sealed trait GraphEltDef[D:PartData]:
 
   def asEntitySource[A:ACSetWithData[D]]: EntitySource[D,A]
 
+  // def transform(f:D => D): GraphEltDef[D]
+  // def stateTransform(es:EditorState)(part:Part,data:D): D
+
 object GraphEltDef:
   def makeEntitySource[D:PartData,A:ACSetWithData[D]](defn:GraphEltDef[D]): EntitySource[D,A] = 
     EntitySource[D,A]( (acset,emap) => for
       ob <- acset.schema.obs
       if defn.test(ob)
+      // _ = if ob == SchObs.FKeyOb
+      //   then 
+      //     println(s"makeEntitySource $ob")
+      //     println(s"parts = ${acset.getData(ob)}")
       (part,data) <- acset.getData(ob)
       newData = defn.init(ob).merge(data)
     yield (part,defn.sprite,newData))
@@ -90,7 +105,7 @@ case class VertexDef[D:PartData](
   def asEntitySource[A:ACSetWithData[D]]: EntitySource[D,A] = 
     GraphEltDef.makeEntitySource(this)
 
-
+  // def transform(f:D => D): VertexDef[D] = VertexDef(sprite,init.andThen(f))
   
 
 
@@ -118,6 +133,10 @@ case class EdgeDef[D:PartData](
 ) extends GraphEltDef[D]:
   
   val init = edgeData.andThen(_._1)
+
+  // def transform(f:D => D): EdgeDef[D] = EdgeDef(sprite,
+  //   edgeData.andThen( (d,src,tgt) => (f(d),src,tgt))
+  // )
 
 
 
@@ -170,12 +189,13 @@ object EdgeDef:
 //   PartData[PropMap] = PartData.propsAreData
 // def acsetIsACSet[D]: ACSetWithDataAndS
 
-case class GraphDisplay[D:PartData](
+case class GraphDisplay[D:PartData,A:ACSetWithData[D]](
   vertexDefs: Seq[VertexDef[D]],
-  edgeDefs: Seq[EdgeDef[D]]
+  edgeDefs: Seq[EdgeDef[D]],
+  transform: (EditorState,A) => Message[A] = (es:EditorState,a:A) => Message[A]()
 ):
   
-  def apply[A:ACSetWithData[D]](
+  def apply(
     bindings:Seq[Binding[A]],
     init:A
   ): SemagramElt[D,A] = {
@@ -183,7 +203,10 @@ case class GraphDisplay[D:PartData](
     
     val newSema = new ACSemagram[D,A] {
 
+      override def stateMsg(es: EditorState,a:A): Message[A] = transform(es,a)
+
       val eltDefs: Seq[GraphEltDef[D]] = vertexDefs ++ edgeDefs
+
 
       def layout(g: A): A = {
         val es = for 
