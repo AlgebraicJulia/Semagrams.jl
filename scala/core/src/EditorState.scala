@@ -40,7 +40,7 @@ case class EditorState(
     case MouseDown(Some(part),Left) if modifiers.contains(Ctrl) => 
       if selected.contains(part)
       then SelectMsg(selected,selected.filter(_ == part))
-      else SelectMsg(selected,selected :+ part)
+      else SelectMsg(selected,(selected :+ part).distinct)
     case MouseDown(Some(part),Left) if part == backgroundPart & selected.nonEmpty =>
       SelectMsg(selected,Seq())
     case MouseDown(Some(part),Left) if part != backgroundPart =>

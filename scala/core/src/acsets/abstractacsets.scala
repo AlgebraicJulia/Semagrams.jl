@@ -7,6 +7,7 @@ import semagrams.acsets._
 
 import upickle.default._
 import semagrams.util.UUID
+import semagrams.acsets.simple.SchemaElt
 
 
 
@@ -76,6 +77,10 @@ trait ACSet[A] {
     def setGlobalProp(f:Property,v:f.Value): A
     def remGlobalProp(f:Property): A
     def addSchemaElts(elts:Seq[Elt]): A
+    def remSchemaElts(ids:Seq[UUID]): A
+    def replaceSchemaElts(elts:Seq[(UUID,Elt)]): A
+
+    // def setSchema(newSchema:Sch): A
     
     /* Manipulating parts */
     def getParts(ob:Ob): Seq[Part]
@@ -93,8 +98,19 @@ trait ACSet[A] {
     def ++(s:Sch) = a.addSchemaElts(s.generators)
 
 
-
+    
     /* Generic methods */
+
+    // def renameSchemaElt(elt:SchemaElt,newName:String) = 
+      
+    //   a.setSchema(
+    //   a.schema.renameElt(elt.id,newName)
+    // )
+    // def renameSchemaElt(id:UUID,newName:String) = a.setSchema(
+    //   a.schema.renameElt(id,newName)
+    // ) 
+      
+
 
     /* Global properties */
     def globalProps: PropMap = a.globalData.getProps()
@@ -522,6 +538,17 @@ case class SetPropMsg[A:ACSet](part:Part,pval:PropVal[_]) extends ACSetMsg[A]:
 
 object SetPropMsg:
   def apply[A:ACSet](part:Part,f:Property,newVal:f.Value) = new SetPropMsg(part,PropVal(f,newVal))
+
+
+case class RenameOb[A:ACSet](id:UUID,newOb:Ob) extends ACSetMsg[A]:
+  def execute(a:A) = 
+    a.replaceSchemaElts(Seq(id -> newOb))
+    // pval match
+    // case PropVal(f,Some(v)) => a.setProp(f,part,v)
+    // case PropVal(f,None) => a.remProp(f,part)
+
+object RenameOb:
+  def apply[A:ACSet](id:UUID,ob:Ob) = new RenameOb[A](id,ob)
 
 
 

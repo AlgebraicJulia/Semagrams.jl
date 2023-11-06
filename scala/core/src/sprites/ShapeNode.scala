@@ -49,7 +49,7 @@ case class ShapeNode[D:PartData](label:Property,init: D) extends Sprite[D] {
       .map(init.merge(_))
       .map(setLabel)
 
-    val text = Sprite.innerText(data)
+    val text = data.map(Sprite.innerText)
 
     val eltSig = data.splitOne(data => data.tryProp(Shape))(
       (shapeOpt,props,propSig) => shapeOpt match
@@ -70,7 +70,7 @@ case class ShapeNode[D:PartData](label:Property,init: D) extends Sprite[D] {
     g(
       cls := "shaperect",
       L.child <-- eltSig,
-      text,
+      L.child <-- text,
       MouseEvents.handlers(ent,eventWriter),
       
       // rect(

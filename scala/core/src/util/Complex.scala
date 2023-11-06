@@ -62,6 +62,9 @@ case class Complex(x: Double, y: Double) {
 
   /** convert to an SVG string */
   def toSvg = s"$x $y"
+
+  def tuple = (x,y)
+  def iter = Seq(x,y)
 }
 
 implicit def realToComplex(x: Double): Complex = Complex(x, 0)

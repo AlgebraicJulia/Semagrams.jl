@@ -17,7 +17,7 @@ extension [A, B](s: L.Signal[Tuple2[A, B]])
 case class Rect[D:PartData](label:Property,val rectInit: D) extends Sprite[D] {
   import Rect._
 
-  def defaultProps = Rect.defaultProps
+  def defaultProps = Sprite.defaultProps
   def requiredProps = Seq(Center)
 
   def setLabel: D => D = Sprite.setContent(label)
@@ -33,7 +33,7 @@ case class Rect[D:PartData](label:Property,val rectInit: D) extends Sprite[D] {
       .map(initData.merge(_))
       .map(setLabel)
 
-    val text = Sprite.innerText(data)
+    val text = data.map(Sprite.innerText)
     
     val box = rect(
       cls := "rect-box",
@@ -52,7 +52,7 @@ case class Rect[D:PartData](label:Property,val rectInit: D) extends Sprite[D] {
     val root = g(
       cls := "rect-root",
       box,
-      text,
+      L.child <-- text,
       bg,
       MouseEvents.handlers(ent, eventWriter),
       /* Prevent selection outside semagram window (on double click) */
@@ -114,6 +114,8 @@ case class Rect[D:PartData](label:Property,val rectInit: D) extends Sprite[D] {
 }
 
 object Rect {
+  import Sprite.defaultProps
+
   def geom[D:PartData](data: D): (Complex, Complex) = {
     val props = data.softSetProps(defaultProps)
     val textRect = boxSize(
@@ -150,7 +152,9 @@ object Rect {
         then "3"
         else "1"
       ),
-      stroke <-- props.map(_.getProp(Stroke).toString),
+      stroke <-- props.map(data => data.tryProp(Stroke).getOrElse(
+        RGB("black")
+      ).toString),
       style <-- props.map(_.getProp(Style))
     )
   }
@@ -163,18 +167,6 @@ object Rect {
       pointerEvents := "none",
     )
   }
-
-  val defaultProps = PropMap()
-    + (Content, "")
-    + (ImageURL, "")
-    + (FontSize, 14)
-    + (Fill, RGB("white"))
-    + (Stroke, RGB("black"))
-    + (InnerSep, 0)
-    + (OuterSep, 0)
-    + (MinimumWidth, 40)
-    + (MinimumHeight, 40)
-    + (Style,"")
 
   def apply() = new Rect(Content,defaultProps)
   def apply(props:PropMap) = new Rect(Content,defaultProps ++ props)

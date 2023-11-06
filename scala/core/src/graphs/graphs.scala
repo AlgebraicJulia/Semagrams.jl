@@ -9,6 +9,11 @@ import semagrams.bindings.Binding
 import cats.effect.IO
 import scala.annotation.targetName
 import semagrams.acsets.simple.SchObs
+import semagrams.util.UUID
+import semagrams.util.UndoableVar
+import com.raquo.laminar.api.L._
+// import com.raquo.airstream.core.Signal
+// import com.raquo.airstream.core.Observer
 
 
 
@@ -41,6 +46,10 @@ val schGraphIsSchema: Schema[SchGraph.type] = new Schema[SchGraph.type] {
     def obMap = genMap(GraphOb.values)
     def homMap = genMap(GraphHom.values)
     def attrMap = Map()
+
+    def renameElt(id:UUID,newName:String) = 
+      println("SchGraph is static")
+      s
 
     def _addElts(elts:Seq[Generator]) = 
       println("SchGraph is static")
@@ -198,7 +207,7 @@ case class GraphDisplay[D:PartData,A:ACSetWithData[D]](
   
   def apply(
     bindings:Seq[Binding[A]],
-    init:A
+    modelVar: Var[A]
   ): SemagramElt[D,A] = {
     /* Create ACSemagram */
     
@@ -225,7 +234,7 @@ case class GraphDisplay[D:PartData,A:ACSetWithData[D]](
 
     }
     /* Return SemagramElt */
-    newSema.apply(bindings,init)
+    newSema.apply(bindings,modelVar)
 
 
 

@@ -4,6 +4,8 @@ import org.scalajs.dom
 import semagrams.util._
 
 import scala.collection.mutable
+import semagrams.Sprite
+import semagrams.GenericProperty
 
 private val measurementStyle = """
 position: absolute;
@@ -46,7 +48,7 @@ def boxSize(text: String, fontSize: Double, split:Boolean = false): Complex = {
 def boxSize(text:Option[String],fontSize:Option[Double]): Complex = boxSize(text,fontSize,false)
 def boxSize(text:Option[String],fontSize:Option[Double],split:Boolean): Complex = boxSize(
   text.getOrElse(""),
-  fontSize.getOrElse(12.0),
+  fontSize.getOrElse(Sprite.defaultProps(GenericProperty.FontSize)),
   split
 )
 

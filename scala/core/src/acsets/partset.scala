@@ -149,15 +149,11 @@ case class PartSet(
     * This is used, for instance, when setting the position of a port.
     */
   def moveToIndex(i: UUID, j: Int) = {
-    println(s"PartSet moveToIndex $i:${ids.indexOf(i)} -> $j")
-    println(s"before: $ids")
     val (seg1, seg2) = ids.filterNot(_ == i).splitAt(j)
-    println(s"seg1 = $seg1, seg2 = $seg2")
-    val ret = this.copy(
+    this.copy(
       ids = (seg1 :+ i) ++ seg2
     )
-    println(s"after partset: ${ret.ids}")
-    ret
+    
   }
 
   def contains(id:UUID) = ids.contains(id)

@@ -16,9 +16,22 @@ case class RGB(red:Int,green:Int,blue:Int):
     convex(r,this.green,that.green),
     convex(r,this.blue,that.blue),
   )
+
+  def tuple = (red,green,blue)
+  def iter = Seq(red,green,blue)
   
   def lighten(r:Double) = interp(r,RGB(255,255,255))
   def darken(r:Double) = interp(r,RGB(0,0,0))
+
+  /* A measure of brightness between 0 and 1 */
+  /* cf. https://en.wikipedia.org/wiki/Relative_luminance */
+  def luminance = Seq(0.2126,0.7152,0.0722)
+    .zip(iter.map(_/256.0))
+    .foldLeft(0.0){ 
+      case (aggr,(coeff,color)) => aggr + coeff * color
+    }
+
+  def contrast = if luminance > .2 then RGB("black") else RGB("white")
 
 
 

@@ -14,7 +14,7 @@ case class Disc[D:PartData](label:Property,init: D) extends Sprite[D] {
   import Disc._
 
   def requiredProps = Seq(Center)
-  def defaultProps = Disc.defaultProps
+  def defaultProps = Sprite.defaultProps
 
 
   def setLabel: D => D = Sprite.setContent(label)
@@ -36,7 +36,7 @@ case class Disc[D:PartData](label:Property,init: D) extends Sprite[D] {
       styleUpdater(data)
     )
 
-    val text = Sprite.innerText(data) 
+    val text = data.map(Sprite.innerText) 
       
     //   L.svg.text(
     //   xy <-- data.map(_.get(Center).getOrElse(Complex(100, 100))),
@@ -61,7 +61,7 @@ case class Disc[D:PartData](label:Property,init: D) extends Sprite[D] {
     g(
       box,
       bg,
-      text,
+      L.child <-- text,
       MouseEvents.handlers(ent, eventWriter)
     )
   }
@@ -69,7 +69,7 @@ case class Disc[D:PartData](label:Property,init: D) extends Sprite[D] {
   override def boundaryPt(init: D, dir: Complex, subparts: Seq[Part] = Seq()) = {
     val data = init.softSetProps(defaultProps)
     val rad = radius(data) + data.tryProp(OuterSep)
-      .getOrElse(Disc.defaultProps(OuterSep))
+      .getOrElse(defaultProps(OuterSep))
     
     data.tryProp(Center).map(dir.normalize * rad + _)
   }
@@ -97,6 +97,8 @@ case class Disc[D:PartData](label:Property,init: D) extends Sprite[D] {
 }
 
 object Disc {
+
+  import Sprite.defaultProps
 
   def radius[D:PartData](data: D): Double = {
     val textBox = boxSize(data.tryProp(Content), data.tryProp(FontSize),split = true)
@@ -129,18 +131,7 @@ object Disc {
 
 
 
-  val defaultProps = PropMap()
-    // + (Center, Complex(100,100))
-    + (Content, "")
-    + (ImageURL, "")
-    + (FontSize, 14)
-    + (Fill, RGB(0,0,0))
-    + (Stroke, RGB("black"))
-    + (InnerSep, 10)
-    + (OuterSep, 5)
-    + (MinimumWidth, 40)
-    + (MinimumHeight, 40)
-    + (Style,"")
+
 
 
   def apply() = new Disc(Content,defaultProps)

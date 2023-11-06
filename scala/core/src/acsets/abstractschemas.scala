@@ -11,6 +11,7 @@ import semagrams.acsets.simple.simpleSchemaIsSchema
 import scala.language.implicitConversions
 
 import upickle.default._
+import semagrams.acsets.simple.ValType
 
 
 
@@ -152,13 +153,29 @@ trait Schema[S]:
     def attrMap: Map[UUID,SchAttr]
     def globalProps: Seq[Property] = Seq()
 
-
     def _addElts(gens:Seq[Generator]): S
     def addProps(prop:Seq[Property]): S
 
     def _remElts(gens:Seq[Generator]): S
     def remProps(props:Seq[Property]): S
 
+    def renameElt(id0:UUID,name:String): S
+
+    def renameOb(id0:UUID,name:String) = s.tryOb(id0) match
+      case Some(ob) => s.renameElt(id0,name)
+      case None => s
+
+    def renameHom(id0:UUID,name:String) = s.tryFKey(id0) match
+      case Some(ob) => s.renameElt(id0,name)
+      case None => s
+
+    def renameAttr(id0:UUID,name:String) = s.tryColumn(id0) match
+      case Some(ob) => s.renameElt(id0,name)
+      case None => s
+
+    def rename(ob:GenOb,newName:String) = s.renameOb(ob.id,newName)
+    def rename(f:GenHom[_],newName:String) = s.renameHom(f.id,newName)
+    def rename(a:GenAttr[_,_],newName:String) = s.renameAttr(a.id,newName)
 
     def eltMap: Map[UUID,Elt] = obMap ++ homMap ++ attrMap
 
@@ -185,8 +202,18 @@ trait Schema[S]:
     def generators: Seq[Generator] = (obs ++ homs ++ attrs).flatMap(_.generators)
 
     def contains(ob:Ob): Boolean = obs.contains(ob)
+    // def contains(f:Arrow): Boolean = homs.contains(f)
+    // def contains(a:Column[_]): Boolean = attrs.contains(a)
+ 
     def tryOb(id0:UUID): Option[SchOb] = obs.find(_.id == id0)
+    def tryFKey(id0:UUID): Option[SchHom] = homs.find(_.id == id0)
+    def tryColumn(id0:UUID): Option[SchAttr] = attrs.find(_.id == id0)
+    def tryId(id0:UUID): Option[Elt] = s.eltMap.get(id0)
+ 
     def getOb(id0:UUID): SchOb = tryOb(id0).get
+    def getFKey(id0:UUID): SchOb = tryOb(id0).get
+    def getAttr(id0:UUID): SchOb = tryOb(id0).get
+    def getId(id0:UUID): Elt = s.tryId(id0).get
 
     
     def addElts(elts:Seq[Elt]): S = 
@@ -200,6 +227,12 @@ trait Schema[S]:
 
     def remElt(elt:Elt) = s._remElts(elt.generators)
     def remElts(elts:Seq[Elt]) = s._remElts(elts.flatMap(_.generators))
+
+    def remId(id:UUID) = s.tryId(id) match
+      case Some(elt) => s.remElt(elt)
+      case None => s
+
+    def remIds(ids:Seq[UUID]) = s.remElts(ids.flatMap(id => s.tryId(id)))
 
 
 
@@ -240,7 +273,7 @@ trait PartData[Data]:
     def tryProp(f:Property): Option[f.Value] = d.getProps().get(f)
     def getProp(f:Property): f.Value = d.getProps()(f)
     
-    def hasProps(fs:Seq[Property]): Boolean = d.getProps().contains(fs)
+    def hasProps(fs:Seq[Property]): Boolean = d.getProps().contains(fs:_*)
     def getProps(fs:Iterator[Property]): PropMap = d.getProps().filterKeys(fs.contains)
     
     def setProps(props:PropMap): Data =

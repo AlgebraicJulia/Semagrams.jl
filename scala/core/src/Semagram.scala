@@ -126,10 +126,15 @@ case class SemagramElt[D:PartData,A:ACSetWithData[D]](
     case msg => Right(msg)
   }
 
+
   case class SemaTable(ob:Ob,cols:Seq[Property],keys:Seq[Property] = Seq()):
+    val (editMsgs,editObs) = EventStream.withObserver[(Part,Property)]
+
     def table = PropTable[Part](ob.label,cols,keys)
-    val (elt,edit) = table.laminarEltWithCallback(
+    
+    val elt = table.laminarElt(
       modelSig.map(_.getPropSeq(ob)),
+      editMsgs.map(toEdit => EditMsg(None,Some(toEdit))),
       modelObs.contramap(acsetMsg)
     )
 
@@ -145,6 +150,8 @@ case class SemagramElt[D:PartData,A:ACSetWithData[D]](
   @targetName("updateState")
   def update(msg:Message[EditorState]) = stateObs.onNext(msg)
 
+
+
   /** Convenience method for constructing tables from semagrams **/
   def propTable(ob:Ob,cols:Seq[Property],keys:Seq[Property]) = 
     SemaTable(ob,cols,keys)
@@ -155,11 +162,11 @@ case class SemagramElt[D:PartData,A:ACSetWithData[D]](
   def propTable(ob:Ob,cols:Property*): SemaTable =
     propTable(ob,cols,Seq())
 
-  def propTable(ob:Ob): SemaTable =
-    val sch = getModel().schema
-    val cols = sch.homs.filter(_.dom == ob)
-      ++ sch.attrs.filter(_.dom == ob)
-    propTable(ob,cols:_*)
+  // def propTable(ob:Ob): SemaTable =
+  //   val sch = getModel().schema
+  //   val cols = sch.homs.filter(_.dom == ob)
+  //     ++ sch.attrs.filter(_.dom == ob)
+  //   propTable(ob,cols:_*)
 
 
 
@@ -172,13 +179,17 @@ trait ACSemagram[D:PartData,A:ACSetWithData[D]] extends Semagram[D] {
 
   def stateMsg(es:EditorState,a:A): Message[A] = Message()
 
+
+
+  // val execute(msg:Message[A]): IO[A]
+  
   /** Construct a `SemagramElt` from a collection of `Binding` interactions
    *  and an optional initial value
    */ 
-  def apply(bindings: Seq[Binding[A]],a:A): SemagramElt[D,A] = {
+  def apply(bindings: Seq[Binding[A]],modelVar:Var[Model]): SemagramElt[D,A] = {
     
     /* Construct the state variables */
-    val modelVar = UndoableVar(a) 
+    // val modelVar = mVar 
     val stateVar = Var(EditorState(None,Complex(1,1),Complex(0,0),Seq(),Set())) 
     val messageBus: EventBus[Either[Message[Model],Message[EditorState]]] = EventBus()
     val messageObs = Observer[Either[Message[Model],Message[EditorState]]](_ match
@@ -196,8 +207,8 @@ trait ACSemagram[D:PartData,A:ACSetWithData[D]] extends Semagram[D] {
     
 
     /* Modify model to account for local state (e.g., hover) */ 
-    val modelSig = stateVar.signal.combineWith(modelVar.signal)
-      .map((es,m) => stateMsg(es,m).execute(m))
+    val statefulSig = stateVar.signal.combineWith(modelVar.signal)
+      .map((state,acset) => stateMsg(state,acset).execute(acset))
 
     // I built messages into the `Event` structure (`MsgEvent`) before I 
     // really understood the laminar API with a `MsgEvent`.
@@ -216,7 +227,7 @@ trait ACSemagram[D:PartData,A:ACSetWithData[D]] extends Semagram[D] {
     
     /* Construct the laminar element associated with the semagram */
     val semaElt = div(
-      this.apply(modelSig,eventBus.writer).amend(
+      this.apply(statefulSig,eventBus.writer).amend(
         svg.height := "100%",
         svg.width := "100%",
       ),
@@ -261,7 +272,7 @@ trait ACSemagram[D:PartData,A:ACSetWithData[D]] extends Semagram[D] {
     SemagramElt(
       semaElt,
       () => (modelVar.now(),stateVar.now()),
-      modelSig.combineWith(stateVar.signal),
+      statefulSig.combineWith(stateVar.signal),
       messageBus
     )
   }

@@ -155,7 +155,7 @@ object Arrow {
     + (LabelAnchor,0.5)
     + (LabelOffset,10.0)
     + (PathLabel,"")
-    + (FontSize,10.0)
+    + (FontSize,12)
 
   def apply(label:Property=Content,props:PropMap = PropMap()) = new Arrow(label,defaultProps ++ props)
 }

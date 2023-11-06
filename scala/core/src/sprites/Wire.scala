@@ -115,7 +115,9 @@ case class Wire[D:PartData]() extends Sprite[D] {
         pathElts := ppath(s,t,data),
         stroke := (if data.hasProp(Highlight) 
           then "lightgrey" 
-          else data.getProp(Stroke).toString
+          else data.tryProp(Stroke).getOrElse(
+            data.getProp(Stroke)
+          ).toString
         ),
         fill := "none",
         style := "user-select: none",

@@ -16,6 +16,7 @@ import com.raquo.laminar.api.L._
 import org.scalajs.dom
 import scala.scalajs.js.annotation._
 import scala.scalajs.js
+import cats.effect.IO
 
 
 implicit val schIsSchema: Schema[SchGraph.type] = 
@@ -31,11 +32,14 @@ val bindings = Seq[Binding[SimpleACSet[SchGraph.type]]](
   Binding(ClickOnPartHook(MouseButton.Left).filter(V), MoveViaDrag()),
   Binding(
     ClickOnPartHook(MouseButton.Left, KeyModifier.Shift), 
-    AddEdgeViaDrag(E, Src, Tgt)
+    AddEdgeViaDrag(
+      Map(V -> (E, Src)),
+      Map((V,V) -> IO(Some((E,Src,Tgt,PropMap()))))
+    )
   ),
   // Binding(MsgHook(),ProcessMsg()),
   Binding(DoubleClickOnPartHook(),Callback(part => 
-      pTable.edit(part,Content)
+      pTable.editObs.onNext(part -> Content)
   )),
   Binding(KeyDownHook("?"), PrintModel()),
 )
@@ -48,7 +52,7 @@ val graphdisplay = GraphDisplay[PropMap,SimpleACSet[SchGraph.type]](
 )
 
 val sema: SemagramElt[PropMap,SimpleACSet[SchGraph.type]] = 
-  graphdisplay(bindings,SimpleACSet(SchGraph))
+  graphdisplay(bindings,Var(SimpleACSet(SchGraph)))
 
 
 

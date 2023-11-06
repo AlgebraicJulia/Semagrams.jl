@@ -127,65 +127,60 @@ trait Sprite[D:PartData] {
 
 
 object Sprite:
+
+
+  val defaultProps = PropMap()
+    + (Content, "")
+    + (ImageURL, "")
+    + (FontSize, 14)
+    + (Fill, RGB("white"))
+    + (Stroke, RGB("black"))
+    + (InnerSep, 5)
+    + (OuterSep, 5)
+    + (MinimumWidth, 40)
+    + (MinimumHeight, 40)
+    + (Style,"")
+
+
+
+
   def setContent[D:PartData](label:Property)(data:D) =
     data.setProp(Content,
-      // data.g
       data.tryProp(label).getOrElse("").toString()
     )
 
-  def innerText[D:PartData](dataSig:Signal[D]): SvgElement = svg.text(
-    xy <-- dataSig.map(pm => pm.tryProp(Center).getOrElse(
-      throw msgError(s"propmap $pm missing `Center`")
-    )),
-    children <-- dataSig.map(data =>
-      val splits = splitString(data.getProp(Content)).zipWithIndex
-      val l = splits.length
-      splits.toIndexedSeq.map({ case (t, i) =>
-        svg.tspan(
-          textToTextNode(t),
-          svg.textAnchor := "middle",
-          svg.x <-- dataSig.map(p =>
-            data.tryProp(Center).getOrElse(Complex(50, 50)).x.toString()
-          ),
-          svg.y <-- dataSig.map(p =>
-            (data.tryProp(Center).getOrElse(Complex(100, 100)).y 
-              + data.tryProp(FontSize).getOrElse(12.0) * (i + 1 - l / 2.0)).toString()
-          ),
-          svg.style := "user-select: none",
-        )
-      })
-    ),
-    svg.fontSize <-- dataSig.map(
-      _.tryProp(FontSize).getOrElse(12.0).toString
-    ),
-    svg.pointerEvents := "none",
-  )
+  def innerText[D:PartData](d:D): SvgElement = 
+    assert(d.getProps().contains(Center))
+    val data: D = d.softSetProps(Sprite.defaultProps)
+    val splits = splitString(data.getProp(Content)).zipWithIndex
+    val l = splits.length
 
-  // def innerText2(dataSig:Signal[PropMap]): Signal[SvgElement] = 
-  //   dataSig.map(pm => svg.text(
-  //     xy <-- pm.get(Center).getOrElse(
-  //       throw msgError(s"propmap $pm missing `Center`")
-  //     ),
-  //     children <-- dataSig.map(p =>
-  //       val splits = splitString(p(Content)).zipWithIndex
-  //       val l = splits.length
-  //       splits.toIndexedSeq.map({ case (t, i) =>
-  //         svg.tspan(
-  //           textToTextNode(t),
-  //           svg.textAnchor := "middle",
-  //           svg.x <-- dataSig.map(p =>
-  //             p.get(Center).getOrElse(Complex(50, 50)).x.toString()
-  //           ),
-  //           svg.y <-- dataSig.map(p =>
-  //             (p.get(Center).getOrElse(Complex(100, 100)).y 
-  //               + p.get(FontSize).getOrElse(12.0) * (i + 1 - l / 2.0)).toString()
-  //           ),
-  //           svg.style := "user-select: none"
-  //         )
-  //       })
-  //     ),
-  //     svg.fontSize <-- dataSig.map(
-  //       _.get(FontSize).getOrElse(12.0).toString
-  //     ),
-  //     svg.pointerEvents := "none",
-  //   )
+    def xy(idx:Int) =
+      val (x0,y0) = data.getProp(Center).tuple
+      val fs = data.getProp(FontSize)
+      (x0,y0 + fs * (idx + 1 - l / 2.0))
+    
+    val tspans = splits.toIndexedSeq.map{ case (text, idx0) =>
+      val (x0,y0) = xy(idx0)
+      svg.tspan(
+        textToTextNode(text),
+        svg.textAnchor := "middle",
+        svg.x := x0.toString,
+        svg.y := y0.toString,
+        svg.style := "user-select: none",
+      )
+    }
+
+    val styles = Seq(
+      svg.fontSize := data.getProp(FontSize).toString,
+      svg.stroke := data.tryProp(Stroke).getOrElse(
+        defaultProps(Stroke)
+      ).toString,
+      svg.fill := data.tryProp(Stroke).getOrElse(
+        defaultProps(Stroke)
+      ).toString,
+      svg.pointerEvents := "none",
+    )
+
+    svg.text(tspans.map(_.amend(styles)))   
+  

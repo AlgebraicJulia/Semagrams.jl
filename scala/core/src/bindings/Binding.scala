@@ -43,12 +43,12 @@ object Binding {
   ): IO[Unit] = 
     import cats.implicits._
     for {
-    state <- IO(r.stateVar.now())
-    _ <- bindings.flatMap{ (b:Binding[Model]) =>
-      b.hook(evt,state)
-        .map(b.action(_,r))
-    }.parSequence_
-  } yield ()
+      state <- IO(r.stateVar.now())
+      _ <- bindings.flatMap{ (b:Binding[Model]) =>
+        b.hook(evt,state)
+          .map(b.action(_,r))
+      }.parSequence_
+    } yield ()
 
   def processAll[Model](r: Action.Resources[Model], bindings: Seq[Binding[Model]]): IO[Unit] = {
     Monad[IO].whileM_(IO(true)) {

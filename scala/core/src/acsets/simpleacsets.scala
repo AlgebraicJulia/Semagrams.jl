@@ -138,9 +138,73 @@ object SimpleACSet:
           schema = a.schema ++ elts
         )
 
+        def remSchemaElts(ids:Seq[UUID]) = 
+          val newSchema = a.schema.remIds(ids)
+          val newParts = 
+            (a.partStore -- ids.flatMap(a.schema.tryOb))
+              .map((ob,parts) => ob -> parts.copy(
+                propStore = a.partStore(ob).propStore.map( (id,data) =>
+                  id -> data.filter{ (f,fval) => fval match
+                    case part:Part =>
+                      val partids = part.ob.generators.map(_.id)
+                      if (ids intersect partids).isEmpty
+                      then true
+                      else false
+                    case _ => true
+                  }
+                )
+              ))
+
+
+          a.copy(
+            schema = newSchema,
+            partStore = newParts
+          )
+
+        def replaceSchemaElts(elts:Seq[(UUID,Elt)]) =
+          val newSchema = a.schema.remIds(elts.map(_._1))
+            .addElts(elts.map(_._2))
+
+          val newParts = a.partStore.map{ (ob,partset) =>
+            val newOb = ob match
+              case ob:GenOb => elts.find(_._1 == ob.id) match
+                case Some((id,newOb:Ob)) => newOb
+                case _ => ob
+              case _ => ob
+            
+            val newProps = a.partStore(ob).propStore.map((id0,data) =>
+              id0 -> data.filter((f,fval) => fval match
+                case part:Part if part.ob.generators.map(_.id).contains(id0) =>
+                  false
+                case _ => true
+              )
+            )
+
+            newOb -> a.partStore(ob).copy(
+              propStore = newProps
+            )
+          }
+
+
+          a.copy(
+            schema = newSchema,
+            partStore = newParts
+          )
+
+
+        def setSchema(newSch: S) = a.copy(
+          schema = newSch,
+          partStore = a.partStore.toSeq.flatMap {
+            case (ob:GenOb,partset) => newSch.obs.find(_.id == ob.id)
+              .map(newOb => newOb -> partset)
+            case _ => None
+          }.toMap
+        )
+
         def getParts(ob:Ob): Seq[Part] = 
           a.partStore(ob).ids.map(Part(_,ob))
 
+          
         def getData(p:Part): PropMap = 
           a.partStore.get(p.ob).flatMap(
             _.propStore.get(p.id)
@@ -167,17 +231,11 @@ object SimpleACSet:
             )
         )
 
-        def moveToIndex(p: Part, idx: Int) =
-          val ids = a.partStore(p.ob).ids
-          println(s"moveToIndex $p:${ids.indexOf(p.id)} -> $idx")
-          println(s"before: " + a.partStore(p.ob).ids)
-          val ret = a.copy(
-            partStore = a.partStore + (
-              p.ob -> a.partStore(p.ob).moveToIndex(p.id,idx)
-            )
+        def moveToIndex(p: Part, idx: Int) = a.copy(
+          partStore = a.partStore + (
+            p.ob -> a.partStore(p.ob).moveToIndex(p.id,idx)
           )
-          println(s"after moveToIndex: " + ret.partStore(p.ob).ids)
-          ret
+        )
         
         def setData(kvs:Seq[(Part,PropMap)]) = a.copy(
           partStore = a.partStore ++ 

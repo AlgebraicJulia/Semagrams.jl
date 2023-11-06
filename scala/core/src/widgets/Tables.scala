@@ -85,6 +85,7 @@ class PropTable[K<:Matchable](name:String,cols:Seq[Property],keys:Seq[Property])
   /** Create an editable laminar element. */ 
   def laminarElt[Model](
     propSig:Signal[Seq[(K,PropMap)]],
+    editStream:EventStream[EditMsg[K]],
     messenger:Observer[ChangeMsg[K]]
   ) =
 
@@ -132,17 +133,21 @@ class PropTable[K<:Matchable](name:String,cols:Seq[Property],keys:Seq[Property])
     /* Return table element. `height` attribute for full-size divs in table */
     table(
       headerRow,
+      editStream --> msgObs,
+      height := "max-content",
       children <-- eltSig,
-      height := "100%",
     )
 
   /** Create a laminar table along with a callback function to trigger table updates. **/ 
   def laminarEltWithCallback(
     rowSig:Signal[Seq[(K,PropMap)]],
+    editStream:EventStream[EditMsg[K]],
     messenger:Observer[ChangeMsg[K]]
   ) =
-    val elt = laminarElt(rowSig,messenger)
-    def edit(k:K,col:Property) = 
+    val elt = laminarElt(rowSig,editStream,messenger)
+    def edit(k:K,col:Property) =
+      println(s"called edit $k $col")
+      println(editingVar.now())
       editingVar.set(Some(k -> col))
     (elt,edit)
 
@@ -216,12 +221,11 @@ case class PropRow[K<:Matchable](key:K,cols:Seq[Property],prv:Option[K],nxt:Opti
     tr(
       td(key.toString),
       cellMods,
-      backgroundColor <-- 
-      
-      rowSig.map(_._1.get(Highlight) match
+      backgroundColor <-- rowSig.map(_._1.get(Highlight) match
         case Some(_) => "lightblue"
         case None => "white"
       ),
+      // height := "100%",
       onMouseEnter.mapTo(HighlightMsg(key)) --> tableObs,
       onMouseLeave.mapTo(HighlightMsg(key,false)) --> tableObs,
     )
@@ -240,6 +244,7 @@ case class PropCell[K<:Matchable,T](key:K, col:Property {type Value = T})(tOpt:O
     
     
     td(cls := "dcell",
+      // height := "100%",
       child <-- editSig.map( _ match
         case true => tableInput(col,editObs,tOpt)
         case false => tableCell(col,valSig,
@@ -263,7 +268,7 @@ def tableCell(col:Property,vSig:Signal[Option[col.Value]],toggle:Observer[Unit])
     case None => ""
   ),
   onDblClick.mapTo(()) --> toggle,
-  height := "100%"
+  height := "100%",
 )
 
 /** Create a laminar table cell input with an initial value. The input observes

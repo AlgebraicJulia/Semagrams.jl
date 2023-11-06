@@ -85,11 +85,9 @@ case class PropMap(pmap: Map[Property, Any]) {
   /** Unset `p` */
   def -(p: Property): PropMap = this -- Seq(p)
 
-  /** Check if `p` is set */
-  def contains(p: Property):Boolean = pmap contains p
-
   /** Check if `ps` are set */
-  def contains(ps: Seq[Property]): Boolean = ps.forall(p => contains(p))
+  def contains(ps: Property*):Boolean = ps.forall(pmap.contains)
+
 }
 
 object PropMap {

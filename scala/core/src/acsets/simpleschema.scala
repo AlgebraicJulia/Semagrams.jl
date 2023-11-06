@@ -294,6 +294,10 @@ val schSchemaIsSchema: Schema[SchSchema.type] = new Schema[SchSchema.type] {
     def homMap = SchHoms.values.map(f => f.id -> f).toMap
     def attrMap = Map()
 
+    def renameElt(id0:UUID,name:String) = 
+      println("SchSchema is static")
+      s
+
     def _addElts(elts:Seq[Generator]) = 
       println("SchSchema is static")
       s
@@ -438,6 +442,20 @@ val simpleSchemaIsSchema: Schema[SimpleSchema] =
       def obMap = s.obMap
       def homMap = s.homMap
       def attrMap = s.attrMap
+
+      def renameElt(id0:UUID,newName:String) = s.tryId(id0) match
+        case Some(ob:SchOb) => s.copy(
+          obMap = s.obMap + (id0 -> ob.copy(name = newName))
+        )
+        case Some(f:SchHom) => s.copy(
+          homMap = s.homMap + (id0 -> f.copy(name = newName))
+        )
+        case Some(a:SchAttr) => s.copy(
+          attrMap = s.attrMap + (id0 -> a.copy(name = newName)(a.codom.rw))
+        )
+        case None => s
+      
+        
       def _addElts(elts:Seq[Generator]) = s.copy(
         obMap = s.obMap ++ elts.collect{ case x:Table => x.id -> x},
         homMap = s.homMap ++ elts.collect{ case f:FKey => f.id -> f},
@@ -497,7 +515,7 @@ object SimpleSchema:
       ).toMap
 
     val fkeyMap = schACSet.getProps(FKeyOb).toSeq.collect { 
-      case (part,props) if props.contains(Seq(FKeySrc,FKeyTgt)) =>
+      case (part,props) if props.contains(FKeySrc,FKeyTgt) =>
         val s = props(FKeySrc)
         val t = props(FKeyTgt)
 
@@ -509,7 +527,7 @@ object SimpleSchema:
     }.toMap
 
     val columnMap = schACSet.getProps(ColumnOb).toSeq.collect { 
-      case (part,props) if props.contains(Seq(ColumnSrc,ColumnTgt)) =>
+      case (part,props) if props.contains(ColumnSrc,ColumnTgt) =>
         val s = props(ColumnSrc)
         val typ = typeMap(props(ColumnTgt))
 
