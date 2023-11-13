@@ -1,6 +1,6 @@
 package semagrams.util
 
-import semagrams.acsets.abstr.Part
+import semagrams.acsets.Part
 // import semagrams.acsets.ROOT
 
 /** Create the declaration of a Tikz node. */

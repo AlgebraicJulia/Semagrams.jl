@@ -67,8 +67,6 @@ case class Complex(x: Double, y: Double) {
   def iter = Seq(x,y)
 }
 
-implicit def realToComplex(x: Double): Complex = Complex(x, 0)
-implicit def intToComplex(n: Int): Complex = Complex(n, 0)
 
 object Complex {
   val im = Complex(0, 1)
@@ -78,4 +76,8 @@ object Complex {
   def apply(x: Double, y: Double) = if x.isNaN || y.isNaN then
     throw new InputMismatchException
   else new Complex(x, y)
+
+
+  implicit def realToComplex(x: Double): Complex = Complex(x, 0)
+  implicit def intToComplex(n: Int): Complex = Complex(n, 0)
 }

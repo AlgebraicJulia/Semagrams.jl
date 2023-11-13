@@ -1,7 +1,8 @@
 package semagrams.bindings
 
 import semagrams._
-import semagrams.acsets.abstr._
+import semagrams.state._
+import semagrams.acsets._
 
 
 /** A trait for filters on the event stream, picking out events that are
@@ -10,7 +11,6 @@ import semagrams.acsets.abstr._
   */
 trait EventHook[A] {
 
-  // override def toString = description
 
   /** Determine whether or not this is triggered, and if it is triggered
     */
@@ -38,10 +38,6 @@ case class FilterMap[A,B](base:EventHook[A],f:A=>Option[B]) extends EventHook[B]
   val description = s"Optionally map an `EventHook[A]` by f:A => Option[B]"
 }
 
-case class MapHook[A,B](base:EventHook[A],f:A => B) extends EventHook[B] {
-  def apply(evt:Event,es:EditorState) = base.apply(evt,es).map(f)
-  val description = "Filter an `EventHook` by some property of its return value"
-}
 
 
 /** An [[EventHook]] for keydown events.
@@ -87,24 +83,12 @@ extension (hook:EventHook[Part])
 case class DoubleClickOnPartHook(button: MouseButton = MouseButton.Left, modifiers: Set[KeyModifier] = Set()) extends EventHook[Part]:
 
   def apply(evt:Event, es: EditorState) = evt match {
-    case DoubleClick(part,button) if modifiers == es.modifiers =>
-      part
+    case DoubleClick(Some(part:Part),button) if modifiers == es.modifiers =>
+      println(s"DoubleClickOnPartHook $part")
+      Some(part)
     case _ => None 
   }
 
   def description = s"double-click on part with $button"
 
-
-
-case class MsgHook[Model]() extends EventHook[Message[Model]] {
-
-
-  def apply(evt: Event, es: EditorState) = evt match {
-    case MsgEvent(msg) => Some(msg.asInstanceOf[Message[Model]])
-    case _ => None
-  }
-
-  def description = "receive a message to process"
-
-}
 

@@ -2,17 +2,20 @@ package semagrams.bindings
 
 import semagrams._
 import semagrams.util._
-// import semagrams.acsets._
+import semagrams.state._
+import semagrams.acsets._
+
 import com.raquo.laminar.api.L._
+
 import cats._
 import cats.implicits._
 import cats.effect._
 import cats.effect.std._
+
 import upickle.default._
 
-import semagrams.acsets.abstr._
 import scala.annotation.targetName
-import cats.data.OptionT
+// import cats.data.OptionT
 // import semagrams.acsets.abstr.ACSet
 
 import scala.concurrent.duration._
@@ -40,11 +43,10 @@ trait Action[Param, Model] {self =>
 
 object Action {
   case class Resources[Model](
-      modelVar: Var[Model],
+      modelVar: UndoableVar[Model],
       stateVar: Var[EditorState],
-      // globalStateVar: StrictSignal[GlobalState],
       eventQueue: Queue[IO, Event],
-      outbox: Observer[Either[Message[Model],Message[EditorState]]]
+      outbox: Observer[StateMsg[Model]]
   ) {
     def processEvent(evt: Event): IO[Unit] = IO(stateVar.update( editorState =>
       val msg = editorState.eventMsg(evt)
@@ -72,58 +74,56 @@ object Action {
     }
 }
 
-case class AddAtMouse[D:PartData,A:ACSetWithData[D]](getPartProps: IO[Option[(Ob,D)]],select:Boolean = true) extends Action[Unit, A] {
-  def apply(_p: Unit, r: Action.Resources[A]) = r.mousePos match
-    case Some(z) =>
-      getPartProps.map( _ match
-        case Some((ob,data)) => r.modelVar.update(acset =>
-          val (next,newPart) = acset.addPart(ob, data.setProp(Center,z))
-          if select then r.stateVar.update(_.copy(selected = Seq(newPart)))
-          next
-        )
-        case None => ()
+case class AddAtMouse[D:PartData](getPartData: IO[Option[(Ob,D)]],select:Boolean = true) extends Action[Unit, ACSet[D]]:
+  def apply(_p: Unit, r: Action.Resources[ACSet[D]]) = r.mousePos match
+    case Some(z) => getPartData.map(_ match
+      case Some((ob,data)) => r.modelVar.update(acset =>
+        val (next,newPart) = acset.addPart(ob, data.setProp(Center,z))
+        if select then r.stateVar.update(_.copy(selected = Seq(newPart)))
+        next
       )
+      case None => ()
+    )
     case None => IO(())
     
   
 
   def description = s"add a new part at current mouse position"
-}
+
 object AddAtMouse:
 
   /* Static objects */
-  def apply[D:PartData,A:ACSetWithData[D]](ob:Ob): AddAtMouse[D,A] = 
-    AddAtMouse[D,A](ob,PartData[D]())
-  def apply[D:PartData,A:ACSetWithData[D]](ob:Ob,data:D): AddAtMouse[D,A] = 
-    AddAtMouse[D,A](IO(ob -> data))
-  def apply[D:PartData,A:ACSetWithData[D]](ob:Ob,dataIO:IO[D]): AddAtMouse[D,A] = 
-    AddAtMouse[D,A](dataIO.map(ob -> _))
+  def apply[D:PartData](ob:Ob) = new AddAtMouse[D](IO(Some(ob -> PartData())))
+  // def apply[D:PartData](ob:Ob,data:D): AddAtMouse[D] = 
+  //   AddAtMouse[D](IO(ob -> data))
+  // def apply[D:PartData](ob:Ob,dataIO:IO[D]): AddAtMouse[D] = 
+  //   AddAtMouse[D](dataIO.map(ob -> _))
 
-  /* Unfailing IO */
-  def apply[D:PartData,A:ACSetWithData[D]](obIO:IO[Ob]): AddAtMouse[D,A] = 
-    AddAtMouse[D,A](obIO.map(_ -> PartData[D]()))
-  @targetName("AddAtMouseObData")
-  def apply[D:PartData,A:ACSetWithData[D]](obDataIO:IO[(Ob,D)]): AddAtMouse[D,A] = 
-    AddAtMouse[D,A](obDataIO.map(pair => Some(pair)))
+  // /* Unfailing IO */
+  // def apply[D:PartData](obIO:IO[Ob]): AddAtMouse[D] = 
+  //   AddAtMouse[D](obIO.map(_ -> PartData[D]()))
+  // @targetName("AddAtMouseObData")
+  // def apply[D:PartData](obDataIO:IO[(Ob,D)]): AddAtMouse[D] = 
+  //   AddAtMouse[D](obDataIO.map(pair => Some(pair)))
 
-  /* IO with failure */
-  @targetName("AddAtMouseObOption")
-  def apply[D:PartData,A:ACSetWithData[D]](optIO:IO[Option[Ob]]): AddAtMouse[D,A] = 
-    AddAtMouse[D,A](optIO.map(_.map(_ -> PartData[D]())))
+  // /* IO with failure */
+  // @targetName("AddAtMouseObOption")
+  // def apply[D:PartData](optIO:IO[Option[Ob]]): AddAtMouse[D] = 
+  //   AddAtMouse[D](optIO.map(_.map(_ -> PartData[D]())))
 
 
-case class Add[A:ACSet](ob: Ob,props:PropMap = PropMap()) extends Action[Unit, A] {
-  def apply(_p: Unit, r: Action.Resources[A]) = IO(
-    {
-      r.modelVar.update(_.addPart(ob, props)._1)
-    }
-  )
+// case class Add[A:ACSet](ob: Ob,props:PropMap = PropMap()) extends Action[Unit, A] {
+//   def apply(_p: Unit, r: Action.Resources[A]) = IO(
+//     {
+//       r.modelVar.update(_.addPart(ob, props)._1)
+//     }
+//   )
 
-  def description = s"add a new part of type $ob with $props"
-}
+//   def description = s"add a new part of type $ob with $props"
+// }
 
-case class DeleteHovered[A:ACSet](cascade:Boolean = true) extends Action[Unit, A] {
-  def apply(_p: Unit, r: Action.Resources[A]) = IO(
+case class DeleteHovered[D:PartData](cascade:Boolean = true) extends Action[Unit, ACSet[D]] {
+  def apply(_p: Unit, r: Action.Resources[ACSet[D]]) = IO(
     {
       r.stateVar
         .now()
@@ -131,9 +131,11 @@ case class DeleteHovered[A:ACSet](cascade:Boolean = true) extends Action[Unit, A
         .map(_ match {
           case (i: Part) => {
             r.stateVar.update(_.copy(hovered = None))
-            r.modelVar.update(_.remPart(i))
+            r.modelVar.update(m =>
+              m.remPart(i))
           }
-          case _ => ()
+          case _ => 
+            ()
         })
         .getOrElse(())
     }
@@ -152,8 +154,8 @@ def takeUntil[A,B](eventQueue: Queue[IO, A])(f: A => IO[Option[B]]): IO[B] =
   }
 } yield b
 
-case class MoveViaDrag[A:ACSet]() extends Action[Part, A] {
-  def apply(p: Part, r: Action.Resources[A]): IO[Unit] = 
+case class MoveViaDrag[D:PartData]() extends Action[Part, ACSet[D]] {
+  def apply(p: Part, r: Action.Resources[ACSet[D]]): IO[Unit] = 
     if r.modelVar.now().tryProp(Center,p).isEmpty
     then IO(())
     else for {
@@ -176,22 +178,27 @@ case class MoveViaDrag[A:ACSet]() extends Action[Part, A] {
 
 
 
-case class AddEdgeViaDrag[A:ACSet](
-  dummyData: Ob => IO[Option[(Ob,GenHom[_])]],
-  tgtIO: (Ob,Ob) => IO[Option[(Ob,GenHom[_],GenHom[_],PropMap)]]
-) extends Action[Part, A] {
-  def apply(srcPart: Part, r: Action.Resources[A]): IO[Unit] =
+case class AddEdgeViaDrag[D:PartData](
+  dummyData: Ob => IO[Option[(Ob,PartProp)]],
+  tgtIO: (Ob,Ob) => IO[Option[(Ob,
+    PartProp,PartProp,D
+    // GenHom[_],GenHom[_],
+    // D
+  )]]
+) extends Action[Part, ACSet[D]]:
+  def apply(srcPart: Part, r: Action.Resources[ACSet[D]]): IO[Unit] =
     println(s"apply $srcPart")
     dummyData(srcPart.ob).flatMap( dummyOpt =>
       println(s"flatMap $dummyOpt")
       dummyOpt.zip(r.mousePos).map{ case ((dummyOb,dummySrc),z0) => 
         println(s"zip map $dummyOb $dummySrc $z0")
-        val dummyProps = PropMap().set(dummySrc,srcPart)
-          .set(End,z0).set(Interactable,false)
+        val dummyData = PartData[D]().setProps(PropMap(
+          dummySrc -> srcPart, End -> z0, Interactable -> false
+        ))
         
         for 
           dummy <- IO {
-            val (a,b) = r.modelVar.now().addPart(dummyOb,dummyProps)
+            val (a,b) = r.modelVar.now().addPart(dummyOb,dummyData)
             r.modelVar.set(a)
             b
           }
@@ -208,17 +215,19 @@ case class AddEdgeViaDrag[A:ACSet](
                 val dragIO = tgtIO(srcPart.ob,tgtPart.ob)
                 for
                   dragOpt <- dragIO
+                
                   _ <- dragOpt match
-                    case Some((dragOb,dragSrc,dragTgt,props)) =>
-                      IO(r.modelVar.update(acset =>
-                        if dragOb == dummyOb & dragSrc == dummySrc
-                        then 
-                          acset.setProps(dummy,props.set(dragTgt,tgtPart))
-                        else
-                          acset.remPart(dummy).addPart(dragOb,
-                              props.set(dragSrc,srcPart).set(dragTgt,tgtPart)
-                            )._1
-                        ))
+                    /* Good return from dragIO */
+                    case Some((dragOb,dragSrc,dragTgt,data)) =>
+                      if dragOb == dummyOb & dragSrc == dummySrc
+                      then IO(r.modelVar.update(acset =>
+                        acset.remProps(dummy,Seq(End,Interactable)).mergeData(dummy,data.setProp(dragTgt,tgtPart))
+                      ))
+                      else IO(r.modelVar.update(acset =>
+                        acset.remPart(dummy).addPart(dragOb,
+                          data.setProps(PropMap(dragSrc -> srcPart, dragTgt -> tgtPart))
+                      )._1))
+                    /* Bad return from dragIO */
                     case None => IO(r.modelVar.update(
                       _.remPart(dummy)
                     ))
@@ -228,6 +237,7 @@ case class AddEdgeViaDrag[A:ACSet](
                 r.modelVar.update(a => a.remPart(dummy))
                 Some(())
               }
+              /* Ignore other events */
               case _ => IO(None)
 
             })
@@ -237,48 +247,43 @@ case class AddEdgeViaDrag[A:ACSet](
     )
 
 
-
-          
-      
-
   def description = "add edge by dragging from source to target"
-}
 
-// object AddEdgeViaDrag:
-  // def apply[A:ACSet](e:Ob,src:GenHom[Ob],tgt:GenHom[Ob]): AddEdgeViaDrag[A] = 
-  //   AddEdgeViaDrag(
-  //     Map(tgt.codom -> (e,src,tgt))
-  //   )
-  // def apply[A:ACSet](tgtObData:(Ob, (Ob,GenHom[Ob],GenHom[Ob]))*): AddEdgeViaDrag[A] = 
-  //   AddEdgeViaDrag(tgtObData.toMap)
+object AddEdgeViaDrag:
+  import PartData.propsAreData
 
-
-case class ProcessMsg[Model]() extends Action[Message[Model],Model] {
-
-  def apply(msg:Message[Model],r: Action.Resources[Model]): IO[Unit] = IO(
-    r.modelVar.update(msg.execute)
-  )
-
-  def description = "process a message from outside the semagram"
+  def apply[D:PartData](tgtObs:(Ob,Ob),edge:(Ob,PartProp,PartProp),init:D = PartData()): AddEdgeViaDrag[D] = 
+    new AddEdgeViaDrag[D](
+      ob => if ob == tgtObs._1 then IO(Some(edge._1 -> edge._2)) else IO(None),
+      (src,tgt) => if ((src,tgt) == tgtObs) then IO(Some(edge :* init)) else IO(None)
+    )
+//   // def apply[A:ACSet](tgtObData:(Ob, (Ob,GenHom[Ob],GenHom[Ob]))*): AddEdgeViaDrag[A] = 
+//   //   AddEdgeViaDrag(tgtObData.toMap)
 
 
+// case class ProcessMsg[Model]() extends Action[Message[Model],Model] {
 
-}
+//   def apply(msg:Message[Model],r: Action.Resources[Model]): IO[Unit] = IO(
+//     r.modelVar.update(msg.execute)
+//   )
+
+//   def description = "process a message from outside the semagram"
 
 
 
+// }
 
-case class Callback[X,A:ACSet](cb:X => Unit) extends Action[X,A] {
 
-  def apply(x:X,r: Action.Resources[A]): IO[Unit] = IO {
-    cb(x)
-  }
 
+
+case class Callback[X,D:PartData](cb:X => Unit) extends Action[X,ACSet[D]]:
+
+  def apply(x:X,r: Action.Resources[ACSet[D]]): IO[Unit] = 
+    IO(cb(x))
   def description = "execute a callback function"
 
 
 
-}
 
 case class PrintModel[Model](hoverRequired:Boolean=true) extends Action[Unit,Model]:
   def apply(u:Unit,r:Action.Resources[Model]) = 
@@ -291,11 +296,10 @@ case class PrintModel[Model](hoverRequired:Boolean=true) extends Action[Unit,Mod
       IO {
         println(acset.toString())
         println(gs.toString())
-        // println(ogs.toString())
       }
   def description = "print a value to the console"
 
 
-case class Die[X,Model]() extends Action[X,Model]:
-  def apply(x:X,r:Action.Resources[Model]) = IO(())
-  def description = "no op"
+// case class Die[X,Model]() extends Action[X,Model]:
+//   def apply(x:X,r:Action.Resources[Model]) = IO(())
+//   def description = "no op"

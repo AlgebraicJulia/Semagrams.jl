@@ -5,7 +5,8 @@ import org.scalajs.dom
 import upickle.default._
 
 import semagrams._
-import semagrams.acsets.abstr._
+import semagrams.acsets._
+import semagrams.state.KeyModifier
 import scala.util._
 
 
@@ -134,8 +135,9 @@ class PropTable[K<:Matchable](name:String,cols:Seq[Property],keys:Seq[Property])
     table(
       headerRow,
       editStream --> msgObs,
-      height := "max-content",
       children <-- eltSig,
+      height := "max-content",
+      margin := "2px"
     )
 
   /** Create a laminar table along with a callback function to trigger table updates. **/ 
@@ -199,8 +201,8 @@ case class PropRow[K<:Matchable](key:K,cols:Seq[Property],prv:Option[K],nxt:Opti
     /* Create a modifier (not an element) for each column. */
     val cellMods = cols.map { col =>
       /* Split signal of a single column */
-      val cellSig: Signal[Element] = rowSig.splitOne{ props => 
-        props.get(col)
+      val cellSig: Signal[Element] = rowSig.splitOne{
+        _.get(col)
       }{ (pval,pair,pairSig) =>
           val cell = PropCell[K,col.Value](key,col)(pval)
           
@@ -283,6 +285,7 @@ def tableInput(col:Property,cellObs:Observer[CellMsg],init:Option[col.Value] = N
       ),
       onKeyDown.stopPropagation --> Observer(_=> ()),
       onMountFocus,
+      inContext(thisNode => onMountCallback(_.thisNode.ref.select())),
       modFilters.flatMap(mods => 
         def catchEmpty(s:String) = (init,readStr(s)(col.rw)) match
           case (None,Some("")) => None

@@ -25,7 +25,7 @@ def toStr[T:ReadWriter](t:T): String = t match
 
 
 case class UUID(stem:String,timestamp:Double,rand:Int) derives ReadWriter:
-  override def toString = Seq(stem,timestamp,rand).mkString("_")
+  override def toString = Seq(stem,rand).mkString("_")
 
 object UUID:
   def apply(stem:String) =

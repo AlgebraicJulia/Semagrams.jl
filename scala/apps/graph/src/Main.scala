@@ -1,58 +1,109 @@
 package semagrams.graph
 
-import semagrams._
-import semagrams.util._
-import semagrams.acsets.abstr._
-import semagrams.acsets.simple._
-import semagrams.bindings._
-import semagrams.graphs._
-import semagrams.sprites._
-import semagrams.acsets.simple.SimpleACSet.simpleACSetIsACSet
-// import semagrams.api._
-// import semagrams.graphs._
-import com.raquo.laminar.api.L._
-
-
 import org.scalajs.dom
 import scala.scalajs.js.annotation._
 import scala.scalajs.js
-import cats.effect.IO
+
+import com.raquo.laminar.api.L._
 
 
-implicit val schIsSchema: Schema[SchGraph.type] = 
-  schGraphIsSchema
-implicit val propsAreData: PartData[PropMap] = 
-  PartData.propsAreData
-implicit val acsetIsACSet: ACSetWithSchemaAndData[SchGraph.type,PropMap][SimpleACSet[SchGraph.type]] =
-  simpleACSetIsACSet[SchGraph.type]
+import semagrams._
+import semagrams.acsets._
+import semagrams.bindings._
+import semagrams.graphs._
 
-val bindings = Seq[Binding[SimpleACSet[SchGraph.type]]](
+
+
+object Main {
+
+  /* The graph editor application */
+  @JSExportTopLevel("GraphApp")
+  object GraphApp {    
+
+    @JSExport
+    def main(mountInto: dom.Element, init: js.UndefOr[String]) = {
+
+      
+      initialize()
+
+
+
+      
+
+      
+      val mainDiv: Div = div( 
+        idAttr := "graph-app",
+        graphSema.laminarElt.amend(
+          semaAttrs,
+        ),
+        div(
+          idAttr := "graph-app-tables",
+          display := "flex",
+          children <-- graphSema.tableVar.signal.map(tableMap =>
+            tableMap.toSeq.map((_,table) => table.elt)
+          )
+        ),
+        // div(graphTables.values.toSeq.map(_.elt)),
+        div(child <-- graphSema.modelSig.map(_.partStore(V.id).ids.mkString("->")))
+      )
+        
+      render(mountInto, mainDiv)
+    }
+  }
+}
+
+
+/* Create table elements and attach them to the semagram tables variable */
+def initialize() = 
+  val graphTables = Map(
+    V.id -> graphSema.editTable(V,Center,Content,Fill),
+    E.id -> graphSema.editTable(E,srcName,tgtName,Content,Stroke,StrokeWidth)
+  )
+
+  for table <- graphTables.values
+  yield table.elt.amend(
+    backgroundColor := "blue"
+  )
+  
+  graphSema.tableVar.set(graphTables)
+
+
+
+val bindings = Seq[Binding[ACSet[PropMap]]](
   Binding(KeyDownHook("a"), AddAtMouse(V)),
   Binding(KeyDownHook("d"), DeleteHovered()),
   Binding(ClickOnPartHook(MouseButton.Left).filter(V), MoveViaDrag()),
   Binding(
     ClickOnPartHook(MouseButton.Left, KeyModifier.Shift), 
-    AddEdgeViaDrag(
-      Map(V -> (E, Src)),
-      Map((V,V) -> IO(Some((E,Src,Tgt,PropMap()))))
-    )
+    AddEdgeViaDrag((V,V),(E,Src,Tgt))
   ),
-  // Binding(MsgHook(),ProcessMsg()),
   Binding(DoubleClickOnPartHook(),Callback(part => 
-      pTable.editObs.onNext(part -> Content)
+    println(part)
+    graphSema.tableVar.now().get(part.ob.id) match
+      case Some(sematable) => 
+        println(s"Some table $part")
+        sematable.edit(part,Content)
+      case None => 
+        println(s"None $part")
+        ()
   )),
   Binding(KeyDownHook("?"), PrintModel()),
 )
 
 
+val srcName = Attr(UUID("CustomAttr"),"srcName",E,ValType[String]("String"))
+val tgtName = Attr(UUID("CustomAttr"),"tgtName",E,ValType[String]("String"))
 
-val graphdisplay = GraphDisplay[PropMap,SimpleACSet[SchGraph.type]](
+val graphdisplay = GraphDisplay[PropMap](
   Seq(VertexDef(Rect(Content),PropMap() + (Fill,RGB("green")) + (Content,"Hi"),V)),
-  Seq(EdgeDef(Arrow(Content),PropMap().set(Stroke,RGB("purple")), E -> (Src,Tgt)))
+  Seq(EdgeDef(Arrow(Content),E,Src,Tgt)),
+  // Seq(EdgeDef(Arrow(Content),PropMap().set(Stroke,RGB("purple")), E -> (Src,Tgt)))
+  (state,acset) => acset
+      .softSetProp(Content,acset.getParts(V).map(p => p -> p.id.toString))
+      .setProp(srcName,acset.collectProp(Src,E).view.mapValues(_.toString))
+      .setProp(tgtName,acset.collectProp(Tgt,E).view.mapValues(_.toString))
+      .setProp(Highlight,state.hoveredPart.map(_ -> ()))
 )
-
-val sema: SemagramElt[PropMap,SimpleACSet[SchGraph.type]] = 
-  graphdisplay(bindings,Var(SimpleACSet(SchGraph)))
 
 
 
@@ -67,27 +118,13 @@ val semaAttrs = Seq(
 )
 
 
-
-val pTable = sema.propTable(V,Content,Fill)
-
+val g = UndoableVar(Graph())
 
 
-object Main {
-  @JSExportTopLevel("GraphApp")
-  object GraphApp {
-    @JSExport
-    def main(mountInto: dom.Element, init: js.UndefOr[String]) = {
 
 
-      val mainDiv: Div = div( 
-        idAttr := "mainDiv",
-        sema.elt.amend(
-          semaAttrs,
-        ),
-        pTable.elt,
-      )
-        
-      render(mountInto, mainDiv)
-    }
-  }
-}
+val graphSema: ACSemagram[PropMap] = graphdisplay(bindings,g)
+
+
+
+

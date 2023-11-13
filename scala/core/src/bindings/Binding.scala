@@ -2,8 +2,9 @@ package semagrams.bindings
 
 import cats.effect._
 import cats._
-import semagrams._
 
+import semagrams._
+import semagrams.state.Event
 /** A pair of a compatible [[EventHook]] and [[Action]]. As each of these have
   * descriptions, an automatic help text can be generated for the binding.
   */
