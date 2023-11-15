@@ -51,7 +51,7 @@
 //         0.5
 //       )(gWithProps)
 
-//     val spriteSources = 
+//     val entitySources = 
 //       vertexDefs.map(v => ACSetEntitySource(v.ob,v.sprite)) ++
 //       edgeDefs.map(e => ACSetEdgeSource(e.ob,e.src,e.tgt,e.sprite))
 

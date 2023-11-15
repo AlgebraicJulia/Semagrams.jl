@@ -196,13 +196,13 @@ def bindings(
       // .withMods(Ctrl)
       .withAltMods(Set(Ctrl), Set(Meta))
       .map(b => es.bgPlus(b))
-      .flatMap(b => a.zoomIn(b, layout, spriteSources)),
+      .flatMap(b => a.zoomIn(b, layout, entitySources)),
 
     // Zoom out of box
     dblClickOn(Left)
       // .withMods(Ctrl)
       .withAltMods(Set(Ctrl), Set(Meta))
-      .flatMap(_ => a.zoomOut(layout, spriteSources)),
+      .flatMap(_ => a.zoomOut(layout, entitySources)),
 
     // Drag box
     clickOnPart(Left)
@@ -284,18 +284,18 @@ def style(acs: ACSet, p: Part): PropMap = (p.lastOb match
   case _                => None
 ).map(_.props).getOrElse(PropMap())
 
-val spriteSources = (es: EditorState) =>
+val entitySources = (es: EditorState) =>
   Seq(
     ACSetEntitySource(Box, AltDPBox(InPort, OutPort, style)(es))
       .withProps(PropMap() + (FontSize, 22)),
     ACSetEntitySource(InPort, BasicPort(PropMap())(es))
       .withProps(PropMap() + (MinimumWidth, 40))
-      .addPropsBy((e: Entity, acs: ACSet, em: SpriteMap) =>
+      .addPropsBy((e: Entity, acs: ACSet, em: EntityMap) =>
         acs.props ++ style(acs, e.asInstanceOf[Part])
       ),
     ACSetEntitySource(OutPort, BasicPort(PropMap())(es))
       .withProps(PropMap() + (MinimumWidth, 40))
-      .addPropsBy((e: Entity, acs: ACSet, em: SpriteMap) =>
+      .addPropsBy((e: Entity, acs: ACSet, em: EntityMap) =>
         acs.props ++ style(acs, e.asInstanceOf[Part])
       ),
     ACSetEntitySource(Wire, BasicWire(Src, Tgt)(es))
@@ -340,7 +340,7 @@ object Main {
         vp <- es.makeViewport(
           es.MainViewport,
           lg,
-          spriteSources(es)
+          entitySources(es)
         )
         ui <- es.makeUI()
         _ <- es.bindForever(bindings(es, g, ui, vp))

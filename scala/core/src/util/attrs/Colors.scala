@@ -1,7 +1,7 @@
 package semagrams.util
 
 import upickle.default._
-
+import scala.language.implicitConversions
 
 case class RGB(red:Int,green:Int,blue:Int):
   override def toString = 
@@ -72,6 +72,8 @@ object RGB:
     val g = hex(hexString.slice(2,4))
     val b = hex(hexString.slice(4,6))
     RGB(r,g,b)
+
+  implicit def stringToRGB(str:String): RGB = RGB(str)
 
   def colorNames: Map[String,RGB] = Seq(
     "aliceblue" -> "F0F8FF",

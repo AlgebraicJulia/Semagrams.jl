@@ -1,10 +1,11 @@
-// package semagrams.sprites
+// package semagrams.rendering
 
 // import com.raquo.laminar.api.L.svg._
 // import com.raquo.laminar.api._
-// import semagrams.util._
+
+
 // import semagrams._
-// import semagrams.acsets.abstr._
+// import semagrams.util._
 
 // extension [A](s: L.Signal[Seq[A]]) {
 //   def splitWithIndexAndLength[B, C](
@@ -44,8 +45,8 @@
 // ) extends Sprite[D] {
 
 //   override def layout(bb: BoundingBox, data: D): D =
-//     val p_in = data.parts(ROOT, inPort)
-//     val p_out = data.parts(ROOT, outPort)
+//     val p_in = data.getParts(inPort)
+//     val p_out = data.getParts(outPort)
 
 //     val (c_in, c_out) = DPBox.layoutPorts(bb, p_in.length, p_out.length)
 
@@ -55,12 +56,12 @@
 //       }
 
 //   def computePortCenters(data: D): D = {
-//     val bbox = boxSprite.bbox(ROOT, data).get
+//     val bbox = boxSprite.bbox(data).get
 //     layout(bbox, data)
 //   }
 
 //   def stylePorts(data: D, style: (D, Part) => PropMap) =
-//     val pts = data.parts(ROOT, inPort) ++ data.parts(ROOT, outPort)
+//     val pts = data.getParts(inPort) ++ data.getParts(outPort)
 //     var mod = data
 //     for (pt, acs) <- pts
 //     yield
@@ -81,7 +82,7 @@
 //       .map(acset => stylePorts(acset, portStyle))
 
 //     val inPorts = laid_out
-//       .map(acset => acset.parts(ROOT, inPort))
+//       .map(acset => acset.getParts(inPort))
 //       .split(_._1)((p, d, $d) => {
 //         inPortSprite.present(
 //           ent.asInstanceOf[Part].extendPart(p),
@@ -92,7 +93,7 @@
 //       })
 
 //     val outPorts = laid_out
-//       .map(_.parts(ROOT, outPort))
+//       .map(_.getParts(outPort))
 //       .split(_._1)((p, d, $d) => {
 //         outPortSprite.present(
 //           ent.asInstanceOf[Part].extendPart(p),
@@ -178,8 +179,8 @@
 //       bb: BoundingBox,
 //       data: D
 //   ): D =
-//     val p_in = data.parts(ROOT, inPort)
-//     val p_out = data.parts(ROOT, outPort)
+//     val p_in = data.getParts(inPort)
+//     val p_out = data.getParts(outPort)
 
 //     val (c_in, c_out) = layoutPorts(bb, p_in.length, p_out.length)
 

@@ -42,9 +42,6 @@ trait PartData[Data]:
 
     /* Return the assigned property value (unsafe) */
     def getProp(f:Property): f.Value = d.getProps()(f)    
-
-
-    // def getProps(fs:Iterator[Property]): PropMap = d.getProps().filterKeys(fs.contains)
     
     /* Setting */
 
@@ -241,11 +238,6 @@ case class PartSet[D:PartData](
     dataStore = dataStore + (i -> dataStore(i).conditionalSet(f,pred,v))
   )
   
-  /* Set `f` to `v` if it is not set */
-  // def softSetProp(f:Property,i:UUID,v:f.Value) = this.copy(
-  //   dataStore = dataStore + (i -> dataStore(i).softSetProp(f,v))
-  // )
-
   /* Merging data */
 
   /* Merge the data in `kvs` into `dataStore` */
@@ -256,7 +248,7 @@ case class PartSet[D:PartData](
   def ++[Data2:PartData](kvs:Seq[(UUID,Data2)]) = merge(kvs)
   def ++[Data2:PartData](d2:Data2) = merge(ids.map(_ -> d2))
 
-  def ++(f:Property,v:f.Value) = merge(ids.map(_ -> PropMap(f -> v)))
+  def ++(f:Property,v:f.Value) = merge(ids.map(_ -> PropMap().set(f,v)))
 
 
   /** Merge unset data for  `i` with `d2` */
@@ -301,14 +293,6 @@ case class PartSet[D:PartData](
   def conditionalSet(f:Property,pred:f.Value => Boolean,v:f.Value): PartSet[D] =
     conditionalSet(f,pred,ids.map(_ -> v))
   
-  /* Set `f` to `v` if it is not set */
-  // def softSetProp(f:Property,kvs:Seq[(UUID,f.Value)]): PartSet[D] = this.copy(
-  //   dataStore = dataStore ++ kvs.map((i,v) => i -> dataStore(i).softSetProp(f,v))
-  // )
-  // def softSetProp(f:Property,v:f.Value): PartSet[D] =
-  //   softSetProp(f,ids.map(_ -> v))
-
-
 
   /* Adding, moving & removing parts */
 
@@ -397,7 +381,6 @@ object Part:
       (obId,partId) => Part(partId,Table(obId))
     )
 
-type PartProp = Property { type Value = Part }
 
 
 type PartStore[D] = Map[UUID,PartSet[D]]

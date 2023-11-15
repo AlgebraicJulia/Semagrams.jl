@@ -2,7 +2,6 @@ package semagrams.state
 
 import semagrams._
 import com.raquo.laminar.api.L.{render as renderL,_}
-// import semagrams.acsets.Part
 import org.scalajs.dom
 
 

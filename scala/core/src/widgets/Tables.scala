@@ -60,10 +60,10 @@ case class EditMsg[K<:Matchable](
 ) extends TableMsg[K]
 
 case class SetValue[K](key:K,change:PropChange[_]) extends ChangeMsg[K]
-case class HighlightMsg[K<:Matchable](key:K,highlighted:Boolean = true) extends ChangeMsg[K] with TableMsg[K]:
+case class HoverMsg[K<:Matchable](key:K,highlighted:Boolean = true) extends ChangeMsg[K] with TableMsg[K]:
   def change = if highlighted
-    then PropChange(Highlight,None,())
-    else PropChange(Highlight,(),None)
+    then PropChange(Hovered,None,())
+    else PropChange(Hovered,(),None)
   
 
 
@@ -77,10 +77,11 @@ class PropTable[K<:Matchable](name:String,cols:Seq[Property],keys:Seq[Property])
    * within `laminarElt`. */
   def editUpdate(msg:TableMsg[K]) = msg match
     case msg:EditMsg[_] => editingVar.set(msg.newEdit)
-    case msg:HighlightMsg[_] => ()
+    case msg:HoverMsg[_] => ()
 
   def headerRow = tr(
-    th(name) +: cols.map(prop => th(prop.toString()))
+    th(name) +: cols.map(prop => th(prop.toString())),
+    backgroundColor := "lightgray"
   )
 
   /** Create an editable laminar element. */ 
@@ -90,19 +91,9 @@ class PropTable[K<:Matchable](name:String,cols:Seq[Property],keys:Seq[Property])
     messenger:Observer[ChangeMsg[K]]
   ) =
 
-    // val changeUpdate: PartialFunction[TableMsg[K],ChangeMsg[K]] = {
-    //   case msg:Highlight[K] => msg
-    //   case msg:EditMsg[K] => 
-    //     msg.change match
-    //       case Some(k -> change) =>
-    //         SetValue(k,change)
-    //       case None =>
-    //         throw util.msgError{"blarg"}
-    // }
-      
 
     val msgObs: Observer[TableMsg[K]] = Observer(_ match
-      case msg:HighlightMsg[K] => messenger.onNext(SetValue(msg.key,msg.change))
+      case msg:HoverMsg[K] => messenger.onNext(SetValue(msg.key,msg.change))
       case msg:EditMsg[K] =>
         editingVar.set(msg.newEdit)
         msg.change match
@@ -227,9 +218,8 @@ case class PropRow[K<:Matchable](key:K,cols:Seq[Property],prv:Option[K],nxt:Opti
         case Some(_) => "lightblue"
         case None => "white"
       ),
-      // height := "100%",
-      onMouseEnter.mapTo(HighlightMsg(key)) --> tableObs,
-      onMouseLeave.mapTo(HighlightMsg(key,false)) --> tableObs,
+      onMouseEnter.mapTo(HoverMsg(key)) --> tableObs,
+      onMouseLeave.mapTo(HoverMsg(key,false)) --> tableObs,
     )
 
 
@@ -239,14 +229,12 @@ case class PropCell[K<:Matchable,T](key:K, col:Property {type Value = T})(tOpt:O
   
   def laminarElt[Model](
     valSig: Signal[Option[col.Value]],
-    // messenger: Observer[Message[Model]],
     editSig: Signal[Boolean],
     editObs: Observer[CellMsg]
   ) = 
     
     
     td(cls := "dcell",
-      // height := "100%",
       child <-- editSig.map( _ match
         case true => tableInput(col,editObs,tOpt)
         case false => tableCell(col,valSig,

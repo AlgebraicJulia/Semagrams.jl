@@ -1,4 +1,4 @@
-package semagrams.acsets
+package semagrams
 
 import upickle.default._
 
@@ -49,6 +49,12 @@ extension [F<:(Hom[_,_] & Generator)](f:F)
   def homGenerators = Map(f.id -> f) ++ f.dom.generators ++ f.codom.generators
 
 
+trait AbstractValType extends Ob
+trait AbstractFKey extends Hom[Ob,Ob]:
+  type Value = Part
+  val rw = Part.rw
+trait AbstractAttr extends Hom[Ob,AbstractValType]
+
 case class Table(id:UUID) extends Ob with Generator:
   def rename(newName:String) = Generator.rename(this,newName)
   def generators = this.obGenerators
@@ -58,31 +64,13 @@ object Table:
     Table(id).rename(name)
 
 
-case class ValType[T:ReadWriter](id:UUID) extends Ob with Generator:
+
+case class ValType[T:ReadWriter](id:UUID) extends AbstractValType with Generator:
 
   def rename(newName:String) = Generator.rename(this,newName)
   def generators = this.obGenerators
 
 object ValType:
-//   import scala.collection.mutable.Map
-//   val valTypes: Map[String,ValType[_]] = Map()
-//   register[String]("String")
-//   register[Int](UUID("ValType"),"Int")
-
-//   // def register(tp:ValType[_]): ValType[_] = 
-//   //   valTypes += (tp.id -> tp)
-//   //   tp
-
-//   def register[T:ReadWriter](id:UUID,name:String): Unit =
-//     valTypes += (id -> tp)
-
-//   def apply(id:UUID): ValType[_] = if valTypes.contains(id)
-//     then valTypes(id)
-//     else throw msgError(s"Error: Missing type id $id. Try providing a type at the call site.")
-
-//   def apply(name:UUID): ValType[_] = if valTypes.contains(id)
-//     then valTypes(id)
-//     else throw msgError(s"Error: Missing type id $id. Try providing a type at the call site.")
 
   def apply[T:ReadWriter](id:UUID,name:String): ValType[T] =
     new ValType[T](id).rename(name)
@@ -91,34 +79,7 @@ object ValType:
     new ValType[T](UUID("ValType")).rename(name)
   
 
-  // def apply[T:ReadWriter](): ValType[T] = valTypes.get(name) match
-  //   case Some(tp) if tp == ValType[T]() => ValType[T]().rename(tp.name)
-  //   case Some(tp) =>
-  
-    
-  //   if valTypes.contains(name) & valTypes(name) == ValType[T]()
-  //   then valType[T]()
-  //   then valTypes
-    
-  //   valTypes.get(id) match
-  //   case Some(tp) => tp
-  //   case None =>
-  //     val tp = ValType[T](id).rename(name)
-  //     valTypes += (id -> tp)
-  //     tp
-
-  // def apply[T:ReadWriter](name:String = ""): ValType[_] =
-  //   valTypes.values.find(_.name == name) match
-  //     case Some(tp) => tp
-  //     case None =>
-  //       val id = UUID("ValType")
-  //       val tp = ValType[T](id).rename(name)
-  //       valTypes += (id -> tp)
-  //       tp
-    
-
-
-trait Hom[+X<:Ob,+Y<:Ob] extends Property:
+trait Hom[+X<:Ob,+Y<:Ob] extends Elt with Property:
 
   def dom: X    
   def codom: Y
@@ -129,9 +90,7 @@ type PartHom = Hom[_,_] & PartProp
 extension (f:Hom[_,_] & Generator)
   def path = Seq(f)
 
-case class FKey(id:UUID,dom:Ob,codom:Ob) extends Hom[Ob,Ob] with Generator:
-  type Value = Part
-  implicit val rw = Part.rw
+case class FKey(id:UUID,dom:Ob,codom:Ob) extends AbstractFKey with Generator:
   
   def rename(newName:String) = Generator.rename(this,newName)
   def generators = this.homGenerators
@@ -141,8 +100,7 @@ object FKey:
   def apply(id:UUID,name:String,dom:Ob,codom:Ob): FKey = 
     FKey(id,dom,codom).rename(name)
 
-case class Attr[T:ReadWriter](id:UUID,dom:Ob,codom:ValType[T]) extends Hom[Ob,ValType[T]] 
-  with Generator:
+case class Attr[T:ReadWriter](id:UUID,dom:Ob,codom:ValType[T]) extends AbstractAttr with Generator:
   override type Value = T
   override val rw = readwriter[T]
 

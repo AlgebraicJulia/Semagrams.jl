@@ -1,6 +1,5 @@
 package semagrams.rendering
 
-// import semagrams.acsets._
 import semagrams._
 import semagrams.state
 import semagrams.util.{Complex,RGB}
@@ -31,7 +30,7 @@ type HandlerAttacher = (Entity, SvgElement) => Unit
   * TODO: Sprites should have an "injection" method for statically computing
   * some layout that they want to have available for boundaryPt/bbox queries, or
   * simply adding default properties. This injection is called before present,
-  * and the result is saved in the SpriteMap. Currently, each sprite has some
+  * and the result is saved in the EntityMap. Currently, each sprite has some
   * custom code for being able to have defaults; that should not be custom
   * because then it is inconsistent.
   */
@@ -95,11 +94,6 @@ trait Sprite[D:PartData] {
       subparts: Seq[Part] = Seq()
   ): Option[Complex] = None
 
-  // def boundaryNormal(
-  //     data: D,
-  //     dir: Complex,
-  //     subparts: Seq[Part] = Seq()
-  // ): Option[Complex] = None
 
   /** Compute the geometric center of the sprite
     *

@@ -1,9 +1,10 @@
 package semagrams.util
 
 import org.scalajs.dom
-import semagrams.acsets.GenericProperty
+import semagrams.GenericProperty
 import semagrams.rendering.Sprite
-// import semagrams.util._
+import semagrams.util.Complex
+
 
 import scala.collection.mutable
 

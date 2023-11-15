@@ -45,14 +45,24 @@ case class FilterMap[A,B](base:EventHook[A],f:A=>Option[B]) extends EventHook[B]
   * @param key
   *   the key that we are listening for
   */
-case class KeyDownHook(key: String) extends EventHook[Unit] {
+case class KeyDownHook(key: String,mods:Option[Set[KeyModifier]] = None) extends EventHook[Unit] {
   def apply(evt: Event, es: EditorState) = evt match 
-    case KeyDown(`key`) => Some(())
-    case _              => None
+    case KeyDown(`key`) if mods == None | mods == Some(es.modifiers) => 
+      println(this)
+      Some(())
+    case _              => 
+      if `key`=="z" then println(this)
+      None
 
 
   def description = key
 }
+
+object KeyDownHook:
+  def apply(key:String,mods:KeyModifier*) = new KeyDownHook(key,mods match
+    case Seq() => None
+    case _ => Some(mods.toSet)
+  )
 
 /** An [[EventHook]] for click events on parts.
   *

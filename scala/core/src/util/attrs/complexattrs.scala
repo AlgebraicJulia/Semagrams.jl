@@ -1,8 +1,12 @@
 package semagrams.util
 
+import CustomAttr._
+import semagrams.util.Complex
+
 import com.raquo.laminar.api.L
 import com.raquo.laminar.api.L.svg._
-import CustomAttr._
+
+
 
 /** Custom laminar attributes for using complex numbers with svg more easily
   *

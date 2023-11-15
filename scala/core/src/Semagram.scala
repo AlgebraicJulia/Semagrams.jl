@@ -10,17 +10,10 @@ import cats.effect.std._
 
 import semagrams.acsets._
 import semagrams.state._
-import semagrams.rendering._
+import semagrams.rendering.{EntitySource,EntityCollector}
 import semagrams.bindings._
 import semagrams.util._
-// import semagrams.listeners._
-// import semagrams.sprites._
-// import semagrams.util._
-// import semagrams.widgets._
-// import semagrams.bindings.Binding
-// import semagrams.bindings.Action
-// import semagrams.widgets.PropTable
-// import semagrams.acsets.abstr._
+
 import scala.annotation.targetName
 
 
@@ -30,30 +23,6 @@ import scala.annotation.targetName
 
 
 type StateMsg[Model] = Either[Message[Model],Message[EditorState]]
-
-  // /** Creates the svg element ready to be inserted into a larger app. */
-  // def oldSemagramApply(mSig: Signal[(Model,EditorState)], eventWriter: Observer[Event]): SvgElement = {
-  //   svg.svg(
-  //     util.svgDefs(),
-  //     svg.svgAttr("tabindex", StringAsIsCodec, None) := "-1",
-  //     children <-- mSig.map(layout)
-  //       .map(produceSprites)
-  //       .split(_._1){ case (part,(_,(sprite,init)),kvSig) =>
-  //         sprite.present(part,init,kvSig.map(_._2._2),eventWriter)
-  //       },
-  //     mouseMoveListener(eventWriter),
-  //     MouseEvents.handlers(Background, eventWriter),
-  //   )
-  // }
-
-
-
-// case class SemagramElt[Model,D:PartData](  
-//   elt: Div,
-//   readout: () => (A,EditorState),
-//   signal: Signal[(A,EditorState)],
-//   messageBus: EventBus[StateMsg[A]]
-// ):
 
 
 
@@ -66,28 +35,29 @@ trait Semagram[Model,D:PartData]:
   def layout(m:Model,es:EditorState): DisplayModel
 
   /** Extractors for the various entities in the Semagram */
-  val spriteSources: Seq[SpriteSource[DisplayModel,D]]
+  val entitySources: Seq[EntitySource[DisplayModel,D]]
 
-  val modelVar: UndoableVar[Model]
+  val modelVar: WeakVar[Model]
 
   def bindings: Seq[Binding[Model]]
 
 
 
 
-
+  def readout() = (stateVar.now(),modelVar.now())
 
   
   def produceSprites(dm: DisplayModel): Seq[(Part,(Sprite[D],D))] =
-    EntityCollector.collect(dm, spriteSources)
+    EntityCollector.collect(dm, entitySources)
 
 
 
   val stateVar = Var(EditorState()) 
 
   val modelSig = modelVar.signal
-    .combineWith(stateVar.signal)
-    .map(layout)
+  
+  val stateModelSig = 
+    modelSig.combineWith(stateVar.signal).map(layout)
 
   val messageBus: EventBus[Either[Message[Model],Message[EditorState]]] = EventBus()
   val messageObs = Observer[Either[Message[Model],Message[EditorState]]](_ match
@@ -107,14 +77,8 @@ trait Semagram[Model,D:PartData]:
   val globalEventBus = EventBus[Event]()
   
 
-  /* Modify model to account for local state (e.g., hover) */ 
-  // val statefulSig = modelVar.signal
-  //   .combineWith(stateVar.signal)
-  //   .map(layout)
-
-
   val defaultAttrs = Seq(
-    backgroundColor := "lightblue",
+    backgroundColor := "white",
     height := "400px",
     width := "100%",
     border := "black",
@@ -123,13 +87,14 @@ trait Semagram[Model,D:PartData]:
   )
       
   /* Construct the laminar element associated with the semagram */
-  val laminarElt = div(
+  val elt = div(
     cls := "semagram-element",
+    defaultAttrs,
     svg.svg(
       svg.cls := "semagram-svg",
       util.svgDefs(),
       svg.svgAttr("tabindex", StringAsIsCodec, None) := "-1",
-      children <-- modelSig.map(produceSprites)
+      children <-- stateModelSig.map(produceSprites)
         .split(_._1){ case (part,(_,(sprite,init)),kvSig) =>
           sprite.present(part,init,kvSig.map(_._2._2),eventBus.writer)
         },
@@ -138,10 +103,8 @@ trait Semagram[Model,D:PartData]:
       svg.height := "100%",
       svg.width := "100%",
     ),
-    // messageBus --> Observer(println),
     messageBus --> messageObs,
     globalEventBus.events --> eventBus.writer,
-    defaultAttrs,
     inContext(thisNode => onMountCallback(_ => stateVar.update(_.copy(
       dims = Complex(thisNode.ref.clientWidth,thisNode.ref.clientHeight)
     )))),
@@ -149,7 +112,7 @@ trait Semagram[Model,D:PartData]:
 
   dom.window.addEventListener("resize",_ => stateVar.update{state => 
     state.copy(
-      dims = Complex(laminarElt.ref.clientWidth,laminarElt.ref.clientHeight)
+      dims = Complex(elt.ref.clientWidth,elt.ref.clientHeight)
     )
   })
 
@@ -162,7 +125,7 @@ trait Semagram[Model,D:PartData]:
   val main = for {
     eventQueue <- Queue.unbounded[IO, Event]
     _ <- Dispatcher.sequential[IO] use { dispatcher =>
-      laminarElt.amend(
+      elt.amend(
         eventBus.events --> Observer[Event](evt =>
           dispatcher.unsafeRunAndForget(eventQueue.offer(evt))
         )
@@ -176,12 +139,13 @@ trait Semagram[Model,D:PartData]:
 
 trait ACSemagram[D:PartData] extends Semagram[ACSet[D],D]:
   import widgets._
-  case class EditTable(ob:Ob,cols:Seq[Property]):
+  case class EditTable(ob:Ob,cols:Seq[Property],withLayout:Boolean = true):
     def table = widgets.PropTable[Part](ob.label,cols)
     val (editMsgs,editObs) = EventStream.withObserver[(Part,Property)]
     
+    val eltSig = if withLayout then stateModelSig else modelSig
     val elt = table.laminarElt(
-      modelSig.map(_.getPropSeq(ob)),
+      eltSig.map(_.getPropSeq(ob)),
       editMsgs.map(cell => widgets.EditMsg(None,Some(cell))),
       modelObs.contramap(acsetMsg)
     )
@@ -190,7 +154,7 @@ trait ACSemagram[D:PartData] extends Semagram[ACSet[D],D]:
   def acsetMsg(msg:ChangeMsg[Part]): Message[ACSet[D]] = 
     msg match
     case SetValue(p,change) => ChangePropMsg(p,change)
-    case HighlightMsg(p,highlighted) => if highlighted 
+    case HoverMsg(p,highlighted) => if highlighted 
       then ChangePropMsg(p,PropChange(Highlight,None,()))
       else ChangePropMsg(p,PropChange(Highlight,(),None))
 
@@ -211,48 +175,4 @@ trait ACSemagram[D:PartData] extends Semagram[ACSet[D],D]:
 
 
 
-
-
-
-
-/** A class packaging the laminar element of a semagram along with
- *  the schema and accessors/modifiers
- */
-
-
-
-  // /** Convenience method for constructing tables from semagrams **/
-  // def propTable(ob:Ob,cols:Seq[Property],keys:Seq[Property]) = 
-  //   SemaTable(ob,cols,keys)
-
-  // def propTable(ob:Ob,cols:Seq[Property],key:Property): SemaTable =
-  //   propTable(ob,cols,Seq(key))
-  
-  // def propTable(ob:Ob,cols:Property*): SemaTable =
-  //   propTable(ob,cols,Seq())
-
-  // // def propTable(ob:Ob): SemaTable =
-  // //   val sch = getModel().schema
-  // //   val cols = sch.homs.filter(_.dom == ob)
-  // //     ++ sch.attrs.filter(_.dom == ob)
-  // //   propTable(ob,cols:_*)
-
-
-
-// /** A specialized trait for semagrams with Model == ACSet **/
-// trait ACSemagram[D:PartData,A:ACSetWithData[D]] extends Semagram[D] {
-  // type Model = A
-
-  // type D = D
-
-
-  // def stateMsg(es:EditorState,a:A): Message[A] = Message()
-
-
-
-  // val execute(msg:Message[A]): IO[A]
-  
-  /** Construct a `SemagramElt` from a collection of `Binding` interactions
-   *  and an optional initial value
-   */ 
 

@@ -54,8 +54,16 @@ case class UndoState[A](
   else this.copy(present = a, future = Nil)
 }
 
+
+trait WeakVar[A] extends SignalSource[A] with Sink[A]:
+  def now(): A
+  def set(a:A): Unit
+  def signal: Signal[A]
+  def update(f:A => A): Unit
+
+
 /** A class similar to `Var` but with support for undo and redo. */
-class UndoableVar[A](init: A) extends SignalSource[A] with Sink[A] {
+class UndoableVar[A](init: A) extends WeakVar[A] {
   private val state = Var(UndoState(true, Nil, init, Nil))
 
   /** An observer that wraps [[UndoState.update]] to record (or not) updates

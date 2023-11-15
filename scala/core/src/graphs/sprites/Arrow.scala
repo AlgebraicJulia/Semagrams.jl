@@ -5,14 +5,10 @@ import semagrams._
 import semagrams.acsets._
 import semagrams.util._
 import semagrams.rendering._
-import semagrams.bindings._
 import semagrams.state._
 
-// import semagrams.acsets._
-import com.raquo.laminar.api.L.svg.{path => svgpath,_}
+import com.raquo.laminar.api.L.svg.{path as svgpath,_}
 import com.raquo.laminar.api._
-// import semagrams._
-// import semagrams.util._
 
 /** A basic sprite used for edges, which looks up the `Start` and `End`
   * properties to see where to start and end, has an arrow head pointing towards
@@ -74,8 +70,7 @@ case class Arrow[D:PartData](label:Property,props: PropMap) extends Sprite[D] {
 
     
     def ppath(p:PropMap) = curvedPath(p.get(Start), p.get(End), p.get(Bend))
-    // def stroke(p:PropMap) = p.get(Stroke).getOrElse(RGB("black")).toString
-      // if p.contains(Highlight) then stroke.lighten(.5).toString else stroke.toString
+
     def labelStr(p:PropMap) = if p.contains(label) then p(label).toString else p(PathLabel)
     def labelPos(p:PropMap) = 
       val pathElt = ppath(p)((ppath(p).length * p(LabelAnchor)).toInt)
@@ -111,7 +106,6 @@ case class Arrow[D:PartData](label:Property,props: PropMap) extends Sprite[D] {
         )
       },
       fontSize <-- data.map(_(FontSize).toString),
-      // pointerEvents := "none"
       pointerEvents <-- data.map(p =>
         if p(Interactable) then "auto" else "none"
       ),
@@ -162,8 +156,6 @@ object Arrow {
     + (Bend, 0)
     + (StrokeDasharray, "none")
     + (Interactable, true)
-    // + (Start,Complex(100,100))
-    // + (End,Complex(200,200))
     + (LabelAnchor,0.5)
     + (LabelOffset,10.0)
     + (PathLabel,"")

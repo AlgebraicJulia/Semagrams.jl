@@ -1,76 +1,53 @@
-// package semagrams.graphs
+package semagrams.graphs
 
 
-// import semagrams._
-// import semagrams.acsets._
-// // import semagrams.acsets.abstr._
-// import semagrams.util._
+import semagrams._
+import semagrams.acsets._
+import semagrams.util._
 
-// import semagrams.acsets.abstr._
 
-// import upickle.default._
+import upickle.default._
 
 
 
 
-// enum SchObs(val name:String) extends Ob with Generator
-//   derives ReadWriter:
-//   case TableOb extends SchObs("TableOb")
-//   case ValTypeOb extends SchObs("ValTypeOb")
-//   case FKeyOb extends SchObs("FKeyOb")
-//   case ColumnOb extends SchObs("ColumnOb")
-//   val id = UUID("SchObs")
-// export SchObs._
+enum SchObs(val _name:String) extends Ob with Generator
+  derives ReadWriter:
+  case TableOb extends SchObs("TableOb")
+  case ValTypeOb extends SchObs("ValTypeOb")
+  case FKeyOb extends SchObs("FKeyOb")
+  case AttrOb extends SchObs("AttrOb")
+  val id = UUID(name)
+  val generators = this.obGenerators
+
+  name = _name
+export SchObs._
 
 
-// enum SchHoms(val name:String,val dom:SchObs,val codom:SchObs) 
-//   extends GenHom[SchObs]:
-//   case FKeySrc extends SchHoms("FKeySrc",FKeyOb,TableOb)
-//   case FKeyTgt extends SchHoms("FKeyTgt",FKeyOb,TableOb)
-//   case ColumnSrc extends SchHoms("ColumnSrc",FKeyOb,TableOb)
-//   case ColumnTgt extends SchHoms("ColumnTgt",FKeyOb,ValTypeOb)
-//   val id = UUID("SchHoms")
-// export SchHoms._
+enum SchHoms(name:String,val dom:SchObs,val codom:SchObs) 
+  extends AbstractFKey with Generator:
+  case FKeySrc extends SchHoms("FKeySrc",FKeyOb,TableOb)
+  case FKeyTgt extends SchHoms("FKeyTgt",FKeyOb,TableOb)
+  case AttrSrc extends SchHoms("AttrSrc",AttrOb,TableOb)
+  case AttrTgt extends SchHoms("AttrTgt",AttrOb,ValTypeOb)
 
-// // enum SchColumns(val name:String,val dom:SchObs)
-
-// case object SchSchema
-// val schSchemaIsSchema: Schema[SchSchema.type] = new Schema[SchSchema.type] {
-//   val name = "schSchemaIsSchema"
-
-//   val emptySchema = SchSchema
-//   type SchOb = SchObs
-//   type SchHom = SchHoms
+  val id = UUID(name)
+  val generators = this.homGenerators
+  val path = this.path
+export SchHoms._
 
 
-//   extension (s:SchSchema.type)
-//     def obMap = SchObs.values.map(ob => ob.id -> ob).toMap
-//     def homMap = SchHoms.values.map(f => f.id -> f).toMap
-//     def attrMap = Map()
+case object SchSchema extends Schema:
 
-//     def renameElt(id0:UUID,name:String) = 
-//       println("SchSchema is static")
-//       s
+  val id = UUID("SchSchema")
 
-//     def _addElts(elts:Seq[Generator]) = 
-//       println("SchSchema is static")
-//       s
+  var name = "SchSchema"
 
-//     def addProps(newProps:Seq[Property]) = 
-//       println("SchSchema is static")
-//       s
-
-//     def _remElts(elts:Seq[Generator]) = 
-//       println("SchSchema is static")
-//       s
-
-//     def remProps(oldProps:Seq[Property]) = 
-//       println("SchSchema is static")
-//       s
+  def elts: Map[UUID, Elt] = 
+    SchObs.values.eltMap ++ SchHoms.values.eltMap
 
 
-
-// }
+  def globalProps: Seq[Property] = Seq()
 
 
 
@@ -118,7 +95,56 @@
 
 
 
-// /* Schemas */
+/* Schemas from ACSet(SchSchema) */
 
 
 
+def schemaId(part:Part) = part.id.copy(
+  stem = part.ob match
+    case TableOb => "Table"
+    case ValTypeOb => "ValType"
+    case FKeyOb => "FKey"
+    case AttrOb => "Attr"
+    case _ => part.ob.toString
+) 
+
+  
+def acsetSchema[D:PartData](acset:ACSet[D]): BasicSchema =
+  if !acset.schema.hasElts(Seq[SchObs](TableOb,FKeyOb,AttrOb))
+  then println(s"Warning: missing schema elements in $acset")
+  val tableMap = acset.tryProp(Content,TableOb).map(
+    (part,content) => content match
+      case Some(name) => part.id -> Table(schemaId(part)).rename(name)
+      case None => part.id -> Table(schemaId(part))
+  )
+    
+  val fkeys = acset.getPropSeq(FKeyOb).collect { 
+    case (part,props) if props.contains(FKeySrc,FKeyTgt) =>
+      val s = props(FKeySrc)
+      val t = props(FKeyTgt)
+
+      FKey(
+        schemaId(part),
+        props.get(Content).getOrElse(""),
+        tableMap(s.id),
+        tableMap(t.id)
+      )
+
+  }
+
+  val attrs = acset.getPropSeq(AttrOb).collect { 
+    case (part,props) if props.contains(AttrSrc,AttrTgt) =>
+      val s = props(AttrSrc)
+      val t = props(AttrTgt)
+
+      Attr(
+        schemaId(part),
+        props.get(Content).getOrElse(""),
+        tableMap(s.id),
+        ValType[String](t.id)
+      )
+
+  }
+
+
+  BasicSchema((tableMap.values ++ fkeys ++ attrs).toSeq:_*)

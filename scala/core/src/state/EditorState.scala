@@ -8,7 +8,6 @@ import semagrams.util._
 import com.raquo.laminar.api._
 
 import org.scalajs.dom
-// import org.scalajs.dom.KeyboardEvent
 
 trait Enti
 
@@ -48,13 +47,13 @@ case class EditorState(
     /* Clear key modifiers when focus is lost */
     case Blur() => ModMsg(modifiers,Set())
     /* Selection events */
-    case MouseDown(Some[Part](part),Left) if modifiers.contains(Ctrl) => 
+    case MouseDown(Some(part:Part),Left) if modifiers.contains(Ctrl) => 
       if selected.contains(part)
       then SelectMsg(selected,selected.filter(_ == part))
       else SelectMsg(selected,(selected :+ part).distinct)
     case MouseDown(Some(Background),Left) if selected.nonEmpty =>
       SelectMsg(selected,Seq())
-    case MouseDown(Some[Part](part),Left) =>
+    case MouseDown(Some(part:Part),Left) =>
       SelectMsg(selected,Seq(part))
  
     case _ => Message()

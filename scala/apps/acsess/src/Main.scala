@@ -1,83 +1,253 @@
 // package semagrams.acsess
 
-// import semagrams._
+import semagrams._
 // import semagrams.api._
-// import semagrams.acsets.abstr._
-// import semagrams.graphs._
+import semagrams.acsets._
+import semagrams.graphs._
 // import semagrams.acsets.simple._
-// import semagrams.bindings._
-// import semagrams.util._
+import semagrams.bindings._
+import semagrams.util._
 
-// import com.raquo.laminar.api.L._
+import com.raquo.laminar.api.L._
 
 
-// import scala.scalajs.js.annotation.JSExportTopLevel
-// import org.scalajs.dom
-// import scala.scalajs.js.annotation._
-// import scala.scalajs.js
-// import semagrams.acsets.simple.SimpleACSet.simpleACSetIsACSet
+import org.scalajs.dom
+import scala.scalajs.js.annotation._
+import scala.scalajs.js
+import cats.effect.IO
+import monocle.Lens
+
 // import cats.effect.IO
-// import semagrams.MouseButton
-// import semagrams.widgets.EditMsg
+
+
+// val appVar = UndoableVar((
+//   ACSet(SchSchema),
+//   ACSet(Schema())
+// ))
+
+def makeName() = scala.util.Random.alphanumeric.dropWhile(_.isDigit).head.toString
+def makeColor(): RGB = 
+  val Seq(r,g,b) = (1 to 3).map(_ => scala.util.Random.between(20,256))
+  if r + g + b < 25 then makeColor() else RGB(r,g,b)
+
+  
+
+
+/* Schema editor */
+
+
+/* Display */
+
+val rectSprite = Rect(Content,PropMap() + (Fill -> "lightgreen"))
+// val discSprite = Disc(Content,PropMap() + (Fill -> "red"))
+val edgeSprite = Arrow(Content,PropMap() + (Stroke -> "purple"))
 
 
 
-// type AS = SimpleACSet[SchSchema.type]
-// type AA = SimpleACSet[BasicSchema]
+def schemaLayout[D:PartData](state:EditorState,acset:ACSet[D]) = 
+  acset
+  // acset.setProp(Highlight,state.hoveredPart.map(_ -> ()))
+    // .setProp(SrcName,acset.mapHom(FKeySrc,_.toString) 
+    //   ++ acset.mapHom(AttrSrc,_.toString)
+    // )
+    // .setProp(TgtName,acset.mapHom(FKeyTgt,_.toString) 
+    //   ++ acset.mapHom(AttrTgt,_.toString)
+    // )
+    // .softSetProp(Fill,ValTypeOb,"pink")
+    // // .setProp(asrc,acset.mapHom(AttrSrc,_.toString))
+    // // .setProp(atgt,acset.mapHom(AttrTgt,_.toString))
+    // .softSetProp(Content,acset.getParts(TableOb).map(p => p -> p.id.toString))
+  
+
+/* State management */
+type A = ACSet[PropMap]
+
+val schemaVar = UndoableVar(ACSet(SchSchema))
+
+val tablePropsIO = IO(
+  PropMap() 
+    + (Content -> makeName()) 
+    + (Fill -> makeColor())
+)
+
+val schemaBindings = Seq[Binding[ACSet[PropMap]]](
+  Binding(
+    KeyDownHook("a"),
+    AddAtMouse(TableOb,tablePropsIO)
+  ),
+  Binding(KeyDownHook("A",KeyModifier.Shift),AddAtMouse(ValTypeOb)),
+  Binding(KeyDownHook("d"), DeleteHovered()),
+  Binding(ClickOnPartHook(MouseButton.Left).filter(TableOb,ValTypeOb), MoveViaDrag()),
+  Binding(KeyDownHook("?"),PrintModel()),
+  // Binding(
+  //   KeyDownHook("z",KeyModifier.Ctrl),
+  //   Callback((_:Unit) =>
+  //     println("undo")
+  //     schemaVar.undo()
+  //   )
+  // )
+)
+
+
+
+def schemaVertexDef = VertexDef(
+  TableOb -> rectSprite,
+  ValTypeOb -> rectSprite
+)
+
+def schemaEdgeDef = EdgeDef(
+  FKeyOb -> (FKeySrc,FKeyTgt,edgeSprite),
+  AttrOb -> (AttrSrc,AttrTgt,edgeSprite)
+)
+
+
+val schemaSema = GraphDisplay[PropMap](
+  schemaVar,
+  schemaBindings,
+  schemaVertexDef,
+  schemaEdgeDef,
+  // schemaLayout
+)
+
+
+
+val schemaSignal = schemaSema.modelVar.signal
+  .splitOne(acsetSchema)((sch,_,_) => sch)
+
+val schemaObs: Observer[Schema] = Observer(newSch =>
+  val oldSch = acsetSema.modelVar.now().schema
+  val rems = oldSch diff newSch
+  val adds = newSch diff oldSch
+  println(s"schemaObs rems = $rems, adds = $adds")
+  acsetVar.update(
+    _ -- rems.values ++ adds.values
+  )  
+)
+
+
+/* Instance Editor */
+
+/* Display */
+
+
+def acsetLayout[D:PartData] = GraphDisplay.defaultLayout[D]
+
+/* State management */
+
+val acsetVar = UndoableVar(ACSet(Schema()))
+
+
+
+val selectIO: IO[Option[(Ob,PropMap)]] = IO {
+  
+  val (state,acset) = schemaSema.readout()
+  val schema = acsetSema.modelVar.now().schema
+  
+  for
+    part <- state.selected.filter(_.ob == TableOb).headOption
+    props = acset.getProps(part)
+    obid = schemaId(part)
+    ob <- schema.tryTable(obid)
+  yield ob -> props
+  
+}
+  
+  
+
+val acsetBindings = Seq[Binding[ACSet[PropMap]]](
+  Binding(KeyDownHook("a"),AddAtMouse(selectIO)),
+  Binding(KeyDownHook("d"), DeleteHovered()),
+  Binding(
+    ClickOnPartHook(MouseButton.Left).filter(_.ob.isInstanceOf[Table]),
+    MoveViaDrag()
+  ),
+  Binding(
+    KeyDownHook("z",KeyModifier.Ctrl),
+    Callback((_:Unit) => acsetVar.undo())
+  ),
+  Binding(
+    KeyDownHook("Z",KeyModifier.Ctrl,KeyModifier.Shift),
+    Callback((_:Unit) => acsetVar.redo())
+  ),
+  Binding(KeyDownHook("?"),PrintModel())
+)
 
 
 
 
-// implicit val schSchemaDef: Schema[SchSchema.type] = schSchemaIsSchema
-// implicit val schACSetDef: ACSetWithSchema[SchSchema.type][AS] & ACSetWithData[PropMap][AS]
-// //  & ACSetWithData[PropMap][AS] 
-// = simpleACSetIsACSet(SchSchema)
-
-// implicit val simpleSchemaDef: Schema[BasicSchema] = simpleSchemaIsSchema
-// implicit val acsetDef: ACSetWithSchema[BasicSchema][AA] & ACSetWithData[PropMap][AA] = simpleACSetIsACSet[BasicSchema]
+def initialize() =
+  println("initialize")
 
 
 
+def vProps = PropMap() 
+  + (MinimumHeight,25) + (MinimumWidth,25)
+  + (Fill,"red") + (InnerSep,0)
 
 
-// object Main {
-//   @JSExportTopLevel("AcsessApp")
-//   object AcsessApp {
-//     @JSExport
-//     def main(mountInto: dom.Element, init: js.UndefOr[String]) = {
+val acsetVertexDef = VertexDef{
+  case t:Table => (rectSprite,vProps)
+}
+
+val acsetSema = GraphDisplay[PropMap](
+  acsetVar,
+  acsetBindings,
+  acsetVertexDef,
+  EdgeDef(),
+  // acsetLayout
+)
 
 
 
-//       val mainDiv: Div = div(
-//         idAttr := "mainDiv",          
-//         div(
-//           cls := "schemaDiv",
-//           display := "flex",
-//           schSema.elt.amend(
-//             flex := "1",
-//             // width := "70%",
-//           ),
-//           padding := "10px",
-//           schemaTablesElt.amend(
-//             maxHeight := "400px",
-//             overflow := "auto",
-//           ),
-//         ),
-//         div(
-//           acsetSema.elt,
-//           tableStream --> tableObs,
-//           changeSig --> changeObs,
-//           stateStream --> stateObs,
-//           padding := "10px",
-//         ),
-//         children <-- acsetTables,
-//         child <-- acsetSema.modelSig.map(_.schema.toString)
-//       )
+object Main {
+  @JSExportTopLevel("AcsessApp")
+  object AcsessApp {
+    @JSExport
+    def main(mountInto: dom.Element, init: js.UndefOr[String]) = {
+
+      initialize()
+
+      val mainDiv: Div = div(
+        idAttr := "acsess-app",
+        div(
+          cls := "acsess-schema",
+          display := "flex",
+          schemaSema.elt.amend(
+            flex := "1",
+            // width := "70%",
+          ),
+          children <-- schemaSema.tableVar.signal.map(tableMap =>
+            tableMap.toSeq.map((_,table) => table.elt.amend(
+              maxHeight := "400px",
+              overflow := "auto",  
+            ))
+          ),
+          padding := "10px",
+        ),
+        div(
+          cls := "acsess-instance",
+          display := "flex",
+          acsetSema.elt.amend(
+            flex := "1",
+            // width := "70%",
+          ),
+          children <-- acsetSema.tableVar.signal.map(tableMap =>
+            tableMap.toSeq.map((_,table) => table.elt.amend(
+              maxHeight := "400px",
+              overflow := "auto",  
+            ))
+          ),
+          schemaSignal.changes --> schemaObs,
+          padding := "10px",
+        ),
+        child <-- schemaSema.modelVar.signal.map(_.toString),
+        child <-- acsetSema.modelVar.signal.map(_.toString),
+      )
         
-//       render(mountInto, mainDiv)
-//     }
-//   }
-// }
+      render(mountInto, mainDiv)
+    }
+  }
+}
 
 
 // val tableVar: Var[Map[UUID,Table]] = Var(Map())
@@ -147,7 +317,7 @@
 //           (FKeyOb,FKeySrc,FKeyTgt,PropMap())
 //         ))
 //         case (TableOb,ValTypeOb) => IO(Some(
-//           (ColumnOb,ColumnSrc,ColumnTgt,PropMap())
+//           (AttrOb,AttrSrc,AttrTgt,PropMap())
 //         ))
 //         case _ => IO(None)
 //     )
@@ -202,7 +372,7 @@
 //     EdgeDef(
 //       Arrow(Content),
 //       PropMap() + (Stroke,RGB("cyan")),
-//       ColumnOb -> (ColumnSrc,ColumnTgt)
+//       AttrOb -> (AttrSrc,AttrTgt)
 //     ),
 //   ),
 //   schStateMsg
@@ -336,7 +506,7 @@
 //           (FKeyOb,FKeySrc,FKeyTgt,PropMap())
 //         ))
 //         case (TableOb,ValTypeOb) => IO(Some(
-//           (ColumnOb,ColumnSrc,ColumnTgt,PropMap())
+//           (AttrOb,AttrSrc,AttrTgt,PropMap())
 //         ))
 //         case _ => IO(None)
 //     )

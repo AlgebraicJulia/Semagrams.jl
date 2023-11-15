@@ -34,3 +34,16 @@ def baseSvg() = {
     )
   )
 }
+
+def arrowheadMarker(width:Double = 7) = svg.marker(
+  svg.idAttr := "arrowhead",
+  svg.markerWidth := "10",
+  svg.markerHeight := width.toString,
+  svg.refX := "10",
+  svg.refY := (width / 2.0).toString,
+  svg.orient := "auto",
+  svg.fill := "context-stroke",
+  svg.polygon(
+    svg.points := s"0 0, 10 ${width/2.0}, 0 ${width}"
+  )
+)

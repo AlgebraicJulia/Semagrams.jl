@@ -1,6 +1,8 @@
-package semagrams.acsets
+package semagrams
 
 import semagrams.util.Complex
+
+
 import scala.annotation.targetName
 
 /** A dependently-typed, persistent mapping from properties to values; the type
@@ -96,8 +98,6 @@ object PropMap {
   def apply() = {
     new PropMap(Map[Property, Any]())
   }
-
-  def apply(kvs:(Property,Any)*) = new PropMap(kvs.toMap)
 
   @targetName("PropMapConvenienceConstructor")
   def apply(pvals:PropVal[_]*) = new PropMap(

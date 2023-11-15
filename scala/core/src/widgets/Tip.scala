@@ -2,6 +2,7 @@ package semagrams.widgets
 
 import com.raquo.laminar.api.L._
 import semagrams.util._
+import semagrams.util.Complex
 
 /** Returns a multiline text element that updates according to a signal.
   *

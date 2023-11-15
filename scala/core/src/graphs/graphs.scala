@@ -3,9 +3,11 @@ package semagrams.graphs
 import upickle.default._
 import com.raquo.laminar.api.L._
 
+
 import semagrams._
-import semagrams.acsets._
-import semagrams.rendering.{SpriteMap,SpriteSource}
+import semagrams.rendering._
+import semagrams.util._
+
 
 
 
@@ -32,6 +34,10 @@ enum GraphHom(val _name:String,val _id:UUID,val dom:GraphOb,val codom:GraphOb)
   def path = this.path
 export GraphHom._
 
+enum GraphProp[T:ReadWriter] extends PValue[T]:
+  case SrcName extends GraphProp[String]
+  case TgtName extends GraphProp[String]
+export GraphProp._
 
 case object SchGraph extends Schema:
 
@@ -54,90 +60,110 @@ object Graph {
 
 
 sealed trait GraphEltDef[D:PartData]:
-  val sprite: Sprite[D]
-  val init: PartialFunction[Ob,D]
+  
+  def sprite: PartialFunction[Ob,Sprite[D]]
+  
+  def init: PartialFunction[Ob,D]
+  def test = init.isDefinedAt
 
-  val test = init.isDefinedAt
+  def entitySource: EntitySource[ACSet[D],D]
 
-  def spriteSource: SpriteSource[ACSet[D],D]
-
-  // def transform(f:D => D): GraphEltDef[D]
-  // def stateTransform(es:EditorState)(part:Part,data:D): D
 
 object GraphEltDef:
-  def makeSpriteSource[D:PartData](defn:GraphEltDef[D]): SpriteSource[ACSet[D],D] =
-    SpriteSource[ACSet[D],D]( (acset,emap) => 
+  def makeSpriteSource[D:PartData](defn:GraphEltDef[D]): EntitySource[ACSet[D],D] =
+    EntitySource[ACSet[D],D]( (acset,emap) => 
       val triples = acset.schema.obSeq
         .filter(defn.test)
         .flatMap(ob => 
           acset.getDataSeq(ob).map((part,data) =>
-            part -> (defn.sprite,defn.init(ob).merge(data))  
+            part -> (defn.sprite(ob),defn.init(ob).merge(data))  
           )        
         )
       triples.reverse
     )
 
     
-    // baseES.softAddDataBy( (part,_,_) => 
-    //   defn.init.applyOrElse(part.ob,(_ => PartData[D]()))
-    // )
+
+
+
+/* Definition data for a vertex type */
+type VDef[D] = (Sprite[D],D)
+
 
 case class VertexDef[D:PartData](
-  sprite:Sprite[D],
-  init: PartialFunction[Ob,D]
+  defn: PartialFunction[Ob,VDef[D]]
 ) extends GraphEltDef[D]:
 
-  def spriteSource: SpriteSource[ACSet[D],D] = 
+  def init = defn.andThen(_._2)
+  def sprite = defn.andThen(_._1)
+  def entitySource: EntitySource[ACSet[D],D] = 
     GraphEltDef.makeSpriteSource(this)
 
-  // def transform(f:D => D): VertexDef[D] = VertexDef(sprite,init.andThen(f))
   
 
+/* Possible input data for a vertex type */
+type VData[D] = VDef[D] | Sprite[D]
+
+/* Convert partial input data into a full definition */
+def vdef[D:PartData](kv:(Ob,VData[D])): (Ob,VDef[D]) = kv match
+  case (ob,vdef:VDef[D]) => ob -> vdef
+  case (ob,sprite:Sprite[D]) => ob -> (sprite,PartData())
 
 
 
 object VertexDef:
-//   def apply[D:PartData](sprite: Sprite[D],ob:Ob,obs: Ob*): VertexDef[D] =
-//     new VertexDef(sprite,(ob +: obs).map(ob => ob -> PartData[D]()).toMap)
-  def apply[D:PartData](sprite: Sprite[D],d:D,ob:Ob,obs: Ob*): VertexDef[D] =
-    new VertexDef(sprite,(ob +: obs).map(ob => ob -> d).toMap)
-//   def apply[D:PartData](sprite: Sprite[D],ob:Ob,d:D): VertexDef[D] =
-//     new VertexDef(sprite,Map(ob -> d))
-//   def apply[D:PartData](sprite: Sprite[D],init:(Ob,D),inits:(Ob,D)*): VertexDef[D] =
-//     new VertexDef(sprite,(init +: inits).toMap)
-//   def apply[D:PartData](sprite: Sprite[D],lifted:Ob => Option[D]): VertexDef[D] =
-//     new VertexDef(sprite,lifted.unlift)
-//   def apply[D:PartData](sprite: Sprite[D],pf:PartialFunction[Ob,D]): VertexDef[D] =
-//     new VertexDef(sprite,pf)
-    
-type EData[D] = (D,PartProp,PartProp)
+  def apply[D:PartData](ob:Ob,sprite:Sprite[D]): VertexDef[D] =
+    new VertexDef(Map(ob -> (sprite,PartData())))
+  def apply[D:PartData](ob:Ob,sprite:Sprite[D],init:D): VertexDef[D] =
+    new VertexDef(Map(ob -> (sprite,init)))
+  def apply[D:PartData,VD<:VData[D]](vdata:(Ob,VD)*): VertexDef[D] =
+    new VertexDef(vdata.map(vdef).toMap)
+
+
+/* Definition data for an edge type */
+type EDef[D] = (PartHom,PartHom,Sprite[D],D)
+
 
 case class EdgeDef[D:PartData](
-  sprite:Sprite[D],
-  edgeData: PartialFunction[Ob,EData[D]]
+  defn: PartialFunction[Ob,EDef[D]]
 ) extends GraphEltDef[D]:
   
-  val init = edgeData.andThen(_._1)
+  val sprite = defn.andThen(_._3)
+  val init = defn.andThen(_._4)
 
-  // def transform(f:D => D): EdgeDef[D] = EdgeDef(sprite,
-  //   edgeData.andThen( (d,src,tgt) => (f(d),src,tgt))
-  // )
-
-
-
-  def spriteSource: SpriteSource[ACSet[D],D] = 
+  def entitySource: EntitySource[ACSet[D],D] = 
     GraphEltDef.makeSpriteSource(this)
-      .addPropsBy( (part,spritemap,data) =>
-        val (_,src,tgt) = edgeData(part.ob) 
-        edgeProps[D](src,tgt)(part,data,spritemap)
+      .addPropsBy( (part,entitymap,data) =>
+        val (src,tgt,_,_) = defn(part.ob) 
+        edgeProps[D](src,tgt)(part,data,entitymap)
       )
 
+
+
+/* Possible input data for an edge type */
+type EData[D] = EDef[D] | (PartHom,PartHom,Sprite[D])
+
+/* Convert partial input data into a full definition */
+def edef[D:PartData](kv:(Ob,EData[D])): (Ob,EDef[D]) =
+  val thedef = kv match
+    case (ob,edef:EDef[D]) => ob -> edef
+    case (ob,(src:PartHom,tgt:PartHom,sprite:Sprite[D])) => ob -> (src,tgt,sprite,PartData())
+
+  val (ob,(src,tgt,_,_)) = thedef
+  println(s"edef $ob, $src, $tgt")
+  println(src.dom -> (src.dom == ob))
+  println(tgt.dom -> (tgt.dom == ob))
+  assert(ob == src.dom & ob == tgt.dom)
+  thedef 
+  
+
 object EdgeDef:
-  def apply[D:PartData](sprite:Sprite[D],edgeOb:Ob,src:PartHom,tgt:PartHom) =
-    assert(src.dom == edgeOb & edgeOb == tgt.dom)
-    new EdgeDef(sprite,{
-      case ob:Ob if ob == edgeOb => (PartData(),src,tgt)
-    })
+  def apply[D:PartData](ob:Ob,src:PartHom,tgt:PartHom,sprite:Sprite[D]): EdgeDef[D] =
+    EdgeDef(ob -> (src,tgt,sprite))
+  def apply[D:PartData](ob:Ob,src:PartHom,tgt:PartHom,sprite:Sprite[D],init:D): EdgeDef[D] =
+    EdgeDef[D,EData[D]](ob -> (src,tgt,sprite,init))
+  def apply[D:PartData,ED<:EData[D]](kvs:(Ob,ED)*): EdgeDef[D] =
+    new EdgeDef(kvs.map(edef).toMap)
 
 
 /** Compute the properties (i.e. Start and End) for an edge, using the top-level
@@ -154,7 +180,7 @@ object EdgeDef:
 def edgeProps[D:PartData](
     src: PartProp,
     tgt: PartProp
-)(_e: Part, data: D, m: SpriteMap[D]): PropMap = {
+)(_e: Part, data: D, m: EntityMap[D]): PropMap = {
   val p = data.getProps()
   val s = p.get(src)
   val t = p.get(tgt)
@@ -183,230 +209,75 @@ def edgeProps[D:PartData](
 }
 
 
-// object EdgeDef:
-//   def apply[D:PartData](sprite:Sprite[D],props:PropMap,ob:Ob,src:PartProp,tgt:PartProp): EdgeDef[D] =
-//     EdgeDef(sprite, PartData[D](props), ob -> (src,tgt))
-// //   def apply[D:PartData](sprite:Sprite[D],d:D,ob:Ob,src:PartProp,tgt:PartProp): EdgeDef[D] =
-// //     EdgeDef(sprite, IO(d), ob -> (src,tgt))
-// //   def apply[D:PartData](sprite:Sprite[D],dIO:IO[D],ob:Ob,src:PartProp,tgt:PartProp): EdgeDef[D] =
-// //     EdgeDef(sprite, dIO, ob -> (src,tgt))
-// // EdgeDef(Arrow(Content),PropMap() + (Stroke,"purple"),FKeyOb,FKeySrc,FKeyTgt)
-
-//   def apply[D:PartData](sprite:Sprite[D],d:D,es:(Ob,(PartProp,PartProp))*): EdgeDef[D] =
-//     new EdgeDef(sprite, es.map{ case (ob,(s,t)) => ob -> (d,s,t) }.toMap )
-// //   def apply[D:PartData](sprite:Sprite[D],dIO:IO[D],es:(Ob,(PartProp,PartProp))*): EdgeDef[D] =
-// //     EdgeDef(sprite, dIO, es.toMap)
-
-// //   // def apply[D:PartData](sprite:Sprite[D],props:PropMap,eOpt:Ob => Option[(PartProp,PartProp)]): EdgeDef[D] =
-// //   //   EdgeDef(sprite, IO(PartData[D](props)), eOpt.unlift)
-// //   def apply[D:PartData](sprite:Sprite[D],d:D,eOpt:Ob => Option[(PartProp,PartProp)]): EdgeDef[D] =
-// //     EdgeDef(sprite, IO(d), eOpt.unlift)
-// //   def apply[D:PartData](sprite:Sprite[D],dIO:IO[D],eOpt:Ob => Option[(PartProp,PartProp)]): EdgeDef[D] =
-// //     EdgeDef(sprite, dIO, eOpt.unlift)
-
-// //   // def apply[D:PartData](sprite:Sprite[D],props:PropMap,edef:PartialFunction[Ob,(PartProp,PartProp)]): EdgeDef[D] =
-// //   //   EdgeDef(sprite, IO(PartData[D](props)), edef)
-// //   def apply[D:PartData](sprite:Sprite[D],d:D,edef:PartialFunction[Ob,(PartProp,PartProp)]): EdgeDef[D] =
-// //     EdgeDef(sprite, IO(d), edef)
-
-
-
   
 
 
 
-
-// implicit val acsetIsACSet[S:Schema](s:S): ACSetWithSchema[SimpleACSet[S]]
-//   = simpleACSetIsACSet(s)
-//   PartData[PropMap] = PartData.propsAreData
-// def acsetIsACSet[D]: ACSetWithDataAndS
-
 case class GraphDisplay[D:PartData](
-  vertexDefs: Seq[VertexDef[D]],
-  edgeDefs: Seq[EdgeDef[D]],
-  _layout: (EditorState,ACSet[D]) => ACSet[D] = (_,a:ACSet[D]) => a
-)(
+  override val modelVar: WeakVar[ACSet[D]],
   override val bindings: Seq[Binding[ACSet[D]]],
-  override val modelVar: UndoableVar[ACSet[D]]
+  vertexDef: VertexDef[D],
+  edgeDef: EdgeDef[D],
+  _layout: (EditorState,ACSet[D]) => ACSet[D]
 ) extends ACSemagram[D]:
-
-  val eltDefs: Seq[GraphEltDef[D]] = vertexDefs ++ edgeDefs
 
 
 
 
   def layout(acset: ACSet[D],state:EditorState): ACSet[D] = {
-    val es = for 
-      edef <- edgeDefs
+    val vs = for 
       ob <- acset.schema.obSeq
-      if edef.edgeData.isDefinedAt(ob)
-      (d,s,t) = edef.edgeData(ob)
+      if vertexDef.defn.isDefinedAt(ob)
+    yield ob
+
+    val es = for
+      ob <- acset.schema.obSeq
+      if edgeDef.defn.isDefinedAt(ob)
+      (s,t,_,_) = edgeDef.defn(ob)
     yield ob -> (s,t)
 
-    _layout(state,assignBends(es.toMap,0.5)(acset))
+    val custom = _layout(state,acset)
+    val withBends = assignBends(es.toMap,0.5)(custom)
+    val withNames = withBends
+      .softSetProp(Content,
+        vs.flatMap(ob => acset.mapParts(ob,_.toString)
+      ))
+      .softSetProp(SrcName,
+        es.flatMap{ case (ob,(src,tgt)) =>
+          acset.mapProp(src,_.toString)
+        }
+      )
+      .softSetProp(TgtName,
+        es.flatMap{ case (ob,(src,tgt)) =>
+          acset.mapProp(src,_.toString)
+        }
+      )
+
+
+    withNames
+
 
   }
 
     
-    val spriteSources = eltDefs.map(_.spriteSource)
+    val entitySources = Seq(vertexDef.entitySource,edgeDef.entitySource)
 
  
     
 
 
+object GraphDisplay:
+
+  def defaultLayout[D:PartData](es:EditorState,acset:ACSet[D]): ACSet[D] =    
+    acset.softSetProp(Highlight,es.hoveredPart,())
+      .softSetProp(Selected,es.selected,())
 
 
-
-
-// type GraphDefSeq[D] = GraphEltDef[D] | Seq[GraphEltDef[D]]
-// // object GraphDisplay:
-// //   def apply[D:PartData](defs:GraphDefSeq[D]*) =
-// //     val clean = defs.flatMap(ds => ds match
-// //         case defs:Seq[GraphEltDef[D]] => defs
-// //         case defn:GraphEltDef[D] => Seq(defn)
-// //       )
-// //     new GraphDisplay(
-// //       clean.collect{ case vdef:VertexDef[D] => vdef},
-// //       clean.collect{ case edef:EdgeDef[D] => edef}
-// //     )
-
-
-//   // type Data = D
-//   // implicit val dataIsPartData: PartData[D] = 
-//   //   summon[PartData[D]]
-//   // def layout(m: GraphDisplay.this.Model): GraphDisplay.this.Model = ???
-//   // implicit val dataIsPartData = dIsData
-
-
-
-// // // object GraphDisplay:
-// // //   import GraphEltDef._
-
-// //   // def apply[A<:AbstractACSet[A]{ type D = PropMap}](schema:AbstractSchema,specs:GraphEltSpec[PropMap]*): GraphDisplay[A] =
-// //   //   val defs = specs.map(GraphEltDef.apply)
-// //   //   new GraphDisplay[A](
-// //   //     schema,
-// //   //     defs.collect{ case v:VertexDef[PropMap] => v},
-// //   //     defs.collect{ case e:EdgeDef[PropMap] => e},
-// //   //   )
-
-// //     // def apply[A<:AbstractACSet[_A]{ type D = PropMap }]
-// //     //   (eltDefs:Seq[GraphEltDef]): GraphDisplay[A] = new GraphDisplay(
-// //     //   eltDefs.collect{ case v:VertexDef => v},
-// //     //   eltDefs.collect{ case e:EdgeDef => e}
-// //     // )
-// //     // import SchGraph._
-
-// //     // def apply[
-// //     //   D : PartData,
-// //     //   A<:AbstractACSet[A]{ type D = D }
-// //     // ](
-// //     //   schema: AbstractSchema,
-// //     //   eltDefs:Seq[
-// //     //       /* Vertex defs */
-// //     //       schema.Ob | 
-// //     //       (schema.Ob,Sprite[PropMap]) | 
-// //     //       (schema.Ob,PropMap) | (schema.Ob,PropMap) |
-// //     //       (schema.Ob,(Sprite[PropMap],PropMap)) |
-// //     //       (schema.Ob,(Sprite[PropMap],PropMap)) |
-// //     //       /* Edge defs */
-// //     //       (schema.Ob,(schema.Hom,schema.Hom)) | 
-// //     //       (schema.Ob,(schema.Hom,schema.Hom,Sprite[PropMap])) |
-// //     //       (schema.Ob,(schema.Hom,schema.Hom,PropMap)) |
-// //     //       (schema.Ob,(schema.Hom,schema.Hom,PropMap)) | 
-// //     //       (schema.Ob,(schema.Hom,schema.Hom,Sprite[PropMap], PropMap)) |
-// //     //       (schema.Ob,(schema.Hom,schema.Hom,Sprite[PropMap], PropMap))
-// //     //     ]
-// //     //   ): GraphDisplay[A] =
-
-// //     //   // def mkData(): 
-// //     //   implicit val pd: PartData[D] = summon[PartData[D]]
-      
-// //     //   val defs = eltDefs.map{
-// //     //     /* Vertex cases */
-// //     //     case ob:schema.Ob => 
-// //     //       VertexDef(ob,ShapeNode(),PropMap())
-// //     //     case (ob:schema.Ob,sprite:Sprite[D]) => 
-// //     //       VertexDef(ob,sprite,PropMap())(pd)
-// //     //     case (ob:schema.Ob,init:PropMap) => 
-// //     //       VertexDef(ob,ShapeNode(), init)
-// //     //     case (ob:schema.Ob,(sprite:Sprite[_],init:PropMap)) => 
-// //     //       VertexDef(ob,sprite, init)
-        
-// //     //     /* Edge defs */
-// //     //     case (ob:schema.Ob,(src:schema.Hom,tgt:schema.Hom)) =>
-// //     //       EdgeDef(ob,src,tgt,Arrow(),PropMap())
-// //     //     case (ob:schema.Ob,(src:schema.Hom,tgt:schema.Hom,sprite:Sprite[PropMap])) =>
-// //     //       EdgeDef(ob,src,tgt,sprite,PropMap())
-// //     //     case (ob:schema.Ob,(src:schema.Hom,tgt:schema.Hom,init:PropMap)) =>
-// //     //       EdgeDef(ob,src,tgt,Arrow(),init)
-// //     //     case (ob:schema.Ob,(src:schema.Hom,tgt:schema.Hom,sprite:Sprite[PropMap],init:PropMap)) =>
-// //     //       EdgeDef(ob,src,tgt,sprite,mkData(d))
-// //     //   }
-
-
-
-
-
-
-
-// // object GraphEltDef:
-
-// //   // type GraphEltSpec[D] = Ob | //(AOb,Sprite[D]) |
-// //   //   (AOb,D) | (AOb,PropMap) | 
-// //   //   (AOb,(Sprite[D],D)) | (AOb,(Sprite[D],PropMap)) |
-// //   //   (AOb,(AHom,AHom)) | (AOb,(AHom,AHom,Sprite[D])) |
-// //   //   (AOb,(AHom,AHom,D)) | (AOb,(AHom,AHom,PropMap)) | 
-// //   //   (AOb,(AHom,AHom,Sprite[D],D)) | (AOb,(AHom,AHom,Sprite[D],PropMap))
-
-// //   // def data[D:PartData](p:PropMap) = implicitly[PartData[D]].toData(p)
-// //   // def data[D:PartData](): D = data[D](PropMap())
-
-// //   def apply[X<:Ob,D:PartData](ob:X): GraphEltDef[X,D] = 
-// //     VertexDef(ob,ShapeNode[D](),PartData[D]())
-  
-// //   def apply[X<:Ob,D:PartData](ob:X,sprite:Sprite[D]): GraphEltDef[X,D] = 
-// //     val init: PropMap = PropMap() + (Bend,2.0)
-// //     VertexDef(ob,sprite,PartData[D](init))
-  
-// //   // def apply[D:PartData](ob:Ob,init:PropMap): GraphEltDef[D] = 
-// //   //   val d = PartData[D](init)
-// //   //   VertextDef(ob,ShapeNode[D](),d)
-
-
-
-
-// //     // VertexDef(ob,ShapeNode[D](),PartData[D](init))
-// //     // VertexDef(ob,ShapeNode(),PartData[D]())
-// //     // eltSpec match
-// //   //   /* Vertex defs */
-// //   //   case ob:AOb => 
-// //   //     VertexDef(ob,ShapeNode(),data())
-// //   //   case (ob:AOb,spec) => spec match
-// //   //     case spr:Sprite[D] => 
-// //   //       VertexDef(ob,spr,data())
-// //   //     case init:D => 
-// //   //       VertexDef(ob,ShapeNode(),init)
-// //   //     case init:PropMap => 
-// //   //       VertexDef(ob,ShapeNode(),data(init))
-// //   //     case (spr:Sprite[D],init:D) => 
-// //   //       VertexDef(ob,spr,init)
-// //   //     case (spr:Sprite[D],init:PropMap) => 
-// //   //       VertexDef(ob,spr,data(init))
-// //   //   /* Edge defs */
-// //   //     case (src:AHom,tgt:AHom) =>
-// //   //       EdgeDef(ob,src,tgt,Arrow(),data())
-// //   //     case (src:AHom,tgt:AHom,spr:Sprite[D]) =>
-// //   //       EdgeDef(ob,src,tgt,spr,data())        
-// //   //     case (src:AHom,tgt:AHom,init:D) =>
-// //   //       EdgeDef(ob,src,tgt,Arrow(),init)
-// //   //     case (src:AHom,tgt:AHom,init:PropMap) =>
-// //   //       EdgeDef(ob,src,tgt,Arrow(),data(init))
-// //   //     case (src:AHom,tgt:AHom,spr:Sprite[D],init:D) =>
-// //   //       EdgeDef(ob,src,tgt,spr,init)
-// //   //     case (src:AHom,tgt:AHom,spr:Sprite[D],init:PropMap) =>
-// //   //       EdgeDef(ob,src,tgt,spr,data(init))
-
-
+  def apply[D:PartData](
+    modelVar: WeakVar[ACSet[D]],
+    bindings: Seq[Binding[ACSet[D]]],
+    vertexDef: VertexDef[D],
+    edgeDef: EdgeDef[D],
+  ) = new GraphDisplay(modelVar,bindings,vertexDef,edgeDef,defaultLayout)
 
 

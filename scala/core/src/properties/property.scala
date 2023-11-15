@@ -1,4 +1,4 @@
-package semagrams.acsets
+package semagrams
 
 import upickle.default._
 
@@ -33,12 +33,6 @@ trait Property {
 
 }
 
-// type Color = dom.ext.Color
-
-// val rw:ReadWriter[Color] = readwriter[String].bimap(
-//   (c:Color) => c.,
-//   str:String => Color.
-// )
 
 
 case class PropVal[T](prop:Property{type Value = T},value:Option[T])
@@ -56,6 +50,7 @@ object PropChange:
 
 case class PartVal[K,V](f:Property{type Value = V},key:K,v:V)
 
+type PartProp = Property { type Value = Part }
 
 /** A subtrait of `Property` that is simpler to implement when there's an
   * implicit ReadWriter for your value type in scope
@@ -98,7 +93,6 @@ enum GenericProperty[T: ReadWriter] extends PValue[T] {
 
   type Value = T
 
-  // val rw = summon[ReadWriter[T]]
 }
 
 
@@ -114,7 +108,6 @@ enum PathProp[T: ReadWriter] extends PValue[T] {
   case TikzEnd extends PathProp[String]
 
   type Value = T
-  // val rw = summon[ReadWriter[T]]
 }
 
 export PathProp._

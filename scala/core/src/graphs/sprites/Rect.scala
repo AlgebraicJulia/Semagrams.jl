@@ -4,9 +4,8 @@ import com.raquo.laminar.api.L.svg._
 import com.raquo.laminar.api._
 import semagrams.util._
 import semagrams.rendering._
-import semagrams.acsets._
+import semagrams._
 import semagrams.state._
-// import semagrams.acsets.abstr._
 
 
 /** A sprite for geometric rectangles
@@ -62,7 +61,7 @@ case class Rect[D:PartData](label:Property,val rectInit: D) extends Sprite[D]:
   }
 
   override def boundaryPt(data: D, dir: Complex, subparts:Seq[Part] = Seq()) = {
-    // Normalize to first quadrant
+    /* Normalize to first quadrant */
     val pm = rectInit.merge(data)
     val (_, boxdims) = geom(pm)
     val os = pm.getProp(OuterSep)
@@ -143,7 +142,6 @@ object Rect:
     val props = updates.map(_.softSetProps(defaultProps))
     
     List(
-      // fill <-- props.map(_.getProp(Fill).toString),
       fill <-- props.map(d =>
         if d.hasProp(Highlight) 
         then d.getProp(Fill).lighten(.5).toString
