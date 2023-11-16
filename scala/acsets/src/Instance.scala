@@ -95,9 +95,9 @@ object Instance extends Delta[Instance] {
     }
   }
 
-  case class Dirty(
-      clean: Clean,
-      patch: Patch
+  class Dirty(
+      val clean: Clean,
+      var patch: Patch
   ) extends Instance {
     if (clean.schema != patch.schema) {
       throw (new Exception("incompatible schemas"))
@@ -108,19 +108,26 @@ object Instance extends Delta[Instance] {
     def subparts: SubpartDelta.Dirty =
       SubpartDelta.Dirty(clean.subparts, patch.subparts)
 
-    def addPart(sort: SortId) = {
+    def addPart(sort: SortId): Part = {
       val (newPatch, part) = patch.addPart(clean, sort)
-      (this.copy(patch = newPatch), part)
+      patch = newPatch
+      part
     }
 
-    def remPart(part: Part) =
-      this.copy(patch = patch.remPart(clean, part))
+    def remPart(part: Part): this.type = {
+      patch = patch.remPart(clean, part)
+      this
+    }
 
-    def setSubpart(part: Part, prop: PropId, v: Value): Dirty =
-      this.copy(patch = patch.setSubpart(clean, part, prop, v))
+    def setSubpart(part: Part, prop: PropId, v: Value): this.type = {
+      patch = patch.setSubpart(clean, part, prop, v)
+      this
+    }
 
-    def setSubpart(part: Part, prop: Property, x: prop.T): Dirty =
-      this.copy(patch = patch.setSubpart(clean, part, prop, x))
+    def setSubpart(part: Part, prop: Property, x: prop.T): this.type = {
+      patch = patch.setSubpart(clean, part, prop, x)
+      this
+    }
   }
 
   object Dirty {

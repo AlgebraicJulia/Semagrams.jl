@@ -29,15 +29,20 @@ trait Helm[Msg, State] {
     process(msg => IO(handler(msg)))
 }
 
-object Balloon {
-  def launch[Msg, State](
-      runner: Helm[Msg, State] => IO[Any],
-      init: State
-  ): IO[Tether[Msg, State]] = async[IO] {
-    val stateVar = Var(init)
-    val stateCell = AtomicCell[IO].of(init).await
+trait Balloon[Msg, State] {
+  def launch: IO[Tether[Msg, State]]
+}
+
+trait AsyncBalloon[Msg, State] extends Balloon[Msg, State] {
+  def current: State
+
+  def run(helm: Helm[Msg, State]): IO[Any]
+
+  def launch: IO[Tether[Msg, State]] = async[IO] {
+    val stateVar = Var(current)
+    val stateCell = AtomicCell[IO].of(current).await
     val queue = Queue.unbounded[IO, (Msg, State => IO[Unit])].await
-    runner(new Helm {
+    run(new Helm {
       def nextWithState = async[IO] {
         val (msg, update) = next.await
         val state = stateCell.get.await
@@ -70,18 +75,31 @@ object Balloon {
   }
 }
 
+object AsyncBalloon {
+  def apply[Msg, State](
+      runner: Helm[Msg, State] => IO[Any],
+      init: State
+  ): AsyncBalloon[Msg, State] = new AsyncBalloon[Msg, State] {
+    def run(helm: Helm[Msg, State]) = runner(helm)
+    def current = init
+  }
+}
+
 /** Pure state machines can be more efficient than using Helm, but can also
   * interoperate with it
   */
-trait PureBalloon[Msg, State] {
-  def current: State
-
+trait PureBalloon[Msg, State] extends AsyncBalloon[Msg, State] {
   def next(msg: Msg): PureBalloon[Msg, State]
 
   def step(helm: Helm[Msg, State]): IO[PureBalloon[Msg, State]] =
     helm.process_(msg => { val b = next(msg); (b, b.current) })
 
-  def launch: IO[Tether[Msg, State]] = async[IO] {
+  def run(helm: Helm[Msg, State]): IO[Void] = async[IO] {
+    val next = this.step(helm).await
+    next.run(helm).await
+  }
+
+  override def launch: IO[Tether[Msg, State]] = async[IO] {
     val stateVar = Var(current)
     val stateCell = AtomicCell[IO].of(this).await
     (Dispatcher.sequential[IO] use { dispatcher =>

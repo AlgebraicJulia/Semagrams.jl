@@ -24,6 +24,7 @@ opaque type SchemaRevisionHash = Long
 opaque type InstanceRevisionHash = Long
 
 enum Value {
+  case C(of: Complex)
   case F(of: Double)
   case I(of: Long)
   case S(of: String)
@@ -41,6 +42,17 @@ sealed trait ValueType {
 }
 
 object ValueType {
+  case object C extends ValueType {
+    type T = Complex
+
+    def coerce(d: Value): Option[T] = d match {
+      case Value.C(x) => Some(x)
+      case _          => None
+    }
+
+    def produce(x: T) = Value.C(x)
+  }
+
   case object F extends ValueType {
     type T = Double
 

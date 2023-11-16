@@ -1,5 +1,7 @@
 package semagrams.util
 
+import acsets._
+
 /** Represents an affine transformation of the 2d plane
   *
   * @param z

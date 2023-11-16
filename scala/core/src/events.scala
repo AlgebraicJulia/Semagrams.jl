@@ -1,6 +1,6 @@
 package semagrams
 
-import semagrams.util.Complex
+import acsets.Complex
 import com.raquo.laminar.api.L._
 
 import acsets._

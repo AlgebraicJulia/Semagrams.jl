@@ -1,5 +1,6 @@
 package semagrams.util
 
+import acsets.Complex
 import scala.math.pow
 
 extension (t: Double) {

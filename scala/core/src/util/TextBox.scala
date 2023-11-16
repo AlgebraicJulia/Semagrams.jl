@@ -1,5 +1,6 @@
 package semagrams.util
 
+import acsets.Complex
 import org.scalajs.dom
 import semagrams.util._
 

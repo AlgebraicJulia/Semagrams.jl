@@ -1,7 +1,7 @@
 package semagrams.bindings
 
+import acsets._
 import semagrams._
-import semagrams.acsets._
 
 /** A trait for filters on the event stream, picking out events that are
   * relevant to a particular [[Action]] and extracting data of type `A` from
@@ -11,7 +11,7 @@ trait EventHook[A] {
 
   /** Determine whether or not this is triggered, and if it is triggered
     */
-  def apply(evt: Event, globalState: GlobalState): Option[A]
+  def apply(evt: LocalEvent, globalState: GlobalState): Option[A]
 
   /** A brief description of what conditions trigger the eventhook, for use in
     * auto-generated help messages.
@@ -25,9 +25,9 @@ trait EventHook[A] {
   *   the key that we are listening for
   */
 case class KeyDownHook(key: String) extends EventHook[Unit] {
-  def apply(evt: Event, _globalState: GlobalState) = evt match {
-    case KeyDown(`key`) => Some(())
-    case _              => None
+  def apply(evt: LocalEvent, _globalState: GlobalState) = evt match {
+    // case KeyDown(`key`) => Some(())
+    case _ => None
   }
 
   def description = key
@@ -40,15 +40,17 @@ case class KeyDownHook(key: String) extends EventHook[Unit] {
   */
 case class ClickOnPartHook(button: MouseButton, modifiers: Set[KeyModifier])
     extends EventHook[Part] {
-  def apply(evt: Event, globalState: GlobalState) = evt match {
-    case MouseDown(Some(ent: Part), `button`) if modifiers == globalState.modifiers =>
+  def apply(evt: LocalEvent, globalState: GlobalState) = evt match {
+    case MouseDown(Some(ent: Part), `button`)
+        if modifiers == globalState.modifiers =>
       Some(ent)
-    case _                                    => None
+    case _ => None
   }
 
   def description = s"$button down on part"
 }
 
 object ClickOnPartHook {
-  def apply(button: MouseButton): ClickOnPartHook = ClickOnPartHook(button, Set())
+  def apply(button: MouseButton): ClickOnPartHook =
+    ClickOnPartHook(button, Set())
 }

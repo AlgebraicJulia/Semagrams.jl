@@ -1,6 +1,5 @@
 package semagrams.util
 
-trait Described[T] {
-  val it: T
+trait Described {
   val description: String
 }

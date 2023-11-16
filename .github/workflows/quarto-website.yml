@@ -27,11 +27,13 @@ jobs:
         with:
           path: site
 
-      - run: |
+      - name: Build Docs
+        run: |
           cd scala
           mill core.docJar
 
-      - run: |
+      - name: Put Docs in Right Place
+        run: |
           mkdir -p dest
           mv site/_site/* dest
           mv scala/out/core/docJar.dest/javadoc dest/scaladoc

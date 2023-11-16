@@ -87,15 +87,26 @@ object BalloonSuite extends SimpleIOSuite {
     }
   }
 
-  test("functional") {
+  test("basic counter functional") {
     async[IO] {
-      val tether = Balloon.launch(processCounter, 0).await
+      val tether = AsyncBalloon(processCounter, 0).launch.await
+      val s0 = tether.get.await
+      tether.send(Inc).await
+      val s1 = tether.get.await
+      tether.send(Dec).await
+      val s2 = tether.get.await
+      expect.all(s0 == 0, s1 == 1, s2 == 0)
+    }
+  }
+
+  test("reverso counter functional") {
+    async[IO] {
+      val tether = AsyncBalloon(processCounter, 0).launch.await
       tether.send(Inc).await
       tether.send(Reverso).await
       tether.send(Inc).await
-      tether.send(Inc).await
       val s = tether.get.await
-      expect(s == 1)
+      expect(s == 0)
     }
   }
 }

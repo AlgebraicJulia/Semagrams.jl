@@ -1,9 +1,9 @@
 package semagrams.bindings
 
+import acsets._
+import balloons._
 import semagrams._
 import semagrams.util._
-import semagrams.acsets._
-import semagrams.control._
 import com.raquo.laminar.api.L._
 import cats._
 import cats.implicits._
@@ -14,43 +14,53 @@ import cats.effect.std._
   * paired with [[EventHook]]s in [[Binding]]s, and can use the data extracted
   * from the event in the [[Binding]].
   */
-trait SemagramAction[Param, Edit, Model] {
-  def apply(p: Param, args: Action.Arguments[Edit, Model]): IO[Unit]
+trait Action extends Described {
+  def apply(
+      res: Action.Resources
+  ): IO[Option[Balloon[LocalEvent, Instance.Patch]]]
+}
 
-  def description: String
+trait PureAction extends Described {
+  def makePatch(
+      editorState: EditorState,
+      clean: Instance.Clean
+  ): Instance.Patch = {
+    val state = Instance.Dirty(clean, Instance.Patch.empty(clean.schema))
+    mutateState(editorState, state)
+    state.patch
+  }
+
+  def mutateState(editorState: EditorState, state: Instance.Dirty): Unit
 }
 
 object Action {
-  case class Arguments[Edit, Model](
-    editHandle: StoreHandle[Edit, Model],
-    globalHandle: StoreHandle[Message, GlobalState],
-    state: EditorState,
-    controls: Controls[Event, EditorState]
+  case class Resources(
+      instanceTether: Tether[Instance.Patch, Instance.Clean],
+      globalTether: Tether[GlobalEvent, GlobalState],
+      editorTether: Tether[EditorState.Event, EditorState]
   )
 
   /** A constructor for anonymous actions.
     */
-  def apply[Param, Edit, Model](
-      f: (Param, Arguments[Edit, Model]) => IO[Unit],
-      desc: String
-  ) =
-    new Action[Param, Edit, Model] {
-      def apply(p: Param, args: Arguments[Edit, Model]) = f(p, args)
-
-      def description = desc
-    }
+  // def apply(
+  //     f: Resources => IO[Unit],
+  //     desc: String
+  // ) =
+  //   new Action[Param, Edit, Model] {
+  //     def apply(args: Arguments[Edit, Model]) = f(p, args)
+  //
+  //     def description = desc
+  //   }
 }
 
-// case class AddAtMouse(ob: Ob) extends Action[Unit, ACSet] {
-//   def apply(_p: Unit, r: Action.Resources[ACSet]) = IO(
-//     {
-//       val pos = r.stateVar.now().mousePos
-//       r.modelVar.update(_.addPart(ob, PropMap() + (Center -> pos))._1)
-//     }
-//   )
+case class AddAtMouse(sort: SortId) extends PureAction {
+  def mutateState(editorState: EditorState, state: Instance.Dirty) = {
+    val x = state.addPart(sort)
+    state.setSubpart(x, Position, editorState.mousePos)
+  }
 
-//   def description = s"add a new part of type $ob at current mouse position"
-// }
+  val description = s"add a new part of type $sort at current mouse position"
+}
 
 // case class DeleteHovered() extends Action[Unit, ACSet] {
 //   def apply(_p: Unit, r: Action.Resources[ACSet]) = IO(

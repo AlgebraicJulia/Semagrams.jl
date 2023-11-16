@@ -1,4 +1,4 @@
-package semagrams.util
+package acsets
 
 import upickle.default._
 import scala.language.implicitConversions
