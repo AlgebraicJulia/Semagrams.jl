@@ -1,8 +1,9 @@
 package semagrams.rendering
 
-import semagrams.{PartData,PropMap}
-import semagrams.acsets.Part
+// import semagrams.{PartData,PropMap}
+import semagrams._
 import semagrams.util.{Complex,RGB}
+// import semagrams.PropMap
 
 /** A collection of entities and sprites
   *

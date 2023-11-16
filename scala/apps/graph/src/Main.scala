@@ -11,6 +11,7 @@ import semagrams._
 import semagrams.acsets._
 import semagrams.bindings._
 import semagrams.graphs._
+import semagrams.PropMap
 
 
 
@@ -47,32 +48,33 @@ def layout[D:PartData](state:EditorState,acset:ACSet[D]) =
 val graphVar = UndoableVar(Graph())
 
 
+import KeyModifier.{Ctrl,Shift}
+
 /* A `Binding` ties an `EventHook` to an `Action` */ 
 val bindings = Seq[Binding[ACSet[PropMap]]](
   Binding(KeyDownHook("a"), AddAtMouse(V)),
   Binding(KeyDownHook("d"), DeleteHovered()),
   Binding(ClickOnPartHook(MouseButton.Left).filter(V), MoveViaDrag()),
   Binding(
-    ClickOnPartHook(MouseButton.Left, KeyModifier.Shift), 
+    ClickOnPartHook(MouseButton.Left, Shift), 
     AddEdgeViaDrag((V,V),(E,Src,Tgt))
   ),
   Binding(DoubleClickOnPartHook(),Callback(part => 
-    println(part)
     graphSema.tableVar.now().get(part.ob.id) match
       case Some(sematable) => 
-        println(s"Some table $part")
         sematable.edit(part,Content)
       case None => 
-        println(s"None $part")
         ()
   )),
   Binding(KeyDownHook("?"), PrintModel()),
   Binding(
-    KeyDownHook("z",KeyModifier.Ctrl),
-    Callback((_:Unit) =>
-      graphVar.undo()
-    )
-  )
+    KeyDownHook("z",Ctrl),
+    Callback(() => graphVar.undo())
+  ),
+  Binding(
+    KeyDownHook("Z",Ctrl,Shift),
+    Callback(() => graphVar.redo())
+  ),
 )
 
 
@@ -151,8 +153,9 @@ object Main {
           display := "flex",
           children <-- graphSema.tableVar.signal.map(tableMap =>
             tableMap.toSeq.map((_,table) => table.elt)
-          )
-        )
+          ),
+        ),
+        // child <-- graphVar.signal.map(_.toString)
       )
       
       /* Render the laminar element to the DOM */

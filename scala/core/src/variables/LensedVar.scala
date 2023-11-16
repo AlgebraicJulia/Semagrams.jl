@@ -36,6 +36,11 @@ class LensedVar[A, B](val v: UndoableVar[A], val l: Lens[A, B]) extends WeakVar[
 
   def update(f:B => B) = v.update(l.replace(f(now())))
 
+  // Pause recording for base variable? This seems bad.
+  def unrecord() = v.unrecord()
+  def record() = v.record()
+  def save() = v.save()
+
   /** Construct a further LensedVar by composing lenses */
   def zoomL[C](m: Lens[B, C]) = new LensedVar(v, l.andThen(m))
 }

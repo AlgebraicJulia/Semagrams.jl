@@ -7,6 +7,7 @@ import semagrams._
 
 import upickle.default._
 import com.raquo.laminar.nodes.ReactiveSvgElement
+// import semagrams.{PropMap, Property}
 
 
 

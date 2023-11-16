@@ -7,6 +7,7 @@ import semagrams.util._
 
 
 import upickle.default._
+// import semagrams.{ValType, FKey, Generator, given, Ob, Elt, Attr, Table, AbstractFKey, Property}
 
 
 
@@ -99,23 +100,25 @@ case object SchSchema extends Schema:
 
 
 
-def schemaId(part:Part) = part.id.copy(
-  stem = part.ob match
-    case TableOb => "Table"
-    case ValTypeOb => "ValType"
-    case FKeyOb => "FKey"
-    case AttrOb => "Attr"
-    case _ => part.ob.toString
-) 
+// def schemaId(part:Part) = part.id.copy(
+//   stem = part.ob match
+//     case TableOb => "Table"
+//     case ValTypeOb => "ValType"
+//     case FKeyOb => "FKey"
+//     case AttrOb => "Attr"
+//     case _ => part.ob.toString
+// ) 
 
   
-def acsetSchema[D:PartData](acset:ACSet[D]): BasicSchema =
+def acsetSchema[D:PartData](id:UUID)(acset:ACSet[D]): BasicSchema =
   if !acset.schema.hasElts(Seq[SchObs](TableOb,FKeyOb,AttrOb))
   then println(s"Warning: missing schema elements in $acset")
   val tableMap = acset.tryProp(Content,TableOb).map(
     (part,content) => content match
-      case Some(name) => part.id -> Table(schemaId(part)).rename(name)
-      case None => part.id -> Table(schemaId(part))
+      // case Some(name) => part.id -> Table(schemaId(part)).rename(name)
+      // case None => part.id -> Table(schemaId(part))
+      case Some(name) => part.id -> Table(part.id).rename(name)
+      case None => part.id -> Table(part.id)
   )
     
   val fkeys = acset.getPropSeq(FKeyOb).collect { 
@@ -124,7 +127,8 @@ def acsetSchema[D:PartData](acset:ACSet[D]): BasicSchema =
       val t = props(FKeyTgt)
 
       FKey(
-        schemaId(part),
+        part.id,
+        // schemaId(part),
         props.get(Content).getOrElse(""),
         tableMap(s.id),
         tableMap(t.id)
@@ -138,7 +142,8 @@ def acsetSchema[D:PartData](acset:ACSet[D]): BasicSchema =
       val t = props(AttrTgt)
 
       Attr(
-        schemaId(part),
+        part.id,
+        // schemaId(part),
         props.get(Content).getOrElse(""),
         tableMap(s.id),
         ValType[String](t.id)
@@ -147,4 +152,4 @@ def acsetSchema[D:PartData](acset:ACSet[D]): BasicSchema =
   }
 
 
-  BasicSchema((tableMap.values ++ fkeys ++ attrs).toSeq:_*)
+  BasicSchema(id,(tableMap.values ++ fkeys ++ attrs).toSeq:_*)

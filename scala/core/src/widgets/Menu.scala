@@ -2,7 +2,6 @@ package semagrams.widgets
 
 import com.raquo.laminar.api.L._
 import cats.effect.IO
-import semagrams.acsets.Part
 
 /** A small menu. To be used with [[UIState.dialogue]], this returns an IO
   * action for the choice made.

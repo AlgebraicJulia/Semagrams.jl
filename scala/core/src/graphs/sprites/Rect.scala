@@ -6,6 +6,7 @@ import semagrams.util._
 import semagrams.rendering._
 import semagrams._
 import semagrams.state._
+// import semagrams.{PropMap, Property}
 
 
 /** A sprite for geometric rectangles

@@ -1,3 +1,4 @@
+// import semagrams.{Ob, PropMap, Table}
 // package semagrams.acsess
 
 import semagrams._
@@ -77,8 +78,31 @@ val schemaBindings = Seq[Binding[ACSet[PropMap]]](
   ),
   Binding(KeyDownHook("A",KeyModifier.Shift),AddAtMouse(ValTypeOb)),
   Binding(KeyDownHook("d"), DeleteHovered()),
-  Binding(ClickOnPartHook(MouseButton.Left).filter(TableOb,ValTypeOb), MoveViaDrag()),
+  Binding(
+    ClickOnPartHook(MouseButton.Left).filter(TableOb,ValTypeOb), 
+    MoveViaDrag().andThen(_ => IO(acsetVar.save()))
+  ),
+  Binding(
+    ClickOnPartHook(MouseButton.Left,KeyModifier.Shift).filter(TableOb),
+    AddEdgeViaDrag(
+      (TableOb,TableOb) -> (FKeyOb,FKeySrc,FKeyTgt,PartData()),
+      (TableOb,ValTypeOb) -> (AttrOb,AttrSrc,AttrTgt,PartData()),
+    )
+  ),
   Binding(KeyDownHook("?"),PrintModel()),
+  // How to keep these in sync?
+  Binding(
+    KeyDownHook("z",KeyModifier.Ctrl),
+    Callback(() => {
+      schemaVar.undo()
+    })
+  ),
+  Binding(
+    KeyDownHook("Z",KeyModifier.Ctrl,KeyModifier.Shift),
+    Callback(() => 
+      schemaVar.redo()
+    )
+  ),
   // Binding(
   //   KeyDownHook("z",KeyModifier.Ctrl),
   //   Callback((_:Unit) =>
@@ -112,13 +136,20 @@ val schemaSema = GraphDisplay[PropMap](
 
 
 val schemaSignal = schemaSema.modelVar.signal
-  .splitOne(acsetSchema)((sch,_,_) => sch)
+  .splitOne(acsetSchema(acsetSchemaId))((sch,_,_) => sch)
 
 val schemaObs: Observer[Schema] = Observer(newSch =>
   val oldSch = acsetSema.modelVar.now().schema
+  // println(s"schObs") // $oldSch -> $newSch")
+  // println(oldSch == newSch)
+  // println(oldSch.id == newSch.id)
+  // println(oldSch.id)
+  // println(newSch.id)
+  // println(oldSch.name == newSch.name)
+  // println(oldSch == newSch)
+  // println()
   val rems = oldSch diff newSch
   val adds = newSch diff oldSch
-  println(s"schemaObs rems = $rems, adds = $adds")
   acsetVar.update(
     _ -- rems.values ++ adds.values
   )  
@@ -134,7 +165,9 @@ def acsetLayout[D:PartData] = GraphDisplay.defaultLayout[D]
 
 /* State management */
 
-val acsetVar = UndoableVar(ACSet(Schema()))
+
+val acsetSchemaId = UUID("ACSetSch")
+val acsetVar = UndoableVar(ACSet(Schema(acsetSchemaId)))
 
 
 
@@ -146,28 +179,52 @@ val selectIO: IO[Option[(Ob,PropMap)]] = IO {
   for
     part <- state.selected.filter(_.ob == TableOb).headOption
     props = acset.getProps(part)
-    obid = schemaId(part)
-    ob <- schema.tryTable(obid)
+    // obid = schemaId(part)
+    ob <- schema.tryTable(part.id)
   yield ob -> props
   
 }
+
+// val edgeSelectIO: IO[Option[(Ob,PartHom,PartHom,PropMap)]] = IO {
+
+//   val (state,acset) = schemaSema.readout()
+//   val schema = acsetSema.modelVar.now().schema
   
-  
+//   for
+//     part <- state.selected.filter(_.ob == FKeyOb).headOption
+//     val Seq(src,tgt) = acset.getProps(Seq(FKeySrc,FKeyTgt),part)
+//     props = acset.getProps(part)
+//     ob <- schema.tryTable(part.id)
+//     srcf <- schema.tryFKey(src.id)
+//     tgtf <- schema.tryFKey(tgt.id)
+//   yield (ob,srcf,tgtf,props)
+
+// }
+
+
+val saveSchema = () => schemaVar.save()
+val schemaIsHovered = () => acsetSema.isHovered
+
 
 val acsetBindings = Seq[Binding[ACSet[PropMap]]](
-  Binding(KeyDownHook("a"),AddAtMouse(selectIO)),
-  Binding(KeyDownHook("d"), DeleteHovered()),
+  Binding(KeyDownHook("a").filter(schemaIsHovered),AddAtMouse(selectIO).andThen(saveSchema)
+  ),
+  Binding(KeyDownHook("d"), DeleteHovered().andThen(saveSchema)),
   Binding(
     ClickOnPartHook(MouseButton.Left).filter(_.ob.isInstanceOf[Table]),
-    MoveViaDrag()
+    MoveViaDrag().andThen(saveSchema)
   ),
   Binding(
     KeyDownHook("z",KeyModifier.Ctrl),
-    Callback((_:Unit) => acsetVar.undo())
+    Callback(() => {
+      acsetVar.undo()
+    })
   ),
   Binding(
     KeyDownHook("Z",KeyModifier.Ctrl,KeyModifier.Shift),
-    Callback((_:Unit) => acsetVar.redo())
+    Callback(() => 
+      acsetVar.redo()
+    )
   ),
   Binding(KeyDownHook("?"),PrintModel())
 )
@@ -184,16 +241,30 @@ def vProps = PropMap()
   + (MinimumHeight,25) + (MinimumWidth,25)
   + (Fill,"red") + (InnerSep,0)
 
+def eProps = PropMap()
+  + (Stroke,"black")
 
 val acsetVertexDef = VertexDef{
   case t:Table => (rectSprite,vProps)
 }
 
-val acsetSema = GraphDisplay[PropMap](
+
+
+// val acsetEdgeDef = EdgeDef{
+//   case f:FKey => 
+//     val ftp = f.
+    
+//     (edgeSprite,eProps)
+// }
+
+
+
+val acsetSema: GraphDisplay[PropMap] = GraphDisplay[PropMap](
   acsetVar,
   acsetBindings,
   acsetVertexDef,
   EdgeDef(),
+  // acsetEdgeDef,
   // acsetLayout
 )
 
@@ -240,8 +311,33 @@ object Main {
           schemaSignal.changes --> schemaObs,
           padding := "10px",
         ),
-        child <-- schemaSema.modelVar.signal.map(_.toString),
-        child <-- acsetSema.modelVar.signal.map(_.toString),
+        div(
+          flex := "column",
+          // div(s"Schema"),
+          // div(s"past ->"),
+          // child.text <-- schemaVar.state.signal.map(us =>
+          //   us.past.mkString("  ->  ")  
+          // ),
+          // child.text <-- schemaVar.state.signal.map(_.present.toString),
+          // div(s"future ->"),
+          // child.text <-- schemaVar.state.signal.map(us =>
+          //   us.future.mkString("  ->  ")  
+          // ),
+          div(),
+          div(s"ACSet"),
+          div(s"past ->"),
+          child.text <-- acsetVar.state.signal.map(us =>
+            us.past.mkString("  ->  ")  
+          ),
+          // div(
+          //   child.text <-- acsetVar.state.signal.map("present -> " + _.present.toString),
+          // ),
+          // div(s"future ->"),
+          // child.text <-- acsetVar.state.signal.map(us =>
+          //   us.future.mkString("  ->  ")  
+          // ),
+
+        )
       )
         
       render(mountInto, mainDiv)

@@ -1,10 +1,12 @@
 package semagrams.acsets
 
 
-
-import semagrams._  
+import semagrams._
+// import semagrams.util.UUID
+// import semagrams._  
 import semagrams.acsets._
 import semagrams.util._
+// // import semagrams.{FKey, Hom, given, Ob, Elt, Attr, Table, Property}
 
 
 
@@ -143,7 +145,8 @@ trait DynamicSchema extends Schema:
 
 
 object Schema:
-  def apply(elts:Elt | Property*): Schema = BasicSchema(elts:_*)
+  // def apply(elts:Elt | Property*): Schema = BasicSchema(UUID("Schema"),elts:_*)
+  def apply(id:UUID,elts:Elt | Property*): Schema = BasicSchema(id:UUID,elts:_*)
 
 
 
@@ -207,8 +210,8 @@ object BasicSchema:
 
 
 
-  def apply[E<:(Elt|Property)](elts:E*): BasicSchema = new BasicSchema(
-    UUID("BasicSchema"),
+  def apply[E<:(Elt|Property)](id:UUID,elts:E*): BasicSchema = new BasicSchema(
+    id,
     elts.collect{ case elt:Elt => elt}.eltMap,
     elts.collect{ case f:Property => f}
   )

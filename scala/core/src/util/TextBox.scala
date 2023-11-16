@@ -7,6 +7,7 @@ import semagrams.util.Complex
 
 
 import scala.collection.mutable
+import semagrams.GenericProperty
 
 private val measurementStyle = """
 position: absolute;

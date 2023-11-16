@@ -9,6 +9,7 @@ import semagrams.state._
 
 import com.raquo.laminar.api.L.svg.{path as svgpath,_}
 import com.raquo.laminar.api._
+// import semagrams.{PropMap, Property}
 
 /** A basic sprite used for edges, which looks up the `Start` and `End`
   * properties to see where to start and end, has an arrow head pointing towards

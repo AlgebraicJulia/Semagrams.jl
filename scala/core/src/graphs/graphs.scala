@@ -7,6 +7,7 @@ import com.raquo.laminar.api.L._
 import semagrams._
 import semagrams.rendering._
 import semagrams.util._
+// import semagrams.{Generator, given, Ob, PartHom, Hom, PValue, PropMap, PartProp}
 
 
 
@@ -150,9 +151,6 @@ def edef[D:PartData](kv:(Ob,EData[D])): (Ob,EDef[D]) =
     case (ob,(src:PartHom,tgt:PartHom,sprite:Sprite[D])) => ob -> (src,tgt,sprite,PartData())
 
   val (ob,(src,tgt,_,_)) = thedef
-  println(s"edef $ob, $src, $tgt")
-  println(src.dom -> (src.dom == ob))
-  println(tgt.dom -> (tgt.dom == ob))
   assert(ob == src.dom & ob == tgt.dom)
   thedef 
   
@@ -214,7 +212,7 @@ def edgeProps[D:PartData](
 
 
 case class GraphDisplay[D:PartData](
-  override val modelVar: WeakVar[ACSet[D]],
+  override val modelVar: UndoableVar[ACSet[D]],
   override val bindings: Seq[Binding[ACSet[D]]],
   vertexDef: VertexDef[D],
   edgeDef: EdgeDef[D],
@@ -274,7 +272,7 @@ object GraphDisplay:
 
 
   def apply[D:PartData](
-    modelVar: WeakVar[ACSet[D]],
+    modelVar: UndoableVar[ACSet[D]],
     bindings: Seq[Binding[ACSet[D]]],
     vertexDef: VertexDef[D],
     edgeDef: EdgeDef[D],

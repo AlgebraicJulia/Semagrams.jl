@@ -1,16 +1,29 @@
 package semagrams.util
 
+import scala.annotation.targetName
 
 
-extension [A,B](pairs:Iterable[(A,B)])
-  def mapKeys[C](f:A => C,merge:(B,B) => B = (b1:B,b2:B) => b2) = 
-    val grps = pairs.groupBy{ case (a,b) => f(a) }
+
+extension [K,V](pairs:Iterable[(K,V)])
+  def mapKeys[A](f:K => A,merge:(V,V) => V = (_:V,v:V) => v) = 
+    val grps = pairs.groupBy{ case (k,v) => f(k) }
 
     for 
-      c <- pairs.map{ case (a:A,b:B) => f(a) }
+      a <- pairs.map{ case (k:K,v:V) => f(k) }
     yield 
-      c -> grps(c).map(_._2).reduce(merge)
+      a -> grps(a).map(_._2).reduce(merge)
     
 
-  def mapVals[C](f:B => C) =
-    pairs.map((a,b) => a -> f(b))
+  def mapVals[A](f:V => A) =
+    pairs.map((k,v) => k -> f(v))
+
+
+
+extension [K,V](map:Map[K,V])
+
+
+  def merge(mergeOp:(V,V) => V = (_:V,v:V) => v)(others:Iterable[(K,V)]): Map[K,V] =
+    (map.toSeq ++ others).groupBy(_._1).map{ (k,kvs) =>
+      kvs.reduce{ case ((k,v1),(_,v2)) => k -> mergeOp(v1,v2) }
+    }
+    

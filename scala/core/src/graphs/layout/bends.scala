@@ -2,6 +2,7 @@ package semagrams.graphs
 
 import semagrams._
 import semagrams.acsets._
+// import semagrams.{PartProp, Ob}
 
 /** Evenly space the edges in an acset by assigning bends to them
   *

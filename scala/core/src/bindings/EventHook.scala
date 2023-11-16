@@ -3,6 +3,7 @@ package semagrams.bindings
 import semagrams._
 import semagrams.state._
 import semagrams.acsets._
+import semagrams.Ob
 
 
 /** A trait for filters on the event stream, picking out events that are
@@ -22,6 +23,7 @@ trait EventHook[A] {
   def description: String
 
   def filter(pred:A=>Boolean) = FilterMap(this,a => if pred(a) then Some(a) else None)
+  def filter(test:()=>Boolean) = FilterMap(this,a => if test() then Some(a) else None)
   def map[B](f:A => B) = FilterMap(this,a => Some(f(a)))
   def mapTo[B](b: () => B) = map(_ => b())
   def mapToValue[B](b:B) = map(_ => b)
@@ -47,11 +49,9 @@ case class FilterMap[A,B](base:EventHook[A],f:A=>Option[B]) extends EventHook[B]
   */
 case class KeyDownHook(key: String,mods:Option[Set[KeyModifier]] = None) extends EventHook[Unit] {
   def apply(evt: Event, es: EditorState) = evt match 
-    case KeyDown(`key`) if mods == None | mods == Some(es.modifiers) => 
-      println(this)
+    case KeyDown(`key`) if (mods == None | mods == Some(es.modifiers)) => 
       Some(())
     case _              => 
-      if `key`=="z" then println(this)
       None
 
 
@@ -88,7 +88,9 @@ object ClickOnPartHook {
 
 
 extension (hook:EventHook[Part])
-  def filter(obs:Ob*) = hook.filter(part => obs.contains(part.ty))
+  def filter(obs:Ob*) = 
+    println("hit")
+    hook.filter(part => obs.contains(part.ty))
 
 case class DoubleClickOnPartHook(button: MouseButton = MouseButton.Left, modifiers: Set[KeyModifier] = Set()) extends EventHook[Part]:
 

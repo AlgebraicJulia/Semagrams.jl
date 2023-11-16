@@ -15,6 +15,7 @@ import semagrams.bindings._
 import semagrams.util._
 
 import scala.annotation.targetName
+// import semagrams.{Ob, Property, PropChange}
 
 
 
@@ -37,7 +38,7 @@ trait Semagram[Model,D:PartData]:
   /** Extractors for the various entities in the Semagram */
   val entitySources: Seq[EntitySource[DisplayModel,D]]
 
-  val modelVar: WeakVar[Model]
+  val modelVar: UndoableVar[Model]
 
   def bindings: Seq[Binding[Model]]
 
@@ -139,6 +140,7 @@ trait Semagram[Model,D:PartData]:
 
 trait ACSemagram[D:PartData] extends Semagram[ACSet[D],D]:
   import widgets._
+
   case class EditTable(ob:Ob,cols:Seq[Property],withLayout:Boolean = true):
     def table = widgets.PropTable[Part](ob.label,cols)
     val (editMsgs,editObs) = EventStream.withObserver[(Part,Property)]
@@ -163,7 +165,7 @@ trait ACSemagram[D:PartData] extends Semagram[ACSet[D],D]:
   @targetName("updateState")
   def update(msg:Message[EditorState]) = stateObs.onNext(msg)
 
-
+  def isHovered: Boolean = stateVar.now().isHovered
 
 
   val tableVar = Var(Map[UUID,EditTable]())

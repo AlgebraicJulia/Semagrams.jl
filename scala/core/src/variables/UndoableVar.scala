@@ -61,10 +61,19 @@ trait WeakVar[A] extends SignalSource[A] with Sink[A]:
   def signal: Signal[A]
   def update(f:A => A): Unit
 
+  /** Turn on recording; updates now save previous state in undo history */
+  def record(): Unit
+
+  /** Turn off recording; updates now do not save previous state */
+  def unrecord(): Unit
+
+  /** Manually save current state in undo history */
+  def save(): Unit
 
 /** A class similar to `Var` but with support for undo and redo. */
 class UndoableVar[A](init: A) extends WeakVar[A] {
-  private val state = Var(UndoState(true, Nil, init, Nil))
+  // private 
+  val state = Var(UndoState(true, Nil, init, Nil))
 
   /** An observer that wraps [[UndoState.update]] to record (or not) updates
     * depending on whether `recording` is set in the state
@@ -84,7 +93,9 @@ class UndoableVar[A](init: A) extends WeakVar[A] {
   def record() = state.update(_.copy(recording = true))
 
   /** Turn off recording; updates now do not save previous state */
-  def unrecord() = state.update(_.copy(recording = false))
+  def unrecord() = 
+    save()
+    state.update(_.copy(recording = false))
 
   /** Manually save current state in undo history */
   def save() = state.update(_.save())

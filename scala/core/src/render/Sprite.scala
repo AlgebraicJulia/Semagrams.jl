@@ -7,6 +7,7 @@ import semagrams.acsets._
 
 import com.raquo.laminar.api.L._
 import scala.util.Random
+// import semagrams.{PropMap, Property}
 
 
 

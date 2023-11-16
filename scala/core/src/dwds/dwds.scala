@@ -4,6 +4,7 @@ import semagrams._
 import semagrams.acsets._
 import semagrams.util._
 import semagrams.rendering._
+// import semagrams.{PropMap, PartProp}
 
 def wireProps[D:PartData](
   e:Part,

@@ -10,6 +10,8 @@ import com.raquo.laminar.api.L._
 import cats._
 import cats.effect._
 import cats.effect.std._
+import scala.annotation.targetName
+// import semagrams.{Ob, PropMap, PartProp}
 
 
 
@@ -32,7 +34,14 @@ trait Action[Param, Model] {self =>
     def description = "add a postaction"    
   }
 
+  @targetName("andThenUnit")
+  def andThen(post:Param => Unit): Action[Param,Model] =
+    andThen(param => IO(post(param)))
 
+  @targetName("andThenNoInput")
+  def andThen(post:() => Unit): Action[Param,Model] =
+    andThen(_ => IO(post()))
+  
 }
 
 object Action {
@@ -130,15 +139,21 @@ case class MoveViaDrag[D:PartData]() extends Action[Part, ACSet[D]] {
     else for {
       ctr <- IO(r.modelVar.now().tryProp(Center,p))
       offset <- IO(r.stateVar.now().mousePos - r.modelVar.now().getProp(Center, p))
+      _ <- IO(r.modelVar.save())
+      _ <- IO(r.modelVar.unrecord())
       _ <- IO(r.modelVar.update(_.moveToFront(p)))
       _ <- takeUntil(r.eventQueue)(
         evt => evt match {
-          case Event.MouseMove(pos) =>
-            IO(r.modelVar.update(_.setProp(Center, p, pos - offset))) >> IO(None)
+          case Event.MouseMove(pos) => IO {
+            r.modelVar.update(_.setProp(Center, p, pos - offset))
+            None
+          }
           case Event.MouseUp(_, _) => IO(Some(()))
           case Event.MouseLeave(backgroundPart) => IO(Some(()))
           case _                   => IO(None)
-        })
+        }
+      )
+      _ <- IO(r.modelVar.record())
     } yield ()
 
   def description = "move part by dragging"
@@ -152,16 +167,15 @@ case class AddEdgeViaDrag[D:PartData](
   tgtIO: (Ob,Ob) => IO[Option[(Ob,PartProp,PartProp,D)]]
 ) extends Action[Part, ACSet[D]]:
   def apply(srcPart: Part, r: Action.Resources[ACSet[D]]): IO[Unit] =
-    println(s"apply $srcPart")
     dummyData(srcPart.ob).flatMap( dummyOpt =>
-      println(s"flatMap $dummyOpt")
       dummyOpt.zip(r.mousePos).map{ case ((dummyOb,dummySrc),z0) => 
-        println(s"zip map $dummyOb $dummySrc $z0")
         val dummyData = PartData[D]().setProps(PropMap() +
           (dummySrc -> srcPart) + (End -> z0) + (Interactable -> false)
         )
         
         for 
+          _ <- IO(r.modelVar.unrecord())
+          _ = println("recording stopped")
           dummy <- IO {
             val (a,b) = r.modelVar.now().addPart(dummyOb,dummyData)
             r.modelVar.set(a)
@@ -207,6 +221,8 @@ case class AddEdgeViaDrag[D:PartData](
 
             })
           )
+          _ <- IO(r.modelVar.record())
+          _ = println("recording started")
         yield ()
       }.getOrElse(IO(()))
     )
@@ -224,13 +240,29 @@ object AddEdgeViaDrag:
     )
 
 
+  
+  def apply[D:PartData](tgts:((Ob,Ob),(Ob,PartProp,PartProp,D))*): AddEdgeViaDrag[D] = 
+    new AddEdgeViaDrag[D](
+      ob0 => IO(tgts.collect{ case tgt if tgt._1._1 == ob0 => tgt }
+        .headOption.map{
+          case _ -> (eob,esrc,_,_) => eob -> esrc
+        }
+      ),
+      (src,tgt) => IO(tgts.find(_._1 == (src,tgt)).map(_._2))
+    )
+
+
+
 case class Callback[X,D:PartData](cb:X => Unit) extends Action[X,ACSet[D]]:
 
   def apply(x:X,r: Action.Resources[ACSet[D]]): IO[Unit] = 
     IO(cb(x))
   def description = "execute a callback function"
 
+object Callback:
+  def make(cb:() => Unit) = new Callback(_ => cb())
 
+  def apply[X,D:PartData](cb:() => Unit) = new Callback[X,D](_ => cb())
 
 
 case class PrintModel[Model](hoverRequired:Boolean=true) extends Action[Unit,Model]:

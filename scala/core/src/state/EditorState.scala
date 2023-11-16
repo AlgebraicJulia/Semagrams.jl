@@ -13,7 +13,7 @@ trait Enti
 
 
 case class EditorState(
-  hovered: Option[Part] | Option[Entity],
+  hovered: Option[Entity],
   dims: Complex,
   mousePos: Complex,
   selected: Seq[Part],
@@ -25,6 +25,8 @@ case class EditorState(
   def hoveredPart: Option[Part] = hovered match
     case Some(p:Part) => Some(p)
     case _ => None
+
+  def isHovered: Boolean = hovered.isDefined
   
 
   def eventMsg(evt:Event): Message[EditorState] = evt match

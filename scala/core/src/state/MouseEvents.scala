@@ -36,7 +36,7 @@ object MouseEvents {
       ) --> eventWriter,
       onDblClick.preventDefault.stopPropagation.map(evt =>
         DoubleClick(Some(ent), MouseButton.fromJS(evt.button))
-      ) --> eventWriter
+      ) --> eventWriter,
     )
 
   def handlers(

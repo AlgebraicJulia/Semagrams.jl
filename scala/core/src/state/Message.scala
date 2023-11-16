@@ -1,6 +1,7 @@
 package semagrams.state
 
 import semagrams._
+// import semagrams.{Ob, PropMap, PropVal, Property, PropChange}
 
 sealed trait Message[Model]:
   def execute(m:Model): Model

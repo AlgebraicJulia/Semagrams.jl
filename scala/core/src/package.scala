@@ -5,5 +5,5 @@ export util.{UUID,UndoableVar}
 export state.{EditorState,MouseButton,KeyModifier,Message}
 export bindings.{Binding}
 export rendering.{Sprite}
-export acsets.{ACSet,Schema,Part,PartData}
+export acsets.{ACSet,Schema}//,Part,PartData}
 

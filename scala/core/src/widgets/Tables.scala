@@ -49,6 +49,7 @@ enum CellMsg:
   case EnterMsg(v:PropChange[_])
   case TabMsg(v:PropChange[_],shift:Boolean)
 import CellMsg._
+// import semagrams.{PropMap, Property, PropChange}
 
 
 sealed trait TableMsg[K<:Matchable]

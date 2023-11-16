@@ -8,6 +8,7 @@ import semagrams.state._
 
 import upickle.default._
 import scala.annotation.targetName
+// import semagrams.{Hom, Ob, Property, PropMap, Elt}
 
 
 case class ACSet[D:PartData](
@@ -308,13 +309,12 @@ case class ACSet[D:PartData](
   /** Removing parts **/
 
   /* The fiber over a part `p` is described by X:Ob => f:Hom(X,p.ob) => f⁻¹(p) */
-  type FiberMap = Map[Hom[_,_],Seq[Part]]
+  type FiberMap = Map[Hom[_,_],Iterable[Part]]
   object FiberMap:
-    def apply() = Map[Hom[_,_],Seq[Part]]()
+    def apply() = Map[Hom[_,_],Iterable[Part]]()
 
-  def merge(m1:FiberMap,m2:FiberMap): FiberMap = (m1.keys ++ m2.keys)
-    .map(k => k -> (m1.get(k).getOrElse(Seq()) ++ m2.get(k).getOrElse(Seq())))
-    .toMap
+  def mergeFibers(m1:FiberMap,m2:FiberMap): FiberMap = 
+    m1.merge(_ ++ _)(m2)
 
   def collectFibers(m:FiberMap): Map[Ob,Seq[Part]] = m.foldLeft(Map[Ob,Seq[Part]]()){
     case (coll,(f,parts)) => coll + (f.dom -> (coll.get(f.dom).getOrElse(Seq()) ++ parts))
@@ -328,29 +328,27 @@ case class ACSet[D:PartData](
   /* Collect all fibers over `part` */
   def fibersOf(part:Part): FiberMap = schema.homSeq
     .filter(_.codom == part.ob)
-    .map(f => f -> fiberOf(f,part)).toMap
+    .map(f => f -> fiberOf(f,part))
+    // .filter(_._2.nonEmpty)
+    .toMap
 
   /* Remove a collection of `parts`, with optional `cascade` */
-  def remParts(parts:Iterable[Part],cascade:Boolean = true): ACSet[D] = if cascade
-    then 
-      val toRemove: Map[Ob,Seq[Part]] = collectFibers(
-        parts.map(fibersOf).foldLeft(FiberMap())(merge)        
+  def remParts(parts:Iterable[Part],cascade:Boolean = true): ACSet[D] = 
+    val toRemove: Map[Ob,Seq[Part]] = 
+      parts.map(p => p.ob -> Seq(p)).toMap.merge(_ ++ _)(
+        if cascade
+        then collectFibers(
+          parts.map(fibersOf).foldLeft(FiberMap())(mergeFibers)        
+        )
+        else Map()
       )
-      this.copy(
-        partStore = toRemove.foldLeft(partStore){
-          case (store,(ob,parts)) => 
-            partStore.updated(ob.id, partStore(ob.id).remParts(parts.map(_.id)))
-        }
-      )
-    else
-      val grps = parts.groupBy(_.ob)
-      this.copy(
-        partStore = grps.foldLeft(partStore){ 
-          case (store,(ob,parts)) => partStore.updated(ob.id,
-            partStore(ob.id).remParts(parts.map(_.id))
-          )
-        }
-      )
+    this.copy(
+      partStore = toRemove.foldLeft(partStore){
+        case (store,(ob,parts)) =>
+          store.updated(ob.id, store(ob.id).remParts(parts.map(_.id)))
+      }
+    )
+
 
   /* Remove a single `part`, with optional `cascade` */
   def remPart(part:Part,cascade:Boolean = true): ACSet[D] = 
