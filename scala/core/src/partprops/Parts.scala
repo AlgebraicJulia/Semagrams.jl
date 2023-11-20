@@ -2,7 +2,7 @@ package semagrams
 
 import upickle.default._
   
-case class Part(id:UUID,ob:Ob) extends Entity:
+case class Part(id:UID,ob:Ob) extends Entity:
 
   val ty = ob
 
@@ -16,12 +16,12 @@ case class Part(id:UUID,ob:Ob) extends Entity:
 
 
 object Part:
-  def apply(x:Ob) = new Part(UUID("Part"),x)
-  def apply(id:UUID,x:Ob) = new Part(id,x)
+  def apply(x:Ob) = new Part(UID("Part"),x)
+  def apply(id:UID,x:Ob) = new Part(id,x)
   
   
   def rw: ReadWriter[Part] = 
-    readwriter[(UUID,UUID)].bimap[Part](
+    readwriter[(UID,UID)].bimap[Part](
       part => (part.ob.id,part.id),
       (obId,partId) => Part(partId,Table(obId))
     )

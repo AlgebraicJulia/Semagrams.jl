@@ -32,13 +32,13 @@
 
 
 //   sealed trait GraphEltDef
-//   case class VertexDef(ob:NestedOb,sprite:Sprite,props:PropMap) extends GraphEltDef
-//   case class EdgeDef(ob:NestedOb,src:Hom,tgt:Hom,sprite:Sprite,props:PropMap) extends GraphEltDef
+//   case class ObSource(ob:NestedOb,sprite:Sprite,props:PropMap) extends GraphEltDef
+//   case class SpanSource(ob:NestedOb,src:Hom,tgt:Hom,sprite:Sprite,props:PropMap) extends GraphEltDef
 
 //   case class GraphDisplay(
 //     schema: Schema,
-//     vertexDefs: Seq[VertexDef],
-//     edgeDefs: Seq[EdgeDef]
+//     vertexDefs: Seq[ObSource],
+//     edgeDefs: Seq[SpanSource]
 //   ) extends ACSemagram:
 //     def layout(g: ACSet) = 
 //       val gWithProps = g.softSetGlobalProps(
@@ -60,8 +60,8 @@
 
 //   object GraphDisplay:
 //     // def apply(eltDefs:Seq[GraphEltDef]): GraphDisplay = new GraphDisplay(
-//     //   eltDefs.collect{ case v:VertexDef => v},
-//     //   eltDefs.collect{ case e:EdgeDef => e}
+//     //   eltDefs.collect{ case v:ObSource => v},
+//     //   eltDefs.collect{ case e:SpanSource => e}
 //     // )
 
 //     def apply(
@@ -78,28 +78,28 @@
 //       val defs = eltDefs.map{
 //         /* Vertex cases */
 //         case ob:NestedOb => 
-//           VertexDef(ob,ShapeNode(),PropMap())
+//           ObSource(ob,ShapeNode(),PropMap())
 //         case (ob:NestedOb,props:PropMap) => 
-//           VertexDef(ob,ShapeNode(),props)
+//           ObSource(ob,ShapeNode(),props)
 //         case (ob:NestedOb,sprite:Sprite) => 
-//           VertexDef(ob,sprite,PropMap())
+//           ObSource(ob,sprite,PropMap())
 //         case (ob:NestedOb,(sprite:Sprite,props:PropMap)) => 
-//           VertexDef(ob,sprite,props)
+//           ObSource(ob,sprite,props)
         
 //         /* Edge defs */
 //         case (ob:NestedOb,(src:Hom,tgt:Hom)) =>
-//           EdgeDef(ob,src,tgt,Arrow(),PropMap())
+//           SpanSource(ob,src,tgt,Arrow(),PropMap())
 //         case (ob:NestedOb,(src:Hom,tgt:Hom,sprite:Sprite)) =>
-//           EdgeDef(ob,src,tgt,sprite,PropMap())
+//           SpanSource(ob,src,tgt,sprite,PropMap())
 //         case (ob:NestedOb,(src:Hom,tgt:Hom,props:PropMap)) =>
-//           EdgeDef(ob,src,tgt,Arrow(),props)
+//           SpanSource(ob,src,tgt,Arrow(),props)
 //         case (ob:NestedOb,(src:Hom,tgt:Hom,sprite:Sprite,props:PropMap)) =>
-//           EdgeDef(ob,src,tgt,sprite,props)
+//           SpanSource(ob,src,tgt,sprite,props)
 //       }
 //       GraphDisplay(
 //         schema,
-//         defs.collect{ case v:VertexDef => v},
-//         defs.collect{ case e:EdgeDef => e},
+//         defs.collect{ case v:ObSource => v},
+//         defs.collect{ case e:SpanSource => e},
 //       )
 
 

@@ -19,7 +19,7 @@ import com.raquo.laminar.api._
   * for mouse events, because otherwise it would be very annoying to mouse over
   * the arrow.
   */
-case class Arrow[D:PartData](label:Property,props: PropMap) extends Sprite[D] {
+case class Arrow[D:PartData](label:Property,data: D) extends Sprite[D] {
 
   val defaultProps = Arrow.defaultProps
   val requiredProps = Seq(Start,End)
@@ -66,8 +66,7 @@ case class Arrow[D:PartData](label:Property,props: PropMap) extends Sprite[D] {
       updates: L.Signal[D],
       eventWriter: L.Observer[Event]
   ): L.SvgElement = {
-    val data = updates.map(d => Arrow.defaultProps ++ props ++ d.getProps()
-    )
+    val props = updates.map(d => Arrow.defaultProps ++ data.getProps() ++ d.getProps())
 
     
     def ppath(p:PropMap) = curvedPath(p.get(Start), p.get(End), p.get(Bend))
@@ -80,34 +79,34 @@ case class Arrow[D:PartData](label:Property,props: PropMap) extends Sprite[D] {
 
     
     val arrow = svgpath(
-      pathElts <-- data.map(ppath),
-      stroke <-- data.map(_(Stroke).toString),
-      strokeDashArray <-- data.map(_(StrokeDasharray)),
-      strokeWidth <-- data.map(_(StrokeWidth).toString),
+      pathElts <-- props.map(ppath),
+      stroke <-- props.map(_(Stroke).toString),
+      strokeDashArray <-- props.map(_(StrokeDasharray)),
+      strokeWidth <-- props.map(_(StrokeWidth).toString),
       fill := "none",
       markerEnd := "url(#arrowhead)",
       pointerEvents := "none"
     )
     
     val text = L.svg.text(
-      xy <-- data.map(labelPos),
-      L.children <-- data.map { p =>
+      xy <-- props.map(labelPos),
+      L.children <-- props.map { p =>
         val splits = splitString(labelStr(p)).zipWithIndex
         val len = splits.length
         splits.toSeq.map((str, line) =>
           L.svg.tspan(
             L.textToTextNode(str),
             textAnchor := "middle",
-            x <-- data.map(p => labelPos(p).x.toString()),
-            y <-- data.map(p =>
+            x <-- props.map(p => labelPos(p).x.toString()),
+            y <-- props.map(p =>
               (labelPos(p).y + p(FontSize) * (line + 1 - len / 2.0)).toString()
             ),
             style := "user-select: none"
           )
         )
       },
-      fontSize <-- data.map(_(FontSize).toString),
-      pointerEvents <-- data.map(p =>
+      fontSize <-- props.map(_(FontSize).toString),
+      pointerEvents <-- props.map(p =>
         if p(Interactable) then "auto" else "none"
       ),
     )
@@ -115,10 +114,10 @@ case class Arrow[D:PartData](label:Property,props: PropMap) extends Sprite[D] {
 
 
     val handle = svgpath(
-      fill <-- data.map(p => if p.contains(Highlight) then "red" else "white"),
+      fill <-- props.map(p => if p.contains(Highlight) then "red" else "white"),
       opacity := "0.1",
-      pathElts <-- data.map(p => blockPath(p.get(Start), p.get(End), 5, p.get(Bend))),
-      pointerEvents <-- data.map(p =>
+      pathElts <-- props.map(p => blockPath(p.get(Start), p.get(End), 5, p.get(Bend))),
+      pointerEvents <-- props.map(p =>
         if p(Interactable) then "auto" else "none"
       ),
       MouseEvents.handlers(ent, eventWriter)
@@ -126,11 +125,11 @@ case class Arrow[D:PartData](label:Property,props: PropMap) extends Sprite[D] {
     g(arrow, handle, text)
   }
 
-  override def toTikz(e: Part, data: D, visible: Boolean = true) =
+  override def toTikz(e: Part, props: D, visible: Boolean = true) =
     if !visible
     then ""
     else
-      val p = data.getProps()
+      val p = props.getProps()
       val s = p.get(TikzStart).getOrElse {
         println(s"Missing TikzStart")
         ""
@@ -162,5 +161,6 @@ object Arrow {
     + (PathLabel,"")
     + (FontSize,12)
 
-  def apply(label:Property=Content,props:PropMap = PropMap()) = new Arrow(label,defaultProps ++ props)
+  def apply[D:PartData](label:Property): Arrow[D] = Arrow[D](label,PartData(defaultProps))
+  def apply[D:PartData](): Arrow[D] = Arrow[D](Content)
 }

@@ -2,7 +2,7 @@ package semagrams.acsets
 
 
 import semagrams._
-// import semagrams.util.UUID
+// import semagrams.util.UID
 // import semagrams._  
 import semagrams.acsets._
 import semagrams.util._
@@ -13,7 +13,7 @@ import semagrams.util._
 
 trait Schema:
 
-  val id: UUID
+  val id: UID
   var name: String
 
   override def toString = if name == ""
@@ -21,7 +21,7 @@ trait Schema:
 
   /* Implementation API */
   def globalProps: Seq[Property]
-  def elts: Map[UUID,Elt]
+  def elts: Map[UID,Elt]
 
   def isDynamic: Boolean = this match
     case s:DynamicSchema => true
@@ -41,12 +41,12 @@ trait Schema:
   /* Schema elements */
   
 
-  def tables: Map[UUID,Table] = elts.collect{ case kv:Tuple2[UUID,Table] => kv }
-  def fkeys: Map[UUID,FKey] = elts.collect{ case kv:Tuple2[UUID,FKey] => kv }
-  def attrs: Map[UUID,Attr[_]] = elts.collect{ case kv:Tuple2[UUID,Attr[_]] => kv }
+  def tables: Map[UID,Table] = elts.collect{ case kv:Tuple2[UID,Table] => kv }
+  def fkeys: Map[UID,FKey] = elts.collect{ case kv:Tuple2[UID,FKey] => kv }
+  def attrs: Map[UID,Attr[_]] = elts.collect{ case kv:Tuple2[UID,Attr[_]] => kv }
 
-  def obs: Map[UUID,Ob] = elts.collect{ case kv:Tuple2[UUID,Ob] => kv }
-  def homs: Map[UUID,Hom[_,_]] = elts.collect{ case kv:Tuple2[UUID,Hom[_,_]] => kv }
+  def obs: Map[UID,Ob] = elts.collect{ case kv:Tuple2[UID,Ob] => kv }
+  def homs: Map[UID,Hom[_,_]] = elts.collect{ case kv:Tuple2[UID,Hom[_,_]] => kv }
 
   
   def eltSeq: Seq[Elt] = elts.values.toSeq
@@ -59,11 +59,11 @@ trait Schema:
   def homSeq: Seq[Hom[_,_]] = eltSeq.collect{ case f:Hom[_,_] => f }
   
   /* Check if `id0` is contained in `s` */
-  def hasId(id0:UUID): Boolean = elts.contains(id0)
-  def hasTable(id0:UUID): Boolean = tables.contains(id0)
-  def hasFKey(id0:UUID): Boolean = fkeys.contains(id0)
-  def hasAttr(id0:UUID): Boolean = attrs.contains(id0)
-  def hasHom(id0:UUID): Boolean = (fkeys ++ attrs).contains(id0)
+  def hasId(id0:UID): Boolean = elts.contains(id0)
+  def hasTable(id0:UID): Boolean = tables.contains(id0)
+  def hasFKey(id0:UID): Boolean = fkeys.contains(id0)
+  def hasAttr(id0:UID): Boolean = attrs.contains(id0)
+  def hasHom(id0:UID): Boolean = (fkeys ++ attrs).contains(id0)
 
   /* Check if `elt` is contained in `s` */
   def hasElt(elt:Elt): Boolean = eltSeq.contains(elt)
@@ -72,36 +72,36 @@ trait Schema:
   def hasAttr(a:Attr[_]): Boolean = attrSeq.contains(a)
   def hasHom(f:Hom[_,_]): Boolean = (fkeySeq ++ attrSeq).contains(f)
 
-  def hasIds(ids:Iterable[UUID]) = ids.toSet.subsetOf(elts.keySet)
+  def hasIds(ids:Iterable[UID]) = ids.toSet.subsetOf(elts.keySet)
   def hasElts(elts:Iterable[Elt]) = elts.forall(hasElt)
 
-  def tryIds(ids:Iterable[UUID]) = ids.map(tryElt)
-  def tryTables(ids:Iterable[UUID]) = ids.map(tryTable)
-  def tryFKeys(ids:Iterable[UUID]) = ids.map(tryFKey)
-  def tryAttrs(ids:Iterable[UUID]) = ids.map(tryAttr)
+  def tryIds(ids:Iterable[UID]) = ids.map(tryElt)
+  def tryTables(ids:Iterable[UID]) = ids.map(tryTable)
+  def tryFKeys(ids:Iterable[UID]) = ids.map(tryFKey)
+  def tryAttrs(ids:Iterable[UID]) = ids.map(tryAttr)
 
-  def getIds(ids:Iterable[UUID]) = ids.map(getElt)
-  def getTables(ids:Iterable[UUID]) = ids.map(getTable)
-  def getFKeys(ids:Iterable[UUID]) = ids.map(getFKey)
-  def getAttrs(ids:Iterable[UUID]) = ids.map(getAttr)
+  def getIds(ids:Iterable[UID]) = ids.map(getElt)
+  def getTables(ids:Iterable[UID]) = ids.map(getTable)
+  def getFKeys(ids:Iterable[UID]) = ids.map(getFKey)
+  def getAttrs(ids:Iterable[UID]) = ids.map(getAttr)
 
-  def collectIds(ids:Iterable[UUID]) = ids.collect(tryElt.unlift)
-  def collectTables(ids:Iterable[UUID]) = ids.collect(tryTable.unlift)
-  def collectFKeys(ids:Iterable[UUID]) = ids.collect(tryFKey.unlift)
-  def collectAttrs(ids:Iterable[UUID]) = ids.collect(tryAttr.unlift)
+  def collectIds(ids:Iterable[UID]) = ids.collect(tryElt.unlift)
+  def collectTables(ids:Iterable[UID]) = ids.collect(tryTable.unlift)
+  def collectFKeys(ids:Iterable[UID]) = ids.collect(tryFKey.unlift)
+  def collectAttrs(ids:Iterable[UID]) = ids.collect(tryAttr.unlift)
 
 
   /* Return an optional element associated with `id0` */
-  def tryElt(id0:UUID): Option[Elt] = elts.get(id0)
-  def tryTable(id0:UUID): Option[Table] = tables.get(id0)
-  def tryFKey(id0:UUID): Option[FKey] = fkeys.get(id0)
-  def tryAttr(id0:UUID): Option[Attr[_]] = attrs.get(id0)
+  def tryElt(id0:UID): Option[Elt] = elts.get(id0)
+  def tryTable(id0:UID): Option[Table] = tables.get(id0)
+  def tryFKey(id0:UID): Option[FKey] = fkeys.get(id0)
+  def tryAttr(id0:UID): Option[Attr[_]] = attrs.get(id0)
 
   /* Return the element associated with `id0` (unsafe) */
-  def getElt(id0:UUID): Elt = elts(id0)
-  def getTable(id0:UUID): Table = tables(id0)
-  def getFKey(id0:UUID): FKey = fkeys(id0)
-  def getAttr(id0:UUID): Attr[_] = attrs(id0)
+  def getElt(id0:UID): Elt = elts(id0)
+  def getTable(id0:UID): Table = tables(id0)
+  def getFKey(id0:UID): FKey = fkeys(id0)
+  def getAttr(id0:UID): Attr[_] = attrs(id0)
 
 
 
@@ -128,10 +128,10 @@ trait DynamicSchema extends Schema:
   def remGlobalProps(props:Iterable[Property]): DynamicSchema
 
   def addElts(elts:Iterable[Elt]): DynamicSchema
-  def remElts(ids:Iterable[UUID],cascade:Boolean): DynamicSchema
-  def modTable(id0:UUID,f:Table => Table): DynamicSchema
-  def modFKey(id0:UUID,f:FKey => FKey): DynamicSchema
-  def modAttr(id0:UUID,f:Attr[_] => Attr[_]): DynamicSchema
+  def remElts(ids:Iterable[UID],cascade:Boolean): DynamicSchema
+  def modTable(id0:UID,f:Table => Table): DynamicSchema
+  def modFKey(id0:UID,f:FKey => FKey): DynamicSchema
+  def modAttr(id0:UID,f:Attr[_] => Attr[_]): DynamicSchema
 
 
     /* Generic methods */
@@ -145,8 +145,8 @@ trait DynamicSchema extends Schema:
 
 
 object Schema:
-  // def apply(elts:Elt | Property*): Schema = BasicSchema(UUID("Schema"),elts:_*)
-  def apply(id:UUID,elts:Elt | Property*): Schema = BasicSchema(id:UUID,elts:_*)
+  // def apply(elts:Elt | Property*): Schema = BasicSchema(UID("Schema"),elts:_*)
+  def apply(id:UID,elts:Elt | Property*): Schema = BasicSchema(id:UID,elts:_*)
 
 
 
@@ -155,8 +155,8 @@ object Schema:
 
 
 case class BasicSchema(
-  id:UUID,
-  elts:Map[UUID,Elt] = Map(),
+  id:UID,
+  elts:Map[UID,Elt] = Map(),
   globalProps: Seq[Property] = Seq()
 ) extends DynamicSchema:
 
@@ -174,7 +174,7 @@ case class BasicSchema(
     elts = elts ++ newElts.eltMap
   )
 
-  def remElts(ids:Iterable[UUID],cascade:Boolean = true) = if cascade
+  def remElts(ids:Iterable[UID],cascade:Boolean = true) = if cascade
     then this.copy(
       elts = elts.filterNot(_._2.uses(ids)),
     )
@@ -183,21 +183,21 @@ case class BasicSchema(
     )
 
 
-  def modTable(id0: UUID, mod: Table => Table): DynamicSchema =
+  def modTable(id0: UID, mod: Table => Table): DynamicSchema =
     tables.get(id0) match
       case Some(t) => this + mod(t)
       case None => 
         println(s"modTable: Missing id $id0")
         this
     
-  def modFKey(id0: UUID, mod: FKey => FKey): DynamicSchema =
+  def modFKey(id0: UID, mod: FKey => FKey): DynamicSchema =
     fkeys.get(id0) match
       case Some(f) => this + mod(f)
       case None => 
         println(s"modFKey: Missing id $id0")
         this
     
-  def modAttr(id0: UUID, mod: Attr[_] => Attr[_]): DynamicSchema =
+  def modAttr(id0: UID, mod: Attr[_] => Attr[_]): DynamicSchema =
     attrs.get(id0) match
       case Some(a) => this + mod(a)
       case None => 
@@ -210,7 +210,7 @@ object BasicSchema:
 
 
 
-  def apply[E<:(Elt|Property)](id:UUID,elts:E*): BasicSchema = new BasicSchema(
+  def apply[E<:(Elt|Property)](id:UID,elts:E*): BasicSchema = new BasicSchema(
     id,
     elts.collect{ case elt:Elt => elt}.eltMap,
     elts.collect{ case f:Property => f}

@@ -9,23 +9,23 @@ import semagrams.util._
 
 /* General categorical entities (e.g., `Table`, `Arrow`) */
 trait Elt:
-  def id: UUID
-  def generators: Map[UUID,Generator]
+  def id: UID
+  def generators: Map[UID,Generator]
   def label:String
   override def toString(): String = if label != ""
     then label
     else s"Elt(${this.id})"
 
-  def uses(ids:Iterable[UUID]) = ids.exists(generators.contains)
+  def uses(ids:Iterable[UID]) = ids.exists(generators.contains)
 
 
 extension [E<:Elt](elts:Iterable[E])
-  def eltMap: Map[UUID,E] = elts.map(elt => elt.id -> elt).toMap
+  def eltMap: Map[UID,E] = elts.map(elt => elt.id -> elt).toMap
 
 /* Generating categorical entities */
 trait Generator extends Elt:
 
-  val id:UUID
+  val id:UID
 
   var name: String = ""
   def label = name
@@ -55,28 +55,36 @@ trait AbstractFKey extends Hom[Ob,Ob]:
   val rw = Part.rw
 trait AbstractAttr extends Hom[Ob,AbstractValType]
 
-case class Table(id:UUID) extends Ob with Generator:
+case class Table(id:UID) extends Ob with Generator:
   def rename(newName:String) = Generator.rename(this,newName)
   def generators = this.obGenerators
 
 object Table:
-  def apply(id:UUID,name:String): Table = 
+  def apply(id:UID,name:String): Table = 
     Table(id).rename(name)
 
 
 
-case class ValType[T:ReadWriter](id:UUID) extends AbstractValType with Generator:
+case class IdHom[X<:Ob](x:X) extends AbstractFKey with Hom[X,X]:
+  def id = x.id
+  def dom = x
+  def codom = x
+  def generators = x.generators
+  def path = Seq()
+  def label = s"id($x)"
+
+case class ValType[T:ReadWriter](id:UID) extends AbstractValType with Generator:
 
   def rename(newName:String) = Generator.rename(this,newName)
   def generators = this.obGenerators
 
 object ValType:
 
-  def apply[T:ReadWriter](id:UUID,name:String): ValType[T] =
+  def apply[T:ReadWriter](id:UID,name:String): ValType[T] =
     new ValType[T](id).rename(name)
   
   def apply[T:ReadWriter](name:String): ValType[T] =
-    new ValType[T](UUID("ValType")).rename(name)
+    new ValType[T](UID("ValType")).rename(name)
   
 
 trait Hom[+X<:Ob,+Y<:Ob] extends Elt with Property:
@@ -90,17 +98,17 @@ type PartHom = Hom[_,_] & PartProp
 extension (f:Hom[_,_] & Generator)
   def path = Seq(f)
 
-case class FKey(id:UUID,dom:Ob,codom:Ob) extends AbstractFKey with Generator:
+case class FKey(id:UID,dom:Ob,codom:Ob) extends AbstractFKey with Generator:
   
   def rename(newName:String) = Generator.rename(this,newName)
   def generators = this.homGenerators
   def path = this.path
   
 object FKey:
-  def apply(id:UUID,name:String,dom:Ob,codom:Ob): FKey = 
+  def apply(id:UID,name:String,dom:Ob,codom:Ob): FKey = 
     FKey(id,dom,codom).rename(name)
 
-case class Attr[T:ReadWriter](id:UUID,dom:Ob,codom:ValType[T]) extends AbstractAttr with Generator:
+case class Attr[T:ReadWriter](id:UID,dom:Ob,codom:ValType[T]) extends AbstractAttr with Generator:
   override type Value = T
   override val rw = readwriter[T]
 
@@ -109,7 +117,7 @@ case class Attr[T:ReadWriter](id:UUID,dom:Ob,codom:ValType[T]) extends AbstractA
   def path = this.path
   
 object Attr:
-  def apply[T:ReadWriter](id:UUID,name:String,dom:Ob,tp:ValType[T]): Attr[T] = 
+  def apply[T:ReadWriter](id:UID,name:String,dom:Ob,tp:ValType[T]): Attr[T] = 
     Attr[T](id,dom,tp).rename(name)
 
 

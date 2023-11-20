@@ -48,7 +48,7 @@ trait Semagram[Model,D:PartData]:
   def readout() = (stateVar.now(),modelVar.now())
 
   
-  def produceSprites(dm: DisplayModel): Seq[(Part,(Sprite[D],D))] =
+  def produceEntities(dm: DisplayModel): Seq[(Part,(Sprite[D],D))] =
     EntityCollector.collect(dm, entitySources)
 
 
@@ -95,7 +95,7 @@ trait Semagram[Model,D:PartData]:
       svg.cls := "semagram-svg",
       util.svgDefs(),
       svg.svgAttr("tabindex", StringAsIsCodec, None) := "-1",
-      children <-- stateModelSig.map(produceSprites)
+      children <-- stateModelSig.map(produceEntities)
         .split(_._1){ case (part,(_,(sprite,init)),kvSig) =>
           sprite.present(part,init,kvSig.map(_._2._2),eventBus.writer)
         },
@@ -168,7 +168,7 @@ trait ACSemagram[D:PartData] extends Semagram[ACSet[D],D]:
   def isHovered: Boolean = stateVar.now().isHovered
 
 
-  val tableVar = Var(Map[UUID,EditTable]())
+  val tableVar = Var(Map[UID,EditTable]())
   
 
   def editTable(ob:Ob,cols:Property*) = EditTable(ob,cols)

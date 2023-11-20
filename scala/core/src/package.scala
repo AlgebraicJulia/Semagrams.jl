@@ -1,9 +1,10 @@
 /** A library for developing interactive semantic diagrams */
 package semagrams
 
-export util.{UUID,UndoableVar}
+export util.{UID,UndoableVar}
 export state.{EditorState,MouseButton,KeyModifier,Message}
 export bindings.{Binding}
 export rendering.{Sprite}
-export acsets.{ACSet,Schema}//,Part,PartData}
+export acsets.{ACSet,Schema}
+export graphs.ObSource._
 

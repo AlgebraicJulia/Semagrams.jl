@@ -24,12 +24,12 @@ def toStr[T:ReadWriter](t:T): String = t match
 
 
 
-case class UUID(stem:String,timestamp:Double,rand:Int) derives ReadWriter:
+case class UID(stem:String,timestamp:Double,rand:Int) derives ReadWriter:
   override def toString = Seq(stem,rand).mkString("_")
 
-object UUID:
+object UID:
   def apply(stem:String) =
     val timestamp = js.Date.now()
     val rand = (Math.random() * 100000).toInt
-    new UUID(stem,timestamp,rand)
+    new UID(stem,timestamp,rand)
 

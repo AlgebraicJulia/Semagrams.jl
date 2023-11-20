@@ -18,7 +18,7 @@ enum SchObs(val _name:String) extends Ob with Generator
   case ValTypeOb extends SchObs("ValTypeOb")
   case FKeyOb extends SchObs("FKeyOb")
   case AttrOb extends SchObs("AttrOb")
-  val id = UUID(name)
+  val id = UID(name)
   val generators = this.obGenerators
 
   name = _name
@@ -32,7 +32,7 @@ enum SchHoms(name:String,val dom:SchObs,val codom:SchObs)
   case AttrSrc extends SchHoms("AttrSrc",AttrOb,TableOb)
   case AttrTgt extends SchHoms("AttrTgt",AttrOb,ValTypeOb)
 
-  val id = UUID(name)
+  val id = UID(name)
   val generators = this.homGenerators
   val path = this.path
 export SchHoms._
@@ -40,11 +40,11 @@ export SchHoms._
 
 case object SchSchema extends Schema:
 
-  val id = UUID("SchSchema")
+  val id = UID("SchSchema")
 
   var name = "SchSchema"
 
-  def elts: Map[UUID, Elt] = 
+  def elts: Map[UID, Elt] = 
     SchObs.values.eltMap ++ SchHoms.values.eltMap
 
 
@@ -56,23 +56,23 @@ case object SchSchema extends Schema:
 
 // case class SchemaDisplay(
 //   globalProps: PropMap,
-//   props: Map[UUID,PropMap],
-//   selected: Seq[UUID]
+//   props: Map[UID,PropMap],
+//   selected: Seq[UID]
 // ):
-//   def setProps(id:UUID,newProps:PropMap) = this.copy(
+//   def setProps(id:UID,newProps:PropMap) = this.copy(
 //     props = props + (id -> newProps)
 //   )
 
 
-//   def setProp(id:UUID,f:Property,v:f.Value) = this.copy(
+//   def setProp(id:UID,f:Property,v:f.Value) = this.copy(
 //     props = props + (id -> props(id).set(f,v))
 //   )
 
 
-//   def select(id:UUID) = this.copy(
+//   def select(id:UID) = this.copy(
 //     selected = (selected :+ id).distinct
 //   )
-//   def unselect(ids:UUID*) = this.copy(
+//   def unselect(ids:UID*) = this.copy(
 //     selected = selected.diff(ids)
 //   )
 //   def clear() = this.copy(
@@ -82,8 +82,8 @@ case object SchSchema extends Schema:
 // object SchemaDisplay:
 //   def apply(
 //     gps: PropMap,
-//     props:Map[UUID,PropMap],
-//     selected:Seq[UUID]
+//     props:Map[UID,PropMap],
+//     selected:Seq[UID]
 //   ) = new SchemaDisplay(
 //     gps,
 //     props.withDefaultValue(PropMap()),
@@ -110,7 +110,7 @@ case object SchSchema extends Schema:
 // ) 
 
   
-def acsetSchema[D:PartData](id:UUID)(acset:ACSet[D]): BasicSchema =
+def acsetSchema[D:PartData](id:UID)(acset:ACSet[D]): BasicSchema =
   if !acset.schema.hasElts(Seq[SchObs](TableOb,FKeyOb,AttrOb))
   then println(s"Warning: missing schema elements in $acset")
   val tableMap = acset.tryProp(Content,TableOb).map(

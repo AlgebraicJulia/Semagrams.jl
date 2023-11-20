@@ -8,7 +8,7 @@
 // trait Ob extends EntityType
 
 // case class Part(pid: Int, ob: Ob) extends Entity {
-//   val id = util.UUID("Part")
+//   val id = util.UID("Part")
     
 //   def asElt(x: Ob) = if (x == ob) Some(this) else None
 

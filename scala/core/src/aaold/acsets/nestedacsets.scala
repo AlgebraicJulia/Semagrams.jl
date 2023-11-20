@@ -167,7 +167,7 @@
 //   *   `Part` is used for both notions, which is very confusing.
 //   */
 // case class Part(path: Seq[(NestedOb, Id)]) extends Entity {
-//   val id = util.UUID("NestedPart")
+//   val id = util.UID("NestedPart")
 
 //   /** All of the objects of the path */
 //   override val ty: PartType = PartType(path.map(_._1))

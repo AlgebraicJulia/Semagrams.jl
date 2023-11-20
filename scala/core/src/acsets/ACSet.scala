@@ -116,19 +116,19 @@ case class ACSet[D:PartData](
   def filterParts[A](ob:Ob,pred:Part => Boolean): Seq[Part] =
     getParts(ob).filter(pred)
 
-  /* Collect any parts in the ACSet with UUID `id0` */
-  def collectParts(id0:UUID): Seq[Part] = for 
+  /* Collect any parts in the ACSet with UID `id0` */
+  def collectParts(id0:UID): Seq[Part] = for 
     ob <- schema.obSeq
     part <- getParts(ob)
     if part.id == id0
   yield part
 
 
-  /* Get an optional part with UUID `id0` */
-  def tryPart(id0:UUID): Option[Part] = collectParts(id0).headOption
+  /* Get an optional part with UID `id0` */
+  def tryPart(id0:UID): Option[Part] = collectParts(id0).headOption
 
-  /* Get a part with UUID `id0` (unsafe) */
-  def getPart(id0:UUID): Part = collectParts(id0).head 
+  /* Get a part with UID `id0` (unsafe) */
+  def getPart(id0:UID): Part = collectParts(id0).head 
 
 
   /** Setting **/
@@ -151,7 +151,7 @@ case class ACSet[D:PartData](
 
   /* Set the properties of each `Part` with the associated `PropMap` */
   def setProps(kvs:Iterable[(Part,PropMap)]): ACSet[D] = 
-    def helper(ob:Ob,kvs:Iterable[(UUID,PropMap)]) = this.copy(
+    def helper(ob:Ob,kvs:Iterable[(UID,PropMap)]) = this.copy(
       partStore = partStore.updated(ob.id,
         partStore(ob.id).setProps(kvs)
       )
@@ -169,7 +169,7 @@ case class ACSet[D:PartData](
 
   /* Set the properties of each `Part` from the associated `PropMap` if they are unset */
   def softSetProps(kvs:Iterable[(Part,PropMap)]): ACSet[D] = 
-    def helper(ob:Ob,kvs:Iterable[(UUID,PropMap)]) = this.copy(
+    def helper(ob:Ob,kvs:Iterable[(UID,PropMap)]) = this.copy(
       partStore = partStore.updated(ob.id,
         partStore(ob.id).softSetProps(kvs)
       )
@@ -189,7 +189,7 @@ case class ACSet[D:PartData](
 
   /* Set the value for `f` with the given part-value pairs */
   def setProp(f:Property,kvs:Iterable[(Part,f.Value)]): ACSet[D] =
-    def helper(f:Property,ob:Ob,kvs:Iterable[(UUID,f.Value)]) = this.copy(
+    def helper(f:Property,ob:Ob,kvs:Iterable[(UID,f.Value)]) = this.copy(
       partStore = partStore.updated(ob.id,
         partStore(ob.id).setProp(f,kvs)
       )
@@ -209,7 +209,7 @@ case class ACSet[D:PartData](
 
   /* Set the value for `f` with the given part-value pairs, if unset */
   def softSetProp(f:Property,kvs:Iterable[(Part,f.Value)]): ACSet[D] =
-    def helper(f:Property,ob:Ob,kvs:Iterable[(UUID,f.Value)]) = this.copy(
+    def helper(f:Property,ob:Ob,kvs:Iterable[(UID,f.Value)]) = this.copy(
       partStore = partStore.updated(ob.id,
         partStore(ob.id).softSetProp(f,kvs)
       )
@@ -261,7 +261,7 @@ case class ACSet[D:PartData](
   
   /** Adding parts **/
 
-  def addPartsById(ob:Ob,partData:Iterable[(UUID,D)]): (ACSet[D],Iterable[Part]) = 
+  def addPartsById(ob:Ob,partData:Iterable[(UID,D)]): (ACSet[D],Iterable[Part]) = 
     /* Collect any schema elements referred to in `partData` */
     val schemaElts: Seq[Elt] = ob +: partData.toSeq.flatMap(
       (_,data) => data.generators().values
@@ -291,7 +291,7 @@ case class ACSet[D:PartData](
         println(s"Attempted to add elements $badElts to StaticSchema $schema")
         (this,Seq())
 
-  def addPartById(ob:Ob,id:UUID,data:D): (ACSet[D],Part) =
+  def addPartById(ob:Ob,id:UID,data:D): (ACSet[D],Part) =
     val (next,parts) = addPartsById(ob,Seq(id -> data))
     (next,parts.head)
 
@@ -302,7 +302,7 @@ case class ACSet[D:PartData](
 
   /* Add a collection of parts to `ob` initialized with `ds` */
   def addParts(ob:Ob,ds:Iterable[D]): (ACSet[D],Iterable[Part]) = 
-    addPartsById(ob,ds.map(UUID(ob.toString + "@") -> _))
+    addPartsById(ob,ds.map(UID(ob.toString + "@") -> _))
   
 
 

@@ -11,13 +11,13 @@ trait EntityType
   * vertex, an edge, m ui element, etc.
   */
 trait Entity:
-  val id: UUID
+  val id: UID
   val ty: EntityType
 
 
 object BackgroundType extends EntityType
 object Background extends Entity {
-  val id = UUID("Background")
+  val id = UID("Background")
   val ty = BackgroundType
   override def toString = "Background"
 }

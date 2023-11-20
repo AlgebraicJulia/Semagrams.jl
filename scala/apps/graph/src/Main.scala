@@ -30,8 +30,8 @@ val edgeSprite = Arrow(Content,PropMap())
 
 
 /* Some custom attributes */
-// val srcName = Attr(UUID("CustomAttr"),"srcName",E,ValType[String]("String"))
-// val tgtName = Attr(UUID("CustomAttr"),"tgtName",E,ValType[String]("String"))
+// val srcName = Attr(UID("CustomAttr"),"srcName",E,ValType[String]("String"))
+// val tgtName = Attr(UID("CustomAttr"),"tgtName",E,ValType[String]("String"))
 
 
 /* Optional modification the acset based on current `EditorState` */
@@ -59,13 +59,16 @@ val bindings = Seq[Binding[ACSet[PropMap]]](
     ClickOnPartHook(MouseButton.Left, Shift), 
     AddEdgeViaDrag((V,V),(E,Src,Tgt))
   ),
-  Binding(DoubleClickOnPartHook(),Callback(part => 
-    graphSema.tableVar.now().get(part.ob.id) match
-      case Some(sematable) => 
-        sematable.edit(part,Content)
-      case None => 
-        ()
-  )),
+  Binding(
+    DoubleClickOnPartHook(),
+    Callback(part => 
+      graphSema.tableVar.now().get(part.ob.id) match
+        case Some(sematable) => 
+          sematable.edit(part,Content)
+        case None => 
+          ()
+    )
+  ),
   Binding(KeyDownHook("?"), PrintModel()),
   Binding(
     KeyDownHook("z",Ctrl),
@@ -89,9 +92,9 @@ val graphSema: ACSemagram[PropMap] = GraphDisplay[PropMap](
   /* Bindings for interaction */                              
   bindings,
   /* Vertex construction */
-  VertexDef(V,nodeSprite),
+  ObSource(V,nodeSprite),
   /* Edge construction */
-  EdgeDef(E,Src,Tgt,edgeSprite),
+  SpanSource(E,Src,Tgt,edgeSprite),
   /* Optional pre-rendering */ 
   // layout
 )
@@ -100,7 +103,7 @@ val graphSema: ACSemagram[PropMap] = GraphDisplay[PropMap](
 
 
 
-def initialize() = 
+def initialize() = {
   /* Add styling to the main svg window */
   graphSema.elt.amend(
     backgroundColor := "lightblue"
@@ -122,7 +125,7 @@ def initialize() =
   graphSema.tableVar.set(graphTables)
 
 
-
+}
 
 
 

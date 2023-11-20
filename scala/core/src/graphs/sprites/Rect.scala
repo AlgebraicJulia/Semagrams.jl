@@ -169,9 +169,9 @@ object Rect:
     )
   }
 
-  def apply() = new Rect(Content,defaultProps)
-  def apply(props:PropMap) = new Rect(Content,defaultProps ++ props)
-  def apply(label:Property) = new Rect(label,defaultProps)
-  def apply(label:Property,props: PropMap) = new Rect(label,defaultProps ++ props)
+  def apply[D:PartData]() = new Rect[D](Content,PartData(defaultProps))
+  def apply[D:PartData](data:D) = new Rect[D](Content,data.softSetProps(defaultProps))
+  def apply[D:PartData](label:Property) = new Rect[D](label,PartData(defaultProps))
+  def apply[D:PartData](label:Property,data: D) = new Rect(label,data.softSetProps(defaultProps))
 
 

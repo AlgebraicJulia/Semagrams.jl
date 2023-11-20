@@ -88,15 +88,12 @@ object ClickOnPartHook {
 
 
 extension (hook:EventHook[Part])
-  def filter(obs:Ob*) = 
-    println("hit")
-    hook.filter(part => obs.contains(part.ty))
+  def filter(obs:Ob*) = hook.filter(part => obs.contains(part.ty))
 
 case class DoubleClickOnPartHook(button: MouseButton = MouseButton.Left, modifiers: Set[KeyModifier] = Set()) extends EventHook[Part]:
 
   def apply(evt:Event, es: EditorState) = evt match {
     case DoubleClick(Some(part:Part),button) if modifiers == es.modifiers =>
-      println(s"DoubleClickOnPartHook $part")
       Some(part)
     case _ => None 
   }

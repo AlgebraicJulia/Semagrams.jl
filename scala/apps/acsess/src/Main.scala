@@ -113,13 +113,13 @@ val schemaBindings = Seq[Binding[ACSet[PropMap]]](
 )
 
 
-
-def schemaVertexDef = VertexDef(
+def schemaVertexDef = ObSource(
+  // TableOb,
   TableOb -> rectSprite,
   ValTypeOb -> rectSprite
 )
 
-def schemaEdgeDef = EdgeDef(
+def schemaEdgeDef = SpanSource(
   FKeyOb -> (FKeySrc,FKeyTgt,edgeSprite),
   AttrOb -> (AttrSrc,AttrTgt,edgeSprite)
 )
@@ -133,10 +133,12 @@ val schemaSema = GraphDisplay[PropMap](
   // schemaLayout
 )
 
+/* ================================*/
+
 
 
 val schemaSignal = schemaSema.modelVar.signal
-  .splitOne(acsetSchema(acsetSchemaId))((sch,_,_) => sch)
+  .splitOne(acsetSchema(acsetSchemaId))((sch,_,_) => sch).distinct
 
 val schemaObs: Observer[Schema] = Observer(newSch =>
   val oldSch = acsetSema.modelVar.now().schema
@@ -156,6 +158,9 @@ val schemaObs: Observer[Schema] = Observer(newSch =>
 )
 
 
+
+
+
 /* Instance Editor */
 
 /* Display */
@@ -166,7 +171,7 @@ def acsetLayout[D:PartData] = GraphDisplay.defaultLayout[D]
 /* State management */
 
 
-val acsetSchemaId = UUID("ACSetSch")
+val acsetSchemaId = UID("ACSetSch")
 val acsetVar = UndoableVar(ACSet(Schema(acsetSchemaId)))
 
 
@@ -207,7 +212,9 @@ val schemaIsHovered = () => acsetSema.isHovered
 
 
 val acsetBindings = Seq[Binding[ACSet[PropMap]]](
-  Binding(KeyDownHook("a").filter(schemaIsHovered),AddAtMouse(selectIO).andThen(saveSchema)
+  Binding(
+    KeyDownHook("a").filter(schemaIsHovered),
+    AddAtMouse(selectIO).andThen(saveSchema)
   ),
   Binding(KeyDownHook("d"), DeleteHovered().andThen(saveSchema)),
   Binding(
@@ -244,18 +251,17 @@ def vProps = PropMap()
 def eProps = PropMap()
   + (Stroke,"black")
 
-val acsetVertexDef = VertexDef{
+val acsetVertexDef = ObSource{
   case t:Table => (rectSprite,vProps)
 }
 
 
 
-// val acsetEdgeDef = EdgeDef{
-//   case f:FKey => 
-//     val ftp = f.
-    
-//     (edgeSprite,eProps)
-// }
+val acsetEdgeDef = SpanSource(
+  ((ob:Ob) => 
+    None
+  ).unlift
+)
 
 
 
@@ -263,8 +269,8 @@ val acsetSema: GraphDisplay[PropMap] = GraphDisplay[PropMap](
   acsetVar,
   acsetBindings,
   acsetVertexDef,
-  EdgeDef(),
-  // acsetEdgeDef,
+  // SpanSource(),
+  acsetEdgeDef,
   // acsetLayout
 )
 
@@ -346,7 +352,7 @@ object Main {
 }
 
 
-// val tableVar: Var[Map[UUID,Table]] = Var(Map())
+// val tableVar: Var[Map[UID,Table]] = Var(Map())
 
 // val schACSetVar = Var(SimpleACSet(SchSchema))
 
@@ -358,7 +364,7 @@ object Main {
 
 // val acsetVar = Var(SimpleACSet(BasicSchema()))
 
-// val tableObs = Observer((newTables:Map[UUID,Table]) =>
+// val tableObs = Observer((newTables:Map[UID,Table]) =>
 //   val oldTables = tableVar.now()
 //   val adds = newTables -- oldTables.keys
 //   val rems = oldTables -- newTables.keys
@@ -450,22 +456,22 @@ object Main {
 
 // val schemaDisplay = GraphDisplay[PropMap,AS](
 //   Seq(
-//     VertexDef[PropMap](
+//     ObSource[PropMap](
 //       Rect(Content),
 //       TableOb -> PropMap()
 //     ),
-//     VertexDef[PropMap](
+//     ObSource[PropMap](
 //       Disc(Content),
 //       ValTypeOb -> PropMap().set(Fill,RGB("white"))
 //     )
 //   ),
 //   Seq(
-//     EdgeDef(
+//     SpanSource(
 //       Arrow(Content),
 //       PropMap() + (Stroke,RGB("purple")),
 //       FKeyOb -> (FKeySrc,FKeyTgt)
 //     ),
-//     EdgeDef(
+//     SpanSource(
 //       Arrow(Content),
 //       PropMap() + (Stroke,RGB("cyan")),
 //       AttrOb -> (AttrSrc,AttrTgt)
@@ -499,12 +505,12 @@ object Main {
 
 
 
-// def propSig: Signal[Map[UUID,PropMap]] = schSema.signal.map( (acset,state) =>
+// def propSig: Signal[Map[UID,PropMap]] = schSema.signal.map( (acset,state) =>
 //   acset.getProps(state.selected).map((part,props) => (part.id,props))
 // )
 
 
-// def propsObs(cols:Property*): Observer[(UUID,PropChange[_])] = Observer((id0,change) => 
+// def propsObs(cols:Property*): Observer[(UID,PropChange[_])] = Observer((id0,change) => 
   
 
 //   if !cols.contains(change.prop)
@@ -530,7 +536,7 @@ object Main {
 
 
 
-// def tableParts[A:ACSet](tableId:UUID,acset:A): Seq[Part] = 
+// def tableParts[A:ACSet](tableId:UID,acset:A): Seq[Part] = 
 //   acset.schema.obs.find(_.id == tableId).toSeq
 //     .flatMap(table => acset.getParts(table))
 
@@ -620,7 +626,7 @@ object Main {
 
 
 // val acsetDisplay = GraphDisplay[PropMap,AA](
-//   Seq(VertexDef(
+//   Seq(ObSource(
 //     Rect(Content,PropMap() + (MinimumWidth,20) + (MinimumHeight,20)),
 //     {case t:Table => PropMap().set(Fill,RGB("pink"))}
 //   )),
@@ -651,14 +657,14 @@ object Main {
 // )
 
 
-// def tableFromId(cols:Property*)(id0:UUID): Signal[Option[Element]] = 
+// def tableFromId(cols:Property*)(id0:UID): Signal[Option[Element]] = 
 //   acsetSema.modelSig.map(acset =>
 //     acset.schema.tryOb(id0).map(table => 
 //       acsetSema.propTable(table,cols:_*).elt
 //     )     
 //   )
 
-// def tablesFromIds(cols:Property*)(ids:Seq[UUID]): Signal[Seq[Element]] =
+// def tablesFromIds(cols:Property*)(ids:Seq[UID]): Signal[Seq[Element]] =
 //   acsetSema.modelSig.map(acset => ids.flatMap(id0 =>
 //     acset.schema.tryOb(id0).map(table =>
 //       acsetSema.propTable(table,cols:_*).elt
@@ -689,7 +695,7 @@ object Main {
 //   case ChangePropMsg(part,change) => part.id -> change
 // }
 // val changeObs = propsObs(Content,Fill,Highlight,Selected).contramap(
-//   (pair:(UUID,PropChange[_])) =>
+//   (pair:(UID,PropChange[_])) =>
 //     println(s"changeObs $pair")
 //     pair
 // )

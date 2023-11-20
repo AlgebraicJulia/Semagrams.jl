@@ -38,13 +38,13 @@ object MsgSeq:
 sealed trait ACSetMsg[D:PartData] extends AtomicMessage[ACSet[D]]
 
 
-case class AddPartMsg[D:PartData](ob:Ob,data:D,idOpt:Option[UUID] = None) extends ACSetMsg[D]:
+case class AddPartMsg[D:PartData](ob:Ob,data:D,idOpt:Option[UID] = None) extends ACSetMsg[D]:
   def execute(a:ACSet[D]) = idOpt match
     case Some(id) => a.addPartById(ob,id,data)._1
     case None => a.addPart(ob,data)._1
 
 object AddPartMsg:
-  def apply[D:PartData](ob:Ob,props:PropMap,id:UUID) =
+  def apply[D:PartData](ob:Ob,props:PropMap,id:UID) =
     new AddPartMsg[D](ob,PartData(props),Some(id))
 
 case class RemovePartMsg[D:PartData](part:Part) extends ACSetMsg[D]:
