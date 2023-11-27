@@ -2,7 +2,6 @@ package semagrams.util
 
 import com.raquo.laminar.api.L._
 
-
 /** Make an SVG element containing the html object.
   *
   * We have to specify manually the dimensions and position of the html, because

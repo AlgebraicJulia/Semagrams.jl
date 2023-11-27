@@ -16,7 +16,8 @@ import com.raquo.airstream.core.Signal
   * @todo
   *   implement more of the `Var` api.
   */
-class LensedVar[A, B](val v: UndoableVar[A], val l: Lens[A, B]) extends WeakVar[B] {
+class LensedVar[A, B](val v: UndoableVar[A], val l: Lens[A, B])
+    extends WeakVar[B] {
 
   /** An observer that uses the lens to write to the underlying var. */
 
@@ -31,9 +32,9 @@ class LensedVar[A, B](val v: UndoableVar[A], val l: Lens[A, B]) extends WeakVar[
 
   def now() = l.get(v.now())
 
-  def set(b:B) = v.update(l.replace(b))
+  def set(b: B) = v.update(l.replace(b))
 
-  def update(f:B => B) = v.update(l.replace(f(now())))
+  def update(f: B => B) = v.update(l.replace(f(now())))
 
   // Pause recording for base variable? This seems bad.
   def unrecord() = v.unrecord()

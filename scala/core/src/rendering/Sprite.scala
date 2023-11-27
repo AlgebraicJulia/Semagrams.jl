@@ -2,13 +2,10 @@ package semagrams.rendering
 
 import semagrams._
 import semagrams.state
-import semagrams.util.{Complex,RGB}
+import semagrams.util.{Complex, RGB}
 
 import com.raquo.laminar.api.L._
 import scala.util.Random
-
-
-
 
 case class BoundingBox(
     pos: Complex,
@@ -23,8 +20,8 @@ case class BoundingBox(
 
 type HandlerAttacher = (Entity, SvgElement) => Unit
 
-/** A Sprite contains the information necessary to turn a sub-D into a
-  * reactive SVG on the screen.
+/** A Sprite contains the information necessary to turn a sub-D into a reactive
+  * SVG on the screen.
   *
   * TODO: Sprites should have an "injection" method for statically computing
   * some layout that they want to have available for boundaryPt/bbox queries, or
@@ -33,7 +30,7 @@ type HandlerAttacher = (Entity, SvgElement) => Unit
   * custom code for being able to have defaults; that should not be custom
   * because then it is inconsistent.
   */
-trait Sprite[D:PartData] {
+trait Sprite[D: PartData] {
 
   /** Construct an SvgElement for a subacset.
     *
@@ -67,8 +64,8 @@ trait Sprite[D:PartData] {
     *   This is used by [[MiddleWare]] to inject event handlers into the sprite.
     *   This should be called on the svg element that the mouse interacts with
     *   (which may be different from the top-level svg element).
-    * 
-    * @param
+    *
+    * \@param
     */
   def present(
       p: Part,
@@ -93,14 +90,13 @@ trait Sprite[D:PartData] {
       subparts: Seq[Part] = Seq()
   ): Option[Complex] = None
 
-
   /** Compute the geometric center of the sprite
     *
     * Similar to [[boundaryPt]]
     */
   def center(
-    data: D,
-    subparts: Seq[Part] = Seq()
+      data: D,
+      subparts: Seq[Part] = Seq()
   ): Option[Complex] = None
 
   /** Compute the bounding box of the sprite
@@ -108,8 +104,8 @@ trait Sprite[D:PartData] {
     * Similar to [[boundaryPt]]
     */
   def bbox(
-    data: D,
-    subparts: Seq[Part] = Seq(),
+      data: D,
+      subparts: Seq[Part] = Seq()
   ): Option[BoundingBox] = None
 
   /** Convert a diagram element into tikz code */
@@ -124,9 +120,7 @@ trait Sprite[D:PartData] {
 
 }
 
-
 object Sprite:
-
 
   val defaultProps = PropMap()
     + (Content, "")
@@ -138,47 +132,49 @@ object Sprite:
     + (OuterSep, 5)
     + (MinimumWidth, 40)
     + (MinimumHeight, 40)
-    + (Style,"")
+    + (Style, "")
 
+  def setContent[D: PartData](label: Property)(data: D) =
+    data.setProp(Content, data.tryProp(label).getOrElse("").toString())
 
-  def setContent[D:PartData](label:Property)(data:D) =
-    data.setProp(Content,
-      data.tryProp(label).getOrElse("").toString()
-    )
-
-  def innerText[D:PartData](d:D): SvgElement = 
+  def innerText[D: PartData](d: D): SvgElement =
     assert(d.getProps().contains(Center))
     val data: D = d.softSetProps(Sprite.defaultProps)
     val splits = util.splitString(data.getProp(Content)).zipWithIndex
     val l = splits.length
 
-    def xy(idx:Int) =
-      val (x0,y0) = data.getProp(Center).tuple
+    def xy(idx: Int) =
+      val (x0, y0) = data.getProp(Center).tuple
       val fs = data.getProp(FontSize)
-      (x0,y0 + fs * (idx + 1 - l / 2.0))
-    
-    val tspans = splits.toIndexedSeq.map{ case (text, idx0) =>
-      val (x0,y0) = xy(idx0)
+      (x0, y0 + fs * (idx + 1 - l / 2.0))
+
+    val tspans = splits.toIndexedSeq.map { case (text, idx0) =>
+      val (x0, y0) = xy(idx0)
       svg.tspan(
         textToTextNode(text),
         svg.textAnchor := "middle",
         svg.x := x0.toString,
         svg.y := y0.toString,
         svg.style := "user-select: none",
-        svg.strokeWidth := "0",
+        svg.strokeWidth := "0"
       )
     }
 
     val styles = Seq(
       svg.fontSize := data.getProp(FontSize).toString,
-      svg.stroke := data.tryProp(Stroke).getOrElse(
-        defaultProps(Stroke)
-      ).toString,
-      svg.fill := data.tryProp(Stroke).getOrElse(
-        defaultProps(Stroke)
-      ).toString,
-      svg.pointerEvents := "none",
+      svg.stroke := data
+        .tryProp(Stroke)
+        .getOrElse(
+          defaultProps(Stroke)
+        )
+        .toString,
+      svg.fill := data
+        .tryProp(Stroke)
+        .getOrElse(
+          defaultProps(Stroke)
+        )
+        .toString,
+      svg.pointerEvents := "none"
     )
 
-    svg.text(tspans.map(_.amend(styles)))   
-  
+    svg.text(tspans.map(_.amend(styles)))

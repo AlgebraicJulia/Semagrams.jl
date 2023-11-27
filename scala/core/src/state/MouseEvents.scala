@@ -4,10 +4,6 @@ import semagrams._
 import com.raquo.laminar.api.L._
 import org.scalajs.dom
 
-
-
-
-
 object MouseEvents {
   def hoverHandlers(
       ent: Entity,
@@ -18,8 +14,6 @@ object MouseEvents {
       onMouseLeave.mapTo(MouseLeave(ent)) --> eventWriter
     )
 
-
-  
   def clickHandlers(
       ent: Entity,
       eventWriter: Observer[Event]
@@ -36,7 +30,7 @@ object MouseEvents {
       ) --> eventWriter,
       onDblClick.preventDefault.stopPropagation.map(evt =>
         DoubleClick(Some(ent), MouseButton.fromJS(evt.button))
-      ) --> eventWriter,
+      ) --> eventWriter
     )
 
   def handlers(
@@ -49,11 +43,11 @@ object MouseEvents {
     )
 }
 
-
-
-
-def mouseMoveListener(eventWriter: Observer[Event]) = inContext(
-  svg => onMouseMove.map(
-    evt => Event.MouseMove(util.svgCoords(svg.ref.asInstanceOf[dom.SVGSVGElement], evt)))
-      --> eventWriter
+def mouseMoveListener(eventWriter: Observer[Event]) = inContext(svg =>
+  onMouseMove.map(evt =>
+    Event.MouseMove(
+      util.svgCoords(svg.ref.asInstanceOf[dom.SVGSVGElement], evt)
+    )
+  )
+    --> eventWriter
 )

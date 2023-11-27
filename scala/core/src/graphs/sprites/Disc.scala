@@ -11,16 +11,13 @@ import semagrams.rendering._
   *
   * Auto-resizes based on the content inside.
   */
-case class Disc[D:PartData](label:Property,init: D) extends Sprite[D] {
+case class Disc[D: PartData](label: Property, init: D) extends Sprite[D] {
   import Disc._
 
   def requiredProps = Seq(Center)
   def defaultProps = Sprite.defaultProps
 
-
   def setLabel: D => D = Sprite.setContent(label)
-
-
 
   def present(
       ent: Part,
@@ -31,14 +28,14 @@ case class Disc[D:PartData](label:Property,init: D) extends Sprite[D] {
     val data = updates
       .map(init.softSetProps(defaultProps).merge(_))
       .map(setLabel)
-    
+
     val box = circle(
       geomUpdater(data),
       styleUpdater(data)
     )
 
-    val text = data.map(Sprite.innerText) 
-      
+    val text = data.map(Sprite.innerText)
+
     val bg = image(
       cls := "disc-bg",
       href <-- data.map(_.getProp(ImageURL)),
@@ -57,16 +54,21 @@ case class Disc[D:PartData](label:Property,init: D) extends Sprite[D] {
     )
   }
 
-  override def boundaryPt(init: D, dir: Complex, subparts: Seq[Part] = Seq()) = {
+  override def boundaryPt(
+      init: D,
+      dir: Complex,
+      subparts: Seq[Part] = Seq()
+  ) = {
     val data = init.softSetProps(defaultProps)
-    val rad = radius(data) + data.tryProp(OuterSep)
+    val rad = radius(data) + data
+      .tryProp(OuterSep)
       .getOrElse(defaultProps(OuterSep))
-    
+
     data.tryProp(Center).map(dir.normalize * rad + _)
   }
 
   override def bbox(data: D, subparts: Seq[Part] = Seq()) =
-    center(data,subparts).map(
+    center(data, subparts).map(
       rendering.BoundingBox(_, Complex(2 * radius(init), 2 * radius(init)))
     )
 
@@ -77,7 +79,11 @@ case class Disc[D:PartData](label:Property,init: D) extends Sprite[D] {
     "circle",
     p.tikzName,
     data.getProps().get(Center).getOrElse(Complex(0, 0)),
-    data.getProps().get(label).getOrElse("").toString
+    data
+      .getProps()
+      .get(label)
+      .getOrElse("")
+      .toString
       .flatMap(_ match
         case '\n' => "\\\\"
         case ch   => ch.toString()
@@ -91,8 +97,9 @@ object Disc {
 
   import Sprite.defaultProps
 
-  def radius[D:PartData](data: D): Double = {
-    val textBox = boxSize(data.tryProp(Content), data.tryProp(FontSize),split = true)
+  def radius[D: PartData](data: D): Double = {
+    val textBox =
+      boxSize(data.tryProp(Content), data.tryProp(FontSize), split = true)
     val innerSep = data.tryProp(InnerSep).getOrElse(defaultProps(InnerSep))
     val d = data
       .tryProp(MinimumWidth)
@@ -103,32 +110,31 @@ object Disc {
     r
   }
 
-  def geomUpdater[D:PartData](data: L.Signal[D]) = {
+  def geomUpdater[D: PartData](data: L.Signal[D]) = {
     List(
       cxy <-- data.map(_.tryProp(Center).getOrElse(defaultProps(Center))),
       r <-- data.map(radius(_).toString)
     )
   }
 
-  def styleUpdater[D:PartData](data: L.Signal[D]) = {
+  def styleUpdater[D: PartData](data: L.Signal[D]) = {
     List(
       fill <-- data.map(_.getProp(Fill).toString),
-      opacity <-- data.map(d => if d.tryProp(Highlight).isDefined then ".8" else "1"),
-      stroke <-- data.map(_.tryProp(Stroke).getOrElse(defaultProps(Stroke)).toString),
+      opacity <-- data.map(d =>
+        if d.tryProp(Highlight).isDefined then ".8" else "1"
+      ),
+      stroke <-- data.map(
+        _.tryProp(Stroke).getOrElse(defaultProps(Stroke)).toString
+      ),
       style <-- data.map(_.tryProp(Style).getOrElse(defaultProps(Style)))
     )
   }
 
-
-
-
-
-
-
-  def apply() = new Disc(Content,defaultProps)
-  def apply(props:PropMap) = new Disc(Content,defaultProps ++ props)
-  def apply(label:Property) = new Disc(label,defaultProps)
-  def apply(label:Property,props: PropMap) = new Disc(label,defaultProps ++ props)
+  def apply() = new Disc(Content, defaultProps)
+  def apply(props: PropMap) = new Disc(Content, defaultProps ++ props)
+  def apply(label: Property) = new Disc(label, defaultProps)
+  def apply(label: Property, props: PropMap) =
+    new Disc(label, defaultProps ++ props)
 
   def boundaryNormal(data: PropMap, dir: Complex) = dir.normalize
 

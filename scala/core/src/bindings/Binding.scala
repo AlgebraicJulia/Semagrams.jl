@@ -5,6 +5,7 @@ import cats._
 
 import semagrams._
 import semagrams.state.Event
+
 /** A pair of a compatible [[EventHook]] and [[Action]]. As each of these have
   * descriptions, an automatic help text can be generated for the binding.
   */
@@ -41,22 +42,25 @@ object Binding {
       evt: Event,
       r: Action.Resources[Model],
       bindings: Seq[Binding[Model]]
-  ): IO[Unit] = 
+  ): IO[Unit] =
     import cats.implicits._
     for {
       state <- IO(r.stateVar.now())
-      _ <- bindings.flatMap{ (b:Binding[Model]) =>
-        b.hook(evt,state)
-          .map(b.action(_,r))
+      _ <- bindings.flatMap { (b: Binding[Model]) =>
+        b.hook(evt, state)
+          .map(b.action(_, r))
       }.parSequence_
     } yield ()
 
-  def processAll[Model](r: Action.Resources[Model], bindings: Seq[Binding[Model]]): IO[Unit] = {
+  def processAll[Model](
+      r: Action.Resources[Model],
+      bindings: Seq[Binding[Model]]
+  ): IO[Unit] = {
     Monad[IO].whileM_(IO(true)) {
       for {
         evt <- r.eventQueue.take
         _ = evt match
-          case _ => ()        
+          case _ => ()
         _ <- r.processEvent(evt)
         _ = evt match
           case _ => ()
@@ -67,4 +71,3 @@ object Binding {
     }
   }
 }
-

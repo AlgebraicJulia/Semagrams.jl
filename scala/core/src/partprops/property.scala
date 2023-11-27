@@ -2,7 +2,6 @@ package semagrams
 
 import upickle.default._
 
-
 import semagrams.util._
 
 import upickle.default.ReadWriter
@@ -28,27 +27,30 @@ trait Property {
     read[Value](sv)(rw)
   }
 
-  def ::[K](kv:(K,Value)) = PartVal[K,Value](this,kv._1,kv._2)
-
+  def ::[K](kv: (K, Value)) = PartVal[K, Value](this, kv._1, kv._2)
 
 }
 
-
-
-case class PropVal[T](prop:Property{type Value = T},value:Option[T])
+case class PropVal[T](prop: Property { type Value = T }, value: Option[T])
 
 object PropVal:
-  def apply(prop:Property,v:prop.Value) = new PropVal[prop.Value](prop,Some(v))
+  def apply(prop: Property, v: prop.Value) =
+    new PropVal[prop.Value](prop, Some(v))
 
-case class PropChange[T](prop:Property{type Value = T},oldVal:Option[T],newVal:Option[T])
+case class PropChange[T](
+    prop: Property { type Value = T },
+    oldVal: Option[T],
+    newVal: Option[T]
+)
 object PropChange:
-  def apply(prop:Property,oldVal:prop.Value,newVal:prop.Value) = new PropChange[prop.Value](prop,Some(oldVal),Some(newVal))
-  def apply(prop:Property,oldVal:Option[prop.Value],newVal:prop.Value) = new PropChange[prop.Value](prop,oldVal,Some(newVal))
-  def apply(prop:Property,oldVal:prop.Value,newVal:Option[prop.Value]) = new PropChange[prop.Value](prop,Some(oldVal),newVal)
+  def apply(prop: Property, oldVal: prop.Value, newVal: prop.Value) =
+    new PropChange[prop.Value](prop, Some(oldVal), Some(newVal))
+  def apply(prop: Property, oldVal: Option[prop.Value], newVal: prop.Value) =
+    new PropChange[prop.Value](prop, oldVal, Some(newVal))
+  def apply(prop: Property, oldVal: prop.Value, newVal: Option[prop.Value]) =
+    new PropChange[prop.Value](prop, Some(oldVal), newVal)
 
-  
-
-case class PartVal[K,V](f:Property{type Value = V},key:K,v:V)
+case class PartVal[K, V](f: Property { type Value = V }, key: K, v: V)
 
 type PartProp = Property { type Value = Part }
 
@@ -60,7 +62,6 @@ trait PValue[T: ReadWriter] extends Property {
 
   val rw = summon[ReadWriter[T]]
 }
-
 
 enum GenericProperty[T: ReadWriter] extends PValue[T] {
   case Fill extends GenericProperty[RGB]
@@ -94,8 +95,6 @@ enum GenericProperty[T: ReadWriter] extends PValue[T] {
   type Value = T
 
 }
-
-
 
 enum PathProp[T: ReadWriter] extends PValue[T] {
   case StartDir extends PathProp[Complex]

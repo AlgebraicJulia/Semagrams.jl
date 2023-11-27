@@ -29,12 +29,9 @@ enum Event {
   case KeyDown(key: String)
   case KeyUp(key: String)
   case ContextMenu(ent: Option[Entity])
-  case Resize(size:Complex)
-  case MsgEvent[Model](msg:Message[Model])
+  case Resize(size: Complex)
+  case MsgEvent[Model](msg: Message[Model])
   case Blur()
 }
-
-
-
 
 export Event._

@@ -2,7 +2,6 @@ package semagrams.util
 
 import scala.math.pow
 
-
 extension (t: Double) {
 
   /** Exponentiation as an infix operator */

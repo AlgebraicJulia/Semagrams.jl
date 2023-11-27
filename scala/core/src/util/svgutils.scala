@@ -3,7 +3,6 @@ package semagrams.util
 import com.raquo.laminar.api.L._
 import org.scalajs.dom
 
-
 /* Default svg element properties */
 def arrowMarkerDef(): Seq[SvgElement] =
   Seq(
@@ -19,7 +18,6 @@ def arrowMarkerDef(): Seq[SvgElement] =
       )
     )
   )
-
 
 def svgCoords(elt: dom.SVGSVGElement, evt: dom.MouseEvent): Complex = {
   val pt = elt.createSVGPoint()

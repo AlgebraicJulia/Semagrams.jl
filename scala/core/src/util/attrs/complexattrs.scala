@@ -5,8 +5,6 @@ import CustomAttr._
 import com.raquo.laminar.api.L
 import com.raquo.laminar.api.L.svg._
 
-
-
 /** Custom laminar attributes for using complex numbers with svg more easily
   *
   * These can be used both
@@ -77,7 +75,6 @@ object complexattrs {
 }
 
 export complexattrs._
-
 
 extension [A, B](s: L.Signal[Tuple2[A, B]])
   def splitTuple: Tuple2[L.Signal[A], L.Signal[B]] = (s.map(_._1), s.map(_._2))

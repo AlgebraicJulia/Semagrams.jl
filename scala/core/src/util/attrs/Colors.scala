@@ -3,79 +3,75 @@ package semagrams.util
 import upickle.default._
 import scala.language.implicitConversions
 
-case class RGB(red:Int,green:Int,blue:Int):
-  override def toString = 
-    RGB.colorNames.find((_,rgb) => rgb == this) match
+case class RGB(red: Int, green: Int, blue: Int):
+  override def toString =
+    RGB.colorNames.find((_, rgb) => rgb == this) match
       case Some(name -> color) => name
-      case None => s"rgb($red,$green,$blue)"
+      case None                => s"rgb($red,$green,$blue)"
 
-  def convex(r:Double,x:Int,y:Int) = ((1-r)*x + r*y).toInt
-  
-  def interp(r:Double,that:RGB) = RGB(
-    convex(r,this.red,that.red),
-    convex(r,this.green,that.green),
-    convex(r,this.blue,that.blue),
+  def convex(r: Double, x: Int, y: Int) = ((1 - r) * x + r * y).toInt
+
+  def interp(r: Double, that: RGB) = RGB(
+    convex(r, this.red, that.red),
+    convex(r, this.green, that.green),
+    convex(r, this.blue, that.blue)
   )
 
-  def tuple = (red,green,blue)
-  def iter = Seq(red,green,blue)
-  
-  def lighten(r:Double) = interp(r,RGB(255,255,255))
-  def darken(r:Double) = interp(r,RGB(0,0,0))
+  def tuple = (red, green, blue)
+  def iter = Seq(red, green, blue)
+
+  def lighten(r: Double) = interp(r, RGB(255, 255, 255))
+  def darken(r: Double) = interp(r, RGB(0, 0, 0))
 
   /* A measure of brightness between 0 and 1 */
   /* cf. https://en.wikipedia.org/wiki/Relative_luminance */
-  def luminance = Seq(0.2126,0.7152,0.0722)
-    .zip(iter.map(_/256.0))
-    .foldLeft(0.0){ 
-      case (aggr,(coeff,color)) => aggr + coeff * color
+  def luminance = Seq(0.2126, 0.7152, 0.0722)
+    .zip(iter.map(_ / 256.0))
+    .foldLeft(0.0) { case (aggr, (coeff, color)) =>
+      aggr + coeff * color
     }
 
   def contrast = if luminance > .2 then RGB("black") else RGB("white")
-
-
-
 
 object RGB:
 
   val rgbPattern = """\s?rgb(\s?[0-9]+\s?,[0-9]+\s?,[0-9]+\s?)\s?""".r
 
-  implicit val  rw:ReadWriter[RGB] = readwriter[String].bimap(
-    color => colorNames.find(_._2 == color) match
-      case Some(name -> color) => name
-      case None => s"rgb(${color.red},${color.green},${color.blue},)"
+  implicit val rw: ReadWriter[RGB] = readwriter[String].bimap(
+    color =>
+      colorNames.find(_._2 == color) match
+        case Some(name -> color) => name
+        case None => s"rgb(${color.red},${color.green},${color.blue},)"
     ,
-    (str:String) => str match
-      case str if colorNames.contains(str) => colorNames(str)
-      case rgbPattern(r,g,b) => RGB(r.toInt,g.toInt,b.toInt)
-      case s => throw msgError(s"bad color rw: $s")
+    (str: String) =>
+      str match
+        case str if colorNames.contains(str) => colorNames(str)
+        case rgbPattern(r, g, b)             => RGB(r.toInt, g.toInt, b.toInt)
+        case s => throw msgError(s"bad color rw: $s")
   )
 
-  extension (n:Int)
-    def abs = if n < 0 then -n else n
+  extension (n: Int) def abs = if n < 0 then -n else n
 
-  def apply(r:Int,g:Int,b:Int) = 
-    new RGB(r.abs % 256,g.abs % 256,b.abs % 256)
+  def apply(r: Int, g: Int, b: Int) =
+    new RGB(r.abs % 256, g.abs % 256, b.abs % 256)
 
-  def apply(str:String) = if colorNames.contains(str)
-    then colorNames(str)
-    else fromHex(str)
+  def apply(str: String) = if colorNames.contains(str)
+  then colorNames(str)
+  else fromHex(str)
 
-  def fromHex(hexString:String): RGB =
+  def fromHex(hexString: String): RGB =
     assert(hexString.length == 6)
-    def hex(str:String) = try
-      Integer.parseInt(str,16) % 256
-    catch
-      case e => 255
-    
-    val r = hex(hexString.slice(0,2))
-    val g = hex(hexString.slice(2,4))
-    val b = hex(hexString.slice(4,6))
-    RGB(r,g,b)
+    def hex(str: String) = try Integer.parseInt(str, 16) % 256
+    catch case e => 255
 
-  implicit def stringToRGB(str:String): RGB = RGB(str)
+    val r = hex(hexString.slice(0, 2))
+    val g = hex(hexString.slice(2, 4))
+    val b = hex(hexString.slice(4, 6))
+    RGB(r, g, b)
 
-  def colorNames: Map[String,RGB] = Seq(
+  implicit def stringToRGB(str: String): RGB = RGB(str)
+
+  def colorNames: Map[String, RGB] = Seq(
     "aliceblue" -> "F0F8FF",
     "lightsalmon" -> "FFA07A",
     "antiquewhite" -> "FAEBD7",
@@ -216,8 +212,4 @@ object RGB:
     "yellow" -> "FFFF00",
     "lightpink" -> "FFB6C1",
     "yellowgreen" -> "9ACD32"
-  ).map(
-    (name,hexString) => name -> RGB.fromHex(hexString)
-  ).toMap
-
-  
+  ).map((name, hexString) => name -> RGB.fromHex(hexString)).toMap

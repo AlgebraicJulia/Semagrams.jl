@@ -7,12 +7,12 @@ import semagrams.rendering._
 import semagrams._
 import semagrams.state._
 
-
 /** A sprite for geometric rectangles
   *
   * Resizes automatically corresponding to its content.
   */
-case class Rect[D:PartData](label:Property,val rectInit: D) extends Sprite[D]:
+case class Rect[D: PartData](label: Property, val rectInit: D)
+    extends Sprite[D]:
   import Rect._
 
   def defaultProps = Sprite.defaultProps
@@ -32,11 +32,11 @@ case class Rect[D:PartData](label:Property,val rectInit: D) extends Sprite[D]:
       .map(setLabel)
 
     val text = data.map(Sprite.innerText)
-    
+
     val box = rect(
       cls := "rect-box",
       geomUpdater(data),
-      styleUpdater(data),
+      styleUpdater(data)
     )
 
     val bg = image(
@@ -44,8 +44,6 @@ case class Rect[D:PartData](label:Property,val rectInit: D) extends Sprite[D]:
       Rect.geomUpdater(data),
       Rect.bgUpdater(data)
     )
-
-
 
     val root = g(
       cls := "rect-root",
@@ -60,7 +58,11 @@ case class Rect[D:PartData](label:Property,val rectInit: D) extends Sprite[D]:
     root
   }
 
-  override def boundaryPt(data: D, dir: Complex, subparts:Seq[Part] = Seq()) = {
+  override def boundaryPt(
+      data: D,
+      dir: Complex,
+      subparts: Seq[Part] = Seq()
+  ) = {
     /* Normalize to first quadrant */
     val pm = rectInit.merge(data)
     val (_, boxdims) = geom(pm)
@@ -83,7 +85,8 @@ case class Rect[D:PartData](label:Property,val rectInit: D) extends Sprite[D]:
       )
     }
     Some(
-      Complex(q1pt.x * dir.x.sign, q1pt.y * dir.y.sign) + data.getProps()
+      Complex(q1pt.x * dir.x.sign, q1pt.y * dir.y.sign) + data
+        .getProps()
         .get(Center)
         .getOrElse(Complex(100, 100))
     )
@@ -94,14 +97,15 @@ case class Rect[D:PartData](label:Property,val rectInit: D) extends Sprite[D]:
     Some(BoundingBox(pos, dims))
   }
 
-  override def center(data: D, subparts: Seq[Part] = Seq()) = 
+  override def center(data: D, subparts: Seq[Part] = Seq()) =
     data.tryProp(Center)
 
   override def toTikz(p: Part, data: D, visible: Boolean = true) = tikzNode(
     "rectangle",
     p.tikzName,
     data.tryProp(Center).getOrElse(Complex(0, 0)),
-    data.getProp(Content)
+    data
+      .getProp(Content)
       .flatMap(_ match
         case '\n' => "\\\\"
         case ch   => ch.toString()
@@ -109,68 +113,75 @@ case class Rect[D:PartData](label:Property,val rectInit: D) extends Sprite[D]:
     visible
   )
 
-
-
 object Rect:
   import Sprite.defaultProps
 
-  def geom[D:PartData](data: D): (Complex, Complex) = {
+  def geom[D: PartData](data: D): (Complex, Complex) = {
     val props = data.softSetProps(defaultProps)
     val textRect = boxSize(
-      props.getProp(Content), 
+      props.getProp(Content),
       props.getProp(FontSize),
       split = true
     )
-    val center = props.tryProp(Center)
+    val center = props
+      .tryProp(Center)
       .getOrElse(throw msgError(s"missing center in $data"))
     val innerSep = props.getProp(InnerSep)
-    val width = props.getProp(MinimumWidth)
+    val width = props
+      .getProp(MinimumWidth)
       .max(textRect.x + innerSep)
-    val height = props.getProp(MinimumHeight)
+    val height = props
+      .getProp(MinimumHeight)
       .max(textRect.y + innerSep)
     val dims = Complex(width, height)
     val pos = center - dims / 2
     (pos, dims)
   }
 
-  def geomUpdater[D:PartData](updates: L.Signal[D]) = {
+  def geomUpdater[D: PartData](updates: L.Signal[D]) = {
     val (pos, dims) = updates.map(geom).splitTuple
     List(xy <-- pos, wh <-- dims)
   }
 
-  def styleUpdater[D:PartData](updates: L.Signal[D]) = {
+  def styleUpdater[D: PartData](updates: L.Signal[D]) = {
     val props = updates.map(_.softSetProps(defaultProps))
-    
+
     List(
       fill <-- props.map(d =>
-        if d.hasProp(Highlight) 
+        if d.hasProp(Highlight)
         then d.getProp(Fill).lighten(.5).toString
         else d.getProp(Fill).toString
       ),
       strokeWidth <-- props.map(d =>
-        if d.hasProp(Selected) 
+        if d.hasProp(Selected)
         then "3"
         else "1"
       ),
-      stroke <-- props.map(data => data.tryProp(Stroke).getOrElse(
-        RGB("black")
-      ).toString),
+      stroke <-- props.map(data =>
+        data
+          .tryProp(Stroke)
+          .getOrElse(
+            RGB("black")
+          )
+          .toString
+      ),
       style <-- props.map(_.getProp(Style))
     )
   }
-  def bgUpdater[D:PartData](data: L.Signal[D]) = {
+  def bgUpdater[D: PartData](data: L.Signal[D]) = {
     val props = data.map(_.softSetProps(defaultProps))
     List(
       cls := "disc-bg",
       href <-- props.map(_.getProp(ImageURL)),
       clipPathAttr := "inset(0% round 50%)",
-      pointerEvents := "none",
+      pointerEvents := "none"
     )
   }
 
-  def apply[D:PartData]() = new Rect[D](Content,PartData(defaultProps))
-  def apply[D:PartData](data:D) = new Rect[D](Content,data.softSetProps(defaultProps))
-  def apply[D:PartData](label:Property) = new Rect[D](label,PartData(defaultProps))
-  def apply[D:PartData](label:Property,data: D) = new Rect(label,data.softSetProps(defaultProps))
-
-
+  def apply[D: PartData]() = new Rect[D](Content, PartData(defaultProps))
+  def apply[D: PartData](data: D) =
+    new Rect[D](Content, data.softSetProps(defaultProps))
+  def apply[D: PartData](label: Property) =
+    new Rect[D](label, PartData(defaultProps))
+  def apply[D: PartData](label: Property, data: D) =
+    new Rect(label, data.softSetProps(defaultProps))

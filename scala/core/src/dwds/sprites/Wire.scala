@@ -8,7 +8,6 @@
 
 // import semagrams.util.Complex.{im}
 
-
 // /** A sprite used for wires. Similar to [[Arrow]], except this one is a spline
 //   * where the beginning and the end are both horizontal, and it has no
 //   * arrowhead.
@@ -74,24 +73,22 @@
 
 //     val dataSig = updates.map(init.softSetProps(defaultProps).merge(_))
 
-
-
 //     def ppath(s:Complex,t:Complex,data:D) =
 //       val Seq(ds,dt): Seq[Complex] = Seq(StartDir,EndDir).map(data.getProp(_))
 //       val b = data.getProp(Bend)
 //       curvedPath(s,t,ds,dt,b)
 
-//     def textElt(s:Complex,t:Complex,data:D): L.SvgElement =  
+//     def textElt(s:Complex,t:Complex,data:D): L.SvgElement =
 //       val o = data.getProp(LabelOffset)
 //       val a = data.getProp(LabelAnchor)
-      
+
 //       val labelPos = {
 //         val crv = ppath(s,t,data)(1)
 //         crv.pos(s, a) + o * crv.dir(s, a)
 //       }
 //       val lines = data.getProp(Content).split('\n').zipWithIndex
 //       val len = lines.length
-//       def y0(lineNum:Int) = labelPos.y 
+//       def y0(lineNum:Int) = labelPos.y
 //             + data.getProp(FontSize) * (lineNum + 1 - len / 2.0)
 
 //       def childNode(lineText:String,lineNum:Int) = L.svg.tspan(
@@ -101,20 +98,19 @@
 //         y := y0(lineNum).toString(),
 //         style := "user-select: none"
 //       )
-            
+
 //       L.svg.text(
 //         xy := labelPos,
 //         lines.map(childNode),
 //         fontSize := data.getProp(FontSize).toString(),
 //         pointerEvents := "none"
 //       )
-    
 
-//     def wireElt(s:Complex,t:Complex,data:D): L.SvgElement = 
+//     def wireElt(s:Complex,t:Complex,data:D): L.SvgElement =
 //       path(
 //         pathElts := ppath(s,t,data),
-//         stroke := (if data.hasProp(Highlight) 
-//           then "lightgrey" 
+//         stroke := (if data.hasProp(Highlight)
+//           then "lightgrey"
 //           else data.tryProp(Stroke).getOrElse(
 //             data.getProp(Stroke)
 //           ).toString
@@ -122,9 +118,9 @@
 //         fill := "none",
 //         style := "user-select: none",
 //         pointerEvents := "none"
-//       )  
+//       )
 
-//     def handleElt(s:Complex,t:Complex,data:D): L.SvgElement = 
+//     def handleElt(s:Complex,t:Complex,data:D): L.SvgElement =
 //       val Seq(ds,dt) = Seq(StartDir,EndDir).map(data.getProp(_))
 //       val b = data.getProp(Bend)
 //       path(
@@ -144,9 +140,6 @@
 //       textElt(s,t,data)
 //     )
 
-
-    
-    
 //     g(
 //       L.children <-- dataSig.map(data =>
 //         (data.tryProp(Start),data.tryProp(End)) match
@@ -167,4 +160,3 @@
 //     + (Content,"")
 //     + (Stroke,RGB("black"))
 //     + (FontSize,16)
-

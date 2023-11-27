@@ -54,12 +54,11 @@ case class UndoState[A](
   else this.copy(present = a, future = Nil)
 }
 
-
 trait WeakVar[A] extends SignalSource[A] with Sink[A]:
   def now(): A
-  def set(a:A): Unit
+  def set(a: A): Unit
   def signal: Signal[A]
-  def update(f:A => A): Unit
+  def update(f: A => A): Unit
 
   /** Turn on recording; updates now save previous state in undo history */
   def record(): Unit
@@ -92,7 +91,7 @@ class UndoableVar[A](init: A) extends WeakVar[A] {
   def record() = state.update(_.copy(recording = true))
 
   /** Turn off recording; updates now do not save previous state */
-  def unrecord() = 
+  def unrecord() =
     save()
     state.update(_.copy(recording = false))
 
@@ -104,11 +103,11 @@ class UndoableVar[A](init: A) extends WeakVar[A] {
     state.updater[B]((s, b) => s.update(f(s.present, b)))
 
   /** Similar to `update` for `Var`s, but undo-aware */
-  def update(f: A => A) = 
+  def update(f: A => A) =
     state.update(s => s.update(f(s.present)))
 
-  def updateIO[B](f:A => (A,B)): IO[B] = IO {
-    val (a,b) = f(now())
+  def updateIO[B](f: A => (A, B)): IO[B] = IO {
+    val (a, b) = f(now())
     writer.onNext(a)
     b
   }
@@ -155,9 +154,8 @@ class UndoableVar[A](init: A) extends WeakVar[A] {
   def zoomL[B](l: Lens[A, B]) = new LensedVar(this, l)
 }
 
-
 object UndoableVar:
-  extension [A,B](pair:UndoableVar[(A,B)])
-    def updateLeft(f:A => A) = pair.updateBoth(f,b=>b)
-    def updateRight(g:B => B) = pair.updateBoth(a=>a,g)
-    def updateBoth(f:A=>A,g:B => B) = pair.update((a,b) => (f(a),g(b)))
+  extension [A, B](pair: UndoableVar[(A, B)])
+    def updateLeft(f: A => A) = pair.updateBoth(f, b => b)
+    def updateRight(g: B => B) = pair.updateBoth(a => a, g)
+    def updateBoth(f: A => A, g: B => B) = pair.update((a, b) => (f(a), g(b)))

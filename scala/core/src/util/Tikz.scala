@@ -1,7 +1,5 @@
 package semagrams.util
 
-
-
 import semagrams.Part
 
 /** Create the declaration of a Tikz node. */
