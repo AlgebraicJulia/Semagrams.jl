@@ -29,7 +29,7 @@ trait Semagram[Model, D: PartData]:
   def postprocess(emap: EntitySeq[D]): EntitySeq[D] = emap
 
   /** Extractors for the various entities in the Semagram */
-  val entitySources: Seq[NewEntitySource[DisplayModel, D]]
+  val entitySources: Seq[EntitySource[DisplayModel, D]]
 
   val modelVar: UndoableVar[Model]
 

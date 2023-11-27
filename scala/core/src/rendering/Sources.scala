@@ -4,12 +4,12 @@ import semagrams._
 import semagrams.util._
 import semagrams.acsets._
 
-trait NewEntitySource[Model, D: PartData] { self =>
+trait EntitySource[Model, D: PartData] { self =>
   type TagType
   val id: UID
   def makeEntities(m: Model, kvs: EntitySeq[D]): EntitySeq[D]
 
-  def mapData(f: D => D): NewEntitySource[Model, D] = NewEntitySource(
+  def mapData(f: D => D): EntitySource[Model, D] = EntitySource(
     id.refresh(),
     (m: Model, kvs: EntitySeq[D]) =>
       self.makeEntities(m, kvs).map { case k -> (spr, init) =>
@@ -27,7 +27,7 @@ trait NewEntitySource[Model, D: PartData] { self =>
   /** Construct m new [[EntitySource]] which uses `f` to make new properties to
     * add to every acset produced by this [[EntitySource]].
     */
-  def addPropsBy(f: (EntityTag, EntitySeq[D], D) => PropMap) = NewEntitySource(
+  def addPropsBy(f: (EntityTag, EntitySeq[D], D) => PropMap) = EntitySource(
     id.refresh(),
     (m: Model, kvs: EntitySeq[D]) =>
       self.makeEntities(m, kvs).map { case tag -> (spr, init) =>
@@ -36,7 +36,7 @@ trait NewEntitySource[Model, D: PartData] { self =>
   )
 
   def softAddPropsBy(f: (EntityTag, EntitySeq[D], D) => PropMap) =
-    NewEntitySource(
+    EntitySource(
       id.refresh(),
       (m: Model, kvs: EntitySeq[D]) =>
         self.makeEntities(m, kvs).map { case tag -> (spr, init) =>
@@ -46,17 +46,17 @@ trait NewEntitySource[Model, D: PartData] { self =>
 
 }
 
-object NewEntitySource:
+object EntitySource:
   def apply[Model, D: PartData](
       id: UID,
       entityConstructor: (Model, EntitySeq[D]) => EntitySeq[D]
-  ) = new NewEntitySource[Model, D] {
+  ) = new EntitySource[Model, D] {
     val id = id
     def makeEntities(m: Model, kvs: EntitySeq[D]): EntitySeq[D] =
       entityConstructor(m, kvs)
   }
 
-trait ACSetSource[D: PartData] extends NewEntitySource[ACSet[D], D]:
+trait ACSetSource[D: PartData] extends EntitySource[ACSet[D], D]:
 
   /* Type of schema data for the source
    *   e.g., Ob, Span */
