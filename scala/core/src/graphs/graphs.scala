@@ -151,7 +151,7 @@ case class GraphDisplay[D: PartData](
     edgeSources: Seq[EdgeSource[D]],
     _layout: (ACSet[D], EditorState) => ACSet[D],
     _post: (EntitySeq[D]) => EntitySeq[D]
-) extends ACSemagram[D]:
+) extends TabularSemagram[D]:
 
   val entitySources = vertexSources ++ edgeSources
 

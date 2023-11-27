@@ -90,7 +90,7 @@ val vSource = ObSource(UID("VSrc"),nodeSprite,V)
 val eSource = SpanSource(vSource.id,edgeSprite,Span(Src,Tgt))
 
 /* Construct the semagram */
-val graphSema: ACSemagram[PropMap] = GraphDisplay[PropMap](
+val graphSema: TabularSemagram[PropMap] = GraphDisplay[PropMap](
   /* Model variable */
   graphVar,
   /* Bindings for interaction */                              

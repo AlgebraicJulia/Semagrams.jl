@@ -140,7 +140,7 @@ trait Semagram[Model, D: PartData]:
 
   main.unsafeRunAndForget()(unsafe.IORuntime.global)
 
-trait ACSemagram[D: PartData] extends Semagram[ACSet[D], D]:
+trait TabularSemagram[D: PartData] extends Semagram[ACSet[D], D]:
   import widgets._
 
   case class EditTable(ob: Ob, cols: Seq[Property], withLayout: Boolean = true):
