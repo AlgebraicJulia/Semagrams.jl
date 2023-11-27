@@ -2,12 +2,12 @@ package semagrams.graphs
 
 import com.raquo.laminar.api.L.svg._
 import com.raquo.laminar.api._
+
 import semagrams.util._
 import semagrams._
+import semagrams.rendering._
 
 import upickle.default._
-import com.raquo.laminar.nodes.ReactiveSvgElement
-// import semagrams.{PropMap, Property}
 
 
 

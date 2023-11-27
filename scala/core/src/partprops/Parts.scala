@@ -1,14 +1,16 @@
 package semagrams
 
 import upickle.default._
+
+import semagrams.util._
   
 case class Part(id:UID,ob:Ob) extends Entity:
 
   val ty = ob
 
   override def toString = if ob.label == ""
-    then "Part" + id.rand
-    else ob.label + id.rand
+    then "Anon-" + id.rand
+    else ob.label + "-" + id.rand
 
 
   /** Transform to an name that is usable in tikz */

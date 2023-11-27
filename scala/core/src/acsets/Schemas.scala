@@ -2,11 +2,8 @@ package semagrams.acsets
 
 
 import semagrams._
-// import semagrams.util.UID
-// import semagrams._  
 import semagrams.acsets._
 import semagrams.util._
-// // import semagrams.{FKey, Hom, given, Ob, Elt, Attr, Table, Property}
 
 
 
@@ -56,7 +53,8 @@ trait Schema:
   def attrSeq: Seq[Attr[_]] = eltSeq.collect{ case a:Attr[_] => a}
  
   def obSeq: Seq[Ob] = eltSeq.collect{ case ob:Ob => ob}
-  def homSeq: Seq[Hom[_,_]] = eltSeq.collect{ case f:Hom[_,_] => f }
+  def homSeq: Seq[Hom[_,_]] = 
+    eltSeq.collect{ case f:Hom[_,_] => f }
   
   /* Check if `id0` is contained in `s` */
   def hasId(id0:UID): Boolean = elts.contains(id0)
@@ -145,7 +143,6 @@ trait DynamicSchema extends Schema:
 
 
 object Schema:
-  // def apply(elts:Elt | Property*): Schema = BasicSchema(UID("Schema"),elts:_*)
   def apply(id:UID,elts:Elt | Property*): Schema = BasicSchema(id:UID,elts:_*)
 
 

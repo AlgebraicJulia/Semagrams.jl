@@ -10,12 +10,11 @@ import cats.effect.std._
 
 import semagrams.acsets._
 import semagrams.state._
-import semagrams.rendering.{EntitySource,EntityCollector}
+import semagrams.rendering._
 import semagrams.bindings._
 import semagrams.util._
 
 import scala.annotation.targetName
-// import semagrams.{Ob, Property, PropChange}
 
 
 
@@ -35,8 +34,11 @@ trait Semagram[Model,D:PartData]:
   /** Computes dynamically some layout properties. */
   def layout(m:Model,es:EditorState): DisplayModel
 
+  /** Optionally postprocess entities emerging from the rendering pipeline */
+  def postprocess(emap:EntitySeq[D]): EntitySeq[D] = emap
+
   /** Extractors for the various entities in the Semagram */
-  val entitySources: Seq[EntitySource[DisplayModel,D]]
+  val entitySources: Seq[NewEntitySource[DisplayModel,D]]
 
   val modelVar: UndoableVar[Model]
 
@@ -48,8 +50,16 @@ trait Semagram[Model,D:PartData]:
   def readout() = (stateVar.now(),modelVar.now())
 
   
-  def produceEntities(dm: DisplayModel): Seq[(Part,(Sprite[D],D))] =
-    EntityCollector.collect(dm, entitySources)
+  def produceEntities(dm: DisplayModel): Seq[(EntityTag,(Sprite[D],D))] =
+    postprocess(entitySources.foldLeft(EntitySeq[D]())( 
+      (ents, source) => ents ++ source.makeEntities(dm, ents).filter{
+        case _ -> (sprite,data) => data.hasProps(sprite.requiredProps)
+      }
+    ))
+
+
+
+
 
 
 
@@ -87,17 +97,17 @@ trait Semagram[Model,D:PartData]:
     boxSizing := "border-box",
   )
       
-  /* Construct the laminar element associated with the semagram */
+
   val elt = div(
     cls := "semagram-element",
     defaultAttrs,
     svg.svg(
       svg.cls := "semagram-svg",
-      util.svgDefs(),
+      util.arrowMarkerDef(),
       svg.svgAttr("tabindex", StringAsIsCodec, None) := "-1",
       children <-- stateModelSig.map(produceEntities)
-        .split(_._1){ case (part,(_,(sprite,init)),kvSig) =>
-          sprite.present(part,init,kvSig.map(_._2._2),eventBus.writer)
+        .split(x => x._1){ case (tag,(_,(spr,init)),kvSig) =>
+          spr.present(tag.keyPart,init,kvSig.map(_._2._2),eventBus.writer)
         },
       mouseMoveListener(eventBus.writer),
       MouseEvents.handlers(Background, eventBus.writer),

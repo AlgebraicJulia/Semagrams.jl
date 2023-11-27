@@ -2,14 +2,12 @@ package semagrams.graphs
 
 
 import semagrams._
-import semagrams.acsets._
 import semagrams.util._
 import semagrams.rendering._
 import semagrams.state._
 
 import com.raquo.laminar.api.L.svg.{path as svgpath,_}
 import com.raquo.laminar.api._
-// import semagrams.{PropMap, Property}
 
 /** A basic sprite used for edges, which looks up the `Start` and `End`
   * properties to see where to start and end, has an arrow head pointing towards
@@ -78,11 +76,16 @@ case class Arrow[D:PartData](label:Property,data: D) extends Sprite[D] {
         Complex.im * p(LabelOffset) * pathElt.dir(p(Start),p(LabelAnchor))
 
     
+    def pathStroke(p:PropMap) = 
+      if p.contains(Selected) 
+      then (2 * p(StrokeWidth)).toString
+      else p(StrokeWidth).toString
+
     val arrow = svgpath(
       pathElts <-- props.map(ppath),
       stroke <-- props.map(_(Stroke).toString),
       strokeDashArray <-- props.map(_(StrokeDasharray)),
-      strokeWidth <-- props.map(_(StrokeWidth).toString),
+      strokeWidth <-- props.map(pathStroke),
       fill := "none",
       markerEnd := "url(#arrowhead)",
       pointerEvents := "none"

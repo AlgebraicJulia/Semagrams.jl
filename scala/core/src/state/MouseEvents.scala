@@ -1,7 +1,7 @@
 package semagrams.state
 
 import semagrams._
-import com.raquo.laminar.api.L.{render as renderL,_}
+import com.raquo.laminar.api.L._
 import org.scalajs.dom
 
 

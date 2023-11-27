@@ -5,7 +5,6 @@ import org.scalajs.dom
 import upickle.default._
 
 import semagrams._
-import semagrams.acsets._
 import semagrams.state.KeyModifier
 import scala.util._
 
@@ -49,7 +48,6 @@ enum CellMsg:
   case EnterMsg(v:PropChange[_])
   case TabMsg(v:PropChange[_],shift:Boolean)
 import CellMsg._
-// import semagrams.{PropMap, Property, PropChange}
 
 
 sealed trait TableMsg[K<:Matchable]
@@ -140,9 +138,9 @@ class PropTable[K<:Matchable](name:String,cols:Seq[Property],keys:Seq[Property])
   ) =
     val elt = laminarElt(rowSig,editStream,messenger)
     def edit(k:K,col:Property) =
-      println(s"called edit $k $col")
-      println(editingVar.now())
       editingVar.set(Some(k -> col))
+
+    /* Return the pair */
     (elt,edit)
 
 

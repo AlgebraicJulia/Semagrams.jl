@@ -9,6 +9,9 @@ import com.raquo.laminar.api.L._
 
 import semagrams._
 import semagrams.acsets._
+import semagrams.util._
+import semagrams.rendering._
+import semagrams.state._
 import semagrams.bindings._
 import semagrams.graphs._
 import semagrams.PropMap
@@ -35,8 +38,8 @@ val edgeSprite = Arrow(Content,PropMap())
 
 
 /* Optional modification the acset based on current `EditorState` */
-def layout[D:PartData](state:EditorState,acset:ACSet[D]) = 
-  GraphDisplay.defaultLayout(state,acset)
+def layout[D:PartData](acset:ACSet[D],state:EditorState) = 
+  GraphDisplay.defaultLayout(acset,state)
     .softSetProp(Content,acset.getParts(V).map(p => p -> p.id.toString))
   
 
@@ -57,7 +60,7 @@ val bindings = Seq[Binding[ACSet[PropMap]]](
   Binding(ClickOnPartHook(MouseButton.Left).filter(V), MoveViaDrag()),
   Binding(
     ClickOnPartHook(MouseButton.Left, Shift), 
-    AddEdgeViaDrag((V,V),(E,Src,Tgt))
+    AddSpanViaDrag((V,V),(E,Src,Tgt))
   ),
   Binding(
     DoubleClickOnPartHook(),
@@ -82,8 +85,9 @@ val bindings = Seq[Binding[ACSet[PropMap]]](
 
 
 
+val vSource = ObSource(UID("VSrc"),nodeSprite,V)
 
-
+val eSource = SpanSource(vSource.id,edgeSprite,Span(Src,Tgt))
 
 /* Construct the semagram */
 val graphSema: ACSemagram[PropMap] = GraphDisplay[PropMap](
@@ -92,9 +96,9 @@ val graphSema: ACSemagram[PropMap] = GraphDisplay[PropMap](
   /* Bindings for interaction */                              
   bindings,
   /* Vertex construction */
-  ObSource(V,nodeSprite),
+  vSource,
   /* Edge construction */
-  SpanSource(E,Src,Tgt,edgeSprite),
+  eSource,
   /* Optional pre-rendering */ 
   // layout
 )
@@ -158,7 +162,11 @@ object Main {
             tableMap.toSeq.map((_,table) => table.elt)
           ),
         ),
-        // child <-- graphVar.signal.map(_.toString)
+        // child <-- graphSema.stateVar.signal.map(_.selected.toString),
+        child <-- graphSema.stateModelSig.map(_.getProps(V).toString),
+        div(),
+                child <-- graphSema.stateModelSig.map(_.getProps(E).toString),
+
       )
       
       /* Render the laminar element to the DOM */

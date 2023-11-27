@@ -72,8 +72,7 @@ trait WeakVar[A] extends SignalSource[A] with Sink[A]:
 
 /** A class similar to `Var` but with support for undo and redo. */
 class UndoableVar[A](init: A) extends WeakVar[A] {
-  // private 
-  val state = Var(UndoState(true, Nil, init, Nil))
+  private val state = Var(UndoState(true, Nil, init, Nil))
 
   /** An observer that wraps [[UndoState.update]] to record (or not) updates
     * depending on whether `recording` is set in the state

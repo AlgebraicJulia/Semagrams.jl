@@ -1,7 +1,6 @@
 package semagrams.state
 
 import semagrams._
-import semagrams.acsets._
 import semagrams.util._
 
 
@@ -51,7 +50,7 @@ case class EditorState(
     /* Selection events */
     case MouseDown(Some(part:Part),Left) if modifiers.contains(Ctrl) => 
       if selected.contains(part)
-      then SelectMsg(selected,selected.filter(_ == part))
+      then SelectMsg(selected,selected.filter(_ != part))
       else SelectMsg(selected,(selected :+ part).distinct)
     case MouseDown(Some(Background),Left) if selected.nonEmpty =>
       SelectMsg(selected,Seq())

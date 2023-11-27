@@ -11,7 +11,6 @@ import cats._
 import cats.effect._
 import cats.effect.std._
 import scala.annotation.targetName
-// import semagrams.{Ob, PropMap, PartProp}
 
 
 
@@ -162,7 +161,7 @@ case class MoveViaDrag[D:PartData]() extends Action[Part, ACSet[D]] {
 
 
 
-case class AddEdgeViaDrag[D:PartData](
+case class AddSpanViaDrag[D:PartData](
   dummyData: Ob => IO[Option[(Ob,PartProp)]],
   tgtIO: (Ob,Ob) => IO[Option[(Ob,PartProp,PartProp,D)]]
 ) extends Action[Part, ACSet[D]]:
@@ -175,7 +174,6 @@ case class AddEdgeViaDrag[D:PartData](
         
         for 
           _ <- IO(r.modelVar.unrecord())
-          _ = println("recording stopped")
           dummy <- IO {
             val (a,b) = r.modelVar.now().addPart(dummyOb,dummyData)
             r.modelVar.set(a)
@@ -222,7 +220,6 @@ case class AddEdgeViaDrag[D:PartData](
             })
           )
           _ <- IO(r.modelVar.record())
-          _ = println("recording started")
         yield ()
       }.getOrElse(IO(()))
     )
@@ -230,19 +227,19 @@ case class AddEdgeViaDrag[D:PartData](
 
   def description = "add edge by dragging from source to target"
 
-object AddEdgeViaDrag:
+object AddSpanViaDrag:
   import PartData.propsAreData
 
-  def apply[D:PartData](tgtObs:(Ob,Ob),edge:(Ob,PartProp,PartProp),init:D = PartData()): AddEdgeViaDrag[D] = 
-    new AddEdgeViaDrag[D](
+  def apply[D:PartData](tgtObs:(Ob,Ob),edge:(Ob,PartProp,PartProp),init:D = PartData()): AddSpanViaDrag[D] = 
+    new AddSpanViaDrag[D](
       ob => if ob == tgtObs._1 then IO(Some(edge._1 -> edge._2)) else IO(None),
       (src,tgt) => if ((src,tgt) == tgtObs) then IO(Some(edge :* init)) else IO(None)
     )
 
 
   
-  def apply[D:PartData](tgts:((Ob,Ob),(Ob,PartProp,PartProp,D))*): AddEdgeViaDrag[D] = 
-    new AddEdgeViaDrag[D](
+  def apply[D:PartData](tgts:((Ob,Ob),(Ob,PartProp,PartProp,D))*): AddSpanViaDrag[D] = 
+    new AddSpanViaDrag[D](
       ob0 => IO(tgts.collect{ case tgt if tgt._1._1 == ob0 => tgt }
         .headOption.map{
           case _ -> (eob,esrc,_,_) => eob -> esrc
@@ -251,6 +248,66 @@ object AddEdgeViaDrag:
       (src,tgt) => IO(tgts.find(_._1 == (src,tgt)).map(_._2))
     )
 
+
+
+
+case class AddHomViaDrag[D:PartData](
+  tgtIO: (Ob,Ob) => IO[Option[PartProp]]
+) extends Action[Part, ACSet[D]]:
+  def apply(srcPart: Part, r: Action.Resources[ACSet[D]]): IO[Unit] =
+    for 
+      _ <- IO(r.modelVar.unrecord())
+      _ = println("recording stopped")
+      _ <- r.mousePos match
+        case None => IO(()) 
+        case Some(z) => {for
+          _ <- IO(r.modelVar.update(_.setProp(End,srcPart,z)))
+        yield ()}
+      /* Drag loop */
+      
+      _ <- takeUntil(r.eventQueue)( evt => 
+        r.processEvent(evt) >> (evt match {
+          /* During drag */
+          case Event.MouseMove(pos) => IO {
+            r.modelVar.update(_.setProp(End, srcPart, pos))
+            None
+          }
+          /* End of drag: Good drop target */
+          case Event.MouseUp(Some(tgtPart:Part), _) => 
+            val dragIO = tgtIO(srcPart.ob,tgtPart.ob)
+            for
+              dragOpt <- dragIO
+            
+              _ <- dragOpt match
+                /* Good return from dragIO */
+                case Some(f) => 
+                  println("good")
+                  IO(r.modelVar.update(
+                  acset => acset.remProp(End,srcPart).setProp(f,srcPart,tgtPart)
+                ))
+                /* Bad return from dragIO */
+                case None => 
+                  println("bad")
+                  IO(r.modelVar.update(
+                  acset => acset.remProp(End,srcPart)
+                ))
+            yield Some(())
+          /* End of drag: Bad drop target */
+          case Event.MouseUp(ent,but) => IO{
+            r.modelVar.update(a => a.remProp(End,srcPart))
+            Some(())
+          }
+          /* Ignore other events */
+          case _ => IO(None)
+
+        })
+      )
+      _ <- IO(r.modelVar.record())
+      _ = println("recording started")
+    yield ()
+
+
+  def description = "add edge by dragging from source to target"
 
 
 case class Callback[X,D:PartData](cb:X => Unit) extends Action[X,ACSet[D]]:

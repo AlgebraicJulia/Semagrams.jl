@@ -2,7 +2,6 @@ package semagrams.bindings
 
 import semagrams._
 import semagrams.state._
-import semagrams.acsets._
 import semagrams.Ob
 
 

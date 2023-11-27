@@ -1,8 +1,6 @@
 package semagrams
 
 import semagrams.util._
-import semagrams.acsets._
-import com.raquo.laminar.api.L._
 
 /** Model runtime-introspectable type tag for an Entity. */
 trait EntityType

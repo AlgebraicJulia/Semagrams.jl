@@ -1,7 +1,6 @@
 package semagrams.util
 
 import CustomAttr._
-import semagrams.util.Complex
 
 import com.raquo.laminar.api.L
 import com.raquo.laminar.api.L.svg._

@@ -7,7 +7,6 @@ import semagrams.util._
 
 
 import upickle.default._
-// import semagrams.{ValType, FKey, Generator, given, Ob, Elt, Attr, Table, AbstractFKey, Property}
 
 
 
@@ -54,60 +53,11 @@ case object SchSchema extends Schema:
 
 
 
-// case class SchemaDisplay(
-//   globalProps: PropMap,
-//   props: Map[UID,PropMap],
-//   selected: Seq[UID]
-// ):
-//   def setProps(id:UID,newProps:PropMap) = this.copy(
-//     props = props + (id -> newProps)
-//   )
-
-
-//   def setProp(id:UID,f:Property,v:f.Value) = this.copy(
-//     props = props + (id -> props(id).set(f,v))
-//   )
-
-
-//   def select(id:UID) = this.copy(
-//     selected = (selected :+ id).distinct
-//   )
-//   def unselect(ids:UID*) = this.copy(
-//     selected = selected.diff(ids)
-//   )
-//   def clear() = this.copy(
-//     selected = Seq()
-//   )
-
-// object SchemaDisplay:
-//   def apply(
-//     gps: PropMap,
-//     props:Map[UID,PropMap],
-//     selected:Seq[UID]
-//   ) = new SchemaDisplay(
-//     gps,
-//     props.withDefaultValue(PropMap()),
-//     selected
-//   )
-
-//   def apply(): SchemaDisplay = SchemaDisplay(PropMap(),Map(),Seq())
-
-
 
 
 
 /* Schemas from ACSet(SchSchema) */
 
-
-
-// def schemaId(part:Part) = part.id.copy(
-//   stem = part.ob match
-//     case TableOb => "Table"
-//     case ValTypeOb => "ValType"
-//     case FKeyOb => "FKey"
-//     case AttrOb => "Attr"
-//     case _ => part.ob.toString
-// ) 
 
   
 def acsetSchema[D:PartData](id:UID)(acset:ACSet[D]): BasicSchema =
@@ -115,8 +65,6 @@ def acsetSchema[D:PartData](id:UID)(acset:ACSet[D]): BasicSchema =
   then println(s"Warning: missing schema elements in $acset")
   val tableMap = acset.tryProp(Content,TableOb).map(
     (part,content) => content match
-      // case Some(name) => part.id -> Table(schemaId(part)).rename(name)
-      // case None => part.id -> Table(schemaId(part))
       case Some(name) => part.id -> Table(part.id).rename(name)
       case None => part.id -> Table(part.id)
   )
@@ -128,7 +76,6 @@ def acsetSchema[D:PartData](id:UID)(acset:ACSet[D]): BasicSchema =
 
       FKey(
         part.id,
-        // schemaId(part),
         props.get(Content).getOrElse(""),
         tableMap(s.id),
         tableMap(t.id)
@@ -143,7 +90,6 @@ def acsetSchema[D:PartData](id:UID)(acset:ACSet[D]): BasicSchema =
 
       Attr(
         part.id,
-        // schemaId(part),
         props.get(Content).getOrElse(""),
         tableMap(s.id),
         ValType[String](t.id)

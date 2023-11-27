@@ -3,10 +3,9 @@ package semagrams.util
 import com.raquo.laminar.api.L._
 import org.scalajs.dom
 
-import semagrams.util.Complex
 
 /* Default svg element properties */
-def svgDefs(): Seq[SvgElement] =
+def arrowMarkerDef(): Seq[SvgElement] =
   Seq(
     svg.marker(
       svg.idAttr := "arrowhead",

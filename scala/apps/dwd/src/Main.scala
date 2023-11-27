@@ -290,12 +290,12 @@ val entitySources = (es: EditorState) =>
       .withProps(PropMap() + (FontSize, 22)),
     ACSetEntitySource(InPort, BasicPort(PropMap())(es))
       .withProps(PropMap() + (MinimumWidth, 40))
-      .addPropsBy((e: Entity, acs: ACSet, em: EntityMap) =>
+      .addPropsBy((e: Entity, acs: ACSet, em: EntitySeq) =>
         acs.props ++ style(acs, e.asInstanceOf[Part])
       ),
     ACSetEntitySource(OutPort, BasicPort(PropMap())(es))
       .withProps(PropMap() + (MinimumWidth, 40))
-      .addPropsBy((e: Entity, acs: ACSet, em: EntityMap) =>
+      .addPropsBy((e: Entity, acs: ACSet, em: EntitySeq) =>
         acs.props ++ style(acs, e.asInstanceOf[Part])
       ),
     ACSetEntitySource(Wire, BasicWire(Src, Tgt)(es))

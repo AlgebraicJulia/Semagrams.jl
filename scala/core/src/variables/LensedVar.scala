@@ -1,6 +1,5 @@
 package semagrams.util
 
-import com.raquo.laminar.api.L._
 import monocle._
 import com.raquo.airstream.core.Observer
 import com.raquo.airstream.core.Signal

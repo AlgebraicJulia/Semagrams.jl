@@ -1,28 +1,22 @@
 package semagrams.dwds
 
 import semagrams._
-import semagrams.acsets._
 import semagrams.util._
 import semagrams.rendering._
-// import semagrams.{PropMap, PartProp}
 
 def wireProps[D:PartData](
-  e:Part,
-  src: PartProp,
-  tgt: PartProp,
+  tag:SpanTag,
   wireDir: Part => Complex = _ => Complex(0, 0),
-)(_e: Part, data: D, m: EntityMap[D]): PropMap = 
+)(_e: Part, data: D, m: EntitySeq[D]): PropMap = 
+  val SpanTag(ctxt,Span(src,tgt),apex,(s,tOpt)) = tag
 
-
-  val p = data.getProps()
 
   val propOpt = for
-    s <- p.get(src)
-    t <- p.get(tgt)
+    t <- tOpt
     sc <- m.findCenter(s)
-    tc <- m.findCenter(t)
-    (sspr,sdata) <- m.get(s)
-    (tspr,tdata) <- m.get(t)
+    tc <- tOpt.flatMap(m.findCenter)
+    (sspr,sdata) <- m.getPart(s,ctxt)
+    (tspr,tdata) <- m.getPart(t,ctxt)
     sd = wireDir(s)
     td = wireDir(t)
   yield (

@@ -1,7 +1,6 @@
 package semagrams.util
 
 import com.raquo.laminar.api.L._
-import semagrams.util.Complex
 
 
 /** Make an SVG element containing the html object.

@@ -11,7 +11,7 @@ import cats.effect.IO
   *   then have an array of IO actions on the other side.
   */
 def Menu[K,A](
-    choices: Seq[(String, K => IO[A])]
+  choices: Seq[(String, K => IO[A])]
 )(finished: Observer[Option[K => IO[A]]]) = {
   div(
     styleAttr := "display: flex; flex-direction: column; padding: 0px; border: none",

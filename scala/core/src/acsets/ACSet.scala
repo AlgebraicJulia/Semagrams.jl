@@ -4,11 +4,9 @@ package semagrams.acsets
 
 import semagrams._
 import semagrams.util._
-import semagrams.state._
 
 import upickle.default._
 import scala.annotation.targetName
-// import semagrams.{Hom, Ob, Property, PropMap, Elt}
 
 
 case class ACSet[D:PartData](
@@ -47,11 +45,10 @@ case class ACSet[D:PartData](
 
   /* Get `PartData` for a collection of `parts` */
   def getData(parts:Iterable[Part]): Map[Part,D] = 
-    def helper(ob:Ob,parts:Iterable[Part]) = parts.map(part =>
-      part -> getData(part)
-    ).toMap
     parts.groupBy(_.ob).foldLeft(Map[Part,D]()){
-      case (data,(ob,obparts)) => data ++ helper(ob,obparts)
+      case (data,(ob,obparts)) => data ++ parts.map(part =>
+        part -> getData(part)
+      ).toMap
     }
     
 
@@ -146,19 +143,22 @@ case class ACSet[D:PartData](
   def mergeData(part:Part,data:D) = resetData(part,getData(part).merge(data)) 
 
 
+
   /* Set properties `props` for `part` */
   def setProps(part:Part,props:PropMap) = resetData(part,getData(part).setProps(props)) 
 
   /* Set the properties of each `Part` with the associated `PropMap` */
   def setProps(kvs:Iterable[(Part,PropMap)]): ACSet[D] = 
-    def helper(ob:Ob,kvs:Iterable[(UID,PropMap)]) = this.copy(
-      partStore = partStore.updated(ob.id,
-        partStore(ob.id).setProps(kvs)
+    def helper(acset:ACSet[D],ob:Ob,kvs:Iterable[(UID,PropMap)]) = acset.copy(
+      partStore = acset.partStore.updated(ob.id,
+        acset.partStore(ob.id).setProps(kvs)
       )
     )
     kvs.groupBy(_._1.ob).foldLeft(this){
-      case (acset,(ob,kvs)) => helper(ob,kvs.map((part,props) => (part.id,props)))
+      case (acset,(ob,kvs)) => helper(acset,ob,kvs.map((part,props) => (part.id,props)))
     }
+
+  def setProps(ob:Ob,props:PropMap): ACSet[D] = setProps(getParts(ob).map(_ -> props))
 
   /* Merge the existing data for `part` into `data` */
   def softMergeData(part:Part,data:D) = resetData(part,getData(part).softMerge(data)) 
@@ -169,15 +169,16 @@ case class ACSet[D:PartData](
 
   /* Set the properties of each `Part` from the associated `PropMap` if they are unset */
   def softSetProps(kvs:Iterable[(Part,PropMap)]): ACSet[D] = 
-    def helper(ob:Ob,kvs:Iterable[(UID,PropMap)]) = this.copy(
-      partStore = partStore.updated(ob.id,
-        partStore(ob.id).softSetProps(kvs)
+    def helper(acset:ACSet[D],ob:Ob,kvs:Iterable[(UID,PropMap)]) = acset.copy(
+      partStore = acset.partStore.updated(ob.id,
+        acset.partStore(ob.id).softSetProps(kvs)
       )
     )
     kvs.groupBy(_._1.ob).foldLeft(this){
-      case (acset,(ob,kvs)) => helper(ob,kvs.map((part,props) => (part.id,props)))
+      case (acset,(ob,kvs)) => helper(acset,ob,kvs.map((part,props) => (part.id,props)))
     }
 
+  def softSetProps(ob:Ob,props:PropMap): ACSet[D] = softSetProps(getParts(ob).map(_ -> props))
 
 
   /* Setting individual properties */
@@ -189,13 +190,13 @@ case class ACSet[D:PartData](
 
   /* Set the value for `f` with the given part-value pairs */
   def setProp(f:Property,kvs:Iterable[(Part,f.Value)]): ACSet[D] =
-    def helper(f:Property,ob:Ob,kvs:Iterable[(UID,f.Value)]) = this.copy(
-      partStore = partStore.updated(ob.id,
-        partStore(ob.id).setProp(f,kvs)
+    def helper(acset:ACSet[D],f:Property,ob:Ob,kvs:Iterable[(UID,f.Value)]) = acset.copy(
+      partStore = acset.partStore.updated(ob.id,
+        acset.partStore(ob.id).setProp(f,kvs)
       )
     )
     kvs.groupBy(_._1.ob).foldLeft(this){
-      case (acset,(ob,obkvs)) => helper(f,ob,obkvs.mapKeys(_.id))
+      case (acset,(ob,obkvs)) => helper(acset,f,ob,obkvs.mapKeys(_.id))
     }
 
   /* Set the value for `f` to `v` for all parts in `ob` */
@@ -209,16 +210,17 @@ case class ACSet[D:PartData](
 
   /* Set the value for `f` with the given part-value pairs, if unset */
   def softSetProp(f:Property,kvs:Iterable[(Part,f.Value)]): ACSet[D] =
-    def helper(f:Property,ob:Ob,kvs:Iterable[(UID,f.Value)]) = this.copy(
-      partStore = partStore.updated(ob.id,
-        partStore(ob.id).softSetProp(f,kvs)
+    def helper(acset:ACSet[D],f:Property,ob:Ob,kvs:Iterable[(UID,f.Value)]) = acset.copy(
+      partStore = acset.partStore.updated(ob.id,
+        acset.partStore(ob.id).softSetProp(f,kvs)
       )
     )
+    
     kvs.groupBy(_._1.ob).foldLeft(this){
-      case (acset,(ob,kvs)) => helper(f,ob,kvs.map((part,v) => (part.id,v)))
+      case (acset,(ob,kvs)) => helper(acset,f,ob,kvs.map((part,v) => (part.id,v)))
     }
-
-  
+    
+    
   /* Set the value for `f` to `v` for  parts in `ob` if missing */
   def softSetProp(f:Property,ob:Ob,v:f.Value): ACSet[D] =
     softSetProp(f,getParts(ob).map(_ -> v))
@@ -329,7 +331,6 @@ case class ACSet[D:PartData](
   def fibersOf(part:Part): FiberMap = schema.homSeq
     .filter(_.codom == part.ob)
     .map(f => f -> fiberOf(f,part))
-    // .filter(_._2.nonEmpty)
     .toMap
 
   /* Remove a collection of `parts`, with optional `cascade` */

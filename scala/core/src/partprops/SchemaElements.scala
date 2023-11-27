@@ -93,6 +93,8 @@ trait Hom[+X<:Ob,+Y<:Ob] extends Elt with Property:
   def codom: Y
   def path: Seq[Hom[_,_] & Generator]
 
+  def display: String = toString + s": $dom -> $codom"
+
 type PartHom = Hom[_,_] & PartProp
 
 extension (f:Hom[_,_] & Generator)
@@ -120,4 +122,10 @@ object Attr:
   def apply[T:ReadWriter](id:UID,name:String,dom:Ob,tp:ValType[T]): Attr[T] = 
     Attr[T](id,dom,tp).rename(name)
 
+
+case class Span(left:PartHom,right:PartHom)
+object Span:
+  def apply(left:PartHom,right:PartHom): Span =
+    assert(left.dom == right.dom)
+    new Span(left,right)
 

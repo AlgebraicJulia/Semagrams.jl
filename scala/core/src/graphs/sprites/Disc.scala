@@ -5,7 +5,7 @@ import com.raquo.laminar.api._
 
 import semagrams._
 import semagrams.util._
-// import semagrams.{PropMap, Property}
+import semagrams.rendering._
 
 /** A Sprite for a geometric Disc shape.
   *

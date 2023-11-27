@@ -3,11 +3,9 @@ package semagrams.util
 import org.scalajs.dom
 import semagrams.GenericProperty
 import semagrams.rendering.Sprite
-import semagrams.util.Complex
 
 
 import scala.collection.mutable
-import semagrams.GenericProperty
 
 private val measurementStyle = """
 position: absolute;

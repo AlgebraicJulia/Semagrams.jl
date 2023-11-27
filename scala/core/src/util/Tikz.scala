@@ -1,6 +1,5 @@
 package semagrams.util
 
-import semagrams.util.Complex
 
 
 import semagrams.Part
