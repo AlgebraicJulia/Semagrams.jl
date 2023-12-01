@@ -143,8 +143,6 @@ object ObSource:
 
 trait EdgeSource[D: PartData] extends ACSetSource[D]:
 
-  type TagType
-
   def srcTag(m: Match): ObTag
   def tgtTag(m: Match): Option[ObTag]
 
