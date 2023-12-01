@@ -150,9 +150,9 @@ case class MoveViaDrag[D: PartData]() extends Action[Part, ACSet[D]] {
                 r.modelVar.update(_.setProp(Center, p, pos - offset))
                 None
               }
-            case Event.MouseUp(_, _)              => IO(Some(()))
-            case Event.MouseLeave(backgroundPart) => IO(Some(()))
-            case _                                => IO(None)
+            case Event.MouseUp(_, _) => IO(Some(()))
+            // case Event.MouseLeave(backgroundPart) => IO(Some(()))
+            case _ => IO(None)
           }
         )
         _ <- IO(r.modelVar.record())
