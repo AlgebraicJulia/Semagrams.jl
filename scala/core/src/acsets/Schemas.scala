@@ -3,6 +3,7 @@ package semagrams.acsets
 import semagrams._
 import semagrams.acsets._
 import semagrams.util._
+import semagrams.partprops._
 
 trait Schema:
 
@@ -33,17 +34,16 @@ trait Schema:
 
   /* Schema elements */
 
-  def tables: Map[UID, Table] = elts.collect { case kv: Tuple2[UID, Table] =>
-    kv
-  }
-  def fkeys: Map[UID, FKey] = elts.collect { case kv: Tuple2[UID, FKey] => kv }
-  def attrs: Map[UID, Attr[_]] = elts.collect { case kv: Tuple2[UID, Attr[_]] =>
-    kv
+  def tables: Map[UID, Table] = elts.collect { case (id, t: Table) => id -> t }
+  def fkeys: Map[UID, FKey] = elts.collect { case (id, f: FKey) => id -> f }
+
+  def attrs: Map[UID, Attr[_]] = elts.collect { case (id, a: Attr[_]) =>
+    id -> a
   }
 
-  def obs: Map[UID, Ob] = elts.collect { case kv: Tuple2[UID, Ob] => kv }
-  def homs: Map[UID, Hom[_, _]] = elts.collect {
-    case kv: Tuple2[UID, Hom[_, _]] => kv
+  def obs: Map[UID, Ob] = elts.collect { case (id, ob: Ob) => id -> ob }
+  def homs: Map[UID, Hom[_]] = elts.collect { case (id, f: Hom[_]) =>
+    id -> f
   }
 
   def eltSeq: Seq[Elt] = elts.values.toSeq
@@ -53,8 +53,8 @@ trait Schema:
   def attrSeq: Seq[Attr[_]] = eltSeq.collect { case a: Attr[_] => a }
 
   def obSeq: Seq[Ob] = eltSeq.collect { case ob: Ob => ob }
-  def homSeq: Seq[Hom[_, _]] =
-    eltSeq.collect { case f: Hom[_, _] => f }
+  def homSeq: Seq[Hom[_]] =
+    eltSeq.collect { case f: Hom[_] => f }
 
   /* Check if `id0` is contained in `s` */
   def hasId(id0: UID): Boolean = elts.contains(id0)
@@ -68,7 +68,7 @@ trait Schema:
   def hasTable(t: Table): Boolean = tableSeq.contains(t)
   def hasFKey(f: FKey): Boolean = fkeySeq.contains(f)
   def hasAttr(a: Attr[_]): Boolean = attrSeq.contains(a)
-  def hasHom(f: Hom[_, _]): Boolean = (fkeySeq ++ attrSeq).contains(f)
+  def hasHom(f: Hom[_]): Boolean = (fkeySeq ++ attrSeq).contains(f)
 
   def hasIds(ids: Iterable[UID]) = ids.toSet.subsetOf(elts.keySet)
   def hasElts(elts: Iterable[Elt]) = elts.forall(hasElt)

@@ -2,7 +2,9 @@ package semagrams.bindings
 
 import semagrams._
 import semagrams.state._
-import semagrams.Ob
+import semagrams.acsets.{Ob, Elt}
+import semagrams.rendering._
+import semagrams.partprops._
 
 /** A trait for filters on the event stream, picking out events that are
   * relevant to a particular [[Action]] and extracting data of type `A` from
@@ -26,7 +28,7 @@ trait EventHook[A] {
   def map[B](f: A => B) = FilterMap(this, a => Some(f(a)))
   def mapTo[B](b: () => B) = map(_ => b())
   def mapToValue[B](b: B) = map(_ => b)
-  def collect[B](f: A => Option[B]) = FilterMap(this, f)
+  def collect[B](f: PartialFunction[A, B]) = FilterMap(this, f.lift)
   def andThen(effect: A => Unit) = FilterMap(
     this,
     a =>
@@ -72,10 +74,11 @@ object KeyDownHook:
   *   the mouse button that we are listening for
   */
 case class ClickOnPartHook(button: MouseButton, modifiers: Set[KeyModifier])
-    extends EventHook[Part] {
+    extends EventHook[PartTag] {
   def apply(evt: Event, es: EditorState) = evt match {
-    case MouseDown(Some(ent: Part), `button`) if modifiers == es.modifiers =>
-      Some(ent)
+    case MouseDown(Some(part: PartTag), `button`)
+        if modifiers == es.modifiers =>
+      Some(part)
     case _ => None
   }
 
@@ -87,20 +90,25 @@ object ClickOnPartHook {
     ClickOnPartHook(button, Set())
   def apply(button: MouseButton, mod: KeyModifier): ClickOnPartHook =
     ClickOnPartHook(button, Set(mod))
-  def apply(ob: Ob, button: MouseButton, mod: KeyModifier): EventHook[Part] =
+  def apply(ob: Ob, button: MouseButton, mod: KeyModifier): EventHook[PartTag] =
     ClickOnPartHook(button, Set(mod)).filter(ob)
 }
 
-extension (hook: EventHook[Part])
-  def filter(obs: Ob*) = hook.filter(part => obs.contains(part.ty))
+extension (hook: EventHook[PartTag])
+  def filter(elts: Elt*) = hook.collect {
+    case tag: ObTag if elts.contains(tag.ob)    => tag
+    case tag: SpanTag if elts.contains(tag.dom) => tag
+    case tag: HomTag if elts.contains(tag.hom)  => tag
+  }
 
 case class DoubleClickOnPartHook(
     button: MouseButton = MouseButton.Left,
     modifiers: Set[KeyModifier] = Set()
-) extends EventHook[Part]:
+) extends EventHook[PartTag]:
 
   def apply(evt: Event, es: EditorState) = evt match {
-    case DoubleClick(Some(part: Part), button) if modifiers == es.modifiers =>
+    case DoubleClick(Some(part: PartTag), button)
+        if modifiers == es.modifiers =>
       Some(part)
     case _ => None
   }

@@ -1,19 +1,27 @@
 package semagrams.graphs
 
 import upickle.default._
-import com.raquo.laminar.api.L._
 
 import semagrams._
 import semagrams.util._
 import semagrams.acsets._
-import semagrams.state._
 import semagrams.rendering._
+import semagrams.state._
 import semagrams.bindings._
+import semagrams.partprops._
 
+// import semagrams.util._
+// import semagrams.acsets._
+// import semagrams.state._
+// import semagrams.rendering._
+// import semagrams.bindings._
+
+// import semagrams.util.{UndoableVar, UID}
 enum GraphOb(val _name: String, val id: UID) extends Ob with Generator
     derives ReadWriter:
   case V extends GraphOb("V", UID("V"))
   case E extends GraphOb("E", UID("E"))
+
   name = _name
   def generators = this.obGenerators
 export GraphOb._
@@ -23,13 +31,11 @@ enum GraphHom(
     val _id: UID,
     val dom: GraphOb,
     val codom: GraphOb
-) extends Hom[GraphOb, GraphOb]
+) extends PartHom
     with Generator:
   case Src extends GraphHom("Src", UID("Src"), E, V)
   case Tgt extends GraphHom("Tgt", UID("Tgt"), E, V)
 
-  type Value = Part
-  val rw = Part.rw
   name = _name
   val id = _id
   def generators = this.homGenerators
@@ -65,19 +71,17 @@ object Graph {
   * src/tgt, and then pass the rest of the path of the part into a method on
   * that sprite.
   */
-def spanProps[D: PartData](
-    src: PartProp,
-    tgt: PartProp
-)(_e: Part, data: D, m: EntitySeq[D]): PropMap = {
+def spanProps[D: PartData](tag: SpanTag, data: D, m: EntitySeq[D]): PropMap = {
+  val SpanTag(ctxt, _, apex, (s, tOpt)) = tag
   val p = data.getProps()
-  val s = p.get(src)
-  val t = p.get(tgt)
-  val spos = s
-    .flatMap(m.findCenter)
+  // val s = p.get(src)
+  // val t = p.get(tgt)
+  val spos = m
+    .findCenter(s)
     .getOrElse(
       p.get(Start).getOrElse(util.Complex(100, 100))
     )
-  val tpos = t
+  val tpos = tOpt
     .flatMap(m.findCenter)
     .getOrElse(
       p.get(End).getOrElse(util.Complex(100, 100))
@@ -85,16 +89,18 @@ def spanProps[D: PartData](
   val dir = spos - tpos
   val bend = p.get(Bend).getOrElse(0.0)
   val rot = util.Complex(0, -bend).exp
-  val start = s
-    .flatMap(m.findBoundary(_, -dir * rot))
+  val start = m
+    .findBoundary(s, -dir * rot)
     .getOrElse(spos)
-  val theend = t
+  val theend = tOpt
     .flatMap(m.findBoundary(_, dir * rot.cong))
     .getOrElse(tpos)
 
-  val tikzProps = (s, t) match
-    case (Some(p), Some(q)) =>
-      PropMap().set(TikzStart, p.tikzName).set(TikzEnd, q.tikzName)
+  val tikzProps = (s, tOpt) match
+    case (p, Some(q)) =>
+      PropMap()
+        .set(TikzStart, p.keyPart.tikzName)
+        .set(TikzEnd, q.keyPart.tikzName)
     case _ => PropMap()
 
   tikzProps + (Start, start) + (End, theend)
@@ -111,17 +117,16 @@ def spanProps[D: PartData](
   * src/tgt, and then pass the rest of the path of the part into a method on
   * that sprite.
   */
-def homProps[D: PartData](
-    hom: PartProp
-)(s: Part, data: D, m: EntitySeq[D]): PropMap = {
+def homProps[D: PartData](tag: HomTag, data: D, m: EntitySeq[D]): PropMap = {
+  val HomTag(ctxt, f, s, tOpt) = tag
   val p = data.getProps()
-  val t = p.get(hom)
+  // val t = p.get(hom)
   val spos = m
     .findCenter(s)
     .getOrElse(
       p.get(Start).getOrElse(util.Complex(100, 100))
     )
-  val tpos = t
+  val tpos = tOpt
     .flatMap(m.findCenter)
     .getOrElse(
       p.get(End).getOrElse(util.Complex(100, 100))
@@ -132,13 +137,15 @@ def homProps[D: PartData](
   val start = m
     .findBoundary(s, -dir * rot)
     .getOrElse(spos)
-  val theend = t
+  val theend = tOpt
     .flatMap(m.findBoundary(_, dir * rot.cong))
     .getOrElse(tpos)
 
-  val tikzProps = (s, t) match
+  val tikzProps = (s, tOpt) match
     case (p, Some(q)) =>
-      PropMap().set(TikzStart, p.tikzName).set(TikzEnd, q.tikzName)
+      PropMap()
+        .set(TikzStart, p.keyPart.tikzName)
+        .set(TikzEnd, q.keyPart.tikzName)
     case _ => PropMap()
 
   tikzProps + (Start, start) + (End, theend)
@@ -163,10 +170,13 @@ case class GraphDisplay[D: PartData](
 
 object GraphDisplay:
 
-  def defaultLayout[D: PartData](acset: ACSet[D], es: EditorState): ACSet[D] =
+  def defaultLayout[D: PartData](
+      acset: ACSet[D],
+      es: EditorState
+  ): ACSet[D] =
     acset
-      .softSetProp(Highlight, es.hoveredPart, ())
-      .softSetProp(Selected, es.selected, ())
+      .softSetProp(Highlight, es.hoveredPart.map(_.keyPart), ())
+      .softSetProp(Selected, es.selected.map(_.keyPart), ())
 
   def apply[D: PartData](
       modelVar: UndoableVar[ACSet[D]],

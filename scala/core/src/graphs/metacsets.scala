@@ -3,6 +3,7 @@ package semagrams.graphs
 import semagrams._
 import semagrams.acsets._
 import semagrams.util._
+import semagrams.partprops._
 
 import upickle.default._
 
@@ -11,6 +12,8 @@ enum SchObs(val _name: String) extends Ob with Generator derives ReadWriter:
   case ValTypeOb extends SchObs("ValTypeOb")
   case FKeyOb extends SchObs("FKeyOb")
   case AttrOb extends SchObs("AttrOb")
+
+  type PartType = Part
   val id = UID(name)
   val generators = this.obGenerators
 
@@ -18,7 +21,7 @@ enum SchObs(val _name: String) extends Ob with Generator derives ReadWriter:
 export SchObs._
 
 enum SchHoms(name: String, val dom: SchObs, val codom: SchObs)
-    extends AbstractFKey
+    extends PartHom
     with Generator:
   case FKeySrc extends SchHoms("FKeySrc", FKeyOb, TableOb)
   case FKeyTgt extends SchHoms("FKeyTgt", FKeyOb, TableOb)

@@ -6,6 +6,7 @@ import semagrams.util._
 import semagrams.rendering._
 import semagrams._
 import semagrams.state._
+import semagrams.partprops._
 
 /** A sprite for geometric rectangles
   *
@@ -20,7 +21,7 @@ case class Rect[D: PartData](label: Property, val rectInit: D)
 
   def setLabel: D => D = Sprite.setContent(label)
   def present(
-      ent: Part,
+      ent: PartTag,
       init: D,
       updates: L.Signal[D],
       eventWriter: L.Observer[Event]
@@ -61,7 +62,7 @@ case class Rect[D: PartData](label: Property, val rectInit: D)
   override def boundaryPt(
       data: D,
       dir: Complex,
-      subparts: Seq[Part] = Seq()
+      subparts: Seq[PartTag] = Seq()
   ) = {
     /* Normalize to first quadrant */
     val pm = rectInit.merge(data)
@@ -92,26 +93,27 @@ case class Rect[D: PartData](label: Property, val rectInit: D)
     )
   }
 
-  override def bbox(data: D, subparts: Seq[Part] = Seq()) = {
+  override def bbox(data: D, subparts: Seq[PartTag] = Seq()) = {
     val (pos, dims) = geom(rectInit.merge(data))
     Some(BoundingBox(pos, dims))
   }
 
-  override def center(data: D, subparts: Seq[Part] = Seq()) =
+  override def center(data: D, subparts: Seq[PartTag] = Seq()) =
     data.tryProp(Center)
 
-  override def toTikz(p: Part, data: D, visible: Boolean = true) = tikzNode(
-    "rectangle",
-    p.tikzName,
-    data.tryProp(Center).getOrElse(Complex(0, 0)),
-    data
-      .getProp(Content)
-      .flatMap(_ match
-        case '\n' => "\\\\"
-        case ch   => ch.toString()
-      ),
-    visible
-  )
+  override def toTikz(p: PartTag, data: D, visible: Boolean = true) =
+    tikzNode(
+      "rectangle",
+      p.keyPart.tikzName,
+      data.tryProp(Center).getOrElse(Complex(0, 0)),
+      data
+        .getProp(Content)
+        .flatMap(_ match
+          case '\n' => "\\\\"
+          case ch   => ch.toString()
+        ),
+      visible
+    )
 
 object Rect:
   import Sprite.defaultProps

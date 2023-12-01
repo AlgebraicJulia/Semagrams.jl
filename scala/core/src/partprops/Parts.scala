@@ -1,12 +1,15 @@
-package semagrams
+package semagrams.partprops
 
 import upickle.default._
 
 import semagrams.util._
+import semagrams.acsets.{Elt, Ob}
 
-case class Part(id: UID, ob: Ob) extends Entity:
+// trait AbstractPart:
+//   val id: UID
+//   val ob: AbstractOb
 
-  val ty = ob
+case class Part(id: UID, ob: Ob):
 
   override def toString = if ob.label == ""
   then "Anon-" + id.rand
@@ -19,10 +22,12 @@ object Part:
   def apply(x: Ob) = new Part(UID("Part"), x)
   def apply(id: UID, x: Ob) = new Part(id, x)
 
-  def rw: ReadWriter[Part] =
+  // This requires read/writing `Ob`
+  // Should be moved into the schema where we know what they are
+  implicit val rw: ReadWriter[Part] =
     readwriter[(UID, UID)].bimap[Part](
       part => (part.ob.id, part.id),
-      (obId, partId) => Part(partId, Table(obId))
+      (obId, partId) => Part(partId, Ob(obId))
     )
 
 /** A trait for the representation of individual parts in an ACSet, defining

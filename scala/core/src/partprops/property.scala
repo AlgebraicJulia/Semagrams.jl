@@ -1,4 +1,4 @@
-package semagrams
+package semagrams.partprops
 
 import upickle.default._
 

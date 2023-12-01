@@ -2,6 +2,7 @@ package semagrams.rendering
 
 import semagrams._
 import semagrams.state
+import semagrams.partprops._
 import semagrams.util.{Complex, RGB}
 
 import com.raquo.laminar.api.L._
@@ -17,8 +18,6 @@ case class BoundingBox(
       Random.nextDouble() * dims.y + pos.y
     )
 }
-
-type HandlerAttacher = (Entity, SvgElement) => Unit
 
 /** A Sprite contains the information necessary to turn a sub-D into a reactive
   * SVG on the screen.
@@ -60,15 +59,11 @@ trait Sprite[D: PartData] {
     *   be used to, for instance, set the center of the Sprite, because then the
     *   center will change when the Sprite is dragged.
     *
-    * @param attachHandlers
-    *   This is used by [[MiddleWare]] to inject event handlers into the sprite.
-    *   This should be called on the svg element that the mouse interacts with
-    *   (which may be different from the top-level svg element).
-    *
-    * \@param
+    * @param eventWriter
+    *   This is used propagate local events back to global state.
     */
   def present(
-      p: Part,
+      p: PartTag,
       init: D,
       updates: Signal[D],
       eventWriter: Observer[state.Event]
@@ -87,7 +82,7 @@ trait Sprite[D: PartData] {
   def boundaryPt(
       data: D,
       dir: Complex,
-      subparts: Seq[Part] = Seq()
+      subparts: Seq[PartTag] = Seq()
   ): Option[Complex] = None
 
   /** Compute the geometric center of the sprite
@@ -96,7 +91,7 @@ trait Sprite[D: PartData] {
     */
   def center(
       data: D,
-      subparts: Seq[Part] = Seq()
+      subparts: Seq[PartTag] = Seq()
   ): Option[Complex] = None
 
   /** Compute the bounding box of the sprite
@@ -105,11 +100,11 @@ trait Sprite[D: PartData] {
     */
   def bbox(
       data: D,
-      subparts: Seq[Part] = Seq()
+      subparts: Seq[PartTag] = Seq()
   ): Option[BoundingBox] = None
 
   /** Convert a diagram element into tikz code */
-  def toTikz(p: Part, data: D, visible: Boolean = true): String = ""
+  def toTikz(p: PartTag, data: D, visible: Boolean = true): String = ""
 
   /** An optional layout algorithm to run before rendering an D */
   def layout(bb: BoundingBox, a: D): D = a

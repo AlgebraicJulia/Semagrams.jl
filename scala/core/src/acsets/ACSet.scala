@@ -1,6 +1,7 @@
 package semagrams.acsets
 
 import semagrams._
+import semagrams.partprops._
 import semagrams.util._
 
 import upickle.default._
@@ -67,14 +68,14 @@ case class ACSet[D: PartData](
     parts.map(part => part -> tryProp(f, part)).toMap
   def tryProp(f: Property, ob: Ob): Map[Part, Option[f.Value]] =
     tryProp(f, getParts(ob))
-  def tryProp(f: Hom[_, _]): Map[Part, Option[f.Value]] = tryProp(f, f.dom)
+  def tryProp(f: Hom[_]): Map[Part, Option[f.Value]] = tryProp(f, f.dom)
 
   /* Get a map of available values for `f` */
   def collectProp(f: Property, parts: Iterable[Part]) =
     tryProp(f, parts).collect { case part -> Some(v) => part -> v }
   def collectProp(f: Property, ob: Ob): Map[Part, f.Value] =
     collectProp(f, getParts(ob))
-  def collectProp(f: Hom[_, _]): Map[Part, f.Value] = collectProp(f, f.dom)
+  def collectProp(f: Hom[_]): Map[Part, f.Value] = collectProp(f, f.dom)
 
   /* Map the available values `f` on `parts` using `g` */
   def mapProp[A](
@@ -96,7 +97,7 @@ case class ACSet[D: PartData](
   def mapProp[A](f: Property, ob: Ob, g: f.Value => A): Map[Part, A] =
     collectProp(f, ob).map((part, fval) => part -> g(fval))
 
-  def mapProp[A](f: Hom[_, _], g: f.Value => A): Map[Part, A] =
+  def mapProp[A](f: Hom[_], g: f.Value => A): Map[Part, A] =
     mapProp(f, f.dom, g)
 
   /* Filter the available values of `f` on `parts` according to `pred` */
@@ -114,7 +115,7 @@ case class ACSet[D: PartData](
   ): Map[Part, f.Value] =
     collectProp(f, ob).filter((_, fval) => pred(fval))
 
-  def filterProp(f: Hom[_, _], pred: f.Value => Boolean): Map[Part, f.Value] =
+  def filterProp(f: Hom[_], pred: f.Value => Boolean): Map[Part, f.Value] =
     filterProp(f, f.dom, pred)
 
   /* Map the parts of `ob` with `f` */
@@ -330,9 +331,9 @@ case class ACSet[D: PartData](
   /** Removing parts * */
 
   /* The fiber over a part `p` is described by X:Ob => f:Hom(X,p.ob) => f⁻¹(p) */
-  type FiberMap = Map[Hom[_, _], Iterable[Part]]
+  type FiberMap = Map[Hom[_], Iterable[Part]]
   object FiberMap:
-    def apply() = Map[Hom[_, _], Iterable[Part]]()
+    def apply() = Map[Hom[_], Iterable[Part]]()
 
   def mergeFibers(m1: FiberMap, m2: FiberMap): FiberMap =
     m1.merge(_ ++ _)(m2)
@@ -343,7 +344,7 @@ case class ACSet[D: PartData](
     }
 
   /* Collect the fiber of `f` over `part` */
-  def fiberOf(f: Hom[_, _], part: Part): Seq[Part] = if f.codom != part.ob
+  def fiberOf(f: Hom[_], part: Part): Seq[Part] = if f.codom != part.ob
   then Seq()
   else filterProp(f, _ == part).keys.toSeq
 
@@ -390,7 +391,7 @@ case class ACSet[D: PartData](
       remParts(obs.flatMap(getParts), cascade)
 
   /* Remove `fs` from the schema, with optional `cascade` */
-  def remHoms(fs: Iterable[Hom[_, _]], cascade: Boolean = true) = schema match
+  def remHoms(fs: Iterable[Hom[_]], cascade: Boolean = true) = schema match
     case schema: DynamicSchema =>
       remProps(fs.map(f => f -> f.dom)).copy(
         schema = schema.remElts(fs.map(_.id), cascade)
@@ -404,7 +405,7 @@ case class ACSet[D: PartData](
   /* Remove `elts` from the schema, with optional `cascade` */
   def remElts(elts: Iterable[Elt], cascade: Boolean = true) =
     remObs(elts.collect { case ob: Ob => ob })
-      .remHoms(elts.collect { case hom: Hom[_, _] => hom })
+      .remHoms(elts.collect { case hom: Hom[_] => hom })
 
   /* Add `elts` from the schema */
   def addElts(elts: Iterable[Elt]) = schema match

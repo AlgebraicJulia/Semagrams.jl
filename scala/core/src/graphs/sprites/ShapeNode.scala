@@ -6,6 +6,7 @@ import com.raquo.laminar.api._
 import semagrams.util._
 import semagrams._
 import semagrams.rendering._
+import semagrams.partprops._
 
 import upickle.default._
 
@@ -34,7 +35,7 @@ case class ShapeNode[D: PartData](label: Property, init: D) extends Sprite[D] {
       case Some(DiscShape)        => Disc(label, init)
 
   def present(
-      ent: Part,
+      ent: PartTag,
       init: D,
       updates: L.Signal[D],
       eventWriter: L.Observer[state.Event]
@@ -61,16 +62,20 @@ case class ShapeNode[D: PartData](label: Property, init: D) extends Sprite[D] {
       state.MouseEvents.handlers(ent, eventWriter)
     )
 
-  override def boundaryPt(data: D, dir: Complex, subparts: Seq[Part] = Seq()) =
+  override def boundaryPt(
+      data: D,
+      dir: Complex,
+      subparts: Seq[PartTag] = Seq()
+  ) =
     sprite(data).boundaryPt(data, dir, subparts)
 
-  override def bbox(data: D, subparts: Seq[Part]) =
+  override def bbox(data: D, subparts: Seq[PartTag]) =
     sprite(data).bbox(data, subparts)
 
-  override def center(data: D, subparts: Seq[Part]) =
+  override def center(data: D, subparts: Seq[PartTag]) =
     sprite(data).center(data, subparts)
 
-  override def toTikz(p: Part, data: D, visible: Boolean = true) =
+  override def toTikz(p: PartTag, data: D, visible: Boolean = true) =
     sprite(data).toTikz(p, data, visible)
 }
 

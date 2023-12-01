@@ -3,6 +3,7 @@ package semagrams.state
 import semagrams._
 import semagrams.util._
 import semagrams.acsets._
+import semagrams.partprops._
 
 sealed trait Message[Model]:
   def execute(m: Model): Model

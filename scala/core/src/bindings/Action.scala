@@ -4,6 +4,8 @@ import semagrams._
 import semagrams.util._
 import semagrams.state._
 import semagrams.acsets._
+import semagrams.rendering._
+import semagrams.partprops._
 
 import com.raquo.laminar.api.L._
 
@@ -73,7 +75,7 @@ object Action {
 
 case class AddAtMouse[D: PartData](
     getPartData: IO[Option[(Ob, D)]],
-    select: Boolean = true
+    contextId: Option[UID] = None
 ) extends Action[Unit, ACSet[D]]:
   def apply(_p: Unit, r: Action.Resources[ACSet[D]]) = r.mousePos match
     case Some(z) =>
@@ -81,7 +83,10 @@ case class AddAtMouse[D: PartData](
         case Some((ob, data)) =>
           r.modelVar.update(acset =>
             val (next, newPart) = acset.addPart(ob, data.setProp(Center, z))
-            if select then r.stateVar.update(_.copy(selected = Seq(newPart)))
+            contextId match
+              case Some(ctxt) =>
+                r.stateVar.update(_.copy(selected = Seq(ObTag(newPart, ctxt))))
+              case None => ()
             next
           )
         case None => ()
@@ -104,15 +109,15 @@ case class DeleteHovered[D: PartData](cascade: Boolean = true)
     {
       r.stateVar
         .now()
-        .hovered
-        .map(_ match {
-          case (i: Part) => {
-            r.stateVar.update(_.copy(hovered = None))
-            r.modelVar.update(m => m.remPart(i, cascade))
-          }
-          case _ =>
-            ()
-        })
+        .hoveredPart
+        .map { tag =>
+          r.stateVar.update(_.copy(hovered = None))
+          r.modelVar.update(m =>
+            tag match
+              case _: (ObTag | SpanTag) => m.remPart(tag.keyPart, cascade)
+              case f: HomTag            => m.remProp(f.hom, f.keyPart)
+          )
+        }
         .getOrElse(())
     }
   )
@@ -130,127 +135,133 @@ def takeUntil[A, B](eventQueue: Queue[IO, A])(f: A => IO[Option[B]]): IO[B] =
     }
   } yield b
 
-case class MoveViaDrag[D: PartData]() extends Action[Part, ACSet[D]] {
-  def apply(p: Part, r: Action.Resources[ACSet[D]]): IO[Unit] =
-    if r.modelVar.now().tryProp(Center, p).isEmpty
-    then IO(())
-    else
-      for {
-        ctr <- IO(r.modelVar.now().tryProp(Center, p))
-        offset <- IO(
-          r.stateVar.now().mousePos - r.modelVar.now().getProp(Center, p)
-        )
-        _ <- IO(r.modelVar.save())
-        _ <- IO(r.modelVar.unrecord())
-        _ <- IO(r.modelVar.update(_.moveToFront(p)))
-        _ <- takeUntil(r.eventQueue)(evt =>
-          evt match {
-            case Event.MouseMove(pos) =>
-              IO {
-                r.modelVar.update(_.setProp(Center, p, pos - offset))
-                None
-              }
-            case Event.MouseUp(_, _)              => IO(Some(()))
-            case Event.MouseLeave(backgroundPart) => IO(Some(()))
-            case _                                => IO(None)
-          }
-        )
-        _ <- IO(r.modelVar.record())
-      } yield ()
+case class MoveViaDrag[D: PartData]() extends Action[PartTag, ACSet[D]] {
+  def apply(tag: PartTag, r: Action.Resources[ACSet[D]]): IO[Unit] = tag match
+    case tag: ObTag =>
+      val p = tag.keyPart
+      if r.modelVar.now().tryProp(Center, p).isEmpty
+      then IO(())
+      else
+        for {
+          ctr <- IO(r.modelVar.now().tryProp(Center, p))
+          offset <- IO(
+            r.stateVar.now().mousePos - r.modelVar.now().getProp(Center, p)
+          )
+          _ <- IO(r.modelVar.save())
+          _ <- IO(r.modelVar.unrecord())
+          _ <- IO(r.modelVar.update(_.moveToFront(p)))
+          _ <- takeUntil(r.eventQueue)(evt =>
+            evt match {
+              case Event.MouseMove(pos) =>
+                IO {
+                  r.modelVar.update(_.setProp(Center, p, pos - offset))
+                  None
+                }
+              case Event.MouseUp(_, _)              => IO(Some(()))
+              case Event.MouseLeave(backgroundPart) => IO(Some(()))
+              case _                                => IO(None)
+            }
+          )
+          _ <- IO(r.modelVar.record())
+        } yield ()
+    case _ => IO(())
 
   def description = "move part by dragging"
 }
 
 case class AddSpanViaDrag[D: PartData](
-    dummyData: Ob => IO[Option[(Ob, PartProp)]],
-    tgtIO: (Ob, Ob) => IO[Option[(Ob, PartProp, PartProp, D)]]
-) extends Action[Part, ACSet[D]]:
-  def apply(srcPart: Part, r: Action.Resources[ACSet[D]]): IO[Unit] =
-    dummyData(srcPart.ob).flatMap(dummyOpt =>
-      dummyOpt
-        .zip(r.mousePos)
-        .map { case ((dummyOb, dummySrc), z0) =>
-          val dummyData = PartData[D]().setProps(
-            PropMap() +
-              (dummySrc -> srcPart) + (End -> z0) + (Interactable -> false)
-          )
-
-          for
-            _ <- IO(r.modelVar.unrecord())
-            dummy <- IO {
-              val (a, b) = r.modelVar.now().addPart(dummyOb, dummyData)
-              r.modelVar.set(a)
-              b
-            }
-            /* Drag loop */
-            _ <- takeUntil(r.eventQueue)(evt =>
-              r.processEvent(evt) >> (evt match {
-                /* During drag */
-                case Event.MouseMove(pos) =>
-                  IO {
-                    r.modelVar.update(_.setProp(End, dummy, pos))
-                    None
-                  }
-                /* End of drag: Good drop target */
-                case Event.MouseUp(Some(tgtPart: Part), _) =>
-                  val dragIO = tgtIO(srcPart.ob, tgtPart.ob)
-                  for
-                    dragOpt <- dragIO
-
-                    _ <- dragOpt match
-                      /* Good return from dragIO */
-                      case Some((dragOb, dragSrc, dragTgt, data)) =>
-                        if dragOb == dummyOb & dragSrc == dummySrc
-                        then
-                          IO(
-                            r.modelVar.update(acset =>
-                              acset
-                                .remProps(dummy, Seq(End, Interactable))
-                                .mergeData(
-                                  dummy,
-                                  data.setProp(dragTgt, tgtPart)
-                                )
-                            )
-                          )
-                        else
-                          IO(
-                            r.modelVar.update(acset =>
-                              acset
-                                .remPart(dummy)
-                                .addPart(
-                                  dragOb,
-                                  data.setProps(
-                                    PropMap() + (dragSrc -> srcPart) + (dragTgt -> tgtPart)
-                                  )
-                                )
-                                ._1
-                            )
-                          )
-                      /* Bad return from dragIO */
-                      case None =>
-                        IO(
-                          r.modelVar.update(
-                            _.remPart(dummy)
-                          )
-                        )
-                  yield Some(())
-                /* End of drag: Bad drop target */
-                case Event.MouseUp(ent, but) =>
-                  IO {
-                    r.modelVar.update(a => a.remPart(dummy))
-                    Some(())
-                  }
-                /* Ignore other events */
-                case _ => IO(None)
-
-              })
+    dummyData: Ob => IO[Option[PartHom]],
+    tgtIO: (Ob, Ob) => IO[Option[(PartSpan, D)]]
+) extends Action[PartTag, ACSet[D]]:
+  def apply(src: PartTag, r: Action.Resources[ACSet[D]]): IO[Unit] = src match
+    case src: ObTag =>
+      val srcPart = src.keyPart
+      dummyData(srcPart.ob).flatMap(dummyOpt =>
+        dummyOpt
+          .zip(r.mousePos)
+          .map { case (dummyf, z0) =>
+            val dummyData = PartData[D]().setProps(
+              PropMap() +
+                (dummyf -> srcPart) + (End -> z0) + (Interactable -> false)
             )
-            _ <- IO(r.modelVar.record())
-          yield ()
-        }
-        .getOrElse(IO(()))
-    )
 
+            for
+              _ <- IO(r.modelVar.unrecord())
+              dummy <- IO {
+                val (a, b) = r.modelVar.now().addPart(dummyf.dom, dummyData)
+                r.modelVar.set(a)
+                b
+              }
+              /* Drag loop */
+              _ <- takeUntil(r.eventQueue)(evt =>
+                r.processEvent(evt) >> (evt match {
+                  /* During drag */
+                  case Event.MouseMove(pos) =>
+                    IO {
+                      r.modelVar.update(_.setProp(End, dummy, pos))
+                      None
+                    }
+                  /* End of drag: Good drop target */
+                  case Event.MouseUp(Some(tgt: ObTag), _) =>
+                    val tgtPart = tgt.keyPart
+                    val dragIO = tgtIO(srcPart.ob, tgtPart.ob)
+                    for
+                      dragOpt <- dragIO
+
+                      _ <- dragOpt match
+                        /* Good return from dragIO */
+                        case Some(span -> data) =>
+                          if span.left == dummyf
+                          then
+                            IO(
+                              r.modelVar.update(acset =>
+                                acset
+                                  .remProps(dummy, Seq(End, Interactable))
+                                  .mergeData(
+                                    dummy,
+                                    data.setProp(span.right, tgtPart)
+                                  )
+                              )
+                            )
+                          else
+                            IO(
+                              r.modelVar.update(acset =>
+                                acset
+                                  .remPart(dummy)
+                                  .addPart(
+                                    span.dom,
+                                    data.setProps(
+                                      PropMap() + (span.left -> srcPart) + (span.right -> tgtPart)
+                                    )
+                                  )
+                                  ._1
+                              )
+                            )
+                        /* Bad return from dragIO */
+                        case None =>
+                          IO(
+                            r.modelVar.update(
+                              _.remPart(dummy)
+                            )
+                          )
+                    yield Some(())
+                  /* End of drag: Bad drop target */
+                  case Event.MouseUp(ent, but) =>
+                    IO {
+                      r.modelVar.update(a => a.remPart(dummy))
+                      Some(())
+                    }
+                  /* Ignore other events */
+                  case _ => IO(None)
+
+                })
+              )
+              _ <- IO(r.modelVar.record())
+            yield ()
+          }
+          .getOrElse(IO(()))
+      )
+    case _ => IO(())
   def description = "add edge by dragging from source to target"
 
 object AddSpanViaDrag:
@@ -258,83 +269,93 @@ object AddSpanViaDrag:
 
   def apply[D: PartData](
       tgtObs: (Ob, Ob),
-      edge: (Ob, PartProp, PartProp),
+      edge: (PartHom, PartHom),
       init: D = PartData()
   ): AddSpanViaDrag[D] =
     new AddSpanViaDrag[D](
-      ob => if ob == tgtObs._1 then IO(Some(edge._1 -> edge._2)) else IO(None),
+      ob => if ob == tgtObs._1 then IO(Some(edge._1)) else IO(None),
       (src, tgt) =>
-        if ((src, tgt) == tgtObs) then IO(Some(edge :* init)) else IO(None)
+        if ((src, tgt) == tgtObs)
+        then IO(Some(Span(edge._1, edge._2) -> init))
+        else IO(None)
     )
 
   def apply[D: PartData](
-      tgts: ((Ob, Ob), (Ob, PartProp, PartProp, D))*
+      tgts: ((Ob, Ob), (PartHom, PartHom, D))*
   ): AddSpanViaDrag[D] =
     new AddSpanViaDrag[D](
       ob0 =>
         IO(tgts.collect { case tgt if tgt._1._1 == ob0 => tgt }.headOption.map {
-          case _ -> (eob, esrc, _, _) => eob -> esrc
+          case _ -> (esrc, _, _) => esrc
         }),
-      (src, tgt) => IO(tgts.find(_._1 == (src, tgt)).map(_._2))
+      (src, tgt) =>
+        IO(tgts.find(_._1 == (src, tgt)).map { case (_, (f, g, init)) =>
+          Span(f, g) -> init
+        })
     )
 
 case class AddHomViaDrag[D: PartData](
-    tgtIO: (Ob, Ob) => IO[Option[PartProp]]
-) extends Action[Part, ACSet[D]]:
-  def apply(srcPart: Part, r: Action.Resources[ACSet[D]]): IO[Unit] =
-    for
-      _ <- IO(r.modelVar.unrecord())
-      _ = println("recording stopped")
-      _ <- r.mousePos match
-        case None => IO(())
-        case Some(z) => {
-          for _ <- IO(r.modelVar.update(_.setProp(End, srcPart, z)))
-          yield ()
-        }
-      /* Drag loop */
+    tgtIO: (Ob, Ob) => IO[Option[PartHom]]
+) extends Action[PartTag, ACSet[D]]:
+  def apply(src: PartTag, r: Action.Resources[ACSet[D]]): IO[Unit] = src match
+    case src: ObTag =>
+      val srcPart = src.keyPart
+      for
+        _ <- IO(r.modelVar.unrecord())
+        _ = println("recording stopped")
+        _ <- r.mousePos match
+          case None => IO(())
+          case Some(z) => {
+            for _ <- IO(r.modelVar.update(_.setProp(End, srcPart, z)))
+            yield ()
+          }
+        /* Drag loop */
 
-      _ <- takeUntil(r.eventQueue)(evt =>
-        r.processEvent(evt) >> (evt match {
-          /* During drag */
-          case Event.MouseMove(pos) =>
-            IO {
-              r.modelVar.update(_.setProp(End, srcPart, pos))
-              None
-            }
-          /* End of drag: Good drop target */
-          case Event.MouseUp(Some(tgtPart: Part), _) =>
-            val dragIO = tgtIO(srcPart.ob, tgtPart.ob)
-            for
-              dragOpt <- dragIO
+        _ <- takeUntil(r.eventQueue)(evt =>
+          r.processEvent(evt) >> (evt match {
+            /* During drag */
+            case Event.MouseMove(pos) =>
+              IO {
+                r.modelVar.update(_.setProp(End, srcPart, pos))
+                None
+              }
+            /* End of drag: Good drop target */
+            case Event.MouseUp(Some(tgt: ObTag), _) =>
+              val dragIO = tgtIO(srcPart.ob, tgt.ob)
+              for
+                dragOpt <- dragIO
 
-              _ <- dragOpt match
-                /* Good return from dragIO */
-                case Some(f) =>
-                  println("good")
-                  IO(
-                    r.modelVar.update(acset =>
-                      acset.remProp(End, srcPart).setProp(f, srcPart, tgtPart)
+                _ <- dragOpt match
+                  /* Good return from dragIO */
+                  case Some(f) =>
+                    println("good")
+                    IO(
+                      r.modelVar.update(acset =>
+                        acset
+                          .remProp(End, srcPart)
+                          .setProp(f, srcPart, tgt.keyPart)
+                      )
                     )
-                  )
-                /* Bad return from dragIO */
-                case None =>
-                  println("bad")
-                  IO(r.modelVar.update(acset => acset.remProp(End, srcPart)))
-            yield Some(())
-          /* End of drag: Bad drop target */
-          case Event.MouseUp(ent, but) =>
-            IO {
-              r.modelVar.update(a => a.remProp(End, srcPart))
-              Some(())
-            }
-          /* Ignore other events */
-          case _ => IO(None)
+                  /* Bad return from dragIO */
+                  case None =>
+                    println("bad")
+                    IO(r.modelVar.update(acset => acset.remProp(End, srcPart)))
+              yield Some(())
+            /* End of drag: Bad drop target */
+            case Event.MouseUp(ent, but) =>
+              IO {
+                r.modelVar.update(a => a.remProp(End, srcPart))
+                Some(())
+              }
+            /* Ignore other events */
+            case _ => IO(None)
 
-        })
-      )
-      _ <- IO(r.modelVar.record())
-      _ = println("recording started")
-    yield ()
+          })
+        )
+        _ <- IO(r.modelVar.record())
+        _ = println("recording started")
+      yield ()
+    case _ => IO(())
 
   def description = "add edge by dragging from source to target"
 

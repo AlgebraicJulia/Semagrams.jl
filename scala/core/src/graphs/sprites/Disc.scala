@@ -6,6 +6,7 @@ import com.raquo.laminar.api._
 import semagrams._
 import semagrams.util._
 import semagrams.rendering._
+import semagrams.partprops._
 
 /** A Sprite for a geometric Disc shape.
   *
@@ -20,7 +21,7 @@ case class Disc[D: PartData](label: Property, init: D) extends Sprite[D] {
   def setLabel: D => D = Sprite.setContent(label)
 
   def present(
-      ent: Part,
+      ent: PartTag,
       init: D,
       updates: L.Signal[D],
       eventWriter: L.Observer[state.Event]
@@ -57,7 +58,7 @@ case class Disc[D: PartData](label: Property, init: D) extends Sprite[D] {
   override def boundaryPt(
       init: D,
       dir: Complex,
-      subparts: Seq[Part] = Seq()
+      subparts: Seq[PartTag] = Seq()
   ) = {
     val data = init.softSetProps(defaultProps)
     val rad = radius(data) + data
@@ -67,29 +68,30 @@ case class Disc[D: PartData](label: Property, init: D) extends Sprite[D] {
     data.tryProp(Center).map(dir.normalize * rad + _)
   }
 
-  override def bbox(data: D, subparts: Seq[Part] = Seq()) =
+  override def bbox(data: D, subparts: Seq[PartTag] = Seq()) =
     center(data, subparts).map(
       rendering.BoundingBox(_, Complex(2 * radius(init), 2 * radius(init)))
     )
 
-  override def center(data: D, subparts: Seq[Part] = Seq()) =
+  override def center(data: D, subparts: Seq[PartTag] = Seq()) =
     data.getProps().get(Center)
 
-  override def toTikz(p: Part, data: D, visible: Boolean = true) = tikzNode(
-    "circle",
-    p.tikzName,
-    data.getProps().get(Center).getOrElse(Complex(0, 0)),
-    data
-      .getProps()
-      .get(label)
-      .getOrElse("")
-      .toString
-      .flatMap(_ match
-        case '\n' => "\\\\"
-        case ch   => ch.toString()
-      ),
-    visible
-  )
+  override def toTikz(p: PartTag, data: D, visible: Boolean = true) =
+    tikzNode(
+      "circle",
+      p.keyPart.tikzName,
+      data.getProps().get(Center).getOrElse(Complex(0, 0)),
+      data
+        .getProps()
+        .get(label)
+        .getOrElse("")
+        .toString
+        .flatMap(_ match
+          case '\n' => "\\\\"
+          case ch   => ch.toString()
+        ),
+      visible
+    )
 
 }
 

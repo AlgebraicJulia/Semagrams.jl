@@ -2,6 +2,7 @@ package semagrams.acsets
 
 import semagrams._
 import semagrams.util._
+import semagrams.partprops._
 
 import upickle.default._
 import scala.annotation.targetName

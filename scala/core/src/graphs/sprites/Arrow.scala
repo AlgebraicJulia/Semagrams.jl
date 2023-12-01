@@ -4,6 +4,7 @@ import semagrams._
 import semagrams.util._
 import semagrams.rendering._
 import semagrams.state._
+import semagrams.partprops._
 
 import com.raquo.laminar.api.L.svg.{path as svgpath, _}
 import com.raquo.laminar.api._
@@ -66,7 +67,7 @@ case class Arrow[D: PartData](label: Property, data: D) extends Sprite[D] {
   )
 
   def present(
-      ent: Part,
+      ent: PartTag,
       init: D,
       updates: L.Signal[D],
       eventWriter: L.Observer[Event]
@@ -135,7 +136,7 @@ case class Arrow[D: PartData](label: Property, data: D) extends Sprite[D] {
     g(arrow, handle, text)
   }
 
-  override def toTikz(e: Part, props: D, visible: Boolean = true) =
+  override def toTikz(e: PartTag, props: D, visible: Boolean = true) =
     if !visible
     then ""
     else

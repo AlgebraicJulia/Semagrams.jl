@@ -1,4 +1,4 @@
-package semagrams
+package semagrams.partprops
 
 import semagrams.util.Complex
 

@@ -2,6 +2,8 @@ package semagrams.state
 
 import semagrams._
 import semagrams.util._
+import semagrams.partprops._
+import semagrams.rendering._
 
 import com.raquo.laminar.api._
 
@@ -10,18 +12,18 @@ import org.scalajs.dom
 trait Enti
 
 case class EditorState(
-    hovered: Option[Entity],
+    hovered: Option[EntityTag],
     dims: Complex,
     mousePos: Complex,
-    selected: Seq[Part],
+    selected: Seq[PartTag],
     modifiers: Set[KeyModifier]
 ) {
   import KeyModifier._
   import MouseButton._
 
-  def hoveredPart: Option[Part] = hovered match
-    case Some(p: Part) => Some(p)
-    case _             => None
+  def hoveredPart: Option[PartTag] = hovered match
+    case Some(p: PartTag) => Some(p)
+    case _                => None
 
   def isHovered: Boolean = hovered.isDefined
 
@@ -29,7 +31,10 @@ case class EditorState(
     /* Mouse events */
     case MouseEnter(ent) => HoverMsg(hovered, Some(ent))
     case MouseLeave(ent) =>
-      HoverMsg(hovered, if ent == Background then None else Some(Background))
+      HoverMsg(
+        hovered,
+        if ent == BackgroundTag then None else Some(BackgroundTag)
+      )
     case MouseMove(pos) => FreeMsg(_.copy(mousePos = pos))
     /* Dimension events */
     case Resize(newsize) => FreeMsg(_.copy(dims = newsize))
@@ -46,13 +51,13 @@ case class EditorState(
     /* Clear key modifiers when focus is lost */
     case Blur() => ModMsg(modifiers, Set())
     /* Selection events */
-    case MouseDown(Some(part: Part), Left) if modifiers.contains(Ctrl) =>
+    case MouseDown(Some(part: PartTag), Left) if modifiers.contains(Ctrl) =>
       if selected.contains(part)
       then SelectMsg(selected, selected.filter(_ != part))
       else SelectMsg(selected, (selected :+ part).distinct)
-    case MouseDown(Some(Background), Left) if selected.nonEmpty =>
+    case MouseDown(Some(BackgroundTag), Left) if selected.nonEmpty =>
       SelectMsg(selected, Seq())
-    case MouseDown(Some(part: Part), Left) =>
+    case MouseDown(Some(part: PartTag), Left) =>
       SelectMsg(selected, Seq(part))
 
     case _ => Message()
@@ -89,14 +94,14 @@ case class ResizeMsg(z: Complex) extends EditorMsg:
   )
 
 case class HoverMsg(
-    prev: Option[Entity] | Option[Part],
-    next: Option[Entity] | Option[Part]
+    prev: Option[EntityTag],
+    next: Option[EntityTag]
 ) extends EditorMsg:
   def execute(es: EditorState) = es.copy(
     hovered = next
   )
 
-case class SelectMsg(prev: Seq[Part], next: Seq[Part]) extends EditorMsg:
+case class SelectMsg(prev: Seq[PartTag], next: Seq[PartTag]) extends EditorMsg:
   def execute(es: EditorState) = es.copy(
     selected = next
   )

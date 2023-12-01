@@ -2,7 +2,7 @@ package semagrams.state
 
 import semagrams.util.Complex
 import com.raquo.laminar.api.L._
-import semagrams.Entity
+import semagrams.rendering.EntityTag
 
 enum MouseButton:
   case Left
@@ -18,17 +18,17 @@ object MouseButton {
 }
 
 enum Event {
-  case MouseEnter(ent: Entity)
-  case MouseLeave(ent: Entity)
-  case MouseDown(ent: Option[Entity], button: MouseButton)
-  case MouseUp(ent: Option[Entity], button: MouseButton)
-  case Click(ent: Option[Entity], button: MouseButton)
-  case DoubleClick(ent: Option[Entity], button: MouseButton)
+  case MouseEnter(ent: EntityTag)
+  case MouseLeave(ent: EntityTag)
+  case MouseDown(ent: Option[EntityTag], button: MouseButton)
+  case MouseUp(ent: Option[EntityTag], button: MouseButton)
+  case Click(ent: Option[EntityTag], button: MouseButton)
+  case DoubleClick(ent: Option[EntityTag], button: MouseButton)
   case MouseLeaveBox(pos: Complex)
   case MouseMove(pos: Complex)
   case KeyDown(key: String)
   case KeyUp(key: String)
-  case ContextMenu(ent: Option[Entity])
+  case ContextMenu(ent: Option[EntityTag])
   case Resize(size: Complex)
   case MsgEvent[Model](msg: Message[Model])
   case Blur()

@@ -1,6 +1,6 @@
 package semagrams.util
 
-import semagrams.Part
+import semagrams.partprops.Part
 
 /** Create the declaration of a Tikz node. */
 def tikzNode(

@@ -3,10 +3,11 @@ package semagrams.state
 import semagrams._
 import com.raquo.laminar.api.L._
 import org.scalajs.dom
+import semagrams.rendering.EntityTag
 
 object MouseEvents {
   def hoverHandlers(
-      ent: Entity,
+      ent: EntityTag,
       eventWriter: Observer[Event]
   ): Seq[Mod[SvgElement]] =
     Seq(
@@ -15,7 +16,7 @@ object MouseEvents {
     )
 
   def clickHandlers(
-      ent: Entity,
+      ent: EntityTag,
       eventWriter: Observer[Event]
   ): Seq[Mod[SvgElement]] =
     Seq(
@@ -34,7 +35,7 @@ object MouseEvents {
     )
 
   def handlers(
-      ent: Entity,
+      ent: EntityTag,
       eventWriter: Observer[Event]
   ): Seq[Mod[SvgElement]] =
     Seq(

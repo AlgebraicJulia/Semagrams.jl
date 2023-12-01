@@ -13,6 +13,7 @@ import semagrams.state._
 import semagrams.rendering._
 import semagrams.bindings._
 import semagrams.util._
+import semagrams.partprops._
 
 import scala.annotation.targetName
 
@@ -37,7 +38,7 @@ trait Semagram[Model, D: PartData]:
 
   def readout() = (stateVar.now(), modelVar.now())
 
-  def produceEntities(dm: DisplayModel): Seq[(EntityTag, (Sprite[D], D))] =
+  def produceEntities(dm: DisplayModel): Seq[(PartTag, (Sprite[D], D))] =
     postprocess(
       entitySources.foldLeft(EntitySeq[D]())((ents, source) =>
         ents ++ source.makeEntities(dm, ents).filter {
@@ -89,10 +90,10 @@ trait Semagram[Model, D: PartData]:
       children <-- stateModelSig
         .map(produceEntities)
         .split(x => x._1) { case (tag, (_, (spr, init)), kvSig) =>
-          spr.present(tag.keyPart, init, kvSig.map(_._2._2), eventBus.writer)
+          spr.present(tag, init, kvSig.map(_._2._2), eventBus.writer)
         },
       mouseMoveListener(eventBus.writer),
-      MouseEvents.handlers(Background, eventBus.writer),
+      MouseEvents.handlers(BackgroundTag, eventBus.writer),
       svg.height := "100%",
       svg.width := "100%"
     ),

@@ -5,6 +5,7 @@ import org.scalajs.dom
 import upickle.default._
 
 import semagrams._
+import semagrams.partprops._
 import semagrams.state.KeyModifier
 import scala.util._
 

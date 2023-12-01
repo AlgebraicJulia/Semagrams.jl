@@ -1,7 +1,7 @@
 package semagrams.util
 
 import org.scalajs.dom
-import semagrams.GenericProperty
+import semagrams.partprops.GenericProperty
 import semagrams.rendering.Sprite
 
 import scala.collection.mutable
