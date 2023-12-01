@@ -281,8 +281,7 @@ object Main {
                   overflow := "auto"
                 )
               )
-            ),
-            child <-- schemaSema.stateVar.signal.map(_.selected.toString())
+            )
           ),
           padding := "10px"
         ),

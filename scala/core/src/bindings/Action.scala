@@ -302,7 +302,6 @@ case class AddHomViaDrag[D: PartData](
       val srcPart = src.keyPart
       for
         _ <- IO(r.modelVar.unrecord())
-        _ = println("recording stopped")
         _ <- r.mousePos match
           case None => IO(())
           case Some(z) => {
@@ -328,7 +327,6 @@ case class AddHomViaDrag[D: PartData](
                 _ <- dragOpt match
                   /* Good return from dragIO */
                   case Some(f) =>
-                    println("good")
                     IO(
                       r.modelVar.update(acset =>
                         acset
@@ -338,7 +336,6 @@ case class AddHomViaDrag[D: PartData](
                     )
                   /* Bad return from dragIO */
                   case None =>
-                    println("bad")
                     IO(r.modelVar.update(acset => acset.remProp(End, srcPart)))
               yield Some(())
             /* End of drag: Bad drop target */
@@ -353,7 +350,6 @@ case class AddHomViaDrag[D: PartData](
           })
         )
         _ <- IO(r.modelVar.record())
-        _ = println("recording started")
       yield ()
     case _ => IO(())
 
