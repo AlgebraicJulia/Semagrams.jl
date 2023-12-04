@@ -4,7 +4,6 @@ import semagrams._
 import semagrams.state._
 import semagrams.acsets.{Ob, Elt}
 import semagrams.rendering._
-import semagrams.partprops._
 
 /** A trait for filters on the event stream, picking out events that are
   * relevant to a particular [[Action]] and extracting data of type `A` from

@@ -2,7 +2,6 @@ package semagrams.state
 
 import semagrams._
 import semagrams.util._
-import semagrams.partprops._
 import semagrams.rendering._
 
 import com.raquo.laminar.api._

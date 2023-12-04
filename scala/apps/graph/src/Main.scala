@@ -40,7 +40,7 @@ import KeyModifier.{Ctrl, Shift}
 
 /* A `Binding` ties an `EventHook` to an `Action` */
 val bindings = Seq[Binding[ACSet[PropMap]]](
-  Binding(KeyDownHook("a"), AddAtMouse(V)),
+  Binding(KeyDownHook("a"), AddAtMouse(V, vSrcId)),
   Binding(KeyDownHook("d"), DeleteHovered()),
   Binding(ClickOnPartHook(MouseButton.Left).filter(V), MoveViaDrag()),
   Binding(
@@ -68,7 +68,8 @@ val bindings = Seq[Binding[ACSet[PropMap]]](
   )
 )
 
-val vSource = ObSource(UID("VSrc"), nodeSprite, V)
+val vSrcId = UID("VSrc")
+val vSource = ObSource(vSrcId, nodeSprite, V)
 
 val eSource = SpanSource(vSource.id, edgeSprite, Span(Src, Tgt))
 
@@ -139,11 +140,7 @@ object Main {
           children <-- graphSema.tableVar.signal.map(tableMap =>
             tableMap.toSeq.map((_, table) => table.elt)
           )
-        ),
-        // child <-- graphSema.stateVar.signal.map(_.selected.toString),
-        child <-- graphSema.stateModelSig.map(_.getProps(V).toString),
-        div(),
-        child <-- graphSema.stateModelSig.map(_.getProps(E).toString)
+        )
       )
 
       /* Render the laminar element to the DOM */

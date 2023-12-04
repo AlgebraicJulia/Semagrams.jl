@@ -75,7 +75,7 @@ object Action {
 
 case class AddAtMouse[D: PartData](
     getPartData: IO[Option[(Ob, D)]],
-    contextId: Option[UID] = None
+    contextId: UID
 ) extends Action[Unit, ACSet[D]]:
   def apply(_p: Unit, r: Action.Resources[ACSet[D]]) = r.mousePos match
     case Some(z) =>
@@ -83,10 +83,7 @@ case class AddAtMouse[D: PartData](
         case Some((ob, data)) =>
           r.modelVar.update(acset =>
             val (next, newPart) = acset.addPart(ob, data.setProp(Center, z))
-            contextId match
-              case Some(ctxt) =>
-                r.stateVar.update(_.copy(selected = Seq(ObTag(newPart, ctxt))))
-              case None => ()
+            r.stateVar.update(_.copy(selected = Seq(ObTag(newPart, contextId))))
             next
           )
         case None => ()
@@ -97,11 +94,12 @@ case class AddAtMouse[D: PartData](
 
 object AddAtMouse:
 
-  def apply[D: PartData](ob: Ob) = new AddAtMouse[D](IO(Some(ob -> PartData())))
-  def apply[D: PartData](ob: Ob, init: D) =
-    new AddAtMouse[D](IO(Some(ob -> init)))
-  def apply[D: PartData](ob: Ob, initIO: IO[D]) =
-    new AddAtMouse[D](initIO.map(init => Some(ob -> init)))
+  def apply[D: PartData](ob: Ob, ctxt: UID) =
+    new AddAtMouse[D](IO(Some(ob -> PartData())), ctxt)
+  def apply[D: PartData](ob: Ob, init: D, ctxt: UID) =
+    new AddAtMouse[D](IO(Some(ob -> init)), ctxt)
+  def apply[D: PartData](ob: Ob, initIO: IO[D], ctxt: UID) =
+    new AddAtMouse[D](initIO.map(init => Some(ob -> init)), ctxt)
 
 case class DeleteHovered[D: PartData](cascade: Boolean = true)
     extends Action[Unit, ACSet[D]] {

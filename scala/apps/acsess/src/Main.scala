@@ -73,9 +73,12 @@ val tablePropsIO = IO(
 val schemaBindings = Seq[Binding[ACSet[PropMap]]](
   Binding(
     KeyDownHook("a"),
-    AddAtMouse(TableOb, tablePropsIO)
+    AddAtMouse(TableOb, tablePropsIO, schVSrcId)
   ),
-  Binding(KeyDownHook("A", KeyModifier.Shift), AddAtMouse(ValTypeOb)),
+  Binding(
+    KeyDownHook("A", KeyModifier.Shift),
+    AddAtMouse(ValTypeOb, schVSrcId)
+  ),
   Binding(KeyDownHook("d"), DeleteHovered()),
   Binding(
     ClickOnPartHook(MouseButton.Left).filter(TableOb, ValTypeOb),
@@ -108,10 +111,11 @@ val schemaBindings = Seq[Binding[ACSet[PropMap]]](
   )
 )
 
-val schVSrc = ObSource[PropMap](UID("SchVSrc"), Rect(), TableOb, ValTypeOb)
+val schVSrcId = UID("SchVSrc")
+val schVSrc = ObSource[PropMap](schVSrcId, Rect(), TableOb, ValTypeOb)
 
 val schESrc = SpanSource[PropMap](
-  schVSrc.id,
+  schVSrcId,
   Arrow(),
   Span(FKeySrc, FKeyTgt) -> PropMap().set(Stroke, "red"),
   Span(AttrSrc, AttrTgt) -> PropMap().set(Stroke, "blue")
@@ -184,7 +188,7 @@ val schemaIsHovered = () => acsetSema.isHovered
 val acsetBindings = Seq[Binding[ACSet[PropMap]]](
   Binding(
     KeyDownHook("a").filter(schemaIsHovered),
-    AddAtMouse(selectIO)
+    AddAtMouse(selectIO, acsetVSrcId)
   ),
   Binding(KeyDownHook("d"), DeleteHovered()),
   Binding(
@@ -236,14 +240,15 @@ def vProps = PropMap()
 def eProps = PropMap()
   + (Stroke, "black")
 
+val acsetVSrcId = UID("ACSetVSrc")
 val acsetVSrc = ObSource(
-  UID("ACSetVSrc"),
+  acsetVSrcId,
   rectSprite,
   { case t: Table => vProps }
 )
 
 val acsetESrc = HomSource(
-  UID("ACSetESrc") -> (acsetVSrc.id, acsetVSrc.id),
+  acsetVSrcId -> (acsetVSrc.id, acsetVSrc.id),
   Arrow(),
   { _ => PartData() }
 )
