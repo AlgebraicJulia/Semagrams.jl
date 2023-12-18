@@ -207,16 +207,6 @@ case class SpanSource(
     }
 
 object SpanSource:
-  // def apply(
-  //     vsrc: UID,
-  //     sprite: Sprite,
-  //     span: PartSpan
-  // ): SpanSource =
-  //   new SpanSource(
-  //     UID("SpanSource") -> (vsrc, vsrc),
-  //     sprite,
-  //     Map(span -> PropMap())
-  //   )
   def apply(
       vsrc: UID,
       sprite: Sprite,

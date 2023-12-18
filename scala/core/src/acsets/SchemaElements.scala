@@ -42,12 +42,20 @@ trait AbstractOb extends Elt:
 
 trait Ob extends AbstractOb:
   type PartType = Part
-  val rw = readwriter[Part]
+  val rw: ReadWriter[Part] =
+    readwriter[(UID, String, UID)].bimap(
+      part => (part.ob.id, part.ob.label, part.id),
+      (obid, obname, partid) => Part(partid, Ob(obid, obname))
+    )
 
 object Ob:
-  def apply(id: UID) = new Ob with Generator { self =>
+  def apply(id: UID): Ob = Ob(id, "")
+  def apply(id: UID, nm: String) = new Ob with Generator {
+    self =>
     val id: UID = id
     def generators = Map(id -> self)
+
+    name = nm
   }
 
 extension [X <: (AbstractOb & Generator)](x: X)
@@ -55,27 +63,6 @@ extension [X <: (AbstractOb & Generator)](x: X)
 
 extension [F <: (Hom[_] & Generator)](f: F)
   def homGenerators = Map(f.id -> f) ++ f.dom.generators ++ f.codom.generators
-
-// trait AbstractValType extends Ob
-// trait AbstractFKey extends PartHom
-// val rw = Part.rw
-// trait AbstractAttr extends Hom[Ob, AbstractValType]
-
-// case object UnitOb extends AbstractOb {
-//   override type PartType = Unit
-//   override val rw = readwriter[Unit]
-
-//   override def id: UID = UID("UnitOb")
-
-//   override def generators: Map[UID, Generator] = Map()
-
-//   override def label: String = "𝟙"
-
-// }
-// val unitPart = new AbstractPart {
-//   val id = UID("UnitPart")
-//   val ob = UnitOb
-// }
 
 case class Table(id: UID) extends Ob with Generator:
 

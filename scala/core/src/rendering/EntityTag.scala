@@ -5,15 +5,6 @@ import upickle.default._
 import semagrams.acsets._
 import semagrams.partprops.Part
 
-/** Model runtime-introspectable type tag for an Entity. */
-// trait EntityType
-
-/** Model reference to an logically distinct part of the Semagram, for instance
-  * m vertex, an edge, m ui element, etc.
-  */
-// trait Entity:
-//   val tag: EntityTag
-
 trait EntityTag:
   type Key
   val contextId: UID
@@ -27,10 +18,6 @@ case object BackgroundTag extends EntityTag {
   override val key: Key = ()
 
 }
-// object Background extends Entity {
-//   val tag = BackgroundTag
-//   override def toString = "Background"
-// }
 
 sealed trait PartTag extends EntityTag with Ordered[PartTag]:
   def keyPart: Part
@@ -44,16 +31,12 @@ sealed trait EdgeTag extends PartTag:
   def srcTag: ObTag
   def tgtTag: Option[ObTag]
 
-case class ObTag(part: Part, contextId: UID) extends PartTag derives ReadWriter:
+case class ObTag(part: Part, contextId: UID) extends PartTag:
   type Key = Part
   val key = part
   def keyPart: Part = key
 
   val ob = part.ob
-
-// object ObTag:
-//   implicit val partrw: ReadWriter[Part] = Part.rw
-//   implicit val rw: ReadWriter[ObTag] = macroRW
 
 case class HomTag(
     contextId: UID,

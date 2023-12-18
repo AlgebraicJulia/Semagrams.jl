@@ -10,13 +10,6 @@ import semagrams.state._
 import semagrams.bindings._
 import semagrams.partprops._
 
-// import semagrams.util._
-// import semagrams.acsets._
-// import semagrams.state._
-// import semagrams.rendering._
-// import semagrams.bindings._
-
-// import semagrams.util.{UndoableVar, UID}
 enum GraphOb(val _name: String, val id: UID) extends Ob with Generator
     derives ReadWriter:
   case V extends GraphOb("V", UID("V"))
@@ -73,8 +66,6 @@ object Graph {
   */
 def spanProps(tag: SpanTag, data: PropMap, m: EntitySeq): PropMap = {
   val SpanTag(ctxt, _, apex, (s, tOpt)) = tag
-  // val s = p.get(src)
-  // val t = p.get(tgt)
   val spos = m
     .findCenter(s)
     .getOrElse(

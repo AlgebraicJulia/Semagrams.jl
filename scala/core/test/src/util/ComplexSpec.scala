@@ -1,6 +1,5 @@
 package semagrams.util
 
-// import utest._
 import semagrams.util.Complex.im
 
 import weaver._

@@ -1,4 +1,4 @@
-package semagrams.graphs
+package semagrams.acsets
 
 import semagrams._
 import semagrams.acsets._
