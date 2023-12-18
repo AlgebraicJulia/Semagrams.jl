@@ -26,7 +26,7 @@ val edgeSprite = Arrow(Content, PropMap())
 // val tgtName = Attr(UID("CustomAttr"),"tgtName",E,ValType[String]("String"))
 
 /* Optional modification the acset based on current `EditorState` */
-def layout[D: PartData](acset: ACSet[D], state: EditorState) =
+def layout(acset: ACSet, state: EditorState) =
   GraphDisplay
     .defaultLayout(acset, state)
     .softSetProp(Content, acset.getParts(V).map(p => p -> p.id.toString))
@@ -39,7 +39,7 @@ val graphVar = UndoableVar(Graph())
 import KeyModifier.{Ctrl, Shift}
 
 /* A `Binding` ties an `EventHook` to an `Action` */
-val bindings = Seq[Binding[ACSet[PropMap]]](
+val bindings = Seq[Binding[ACSet]](
   Binding(KeyDownHook("a"), AddAtMouse(V, vSrcId)),
   Binding(KeyDownHook("d"), DeleteHovered()),
   Binding(ClickOnPartHook(MouseButton.Left).filter(V), MoveViaDrag()),
@@ -74,7 +74,7 @@ val vSource = ObSource(vSrcId, nodeSprite, V)
 val eSource = SpanSource(vSource.id, edgeSprite, Span(Src, Tgt))
 
 /* Construct the semagram */
-val graphSema: TabularSemagram[PropMap] = GraphDisplay[PropMap](
+val graphSema: TabularSemagram = GraphDisplay(
   /* Model variable */
   graphVar,
   /* Bindings for interaction */

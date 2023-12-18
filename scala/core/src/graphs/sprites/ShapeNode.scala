@@ -23,31 +23,31 @@ enum ShapeProp[T: ReadWriter] extends Property {
 export ShapeProp._
 
 /** A sprite with shape determined by the `props` * */
-case class ShapeNode[D: PartData](label: Property, init: D) extends Sprite[D] {
+case class ShapeNode(label: Property, init: PropMap) extends Sprite {
   def defaultProps = PropMap().set(Shape, RectShape)
   def requiredProps = Seq(Center)
 
-  def setLabel: D => D = Sprite.setContent(label)
+  def setLabel: PropMap => PropMap = Sprite.setContent(label)
 
-  def sprite(data: D) =
-    data.tryProp(Shape) match
+  def sprite(data: PropMap) =
+    data.get(Shape) match
       case Some(RectShape) | None => Rect(label, init)
       case Some(DiscShape)        => Disc(label, init)
 
   def present(
       ent: PartTag,
-      init: D,
-      updates: L.Signal[D],
+      init: PropMap,
+      updates: L.Signal[PropMap],
       eventWriter: L.Observer[state.Event]
   ) =
     val data = updates
-      .map(init.merge(_))
+      .map(init ++ _)
       .map(setLabel)
 
     val text = data.map(Sprite.innerText)
 
     val eltSig =
-      data.splitOne(data => data.tryProp(Shape))((shapeOpt, props, propSig) =>
+      data.splitOne(data => data.get(Shape))((shapeOpt, props, propSig) =>
         shapeOpt match
           case Some(RectShape) | None =>
             rect(Rect.geomUpdater(data), Rect.styleUpdater(data))
@@ -63,19 +63,19 @@ case class ShapeNode[D: PartData](label: Property, init: D) extends Sprite[D] {
     )
 
   override def boundaryPt(
-      data: D,
+      data: PropMap,
       dir: Complex,
       subparts: Seq[PartTag] = Seq()
   ) =
     sprite(data).boundaryPt(data, dir, subparts)
 
-  override def bbox(data: D, subparts: Seq[PartTag]) =
+  override def bbox(data: PropMap, subparts: Seq[PartTag]) =
     sprite(data).bbox(data, subparts)
 
-  override def center(data: D, subparts: Seq[PartTag]) =
+  override def center(data: PropMap, subparts: Seq[PartTag]) =
     sprite(data).center(data, subparts)
 
-  override def toTikz(p: PartTag, data: D, visible: Boolean = true) =
+  override def toTikz(p: PartTag, data: PropMap, visible: Boolean = true) =
     sprite(data).toTikz(p, data, visible)
 }
 

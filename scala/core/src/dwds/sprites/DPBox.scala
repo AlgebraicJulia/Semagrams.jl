@@ -17,7 +17,7 @@
 //   }
 // }
 
-// /** A Sprite[D] that is a box with ports on both sides.
+// /** A Sprite that is a box with ports on both sides.
 //   *
 //   * @param `boxSprite`
 //   *   the sprite to use for the box
@@ -34,16 +34,16 @@
 //   * @param `outPort`
 //   *   the object in the subschema to query for the list of out ports
 //   */
-// case class DPBox[D:PartData](
-//     boxSprite: Sprite[D],
-//     inPortSprite: Sprite[D],
-//     outPortSprite: Sprite[D],
+// case class DPBox[PropMap:PartData](
+//     boxSprite: Sprite,
+//     inPortSprite: Sprite,
+//     outPortSprite: Sprite,
 //     inPort: Ob,
 //     outPort: Ob,
-//     portStyle: (D, Part) => PropMap
-// ) extends Sprite[D] {
+//     portStyle: (PropMap, Part) => PropMap
+// ) extends Sprite {
 
-//   override def layout(bb: BoundingBox, data: D): D =
+//   override def layout(bb: BoundingBox, data: PropMap): PropMap =
 //     val p_in = data.getParts(inPort)
 //     val p_out = data.getParts(outPort)
 
@@ -54,12 +54,12 @@
 //         data.setProp(part, Center, ctr + bb.dims / 2.0)
 //       }
 
-//   def computePortCenters(data: D): D = {
+//   def computePortCenters(data: PropMap): PropMap = {
 //     val bbox = boxSprite.bbox(data).get
 //     layout(bbox, data)
 //   }
 
-//   def stylePorts(data: D, style: (D, Part) => PropMap) =
+//   def stylePorts(data: PropMap, style: (PropMap, Part) => PropMap) =
 //     val pts = data.getParts(inPort) ++ data.getParts(outPort)
 //     var mod = data
 //     for (pt, acs) <- pts
@@ -70,8 +70,8 @@
 
 //   def present(
 //       ent: Entity,
-//       init: D,
-//       updates: L.Signal[D],
+//       init: PropMap,
+//       updates: L.Signal,
 //       eventWriter: L.Observer[Event]
 //   ): L.SvgElement = {
 //     val rect = boxSprite.present(ent, init, updates, eventWriter)
@@ -111,14 +111,14 @@
 
 //   override def boundaryPt(
 //       subent: Entity,
-//       data: D,
+//       data: PropMap,
 //       dir: Complex
 //   ): Option[Complex] = subent match {
 //     case Part(Nil) => boxSprite.boundaryPt(subent, data, dir)
 //     case _         => None
 //   }
 
-//   override def center(subent: Entity, data: D): Option[Complex] =
+//   override def center(subent: Entity, data: PropMap): Option[Complex] =
 //     subent match {
 //       case Part(Nil) => data.props.get(Center)
 //       case Part((ob, i) :: Nil) if ob == inPort || ob == outPort => {
@@ -127,7 +127,7 @@
 //       case _ => None
 //     }
 
-//   override def bbox(subent: Entity, data: D) = subent match
+//   override def bbox(subent: Entity, data: PropMap) = subent match
 //     case p: Part =>
 //       val (spr, tail) = p.ty.path match
 //         case Seq()                    => (boxSprite, ROOT)
@@ -137,7 +137,7 @@
 //       spr.bbox(tail, computePortCenters(data).subacset(p))
 //     case _ => throw msgError(s"DPBox bbox: unmatched entity $subent")
 
-//   override def toTikz(b: Part, data: D, visible: Boolean = true): String =
+//   override def toTikz(b: Part, data: PropMap, visible: Boolean = true): String =
 
 //     val boxString = boxSprite.toTikz(b, data)
 
@@ -176,8 +176,8 @@
 //   /** Update `data` with centers for `inPort`s and `outPort`s */
 //   def layoutPorts(inPort: Ob, outPort: Ob)(
 //       bb: BoundingBox,
-//       data: D
-//   ): D =
+//       data: PropMap
+//   ): PropMap =
 //     val p_in = data.getParts(inPort)
 //     val p_out = data.getParts(outPort)
 
@@ -191,7 +191,7 @@
 //   /** Update `data` with centers for `inPort`s and `outPort`s on the viewport
 //     * boundary
 //     */
-//   def layoutPortsBg(inPort: Ob, outPort: Ob)(sz: Complex, data: D): D =
+//   def layoutPortsBg(inPort: Ob, outPort: Ob)(sz: Complex, data: PropMap): PropMap =
 //     layoutPorts(inPort, outPort)(BoundingBox(sz / 2.0, sz), data)
 
 //   /** Compute the index of a new port based on a position and the number of

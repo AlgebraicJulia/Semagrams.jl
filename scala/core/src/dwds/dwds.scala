@@ -5,10 +5,10 @@ import semagrams.util._
 import semagrams.rendering._
 import semagrams.partprops._
 
-def wireProps[D: PartData](
+def wireProps(
     tag: SpanTag,
     wireDir: Part => Complex = _ => Complex(0, 0)
-)(_e: Part, data: D, m: EntitySeq[D]): PropMap =
+)(_e: Part, data: PropMap, m: EntitySeq): PropMap =
   val SpanTag(ctxt, _, apex, (s, tOpt)) = tag
   val propOpt = for
     t <- tOpt

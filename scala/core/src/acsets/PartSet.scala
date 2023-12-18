@@ -7,12 +7,12 @@ import semagrams.partprops._
 import upickle.default._
 import scala.annotation.targetName
 
-type DataStore[D] = Map[UID, D]
-extension [D: PartData](dstore: DataStore[D])
+type DataStore = Map[UID, PropMap]
+extension (dstore: DataStore)
   def remProp(id: UID, f: Property) =
-    dstore + (id -> (dstore(id).remProp(f)))
+    dstore + (id -> (dstore(id).rem(f)))
   def setProp(id: UID, f: Property, v: f.Value) =
-    dstore + (id -> (dstore(id).setProp(f, v)))
+    dstore + (id -> (dstore(id).set(f, v)))
 
 /** Storage class for the parts corresponding to an `Ob` in a schema.
   *
@@ -26,9 +26,9 @@ extension [D: PartData](dstore: DataStore[D])
   * @param dataStore
   *   The subacset corresponding to each id
   */
-case class PartSet[D: PartData](
+case class PartSet(
     ids: Seq[UID],
-    dataStore: DataStore[D]
+    dataStore: DataStore
 ) {
 
   /* Getting */
@@ -43,11 +43,8 @@ case class PartSet[D: PartData](
     dataStore(id).contains(f)
 
   /* Get the data associated with a part (or empty) */
-  def getData(i: UID): D =
-    dataStore.get(i).getOrElse(PartData())
-
-  /* Get all properties for part `i` */
-  def getProps(i: UID): PropMap = getData(i).getProps()
+  def getProps(i: UID): PropMap =
+    dataStore.get(i).getOrElse(PropMap())
 
   /* Return an optional value for `f` on part `i` */
   def tryProp(f: Property, i: UID) =
@@ -65,43 +62,43 @@ case class PartSet[D: PartData](
   /* Individual properties */
 
   /* Set `f` for `i` to `v` */
-  def setProp(f: Property, id: UID, v: f.Value): PartSet[D] =
+  def setProp(f: Property, id: UID, v: f.Value): PartSet =
     setProp(f, Seq(id -> v))
 
-  def setProp(f: Property, kvs: Iterable[(UID, f.Value)]): PartSet[D] =
+  def setProp(f: Property, kvs: Iterable[(UID, f.Value)]): PartSet =
     this.copy(
       dataStore =
-        dataStore ++ kvs.map((id, v) => (id -> dataStore(id).setProp(f, v)))
+        dataStore ++ kvs.map((id, v) => (id -> dataStore(id).set(f, v)))
     )
 
-  def setProps(id: UID, props: PropMap): PartSet[D] =
+  def setProps(id: UID, props: PropMap): PartSet =
     setProps(Seq(id -> props))
 
-  def setProps(kvs: Iterable[(UID, PropMap)]): PartSet[D] = this.copy(
+  def setProps(kvs: Iterable[(UID, PropMap)]): PartSet = this.copy(
     dataStore =
-      dataStore ++ kvs.map((id, props) => id -> dataStore(id).setProps(props))
+      dataStore ++ kvs.map((id, props) => id -> (dataStore(id) ++ props))
   )
 
-  def softSetProp(f: Property, id: UID, v: f.Value): PartSet[D] =
+  def softSetProp(f: Property, id: UID, v: f.Value): PartSet =
     if hasProp(f, id) then this else setProp(f, id, v)
 
-  def softSetProp(f: Property, kvs: Iterable[(UID, f.Value)]): PartSet[D] =
+  def softSetProp(f: Property, kvs: Iterable[(UID, f.Value)]): PartSet =
     this.copy(
       dataStore =
-        dataStore ++ kvs.map((id, v) => (id -> dataStore(id).softSetProp(f, v)))
+        dataStore ++ kvs.map((id, v) => (id -> dataStore(id).softSet(f, v)))
     )
 
-  def softSetProps(id: UID, props: PropMap): PartSet[D] =
+  def softSetProps(id: UID, props: PropMap): PartSet =
     softSetProps(Seq(id -> props))
 
-  def softSetProps(kvs: Iterable[(UID, PropMap)]): PartSet[D] = this.copy(
+  def softSetProps(kvs: Iterable[(UID, PropMap)]): PartSet = this.copy(
     dataStore = dataStore ++ kvs.map((id, props) =>
       id -> dataStore(id).softSetProps(props)
     )
   )
 
   /* Set `f` for `i` to `v` */
-  def remProp(f: Property, i: UID): PartSet[D] = this.copy(
+  def remProp(f: Property, i: UID): PartSet = this.copy(
     dataStore = dataStore - i
   )
 
@@ -137,38 +134,37 @@ case class PartSet[D: PartData](
   /* Merging data */
 
   /* Merge the data in `kvs` into `dataStore` */
-  def merge[Data2: PartData](kvs: Seq[(UID, Data2)]) = this.copy(
-    dataStore = dataStore ++ kvs.map((id, d2) => id -> dataStore(id).merge(d2))
+  def merge(kvs: Seq[(UID, PropMap)]) = this.copy(
+    dataStore = dataStore ++ kvs.map((id, d2) => id -> (dataStore(id) ++ d2))
   )
 
-  def ++[Data2: PartData](kvs: Seq[(UID, Data2)]) = merge(kvs)
-  def ++[Data2: PartData](d2: Data2) = merge(ids.map(_ -> d2))
+  def ++(kvs: Seq[(UID, PropMap)]) = merge(kvs)
+  def ++(d2: PropMap) = merge(ids.map(_ -> d2))
 
   def ++(f: Property, v: f.Value) = merge(ids.map(_ -> PropMap().set(f, v)))
 
   /** Merge unset data for  `i` with `d2` */
-  def softMerge[Data2: PartData](kvs: Seq[(UID, Data2)]): PartSet[D] =
+  def softMerge(kvs: Seq[(UID, PropMap)]): PartSet =
     this.copy(
       dataStore =
-        dataStore ++ kvs.map((i, d2) => i -> dataStore(i).softMerge(d2))
+        dataStore ++ kvs.map((i, d2) => i -> dataStore(i).softSetProps(d2))
     )
 
   /** Merge unset data for  `i` with `d2` */
-  def softMerge[Data2: PartData](d2: Data2): PartSet[D] =
-    softMerge(ids.map(_ -> d2))(summon[PartData[Data2]])
+  def softMerge(d2: PropMap): PartSet =
+    softMerge(ids.map(_ -> d2))
 
   /** Overwrite the data for a sequence of `id -> data` pairs */
-  def resetData(kvs: Seq[(UID, D)]): PartSet[D] = this.copy(
+  def resetData(kvs: Seq[(UID, PropMap)]): PartSet = this.copy(
     dataStore = dataStore ++ kvs
   )
 
   /** Merge unset data for  `i` with `d2` */
-  def resetData(id: UID, d0: D): PartSet[D] =
+  def resetData(id: UID, d0: PropMap): PartSet =
     resetData(Seq(id -> d0))
 
   def remProps(kvs: Seq[(UID, Seq[Property])]) = this.copy(
-    dataStore =
-      dataStore ++ kvs.map((id, fs) => id -> dataStore(id).remProps(fs))
+    dataStore = dataStore ++ kvs.map((id, fs) => id -> dataStore(id).rem(fs))
   )
 
   def --(kvs: Seq[(UID, Seq[Property])]) = remProps(kvs)
@@ -189,7 +185,7 @@ case class PartSet[D: PartData](
       f: Property,
       pred: Option[f.Value] => Boolean,
       v: f.Value
-  ): PartSet[D] =
+  ): PartSet =
     optionalSet(f, pred, ids.map(_ -> v))
 
   /* Conditionally set `f` for `i -> v` pairs, conditional on `pred` or if the value is missing */
@@ -197,7 +193,7 @@ case class PartSet[D: PartData](
       f: Property,
       pred: f.Value => Boolean,
       kvs: Seq[(UID, f.Value)]
-  ): PartSet[D] = this.copy(
+  ): PartSet = this.copy(
     dataStore = dataStore ++ kvs.map((i, v) =>
       i -> dataStore(i).conditionalSet(f, pred, v)
     )
@@ -206,29 +202,29 @@ case class PartSet[D: PartData](
       f: Property,
       pred: f.Value => Boolean,
       v: f.Value
-  ): PartSet[D] =
+  ): PartSet =
     conditionalSet(f, pred, ids.map(_ -> v))
 
   /* Adding, moving & removing parts */
 
   /* Add a sequence of new parts with associated data */
-  def addParts(parts: Iterable[(UID, D)]): PartSet[D] = PartSet(
+  def addParts(parts: Iterable[(UID, PropMap)]): PartSet = PartSet(
     parts.map(_._1).toSeq ++ ids,
     parts.toMap ++ dataStore
   )
 
   /** Adds a single part with a given `id` and `data` */
-  def addPart(id: UID, data: D): PartSet[D] =
+  def addPart(id: UID, data: PropMap): PartSet =
     addParts(Seq(id -> data))
 
   /* Remove a sequence of parts with the ids `rem` */
-  def remParts(rem: Iterable[UID]): PartSet[D] = PartSet(
+  def remParts(rem: Iterable[UID]): PartSet = PartSet(
     ids.diff(rem.toSeq),
     dataStore -- rem
   )
 
   /** Remove a single part with a given `id` */
-  def remPart(id: UID): PartSet[D] = remParts(Seq(id))
+  def remPart(id: UID): PartSet = remParts(Seq(id))
 
   /* Move id `i` to the index `j` in the list of ids. Used to
    * change rendering order and ordering of ports
@@ -253,21 +249,21 @@ case class PartSet[D: PartData](
 }
 object PartSet:
   /* Validataion */
-  def apply[D: PartData](ids: Seq[UID], dataStore: DataStore[D]): PartSet[D] =
+  def apply(ids: Seq[UID], dataStore: DataStore): PartSet =
     assert(ids.toSet == dataStore.keySet)
-    new PartSet(ids, dataStore.withDefaultValue(PartData()))
+    new PartSet(ids, dataStore.withDefaultValue(PropMap()))
 
   /* Convenience methods */
-  def apply[D: PartData](dataStore: DataStore[D]): PartSet[D] =
+  def apply(dataStore: DataStore): PartSet =
     apply(dataStore.keys.toSeq, dataStore)
-  def apply[D: PartData](ids: Seq[UID]): PartSet[D] =
-    apply(ids, ids.map((_, PartData())).toMap)
-  def apply[D: PartData](): PartSet[D] = PartSet(Seq(), Map())
+  def apply(ids: Seq[UID]): PartSet =
+    apply(ids, ids.map((_, PropMap())).toMap)
+  def apply(): PartSet = PartSet(Seq(), Map())
 
-type PartStore[D] = Map[UID, PartSet[D]]
+type PartStore = Map[UID, PartSet]
 
 object PartStore:
-  def apply[D: PartData]() = Map[UID, PartSet[D]]().withDefaultValue(PartSet())
+  def apply() = Map[UID, PartSet]().withDefaultValue(PartSet())
 
   implicit val rw: ReadWriter[Part] =
     readwriter[(UID, UID, String)].bimap[Part](

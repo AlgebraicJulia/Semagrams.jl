@@ -4,13 +4,13 @@ import semagrams._
 import semagrams.util._
 import semagrams.partprops._
 
-type EntitySeq[D] = Seq[(PartTag, (Sprite[D], D))]
+type EntitySeq = Seq[(PartTag, (Sprite, PropMap))]
 
 object EntitySeq:
-  def apply[D: PartData](): EntitySeq[D] = Seq[(PartTag, (Sprite[D], D))]()
+  def apply(): EntitySeq = Seq[(PartTag, (Sprite, PropMap))]()
 
 object EntitySeqExtension {
-  extension [D: PartData](entseq: EntitySeq[D])
+  extension (entseq: EntitySeq)
     def tags = entseq.map(_._1)
 
     /** Find the center of the sprite corresponding to `p`, by looking up the
@@ -48,7 +48,7 @@ object EntitySeqExtension {
         }
         .headOption
 
-    def getTag(p: PartTag): Option[(Sprite[D], D)] =
+    def getTag(p: PartTag): Option[(Sprite, PropMap)] =
       entseq.find(_._1 == p).map(_._2)
 }
 export EntitySeqExtension._

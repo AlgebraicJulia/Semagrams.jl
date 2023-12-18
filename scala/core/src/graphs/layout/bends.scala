@@ -18,10 +18,10 @@ import semagrams.partprops._
   * @param a
   *   the acset to assign bends to.
   */
-def makeBends[D: PartData](
-    edges: Seq[EdgeSource[D]],
+def makeBends(
+    edges: Seq[EdgeSource],
     spacing: Double
-)(a: ACSet[D]): Map[PartTag, Double] =
+)(a: ACSet): Map[PartTag, Double] =
 
   val es = edges.flatMap(_.tagSpans(a)).collect { case (e, (src, Some(tgt))) =>
     e -> (src, tgt)
@@ -38,12 +38,12 @@ def makeBends[D: PartData](
     }
   }
 
-def addBends[D: PartData](
-    emap: EntitySeq[D],
+def addBends(
+    emap: EntitySeq,
     bends: Map[PartTag, Double]
-): EntitySeq[D] =
+): EntitySeq =
   emap.map { case (tag, (spr, init)) =>
     if bends.contains(tag)
-    then tag -> (spr, init.setProp(Bend, bends(tag)))
+    then tag -> (spr, init.set(Bend, bends(tag)))
     else tag -> (spr, init)
   }

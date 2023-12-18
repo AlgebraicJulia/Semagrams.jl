@@ -142,6 +142,12 @@ object Schema:
   def apply(id: UID, elts: Elt | Property*): Schema =
     BasicSchema(id: UID, elts: _*)
 
+  def generators(props: PropMap): Map[UID, Generator] =
+    props.pmap
+      .collect { case (_, elt: Elt) => elt }
+      .flatMap(_.generators)
+      .toMap
+
 case class BasicSchema(
     id: UID,
     elts: Map[UID, Elt] = Map(),

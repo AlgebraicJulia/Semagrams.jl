@@ -7,11 +7,11 @@ import semagrams.util._
 import upickle.default._
 import scala.annotation.targetName
 
-case class ACSet[D: PartData](
+case class ACSet(
     name: String,
     schema: Schema,
     globalProps: PropMap,
-    partStore: PartStore[D]
+    partStore: PartStore
 ):
 
   /** Getting * */
@@ -22,15 +22,8 @@ case class ACSet[D: PartData](
   def getParts(ob: Ob): Seq[Part] = partStore(ob.id).ids.map(Part(_, ob))
 
   /* Get an ordered sequence of parts and `PartData` from `ob` */
-  def getDataSeq(ob: Ob): Seq[(Part, D)] =
-    getParts(ob).map(part => part -> partStore(ob.id).getData(part.id))
-
-  /* Get an ordered sequence of parts and `PropMap`s from `ob` */
-  def getPropSeq(ob: Ob) =
-    getDataSeq(ob).map((part, data) => part -> data.getProps())
-
-  /* Get a map of parts to `PartData` from `ob` */
-  def getData(ob: Ob) = getDataSeq(ob).toMap
+  def getPropSeq(ob: Ob): Seq[(Part, PropMap)] =
+    getParts(ob).map(part => part -> partStore(ob.id).getProps(part.id))
 
   /* Get a map of parts to `PropMap`s from `ob` */
   def getProps(ob: Ob) = getPropSeq(ob).toMap
@@ -38,24 +31,18 @@ case class ACSet[D: PartData](
   /* Getting individual properties by object */
 
   /* Get `PartData` for a single `part` (or empty) */
-  def getData(part: Part): D = partStore(part.ob.id).dataStore(part.id)
+  def getProps(part: Part): PropMap = partStore(part.ob.id).dataStore(part.id)
 
   /* Get `PartData` for a collection of `parts` */
-  def getData(parts: Iterable[Part]): Map[Part, D] =
-    parts.groupBy(_.ob).foldLeft(Map[Part, D]()) { case (data, (ob, obparts)) =>
-      data ++ parts.map(part => part -> getData(part)).toMap
+  def getProps(parts: Iterable[Part]): Map[Part, PropMap] =
+    parts.groupBy(_.ob).foldLeft(Map[Part, PropMap]()) {
+      case (data, (ob, obparts)) =>
+        data ++ parts.map(part => part -> getProps(part)).toMap
     }
-
-  /* Get `PropMap` for a single `part` */
-  def getProps(part: Part): PropMap = getData(part).getProps()
-
-  /* Get `PropMap`s for a collection `parts` */
-  def getProps(parts: Iterable[Part]): Iterable[(Part, PropMap)] =
-    getData(parts).map(_ -> _.getProps())
 
   /* Get an optional value for `f` at `part` */
   def tryProp(f: Property, part: Part) =
-    partStore(part.ob.id).dataStore(part.id).tryProp(f)
+    partStore(part.ob.id).dataStore(part.id).get(f)
 
   /* Get the value for `f` at `part` (unsafe) */
   def getProp(f: Property, part: Part) = tryProp(f, part).get
@@ -144,24 +131,20 @@ case class ACSet[D: PartData](
   /* Setting aggregate data/props */
 
   /* Reset the data associated with `part` to `data` */
-  def resetData(part: Part, data: D) = this.copy(
+  def resetData(part: Part, data: PropMap) = this.copy(
     partStore = partStore.updated(
       part.ob.id,
       partStore(part.ob.id).resetData(part.id, data)
     )
   )
 
-  /* Merge `data` into the existing data for `part` */
-  def mergeData(part: Part, data: D) =
-    resetData(part, getData(part).merge(data))
-
   /* Set properties `props` for `part` */
   def setProps(part: Part, props: PropMap) =
-    resetData(part, getData(part).setProps(props))
+    resetData(part, getProps(part) ++ props)
 
   /* Set the properties of each `Part` with the associated `PropMap` */
-  def setProps(kvs: Iterable[(Part, PropMap)]): ACSet[D] =
-    def helper(acset: ACSet[D], ob: Ob, kvs: Iterable[(UID, PropMap)]) =
+  def setProps(kvs: Iterable[(Part, PropMap)]): ACSet =
+    def helper(acset: ACSet, ob: Ob, kvs: Iterable[(UID, PropMap)]) =
       acset.copy(
         partStore =
           acset.partStore.updated(ob.id, acset.partStore(ob.id).setProps(kvs))
@@ -170,21 +153,17 @@ case class ACSet[D: PartData](
       helper(acset, ob, kvs.map((part, props) => (part.id, props)))
     }
 
-  def setProps(ob: Ob, props: PropMap): ACSet[D] = setProps(
+  def setProps(ob: Ob, props: PropMap): ACSet = setProps(
     getParts(ob).map(_ -> props)
   )
 
-  /* Merge the existing data for `part` into `data` */
-  def softMergeData(part: Part, data: D) =
-    resetData(part, getData(part).softMerge(data))
-
   /* Set properties `props` for `part`, if unset */
   def softSetProps(part: Part, props: PropMap) =
-    resetData(part, getData(part).softSetProps(props))
+    resetData(part, getProps(part).softSetProps(props))
 
   /* Set the properties of each `Part` from the associated `PropMap` if they are unset */
-  def softSetProps(kvs: Iterable[(Part, PropMap)]): ACSet[D] =
-    def helper(acset: ACSet[D], ob: Ob, kvs: Iterable[(UID, PropMap)]) =
+  def softSetProps(kvs: Iterable[(Part, PropMap)]): ACSet =
+    def helper(acset: ACSet, ob: Ob, kvs: Iterable[(UID, PropMap)]) =
       acset.copy(
         partStore = acset.partStore
           .updated(ob.id, acset.partStore(ob.id).softSetProps(kvs))
@@ -193,7 +172,7 @@ case class ACSet[D: PartData](
       helper(acset, ob, kvs.map((part, props) => (part.id, props)))
     }
 
-  def softSetProps(ob: Ob, props: PropMap): ACSet[D] = softSetProps(
+  def softSetProps(ob: Ob, props: PropMap): ACSet = softSetProps(
     getParts(ob).map(_ -> props)
   )
 
@@ -201,12 +180,12 @@ case class ACSet[D: PartData](
 
   /* Set the value for `f` at `part` to `v` */
   def setProp(f: Property, part: Part, v: f.Value) =
-    resetData(part, getData(part).setProp(f, v))
+    resetData(part, getProps(part).set(f, v))
 
   /* Set the value for `f` with the given part-value pairs */
-  def setProp(f: Property, kvs: Iterable[(Part, f.Value)]): ACSet[D] =
+  def setProp(f: Property, kvs: Iterable[(Part, f.Value)]): ACSet =
     def helper(
-        acset: ACSet[D],
+        acset: ACSet,
         f: Property,
         ob: Ob,
         kvs: Iterable[(UID, f.Value)]
@@ -219,7 +198,7 @@ case class ACSet[D: PartData](
     }
 
   /* Set the value for `f` to `v` for all parts in `ob` */
-  def setProp(f: Property, ob: Ob, v: f.Value): ACSet[D] =
+  def setProp(f: Property, ob: Ob, v: f.Value): ACSet =
     setProp(f, getParts(ob).map(_ -> v))
 
   /* Set the value for `f` at `part` to `v`, if unset */
@@ -227,9 +206,9 @@ case class ACSet[D: PartData](
     if hasProp(f, part) then this else setProp(f, part, v)
 
   /* Set the value for `f` with the given part-value pairs, if unset */
-  def softSetProp(f: Property, kvs: Iterable[(Part, f.Value)]): ACSet[D] =
+  def softSetProp(f: Property, kvs: Iterable[(Part, f.Value)]): ACSet =
     def helper(
-        acset: ACSet[D],
+        acset: ACSet,
         f: Property,
         ob: Ob,
         kvs: Iterable[(UID, f.Value)]
@@ -243,51 +222,50 @@ case class ACSet[D: PartData](
     }
 
   /* Set the value for `f` to `v` for  parts in `ob` if missing */
-  def softSetProp(f: Property, ob: Ob, v: f.Value): ACSet[D] =
+  def softSetProp(f: Property, ob: Ob, v: f.Value): ACSet =
     softSetProp(f, getParts(ob).map(_ -> v))
 
   /* Set the value for `f` to `v` from `parts` if missing */
-  def softSetProp(f: Property, parts: Iterable[Part], v: f.Value): ACSet[D] =
+  def softSetProp(f: Property, parts: Iterable[Part], v: f.Value): ACSet =
     softSetProp(f, parts.map(_ -> v))
 
   /* Removing properties */
 
   /* Remove the properties `fs` from `part` */
   def remProps(part: Part, fs: Iterable[Property]) =
-    resetData(part, getData(part).remProps(fs))
+    resetData(part, getProps(part).rem(fs))
 
   /* Remove the properties `fs` from all parts in `ob` */
-  def remProps(fs: Iterable[Property], ob: Ob): ACSet[D] = this.copy(
+  def remProps(fs: Iterable[Property], ob: Ob): ACSet = this.copy(
     partStore = partStore.updatedWith(ob.id)(opt =>
       opt.map(partset =>
         partset.copy(
-          dataStore =
-            partset.dataStore.map((id, data) => id -> data.remProps(fs))
+          dataStore = partset.dataStore.map((id, data) => id -> data.rem(fs))
         )
       )
     )
   )
 
   /* Remove `f` from all parts in `ob` */
-  def remProp(f: Property, ob: Ob): ACSet[D] = remProps(Seq(f), ob)
+  def remProp(f: Property, ob: Ob): ACSet = remProps(Seq(f), ob)
 
   /* Remove properties from all parts in the associated objects */
-  def remProps(kvs: Iterable[(Property, Ob)]): ACSet[D] = kvs.toSeq match
+  def remProps(kvs: Iterable[(Property, Ob)]): ACSet = kvs.toSeq match
     case Seq()           => this
     case (f, ob) +: tail => remProp(f, ob).remProps(tail)
 
   /* Remove `f` from `part` */
-  def remProp(f: Property, part: Part): ACSet[D] = remProps(part, Seq(f))
+  def remProp(f: Property, part: Part): ACSet = remProps(part, Seq(f))
 
   /** Adding parts * */
 
   def addPartsById(
       ob: Ob,
-      partData: Iterable[(UID, D)]
-  ): (ACSet[D], Iterable[Part]) =
+      partData: Iterable[(UID, PropMap)]
+  ): (ACSet, Iterable[Part]) =
     /* Collect any schema elements referred to in `partData` */
     val schemaElts: Seq[Elt] =
-      ob +: partData.toSeq.flatMap((_, data) => data.generators().values)
+      ob +: partData.toSeq.flatMap((_, data) => Schema.generators(data).values)
     /* Construct parts with the given ids */
     val newParts = partData.map((id, _) => Part(id, ob))
     if schema.hasElts(schemaElts)
@@ -315,17 +293,17 @@ case class ACSet[D: PartData](
           println(s"Attempted to add elements $badElts to StaticSchema $schema")
           (this, Seq())
 
-  def addPartById(ob: Ob, id: UID, data: D): (ACSet[D], Part) =
+  def addPartById(ob: Ob, id: UID, data: PropMap): (ACSet, Part) =
     val (next, parts) = addPartsById(ob, Seq(id -> data))
     (next, parts.head)
 
   /* Add a part to `ob` initialized with `data` */
-  def addPart(ob: Ob, data: D): (ACSet[D], Part) =
+  def addPart(ob: Ob, data: PropMap): (ACSet, Part) =
     val (next, parts) = addParts(ob, Seq(data))
     (next, parts.head)
 
   /* Add a collection of parts to `ob` initialized with `ds` */
-  def addParts(ob: Ob, ds: Iterable[D]): (ACSet[D], Iterable[Part]) =
+  def addParts(ob: Ob, ds: Iterable[PropMap]): (ACSet, Iterable[Part]) =
     addPartsById(ob, ds.map(UID(ob.toString + "@") -> _))
 
   /** Removing parts * */
@@ -355,7 +333,7 @@ case class ACSet[D: PartData](
     .toMap
 
   /* Remove a collection of `parts`, with optional `cascade` */
-  def remParts(parts: Iterable[Part], cascade: Boolean = true): ACSet[D] =
+  def remParts(parts: Iterable[Part], cascade: Boolean = true): ACSet =
     val toRemove: Map[Ob, Seq[Part]] =
       parts
         .map(p => p.ob -> Seq(p))
@@ -375,7 +353,7 @@ case class ACSet[D: PartData](
     )
 
   /* Remove a single `part`, with optional `cascade` */
-  def remPart(part: Part, cascade: Boolean = true): ACSet[D] =
+  def remPart(part: Part, cascade: Boolean = true): ACSet =
     remParts(Seq(part), cascade)
 
   /* Remove `obs` from the schema, with optional `cascade` */
@@ -441,5 +419,5 @@ case class ACSet[D: PartData](
 object ACSet:
 
   /** Construct a new ACSet with schema `s` and top-level parts `props` */
-  def apply[D: PartData](s: Schema): ACSet[D] =
+  def apply(s: Schema): ACSet =
     new ACSet("", s, PropMap(), PartStore())

@@ -29,7 +29,7 @@ case class Complex(x: Double, y: Double) {
   def -(other: Complex): Complex = Complex(x - other.x, y - other.y)
   def /(other: Complex): Complex = {
     val d = other.abssq
-    val z = this * other.cong
+    val z = this * other.conj
     Complex(z.x / d, z.y / d)
   }
 
@@ -48,7 +48,7 @@ case class Complex(x: Double, y: Double) {
 
   def log = Math.log(abs) + Math.atan2(x, y)
 
-  def cong = Complex(x, -y)
+  def conj = Complex(x, -y)
 
   /** absolute value squared */
   def abssq = x * x + y * y

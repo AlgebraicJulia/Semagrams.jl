@@ -52,7 +52,8 @@ object core extends Defaults {
     ivy"org.typelevel::cats-effect-cps::0.4.0",
     ivy"com.github.japgolly.scalacss::core::1.0.0",
     ivy"dev.optics::monocle-core::3.2.0",
-    ivy"dev.optics::monocle-macro::3.2.0"
+    ivy"dev.optics::monocle-macro::3.2.0",
+    ivy"io.laminext::fetch::0.16.2"
   )
 
   object test extends ScalaJSTests {

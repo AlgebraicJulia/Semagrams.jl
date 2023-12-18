@@ -28,8 +28,18 @@ case class PropMap(pmap: Map[Property, Any]) {
     this.copy(pmap = pmap + (k -> v.asInstanceOf[Any]))
   }
 
+  def softSet(k: Property, v: k.Value): PropMap =
+    if contains(k) then this else this.copy(pmap = pmap + (k -> v))
+
+  def softSetProps(that: PropMap): PropMap =
+    val newProps = that.filterKeys(prop => !this.contains(prop))
+    this ++ newProps
+
   /** Removes property `k` from the new PropMap */
   def rem(k: Property): PropMap = this - k
+
+  /** Removes the properties `ks` from the new PropMap */
+  def rem(ks: Iterable[Property]): PropMap = this -- ks
 
   /** Returns a new PropMap with `kv(1)` set to `kv(2)`
     *
@@ -89,6 +99,15 @@ case class PropMap(pmap: Map[Property, Any]) {
   /** Check if `ps` are set */
   def contains(ps: Property*): Boolean = ps.forall(pmap.contains)
 
+  def optionalSet(f: Property, pred: Option[f.Value] => Boolean, v: f.Value) =
+    if pred(get(f))
+    then set(f, v)
+    else this
+
+  def conditionalSet(f: Property, pred: f.Value => Boolean, v: f.Value) =
+    if pred(this.apply(f))
+    then set(f, v)
+    else this
 }
 
 object PropMap {

@@ -19,8 +19,8 @@ case class BoundingBox(
     )
 }
 
-/** A Sprite contains the information necessary to turn a sub-D into a reactive
-  * SVG on the screen.
+/** A Sprite contains the information necessary to turn a sub-PropMap into a
+  * reactive SVG on the screen.
   *
   * TODO: Sprites should have an "injection" method for statically computing
   * some layout that they want to have available for boundaryPt/bbox queries, or
@@ -29,7 +29,7 @@ case class BoundingBox(
   * custom code for being able to have defaults; that should not be custom
   * because then it is inconsistent.
   */
-trait Sprite[D: PartData] {
+trait Sprite {
 
   /** Construct an SvgElement for a subacset.
     *
@@ -64,8 +64,8 @@ trait Sprite[D: PartData] {
     */
   def present(
       p: PartTag,
-      init: D,
-      updates: Signal[D],
+      init: PropMap,
+      updates: Signal[PropMap],
       eventWriter: Observer[state.Event]
   ): SvgElement
 
@@ -80,7 +80,7 @@ trait Sprite[D: PartData] {
     * This might not make sense, so is optional to implement.
     */
   def boundaryPt(
-      data: D,
+      data: PropMap,
       dir: Complex,
       subparts: Seq[PartTag] = Seq()
   ): Option[Complex] = None
@@ -90,7 +90,7 @@ trait Sprite[D: PartData] {
     * Similar to [[boundaryPt]]
     */
   def center(
-      data: D,
+      data: PropMap,
       subparts: Seq[PartTag] = Seq()
   ): Option[Complex] = None
 
@@ -99,18 +99,18 @@ trait Sprite[D: PartData] {
     * Similar to [[boundaryPt]]
     */
   def bbox(
-      data: D,
+      data: PropMap,
       subparts: Seq[PartTag] = Seq()
   ): Option[BoundingBox] = None
 
   /** Convert a diagram element into tikz code */
-  def toTikz(p: PartTag, data: D, visible: Boolean = true): String = ""
+  def toTikz(p: PartTag, data: PropMap, visible: Boolean = true): String = ""
 
-  /** An optional layout algorithm to run before rendering an D */
-  def layout(bb: BoundingBox, a: D): D = a
+  /** An optional layout algorithm to run before rendering an PropMap */
+  def layout(bb: BoundingBox, a: PropMap): PropMap = a
 
   /** Compute the layout for a full window of size `sz` */
-  def layoutBg(sz: Complex, a: D): D =
+  def layoutBg(sz: Complex, a: PropMap): PropMap =
     layout(BoundingBox(sz / 2.0, sz), a)
 
 }
@@ -129,18 +129,18 @@ object Sprite:
     + (MinimumHeight, 40)
     + (Style, "")
 
-  def setContent[D: PartData](label: Property)(data: D) =
-    data.setProp(Content, data.tryProp(label).getOrElse("").toString())
+  def setContent(label: Property)(data: PropMap) =
+    data.set(Content, data.get(label).getOrElse("").toString())
 
-  def innerText[D: PartData](d: D): SvgElement =
-    assert(d.getProps().contains(Center))
-    val data: D = d.softSetProps(Sprite.defaultProps)
-    val splits = util.splitString(data.getProp(Content)).zipWithIndex
+  def innerText(d: PropMap): SvgElement =
+    assert(d.contains(Center))
+    val data: PropMap = d.softSetProps(Sprite.defaultProps)
+    val splits = util.splitString(data(Content)).zipWithIndex
     val l = splits.length
 
     def xy(idx: Int) =
-      val (x0, y0) = data.getProp(Center).tuple
-      val fs = data.getProp(FontSize)
+      val (x0, y0) = data(Center).tuple
+      val fs = data(FontSize)
       (x0, y0 + fs * (idx + 1 - l / 2.0))
 
     val tspans = splits.toIndexedSeq.map { case (text, idx0) =>
@@ -156,15 +156,15 @@ object Sprite:
     }
 
     val styles = Seq(
-      svg.fontSize := data.getProp(FontSize).toString,
+      svg.fontSize := data(FontSize).toString,
       svg.stroke := data
-        .tryProp(Stroke)
+        .get(Stroke)
         .getOrElse(
           defaultProps(Stroke)
         )
         .toString,
       svg.fill := data
-        .tryProp(Stroke)
+        .get(Stroke)
         .getOrElse(
           defaultProps(Stroke)
         )

@@ -12,22 +12,22 @@ import semagrams.partprops._
   *
   * Auto-resizes based on the content inside.
   */
-case class Disc[D: PartData](label: Property, init: D) extends Sprite[D] {
+case class Disc(label: Property, init: PropMap) extends Sprite {
   import Disc._
 
   def requiredProps = Seq(Center)
   def defaultProps = Sprite.defaultProps
 
-  def setLabel: D => D = Sprite.setContent(label)
+  def setLabel: PropMap => PropMap = Sprite.setContent(label)
 
   def present(
       ent: PartTag,
-      init: D,
-      updates: L.Signal[D],
+      init: PropMap,
+      updates: L.Signal[PropMap],
       eventWriter: L.Observer[state.Event]
   ): L.SvgElement = {
     val data = updates
-      .map(init.softSetProps(defaultProps).merge(_))
+      .map(init.softSetProps(defaultProps) ++ _)
       .map(setLabel)
 
     val box = circle(
@@ -39,7 +39,7 @@ case class Disc[D: PartData](label: Property, init: D) extends Sprite[D] {
 
     val bg = image(
       cls := "disc-bg",
-      href <-- data.map(_.getProp(ImageURL)),
+      href <-- data.map(_(ImageURL)),
       clipPathAttr := "inset(0% round 50%)",
       pointerEvents := "none",
       Rect.geomUpdater(data),
@@ -56,33 +56,32 @@ case class Disc[D: PartData](label: Property, init: D) extends Sprite[D] {
   }
 
   override def boundaryPt(
-      init: D,
+      init: PropMap,
       dir: Complex,
       subparts: Seq[PartTag] = Seq()
   ) = {
     val data = init.softSetProps(defaultProps)
     val rad = radius(data) + data
-      .tryProp(OuterSep)
+      .get(OuterSep)
       .getOrElse(defaultProps(OuterSep))
 
-    data.tryProp(Center).map(dir.normalize * rad + _)
+    data.get(Center).map(dir.normalize * rad + _)
   }
 
-  override def bbox(data: D, subparts: Seq[PartTag] = Seq()) =
+  override def bbox(data: PropMap, subparts: Seq[PartTag] = Seq()) =
     center(data, subparts).map(
       rendering.BoundingBox(_, Complex(2 * radius(init), 2 * radius(init)))
     )
 
-  override def center(data: D, subparts: Seq[PartTag] = Seq()) =
-    data.getProps().get(Center)
+  override def center(data: PropMap, subparts: Seq[PartTag] = Seq()) =
+    data.get(Center)
 
-  override def toTikz(p: PartTag, data: D, visible: Boolean = true) =
+  override def toTikz(p: PartTag, data: PropMap, visible: Boolean = true) =
     tikzNode(
       "circle",
       p.keyPart.tikzName,
-      data.getProps().get(Center).getOrElse(Complex(0, 0)),
+      data.get(Center).getOrElse(Complex(0, 0)),
       data
-        .getProps()
         .get(label)
         .getOrElse("")
         .toString
@@ -99,12 +98,12 @@ object Disc {
 
   import Sprite.defaultProps
 
-  def radius[D: PartData](data: D): Double = {
+  def radius(data: PropMap): Double = {
     val textBox =
-      boxSize(data.tryProp(Content), data.tryProp(FontSize), split = true)
-    val innerSep = data.tryProp(InnerSep).getOrElse(defaultProps(InnerSep))
+      boxSize(data.get(Content), data.get(FontSize), split = true)
+    val innerSep = data.get(InnerSep).getOrElse(defaultProps(InnerSep))
     val d = data
-      .tryProp(MinimumWidth)
+      .get(MinimumWidth)
       .getOrElse(defaultProps(MinimumWidth))
       .max(textBox.x + innerSep)
       .max(textBox.y + innerSep)
@@ -112,23 +111,23 @@ object Disc {
     r
   }
 
-  def geomUpdater[D: PartData](data: L.Signal[D]) = {
+  def geomUpdater(data: L.Signal[PropMap]) = {
     List(
-      cxy <-- data.map(_.tryProp(Center).getOrElse(defaultProps(Center))),
+      cxy <-- data.map(_.get(Center).getOrElse(defaultProps(Center))),
       r <-- data.map(radius(_).toString)
     )
   }
 
-  def styleUpdater[D: PartData](data: L.Signal[D]) = {
+  def styleUpdater(data: L.Signal[PropMap]) = {
     List(
-      fill <-- data.map(_.getProp(Fill).toString),
+      fill <-- data.map(_(Fill).toString),
       opacity <-- data.map(d =>
-        if d.tryProp(Highlight).isDefined then ".8" else "1"
+        if d.get(Highlight).isDefined then ".8" else "1"
       ),
       stroke <-- data.map(
-        _.tryProp(Stroke).getOrElse(defaultProps(Stroke)).toString
+        _.get(Stroke).getOrElse(defaultProps(Stroke)).toString
       ),
-      style <-- data.map(_.tryProp(Style).getOrElse(defaultProps(Style)))
+      style <-- data.map(_.get(Style).getOrElse(defaultProps(Style)))
     )
   }
 

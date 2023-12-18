@@ -73,16 +73,16 @@ object Action {
     }
 }
 
-case class AddAtMouse[D: PartData](
-    getPartData: IO[Option[(Ob, D)]],
+case class AddAtMouse(
+    getProps: IO[Option[(Ob, PropMap)]],
     contextId: UID
-) extends Action[Unit, ACSet[D]]:
-  def apply(_p: Unit, r: Action.Resources[ACSet[D]]) = r.mousePos match
+) extends Action[Unit, ACSet]:
+  def apply(_p: Unit, r: Action.Resources[ACSet]) = r.mousePos match
     case Some(z) =>
-      getPartData.map(_ match
+      getProps.map(_ match
         case Some((ob, data)) =>
           r.modelVar.update(acset =>
-            val (next, newPart) = acset.addPart(ob, data.setProp(Center, z))
+            val (next, newPart) = acset.addPart(ob, data.set(Center, z))
             r.stateVar.update(_.copy(selected = Seq(ObTag(newPart, contextId))))
             next
           )
@@ -94,16 +94,15 @@ case class AddAtMouse[D: PartData](
 
 object AddAtMouse:
 
-  def apply[D: PartData](ob: Ob, ctxt: UID) =
-    new AddAtMouse[D](IO(Some(ob -> PartData())), ctxt)
-  def apply[D: PartData](ob: Ob, init: D, ctxt: UID) =
-    new AddAtMouse[D](IO(Some(ob -> init)), ctxt)
-  def apply[D: PartData](ob: Ob, initIO: IO[D], ctxt: UID) =
-    new AddAtMouse[D](initIO.map(init => Some(ob -> init)), ctxt)
+  def apply(ob: Ob, ctxt: UID) =
+    new AddAtMouse(IO(Some(ob -> PropMap())), ctxt)
+  def apply(ob: Ob, init: PropMap, ctxt: UID) =
+    new AddAtMouse(IO(Some(ob -> init)), ctxt)
+  def apply(ob: Ob, initIO: IO[PropMap], ctxt: UID) =
+    new AddAtMouse(initIO.map(init => Some(ob -> init)), ctxt)
 
-case class DeleteHovered[D: PartData](cascade: Boolean = true)
-    extends Action[Unit, ACSet[D]] {
-  def apply(_p: Unit, r: Action.Resources[ACSet[D]]) = IO(
+case class DeleteHovered(cascade: Boolean = true) extends Action[Unit, ACSet] {
+  def apply(_p: Unit, r: Action.Resources[ACSet]) = IO(
     {
       r.stateVar
         .now()
@@ -133,8 +132,8 @@ def takeUntil[A, B](eventQueue: Queue[IO, A])(f: A => IO[Option[B]]): IO[B] =
     }
   } yield b
 
-case class MoveViaDrag[D: PartData]() extends Action[PartTag, ACSet[D]] {
-  def apply(tag: PartTag, r: Action.Resources[ACSet[D]]): IO[Unit] = tag match
+case class MoveViaDrag() extends Action[PartTag, ACSet] {
+  def apply(tag: PartTag, r: Action.Resources[ACSet]): IO[Unit] = tag match
     case tag: ObTag =>
       val p = tag.keyPart
       if r.modelVar.now().tryProp(Center, p).isEmpty
@@ -167,21 +166,19 @@ case class MoveViaDrag[D: PartData]() extends Action[PartTag, ACSet[D]] {
   def description = "move part by dragging"
 }
 
-case class AddSpanViaDrag[D: PartData](
+case class AddSpanViaDrag(
     dummyData: Ob => IO[Option[PartHom]],
-    tgtIO: (Ob, Ob) => IO[Option[(PartSpan, D)]]
-) extends Action[PartTag, ACSet[D]]:
-  def apply(src: PartTag, r: Action.Resources[ACSet[D]]): IO[Unit] = src match
+    tgtIO: (Ob, Ob) => IO[Option[(PartSpan, PropMap)]]
+) extends Action[PartTag, ACSet]:
+  def apply(src: PartTag, r: Action.Resources[ACSet]): IO[Unit] = src match
     case src: ObTag =>
       val srcPart = src.keyPart
       dummyData(srcPart.ob).flatMap(dummyOpt =>
         dummyOpt
           .zip(r.mousePos)
           .map { case (dummyf, z0) =>
-            val dummyData = PartData[D]().setProps(
-              PropMap() +
-                (dummyf -> srcPart) + (End -> z0) + (Interactable -> false)
-            )
+            val dummyData = PropMap() +
+              (dummyf -> srcPart) + (End -> z0) + (Interactable -> false)
 
             for
               _ <- IO(r.modelVar.unrecord())
@@ -215,9 +212,9 @@ case class AddSpanViaDrag[D: PartData](
                               r.modelVar.update(acset =>
                                 acset
                                   .remProps(dummy, Seq(End, Interactable))
-                                  .mergeData(
+                                  .setProps(
                                     dummy,
-                                    data.setProp(span.right, tgtPart)
+                                    data.set(span.right, tgtPart)
                                   )
                               )
                             )
@@ -228,9 +225,9 @@ case class AddSpanViaDrag[D: PartData](
                                   .remPart(dummy)
                                   .addPart(
                                     span.dom,
-                                    data.setProps(
-                                      PropMap() + (span.left -> srcPart) + (span.right -> tgtPart)
-                                    )
+                                    data
+                                      .set(span.left, srcPart)
+                                      .set(span.right, tgtPart)
                                   )
                                   ._1
                               )
@@ -263,14 +260,13 @@ case class AddSpanViaDrag[D: PartData](
   def description = "add edge by dragging from source to target"
 
 object AddSpanViaDrag:
-  import PartData.propsAreData
 
-  def apply[D: PartData](
+  def apply(
       tgtObs: (Ob, Ob),
       edge: (PartHom, PartHom),
-      init: D = PartData()
-  ): AddSpanViaDrag[D] =
-    new AddSpanViaDrag[D](
+      init: PropMap = PropMap()
+  ): AddSpanViaDrag =
+    new AddSpanViaDrag(
       ob => if ob == tgtObs._1 then IO(Some(edge._1)) else IO(None),
       (src, tgt) =>
         if ((src, tgt) == tgtObs)
@@ -278,10 +274,10 @@ object AddSpanViaDrag:
         else IO(None)
     )
 
-  def apply[D: PartData](
-      tgts: ((Ob, Ob), (PartHom, PartHom, D))*
-  ): AddSpanViaDrag[D] =
-    new AddSpanViaDrag[D](
+  def apply(
+      tgts: ((Ob, Ob), (PartHom, PartHom, PropMap))*
+  ): AddSpanViaDrag =
+    new AddSpanViaDrag(
       ob0 =>
         IO(tgts.collect { case tgt if tgt._1._1 == ob0 => tgt }.headOption.map {
           case _ -> (esrc, _, _) => esrc
@@ -292,10 +288,10 @@ object AddSpanViaDrag:
         })
     )
 
-case class AddHomViaDrag[D: PartData](
+case class AddHomViaDrag(
     tgtIO: (Ob, Ob) => IO[Option[PartHom]]
-) extends Action[PartTag, ACSet[D]]:
-  def apply(src: PartTag, r: Action.Resources[ACSet[D]]): IO[Unit] = src match
+) extends Action[PartTag, ACSet]:
+  def apply(src: PartTag, r: Action.Resources[ACSet]): IO[Unit] = src match
     case src: ObTag =>
       val srcPart = src.keyPart
       for
@@ -353,16 +349,17 @@ case class AddHomViaDrag[D: PartData](
 
   def description = "add edge by dragging from source to target"
 
-case class Callback[X, D: PartData](cb: X => Unit) extends Action[X, ACSet[D]]:
+case class Callback[X](cb: X => Unit) extends Action[X, ACSet]:
 
-  def apply(x: X, r: Action.Resources[ACSet[D]]): IO[Unit] =
+  def apply(x: X, r: Action.Resources[ACSet]): IO[Unit] =
     IO(cb(x))
   def description = "execute a callback function"
 
 object Callback:
   def make(cb: () => Unit) = new Callback(_ => cb())
 
-  def apply[X, D: PartData](cb: () => Unit) = new Callback[X, D](_ => cb())
+  def apply[X](cb: () => Unit) =
+    new Callback[X](_ => cb())
 
 case class PrintModel[Model](hoverRequired: Boolean = true)
     extends Action[Unit, Model]:

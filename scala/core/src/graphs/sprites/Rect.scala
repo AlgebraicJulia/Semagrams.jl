@@ -12,24 +12,23 @@ import semagrams.partprops._
   *
   * Resizes automatically corresponding to its content.
   */
-case class Rect[D: PartData](label: Property, val rectInit: D)
-    extends Sprite[D]:
+case class Rect(label: Property, val rectInit: PropMap) extends Sprite:
   import Rect._
 
   def defaultProps = Sprite.defaultProps
   def requiredProps = Seq(Center)
 
-  def setLabel: D => D = Sprite.setContent(label)
+  def setLabel: PropMap => PropMap = Sprite.setContent(label)
   def present(
       ent: PartTag,
-      init: D,
-      updates: L.Signal[D],
+      init: PropMap,
+      updates: L.Signal[PropMap],
       eventWriter: L.Observer[Event]
   ): L.SvgElement = {
 
-    val initData = rectInit.merge(init)
+    val initData = rectInit ++ init
     val data = updates
-      .map(initData.merge(_))
+      .map(initData ++ _)
       .map(setLabel)
 
     val text = data.map(Sprite.innerText)
@@ -60,14 +59,14 @@ case class Rect[D: PartData](label: Property, val rectInit: D)
   }
 
   override def boundaryPt(
-      data: D,
+      data: PropMap,
       dir: Complex,
       subparts: Seq[PartTag] = Seq()
   ) = {
     /* Normalize to first quadrant */
-    val pm = rectInit.merge(data)
+    val pm = rectInit ++ data
     val (_, boxdims) = geom(pm)
-    val os = pm.getProp(OuterSep)
+    val os = pm(OuterSep)
     val dims = Complex(boxdims.x + 2 * os, boxdims.y + 2 * os)
     val q1dir = Complex(dir.x.abs, dir.y.abs)
     val q1pt = if (q1dir.x == 0) {
@@ -87,27 +86,25 @@ case class Rect[D: PartData](label: Property, val rectInit: D)
     }
     Some(
       Complex(q1pt.x * dir.x.sign, q1pt.y * dir.y.sign) + data
-        .getProps()
         .get(Center)
         .getOrElse(Complex(100, 100))
     )
   }
 
-  override def bbox(data: D, subparts: Seq[PartTag] = Seq()) = {
-    val (pos, dims) = geom(rectInit.merge(data))
+  override def bbox(data: PropMap, subparts: Seq[PartTag] = Seq()) = {
+    val (pos, dims) = geom(rectInit ++ data)
     Some(BoundingBox(pos, dims))
   }
 
-  override def center(data: D, subparts: Seq[PartTag] = Seq()) =
-    data.tryProp(Center)
+  override def center(data: PropMap, subparts: Seq[PartTag] = Seq()) =
+    data.get(Center)
 
-  override def toTikz(p: PartTag, data: D, visible: Boolean = true) =
+  override def toTikz(p: PartTag, data: PropMap, visible: Boolean = true) =
     tikzNode(
       "rectangle",
       p.keyPart.tikzName,
-      data.tryProp(Center).getOrElse(Complex(0, 0)),
-      data
-        .getProp(Content)
+      data.get(Center).getOrElse(Complex(0, 0)),
+      data(Content)
         .flatMap(_ match
           case '\n' => "\\\\"
           case ch   => ch.toString()
@@ -118,72 +115,70 @@ case class Rect[D: PartData](label: Property, val rectInit: D)
 object Rect:
   import Sprite.defaultProps
 
-  def geom[D: PartData](data: D): (Complex, Complex) = {
+  def geom(data: PropMap): (Complex, Complex) = {
     val props = data.softSetProps(defaultProps)
     val textRect = boxSize(
-      props.getProp(Content),
-      props.getProp(FontSize),
+      props(Content),
+      props(FontSize),
       split = true
     )
     val center = props
-      .tryProp(Center)
+      .get(Center)
       .getOrElse(throw msgError(s"missing center in $data"))
-    val innerSep = props.getProp(InnerSep)
-    val width = props
-      .getProp(MinimumWidth)
+    val innerSep = props(InnerSep)
+    val width = props(MinimumWidth)
       .max(textRect.x + innerSep)
-    val height = props
-      .getProp(MinimumHeight)
+    val height = props(MinimumHeight)
       .max(textRect.y + innerSep)
     val dims = Complex(width, height)
     val pos = center - dims / 2
     (pos, dims)
   }
 
-  def geomUpdater[D: PartData](updates: L.Signal[D]) = {
+  def geomUpdater(updates: L.Signal[PropMap]) = {
     val (pos, dims) = updates.map(geom).splitTuple
     List(xy <-- pos, wh <-- dims)
   }
 
-  def styleUpdater[D: PartData](updates: L.Signal[D]) = {
+  def styleUpdater(updates: L.Signal[PropMap]) = {
     val props = updates.map(_.softSetProps(defaultProps))
 
     List(
       fill <-- props.map(d =>
-        if d.hasProp(Highlight)
-        then d.getProp(Fill).lighten(.5).toString
-        else d.getProp(Fill).toString
+        if d.contains(Highlight)
+        then d(Fill).lighten(.5).toString
+        else d(Fill).toString
       ),
       strokeWidth <-- props.map(d =>
-        if d.hasProp(Selected)
+        if d.contains(Selected)
         then "3"
         else "1"
       ),
       stroke <-- props.map(data =>
         data
-          .tryProp(Stroke)
+          .get(Stroke)
           .getOrElse(
             RGB("black")
           )
           .toString
       ),
-      style <-- props.map(_.getProp(Style))
+      style <-- props.map(_(Style))
     )
   }
-  def bgUpdater[D: PartData](data: L.Signal[D]) = {
+  def bgUpdater(data: L.Signal[PropMap]) = {
     val props = data.map(_.softSetProps(defaultProps))
     List(
       cls := "disc-bg",
-      href <-- props.map(_.getProp(ImageURL)),
+      href <-- props.map(_(ImageURL)),
       clipPathAttr := "inset(0% round 50%)",
       pointerEvents := "none"
     )
   }
 
-  def apply[D: PartData]() = new Rect[D](Content, PartData(defaultProps))
-  def apply[D: PartData](data: D) =
-    new Rect[D](Content, data.softSetProps(defaultProps))
-  def apply[D: PartData](label: Property) =
-    new Rect[D](label, PartData(defaultProps))
-  def apply[D: PartData](label: Property, data: D) =
+  def apply() = new Rect(Content, defaultProps)
+  def apply(data: PropMap) =
+    new Rect(Content, data.softSetProps(defaultProps))
+  def apply(label: Property) =
+    new Rect(label, defaultProps)
+  def apply(label: Property, data: PropMap) =
     new Rect(label, data.softSetProps(defaultProps))

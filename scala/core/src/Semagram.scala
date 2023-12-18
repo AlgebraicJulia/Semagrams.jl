@@ -19,7 +19,7 @@ import scala.annotation.targetName
 
 type StateMsg[Model] = Either[Message[Model], Message[EditorState]]
 
-trait Semagram[Model, D: PartData]:
+trait Semagram[Model]:
   /* Implementation API */
   type DisplayModel = Model
 
@@ -27,10 +27,10 @@ trait Semagram[Model, D: PartData]:
   def layout(m: Model, es: EditorState): DisplayModel
 
   /** Optionally postprocess entities emerging from the rendering pipeline */
-  def postprocess(emap: EntitySeq[D]): EntitySeq[D] = emap
+  def postprocess(emap: EntitySeq): EntitySeq = emap
 
   /** Extractors for the various entities in the Semagram */
-  val entitySources: Seq[EntitySource[DisplayModel, D]]
+  val entitySources: Seq[EntitySource[DisplayModel]]
 
   val modelVar: UndoableVar[Model]
 
@@ -38,11 +38,11 @@ trait Semagram[Model, D: PartData]:
 
   def readout() = (stateVar.now(), modelVar.now())
 
-  def produceEntities(dm: DisplayModel): Seq[(PartTag, (Sprite[D], D))] =
+  def produceEntities(dm: DisplayModel): Seq[(PartTag, (Sprite, PropMap))] =
     postprocess(
-      entitySources.foldLeft(EntitySeq[D]())((ents, source) =>
+      entitySources.foldLeft(EntitySeq())((ents, source) =>
         ents ++ source.makeEntities(dm, ents).filter {
-          case _ -> (sprite, data) => data.hasProps(sprite.requiredProps)
+          case _ -> (sprite, data) => data.contains(sprite.requiredProps: _*)
         }
       )
     )
@@ -141,7 +141,7 @@ trait Semagram[Model, D: PartData]:
 
   main.unsafeRunAndForget()(unsafe.IORuntime.global)
 
-trait TabularSemagram[D: PartData] extends Semagram[ACSet[D], D]:
+trait TabularSemagram extends Semagram[ACSet]:
   import widgets._
 
   case class EditTable(ob: Ob, cols: Seq[Property], withLayout: Boolean = true):
@@ -156,7 +156,7 @@ trait TabularSemagram[D: PartData] extends Semagram[ACSet[D], D]:
     )
     def edit(part: Part, f: Property) = editObs.onNext(part -> f)
 
-  def acsetMsg(msg: ChangeMsg[Part]): Message[ACSet[D]] =
+  def acsetMsg(msg: ChangeMsg[Part]): Message[ACSet] =
     msg match
       case SetValue(p, change) => ChangePropMsg(p, change)
       case HoverMsg(p, highlighted) =>
@@ -165,7 +165,7 @@ trait TabularSemagram[D: PartData] extends Semagram[ACSet[D], D]:
         else ChangePropMsg(p, PropChange(Highlight, (), None))
 
   /** A callback function for passing messages externally * */
-  def update(msg: Message[ACSet[D]]) = modelObs.onNext(msg)
+  def update(msg: Message[ACSet]) = modelObs.onNext(msg)
   @targetName("updateState")
   def update(msg: Message[EditorState]) = stateObs.onNext(msg)
 

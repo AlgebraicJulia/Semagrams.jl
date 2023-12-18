@@ -12,7 +12,7 @@
 //   * where the beginning and the end are both horizontal, and it has no
 //   * arrowhead.
 //   */
-// case class Wire[D:PartData]() extends Sprite[D] {
+// case class Wire[PropMap:PartData]() extends Sprite {
 
 //   def requiredProps = Seq(Start,End)
 //   def defaultProps = Wire.defaultProps
@@ -66,19 +66,19 @@
 
 //   def present(
 //       ent: Part,
-//       init: D,
-//       updates: L.Signal[D],
+//       init: PropMap,
+//       updates: L.Signal,
 //       eventWriter: L.Observer[Event]
 //   ): L.SvgElement = {
 
-//     val dataSig = updates.map(init.softSetProps(defaultProps).merge(_))
+//     val dataSig = updates.map(init.softSetProps(defaultProps) ++ _)
 
-//     def ppath(s:Complex,t:Complex,data:D) =
+//     def ppath(s:Complex,t:Complex,data:PropMap) =
 //       val Seq(ds,dt): Seq[Complex] = Seq(StartDir,EndDir).map(data.getProp(_))
 //       val b = data.getProp(Bend)
 //       curvedPath(s,t,ds,dt,b)
 
-//     def textElt(s:Complex,t:Complex,data:D): L.SvgElement =
+//     def textElt(s:Complex,t:Complex,data:PropMap): L.SvgElement =
 //       val o = data.getProp(LabelOffset)
 //       val a = data.getProp(LabelAnchor)
 
@@ -106,7 +106,7 @@
 //         pointerEvents := "none"
 //       )
 
-//     def wireElt(s:Complex,t:Complex,data:D): L.SvgElement =
+//     def wireElt(s:Complex,t:Complex,data:PropMap): L.SvgElement =
 //       path(
 //         pathElts := ppath(s,t,data),
 //         stroke := (if data.hasProp(Highlight)
@@ -120,7 +120,7 @@
 //         pointerEvents := "none"
 //       )
 
-//     def handleElt(s:Complex,t:Complex,data:D): L.SvgElement =
+//     def handleElt(s:Complex,t:Complex,data:PropMap): L.SvgElement =
 //       val Seq(ds,dt) = Seq(StartDir,EndDir).map(data.getProp(_))
 //       val b = data.getProp(Bend)
 //       path(
@@ -134,7 +134,7 @@
 //         )
 //       )
 
-//     def elts(s:Complex,t:Complex,data:D) = Seq(
+//     def elts(s:Complex,t:Complex,data:PropMap) = Seq(
 //       wireElt(s,t,data),
 //       handleElt(s,t,data),
 //       textElt(s,t,data)

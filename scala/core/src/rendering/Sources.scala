@@ -5,41 +5,42 @@ import semagrams.util._
 import semagrams.acsets._
 import semagrams.partprops._
 
-trait EntitySource[Model, D: PartData] { self =>
+trait EntitySource[Model] { self =>
   type TagType
   val id: UID
-  def makeEntities(m: Model, kvs: EntitySeq[D]): EntitySeq[D]
+  def makeEntities(m: Model, kvs: EntitySeq): EntitySeq
 
-  def mapData(f: D => D): EntitySource[Model, D] = EntitySource(
-    id.refresh(),
-    (m: Model, kvs: EntitySeq[D]) =>
-      self.makeEntities(m, kvs).map { case k -> (spr, init) =>
-        k -> (spr, f(init))
-      }
-  )
+  def mapData(f: PropMap => PropMap): EntitySource[Model] =
+    EntitySource(
+      id.refresh(),
+      (m: Model, kvs: EntitySeq) =>
+        self.makeEntities(m, kvs).map { case k -> (spr, init) =>
+          k -> (spr, f(init))
+        }
+    )
 
   /** Construct m new [[EntitySource]] which adds the properties in `props` to
     * every acset produced by this [[EntitySource]].
     */
-  def withProps(props: PropMap) = mapData(_.setProps(props))
+  def withProps(props: PropMap) = mapData(_ ++ props)
 
   def withSoftProps(props: PropMap) = mapData(_.softSetProps(props))
 
   /** Construct m new [[EntitySource]] which uses `f` to make new properties to
     * add to every acset produced by this [[EntitySource]].
     */
-  def addPropsBy(f: (PartTag, EntitySeq[D], D) => PropMap) = EntitySource(
+  def addPropsBy(f: (PartTag, EntitySeq, PropMap) => PropMap) = EntitySource(
     id.refresh(),
-    (m: Model, kvs: EntitySeq[D]) =>
+    (m: Model, kvs: EntitySeq) =>
       self.makeEntities(m, kvs).map { case tag -> (spr, init) =>
-        tag -> (spr, init.setProps(f(tag, kvs, init)))
+        tag -> (spr, init ++ f(tag, kvs, init))
       }
   )
 
-  def softAddPropsBy(f: (PartTag, EntitySeq[D], D) => PropMap) =
+  def softAddPropsBy(f: (PartTag, EntitySeq, PropMap) => PropMap) =
     EntitySource(
       id.refresh(),
-      (m: Model, kvs: EntitySeq[D]) =>
+      (m: Model, kvs: EntitySeq) =>
         self.makeEntities(m, kvs).map { case tag -> (spr, init) =>
           tag -> (spr, init.softSetProps(f(tag, kvs, init)))
         }
@@ -48,16 +49,16 @@ trait EntitySource[Model, D: PartData] { self =>
 }
 
 object EntitySource:
-  def apply[Model, D: PartData](
+  def apply[Model, PropMap](
       id: UID,
-      entityConstructor: (Model, EntitySeq[D]) => EntitySeq[D]
-  ) = new EntitySource[Model, D] {
+      entityConstructor: (Model, EntitySeq) => EntitySeq
+  ) = new EntitySource[Model] {
     val id = id
-    def makeEntities(m: Model, kvs: EntitySeq[D]): EntitySeq[D] =
+    def makeEntities(m: Model, kvs: EntitySeq): EntitySeq =
       entityConstructor(m, kvs)
   }
 
-trait ACSetSource[D: PartData] extends EntitySource[ACSet[D], D]:
+trait ACSetSource extends EntitySource[ACSet]:
 
   /* Type of schema data for the source
    *   e.g., Ob, Span */
@@ -69,42 +70,42 @@ trait ACSetSource[D: PartData] extends EntitySource[ACSet[D], D]:
 
   type TagType <: PartTag
 
-  def sprite: Sprite[D]
+  def sprite: Sprite
 
-  def init: PartialFunction[Shape, D]
+  def init: PartialFunction[Shape, PropMap]
 
   def test = init.isDefinedAt
 
   def shapes(s: Schema): Seq[Shape]
 
-  def matchData(shape: Shape, acset: ACSet[D]): Seq[(Match, D)]
+  def matchData(shape: Shape, acset: ACSet): Seq[(Match, PropMap)]
 
-  def matchData(acset: ACSet[D]): Seq[(Match, D)] =
+  def matchData(acset: ACSet): Seq[(Match, PropMap)] =
     shapes(acset.schema).flatMap(matchData(_, acset))
 
-  def matches(shape: Shape, acset: ACSet[D]): Seq[Match] =
+  def matches(shape: Shape, acset: ACSet): Seq[Match] =
     matchData(shape, acset).map(_._1)
 
-  def matches(acset: ACSet[D]): Seq[Match] = matchData(acset).map(_._1)
+  def matches(acset: ACSet): Seq[Match] = matchData(acset).map(_._1)
 
   def tag(shape: Shape, m: Match): TagType
 
-  def tags(acset: ACSet[D]): Seq[TagType] =
+  def tags(acset: ACSet): Seq[TagType] =
     shapes(acset.schema).flatMap(shape =>
       matches(shape, acset).map(tag(shape, _))
     )
 
-  def baseEntities(acset: ACSet[D], kvs: EntitySeq[D]) = (for
+  def baseEntities(acset: ACSet, kvs: EntitySeq) = (for
     shape <- shapes(acset.schema)
     if test(shape)
     (m, data) <- matchData(shape, acset)
-  yield tag(shape, m) -> (sprite, init(shape).merge(data))).reverse
+  yield tag(shape, m) -> (sprite, init(shape) ++ data)).reverse
 
-case class ObSource[D: PartData](
+case class ObSource(
     id: UID,
-    sprite: Sprite[D],
-    init: PartialFunction[Ob, D]
-) extends ACSetSource[D]:
+    sprite: Sprite,
+    init: PartialFunction[Ob, PropMap]
+) extends ACSetSource:
   type Shape = Ob
   type Match = Part
 
@@ -112,42 +113,42 @@ case class ObSource[D: PartData](
 
   def shapes(s: Schema): Seq[Ob] = s.obSeq
 
-  def matchData(ob: Ob, acset: ACSet[D]): Seq[(Part, D)] =
-    acset.getDataSeq(ob)
+  def matchData(ob: Ob, acset: ACSet): Seq[(Part, PropMap)] =
+    acset.getPropSeq(ob)
 
   def tag(shape: Shape, p: Part) = ObTag(p, id)
 
-  def makeEntities(acset: ACSet[D], kvs: EntitySeq[D]) =
+  def makeEntities(acset: ACSet, kvs: EntitySeq) =
     baseEntities(acset, kvs)
 
-def obdef[D: PartData](kv: (Ob | (Ob, D))): (Ob, D) = kv match
-  case kv: (Ob, D) => kv
-  case ob: Ob      => ob -> PartData()
+def obdef(kv: (Ob | (Ob, PropMap))): (Ob, PropMap) = kv match
+  case kv: (Ob, PropMap) => kv
+  case ob: Ob            => ob -> PropMap()
 
 object ObSource:
-  def apply[D: PartData](id: UID, sprite: Sprite[D], ob: Ob): ObSource[D] =
-    new ObSource(id, sprite, Map(ob -> PartData()))
-  def apply[D: PartData](
+  def apply(id: UID, sprite: Sprite, ob: Ob): ObSource =
+    new ObSource(id, sprite, Map(ob -> PropMap()))
+  def apply(
       id: UID,
-      sprite: Sprite[D],
+      sprite: Sprite,
       ob: Ob,
-      init: D
-  ): ObSource[D] =
+      init: PropMap
+  ): ObSource =
     new ObSource(id, sprite, Map(ob -> (init)))
-  def apply[D: PartData](
+  def apply(
       id: UID,
-      sprite: Sprite[D],
-      kvs: (Ob | (Ob, D))*
-  ): ObSource[D] =
+      sprite: Sprite,
+      kvs: (Ob | (Ob, PropMap))*
+  ): ObSource =
     new ObSource(id, sprite, kvs.map(obdef).toMap)
 
-trait EdgeSource[D: PartData] extends ACSetSource[D]:
+trait EdgeSource extends ACSetSource:
 
   def srcTag(m: Match): ObTag
   def tgtTag(m: Match): Option[ObTag]
 
   def tagSpans(
-      acset: ACSet[D]
+      acset: ACSet
   ): Seq[(TagType, (PartTag, Option[PartTag]))] =
     shapes(acset.schema).flatMap(shape =>
       matchData(shape, acset).map((m, _) =>
@@ -155,11 +156,11 @@ trait EdgeSource[D: PartData] extends ACSetSource[D]:
       )
     )
 
-case class SpanSource[D: PartData](
+case class SpanSource(
     contextIds: (UID, (UID, UID)),
-    sprite: Sprite[D],
-    init: PartialFunction[PartSpan, D]
-) extends EdgeSource[D]:
+    sprite: Sprite,
+    init: PartialFunction[PartSpan, PropMap]
+) extends EdgeSource:
   type Shape = PartSpan
   type Match = (Part, (Part, Option[Part]))
 
@@ -184,14 +185,14 @@ case class SpanSource[D: PartData](
       if test(span)
     yield span
 
-  def matchData(shape: Shape, acset: ACSet[D]): Seq[(Match, D)] =
+  def matchData(shape: Shape, acset: ACSet): Seq[(Match, PropMap)] =
     val Span(f, g) = shape
     for
-      (part, data) <- acset.getDataSeq(f.dom)
-      if data.hasProps(Seq(f, g)) | data.hasProps(Seq(f, End))
+      (part, data) <- acset.getPropSeq(f.dom)
+      if data.contains(f, g) | data.contains(f, End)
     yield
-      val s = data.getProp(f)
-      val tOpt = data.tryProp(g)
+      val s = data(f)
+      val tOpt = data.get(g)
       val m = part -> (s, tOpt)
       m -> data
 
@@ -199,49 +200,48 @@ case class SpanSource[D: PartData](
     val (apex, _) = m
     SpanTag(id, shape, apex, srcTag(m) -> tgtTag(m))
 
-  def makeEntities(m: ACSet[D], kvs: EntitySeq[D]): EntitySeq[D] =
+  def makeEntities(m: ACSet, kvs: EntitySeq): EntitySeq =
     baseEntities(m, kvs).map { case tag -> (spr, init) =>
-      tag -> (spr, init.setProps(
-        graphs.spanProps(tag, init, kvs)
-      ))
+      tag -> (spr,
+      init ++ graphs.spanProps(tag, init, kvs))
     }
 
 object SpanSource:
-  // def apply[D: PartData](
+  // def apply(
   //     vsrc: UID,
-  //     sprite: Sprite[D],
+  //     sprite: Sprite,
   //     span: PartSpan
-  // ): SpanSource[D] =
-  //   new SpanSource[D](
+  // ): SpanSource =
+  //   new SpanSource(
   //     UID("SpanSource") -> (vsrc, vsrc),
   //     sprite,
-  //     Map(span -> PartData())
+  //     Map(span -> PropMap())
   //   )
-  def apply[D: PartData](
+  def apply(
       vsrc: UID,
-      sprite: Sprite[D],
+      sprite: Sprite,
       span: PartSpan,
-      init: D
-  ): SpanSource[D] =
+      init: PropMap
+  ): SpanSource =
     new SpanSource(UID("SpanSource") -> (vsrc, vsrc), sprite, Map(span -> init))
-  def apply[D: PartData](
+  def apply(
       vsrc: UID,
-      sprite: Sprite[D],
-      kvs: (PartSpan | (PartSpan, D))*
-  ): SpanSource[D] =
+      sprite: Sprite,
+      kvs: (PartSpan | (PartSpan, PropMap))*
+  ): SpanSource =
     val cleankvs = kvs
       .map(_ match
-        case span: PartSpan       => span -> PartData[D]()
-        case clean: (PartSpan, D) => clean
+        case span: PartSpan             => span -> PropMap()
+        case clean: (PartSpan, PropMap) => clean
       )
       .toMap
     new SpanSource(UID("SpanSource") -> (vsrc, vsrc), sprite, cleankvs)
 
-case class HomSource[D: PartData](
+case class HomSource(
     contextIds: (UID, (UID, UID)),
-    sprite: Sprite[D],
-    init: PartialFunction[PartHom, D]
-) extends EdgeSource[D]:
+    sprite: Sprite,
+    init: PartialFunction[PartHom, PropMap]
+) extends EdgeSource:
   type Shape = PartHom
   type Match = (Part, Option[Part])
 
@@ -262,52 +262,51 @@ case class HomSource[D: PartData](
       .collect { case f: PartHom => f }
       .filter(test)
 
-  def matchData(f: Shape, acset: ACSet[D]): Seq[(Match, D)] =
+  def matchData(f: Shape, acset: ACSet): Seq[(Match, PropMap)] =
     for
-      (part, data) <- acset.getDataSeq(f.dom)
-      if data.hasProps(Seq(f)) | data.hasProps(Seq(End))
+      (part, data) <- acset.getPropSeq(f.dom)
+      if data.contains(f) | data.contains(End)
     yield
-      val tOpt = data.tryProp(f)
+      val tOpt = data.get(f)
       (part, tOpt) -> data
 
   def tag(f: Shape, m: Match) =
     val (s, t) = m
     HomTag(id, f, srcTag(m), tgtTag(m))
 
-  def makeEntities(m: ACSet[D], kvs: EntitySeq[D]): EntitySeq[D] =
+  def makeEntities(m: ACSet, kvs: EntitySeq): EntitySeq =
     baseEntities(m, kvs).map { case tag -> (spr, init) =>
-      tag -> (spr, init.setProps(
-        graphs.homProps(tag, init, kvs)
-      ))
+      tag -> (spr,
+      init ++ graphs.homProps(tag, init, kvs))
     }
 
 object HomSource:
-  def apply[D: PartData](
+  def apply(
       vsrc: UID,
       hom: Hom[_],
-      sprite: Sprite[D]
-  ): HomSource[D] =
-    new HomSource[D](
+      sprite: Sprite
+  ): HomSource =
+    new HomSource(
       UID("HomSource") -> (vsrc, vsrc),
       sprite,
-      Map(hom -> PartData())
+      Map(hom -> PropMap())
     )
-  def apply[D: PartData](
+  def apply(
       vsrc: UID,
-      sprite: Sprite[D],
+      sprite: Sprite,
       hom: Hom[_],
-      init: D
-  ): HomSource[D] =
+      init: PropMap
+  ): HomSource =
     new HomSource(UID("HomSource") -> (vsrc, vsrc), sprite, Map(hom -> init))
-  def apply[D: PartData](
+  def apply(
       vsrc: UID,
-      sprite: Sprite[D],
-      kvs: (Hom[_] | (Hom[_], D))*
-  ): HomSource[D] =
+      sprite: Sprite,
+      kvs: (Hom[_] | (Hom[_], PropMap))*
+  ): HomSource =
     val cleankvs = kvs
       .map(_ match
-        case clean: (Hom[_], D)     => clean
-        case hom: Hom[_] @unchecked => hom -> PartData[D]()
+        case clean: (Hom[_], PropMap) => clean
+        case hom: Hom[_] @unchecked   => hom -> PropMap()
       )
       .toMap
     new HomSource(UID("HomSource") -> (vsrc, vsrc), sprite, cleankvs)

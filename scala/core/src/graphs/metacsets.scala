@@ -46,7 +46,7 @@ case object SchSchema extends Schema:
 
 /* Schemas from ACSet(SchSchema) */
 
-def acsetSchema[D: PartData](id: UID)(acset: ACSet[D]): BasicSchema =
+def acset2Schema(id: UID)(acset: ACSet): BasicSchema =
   if !acset.schema.hasElts(Seq[SchObs](TableOb, FKeyOb, AttrOb))
   then println(s"Warning: missing schema elements in $acset")
   val tableMap = acset
@@ -86,3 +86,39 @@ def acsetSchema[D: PartData](id: UID)(acset: ACSet[D]): BasicSchema =
   }
 
   BasicSchema(id, (tableMap.values ++ fkeys ++ attrs).toSeq: _*)
+
+def schema2ACSet(schema: BasicSchema): ACSet =
+  val a0 = ACSet(SchSchema)
+
+  val (a1, obparts) = a0.addPartsById(
+    TableOb,
+    schema.tables.map((id, ob) => id -> PropMap().set(Content, ob.name))
+  )
+  val obs = obparts.map(p => p.id -> p).toMap
+
+  val (a2, tpparts) = a1.addPartsById(
+    ValTypeOb,
+    schema.attrSeq
+      .map(_.codom)
+      .eltMap
+      .map((id, tp) => id -> PropMap().set(Content, tp.name))
+  )
+  val tps = tpparts.map(tp => tp.id -> tp).toMap
+
+  val fkeys = schema.fkeys.map((id, f) =>
+    id -> PropMap()
+      .set(Content, f.name)
+      .set(FKeySrc, obs(f.dom.id))
+      .set(FKeyTgt, obs(f.codom.id))
+  )
+  val a3 = a2.addPartsById(FKeyOb, fkeys)._1
+
+  val attrs = schema.attrs.map((id, a) =>
+    id -> PropMap()
+      .set(Content, a.name)
+      .set(AttrSrc, obs(a.dom.id))
+      .set(AttrTgt, tps(a.codom.id))
+  )
+  val a4 = a3.addPartsById(AttrOb, attrs)._1
+
+  a4

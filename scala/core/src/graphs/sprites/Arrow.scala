@@ -17,7 +17,7 @@ import com.raquo.laminar.api._
   * for mouse events, because otherwise it would be very annoying to mouse over
   * the arrow.
   */
-case class Arrow[D: PartData](label: Property, data: D) extends Sprite[D] {
+case class Arrow(label: Property, customProps: PropMap) extends Sprite {
 
   val defaultProps = Arrow.defaultProps
   val requiredProps = Seq(Start, End)
@@ -53,7 +53,7 @@ case class Arrow[D: PartData](label: Property, data: D) extends Sprite[D] {
     val rot = Complex(0, -bend).exp
     val λ = 1.0 / 4
     val cs = rot * (λ * (e - s)) + s
-    val ce = rot.cong * (λ * (s - e)) + e
+    val ce = rot.conj * (λ * (s - e)) + e
     Seq(MoveTo(s), Cubic(cs, ce, e))
   }
   def curvedPath(
@@ -68,12 +68,12 @@ case class Arrow[D: PartData](label: Property, data: D) extends Sprite[D] {
 
   def present(
       ent: PartTag,
-      init: D,
-      updates: L.Signal[D],
+      init: PropMap,
+      updates: L.Signal[PropMap],
       eventWriter: L.Observer[Event]
   ): L.SvgElement = {
     val props =
-      updates.map(d => Arrow.defaultProps ++ data.getProps() ++ d.getProps())
+      updates.map(d => Arrow.defaultProps ++ customProps ++ d)
 
     def ppath(p: PropMap) = curvedPath(p.get(Start), p.get(End), p.get(Bend))
 
@@ -136,20 +136,19 @@ case class Arrow[D: PartData](label: Property, data: D) extends Sprite[D] {
     g(arrow, handle, text)
   }
 
-  override def toTikz(e: PartTag, props: D, visible: Boolean = true) =
+  override def toTikz(e: PartTag, props: PropMap, visible: Boolean = true) =
     if !visible
     then ""
     else
-      val p = props.getProps()
-      val s = p.get(TikzStart).getOrElse {
+      val s = props.get(TikzStart).getOrElse {
         println(s"Missing TikzStart")
         ""
       }
-      val t = p.get(TikzEnd).getOrElse {
+      val t = props.get(TikzEnd).getOrElse {
         println(s"Missing TikzEnd")
         ""
       }
-      val b = 40 * p.get(Bend).getOrElse(0.0)
+      val b = 40 * props.get(Bend).getOrElse(0.0)
 
       val endpts =
         s"\\path ($s) to[bend left={$b}] node[pos=00](a@$s){} node[pos=1](b@$t){} ($t);\n"
@@ -172,7 +171,7 @@ object Arrow {
     + (PathLabel, "")
     + (FontSize, 12)
 
-  def apply[D: PartData](label: Property): Arrow[D] =
-    Arrow[D](label, PartData(defaultProps))
-  def apply[D: PartData](): Arrow[D] = Arrow[D](Content)
+  def apply(label: Property): Arrow =
+    Arrow(label, defaultProps)
+  def apply(): Arrow = Arrow(Content)
 }
