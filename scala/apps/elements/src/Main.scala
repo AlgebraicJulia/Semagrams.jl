@@ -37,7 +37,7 @@ def arrowExtractor(d: DynACSet, sprites: Sprites): List[(Entity, PropMap)] = {
           case f if pm contains f =>
             (
               HomArrow(e, Right(pm(f)), f),
-              edgeProps(
+              spanProps(
                 sprites,
                 Some(e),
                 sprites(e)._2(Center),
@@ -205,7 +205,7 @@ def handleCommand(state: DynACSet, c: Command) = {
           PropMap() + (Center, p * scale + offset) + (Content, s"$s: $i")
         )
       })
-      acs.setSubparts(posProps)
+      acs.setProps(posProps)
     }
   }
 }

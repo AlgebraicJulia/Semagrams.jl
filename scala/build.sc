@@ -17,25 +17,13 @@ def defaultPomSettings(desc: String) = PomSettings(
 )
 
 trait Defaults extends ScalaJSModule with PublishModule with ScalafmtModule {
-  def scalaVersion = "3.2.2"
-  def scalaJSVersion = "1.13.1"
-  def ammoniteVersion = "3.0.0-M0"
+  def scalaVersion = "3.3.1"
+  def scalaJSVersion = "1.13.2"
+  def ammoniteVersion = "3.0.0-M0-53-084f7f4e"
 
-  def scalacOptions = Seq("-deprecation", "-feature")
+  def scalacOptions = Seq("-deprecation", "-feature", "-Wunused:all")
 
   def moduleKind = T { ModuleKind.ESModule }
-
-  def ivyDeps = Agg(
-    ivy"org.scala-js::scalajs-dom::2.6.0",
-    ivy"com.raquo::laminar::15.0.1",
-    ivy"com.lihaoyi::upickle::3.1.0",
-    ivy"org.typelevel::cats-core::2.9.0",
-    ivy"org.typelevel::cats-kernel::2.9.0",
-    ivy"org.typelevel::cats-effect::3.5.0",
-    ivy"com.github.japgolly.scalacss::core::1.0.0",
-    ivy"dev.optics::monocle-core::3.2.0",
-    ivy"dev.optics::monocle-macro::3.2.0"
-  )
 
   def desc: String
 
@@ -45,7 +33,8 @@ trait Defaults extends ScalaJSModule with PublishModule with ScalafmtModule {
 
   def sonatypeUri = "https://s01.oss.sonatype.org/service/local"
 
-  def sonatypeSnapshotUri = "https://s01.oss.sonatype.org/content/repositories/snapshots"
+  def sonatypeSnapshotUri =
+    "https://s01.oss.sonatype.org/content/repositories/snapshots"
 }
 
 object core extends Defaults {
@@ -53,10 +42,26 @@ object core extends Defaults {
 
   def artifactName = "semagrams"
 
-  object test extends Tests with TestModule.Utest {
-    def jsEnvConfig = T(JsEnvConfig.JsDom())
+  def ivyDeps = Agg(
+    ivy"org.scala-js::scalajs-dom::2.6.0",
+    ivy"com.raquo::laminar::16.0.0",
+    ivy"com.lihaoyi::upickle::3.1.3",
+    ivy"org.typelevel::cats-core::2.10.0",
+    ivy"org.typelevel::cats-kernel::2.10.0",
+    ivy"org.typelevel::cats-effect::3.5.1",
+    ivy"org.typelevel::cats-effect-cps::0.4.0",
+    ivy"com.github.japgolly.scalacss::core::1.0.0",
+    ivy"dev.optics::monocle-core::3.2.0",
+    ivy"dev.optics::monocle-macro::3.2.0",
+    ivy"io.laminext::fetch::0.16.2"
+  )
 
-    def ivyDeps = Agg(ivy"com.lihaoyi::utest::0.8.1")
+  object test extends ScalaJSTests {
+    def ivyDeps = Agg(
+      ivy"com.disneystreaming::weaver-cats::0.8.3"
+    )
+
+    def testFramework = "weaver.framework.CatsEffect"
   }
 }
 
@@ -66,18 +71,28 @@ trait SemagramsApp extends Defaults {
 
 object apps extends Module {
 
-  object simplepetri extends SemagramsApp {
-    def desc = "simple petri editor"
+  // object simplepetri extends SemagramsApp {
+  //   def desc = "simple petri editor"
 
-    def artifactName = "semagrams-simplepetri"
+  //   def artifactName = "semagrams-simplepetri"
+  // }
+
+  // object dwd extends SemagramsApp {
+  //   def desc = "A string diagram editor"
+
+  //   def artifactName = "semagrams-dwd"
+  // }
+
+  object graph extends SemagramsApp {
+    def desc = "graph editor"
+
+    def artifactName = "semagrams-graph"
   }
-  
-  object dwd extends SemagramsApp {
-    def desc = "A string diagram editor"
 
-    def artifactName = "semagrams-dwd"
+  object acsess extends SemagramsApp {
+    def desc = "ACSet editor"
+
+    def artifactName = "semagrams-acsess"
   }
-
-
 
 }

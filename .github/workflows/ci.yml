@@ -15,7 +15,7 @@ jobs:
       - name: Set up Mill
         uses: jodersky/setup-mill@master
         with:
-          mill-version: '0.10.5'
+          mill-version: '0.11.6'
 
       - name: Set up NPM
         uses: actions/setup-node@v3
@@ -37,7 +37,7 @@ jobs:
       - name: Set up Mill
         uses: jodersky/setup-mill@master
         with:
-          mill-version: '0.10.5'
+          mill-version: '0.11.6'
 
       - name: Check formatting
         run: |
@@ -57,7 +57,7 @@ jobs:
       - name: Set up Mill
         uses: jodersky/setup-mill@master
         with:
-          mill-version: '0.10.11'
+          mill-version: '0.11.6'
 
       - name: Build compiled javascript
         run: |

@@ -74,7 +74,7 @@ extension (a: Actions) {
         (
           a.getDims(p),
           m.now()
-            .trySubpart(Center, p)
+            .tryProp(Center, p)
             .getOrElse(
               throw msgError(s"missing center for $p")
             )
@@ -95,14 +95,14 @@ extension (a: Actions) {
       case Wire => (
         for
           _ <- a.set(p, PortType, tpe)
-          s = m.now().trySubpart(Src, p)
-          t = m.now().trySubpart(Tgt, p)
+          s = m.now().tryProp(Src, p)
+          t = m.now().tryProp(Tgt, p)
           _ <- s match
-            case Some(p) if m.now().trySubpart(PortType, p) != Some(tpe) =>
+            case Some(p) if m.now().tryProp(PortType, p) != Some(tpe) =>
               setType(p, tpe)
             case _ => IO(())
           _ <- t match
-            case Some(p) if m.now().trySubpart(PortType, p) != Some(tpe) =>
+            case Some(p) if m.now().tryProp(PortType, p) != Some(tpe) =>
               setType(p, tpe)
             case _ => IO(())
         yield ()
@@ -111,7 +111,7 @@ extension (a: Actions) {
         for
           _ <- a.set(p, PortType, tpe)
           ws = (m.now().incident(p, Src) ++ m.now().incident(p, Tgt))
-            .filter(w => m.now().trySubpart(PortType, w) != Some(tpe))
+            .filter(w => m.now().tryProp(PortType, w) != Some(tpe))
           _ <- a.doAll(ws.map(setType(_, tpe)))
         yield ()
       )
@@ -120,8 +120,8 @@ extension (a: Actions) {
     * different, in which case die.
     */
   def eqTypes(p: Part, q: Part): IO[Unit] =
-    val ptpe = a.m.now().trySubpart(PortType, p)
-    val qtpe = a.m.now().trySubpart(PortType, q)
+    val ptpe = a.m.now().tryProp(PortType, p)
+    val qtpe = a.m.now().tryProp(PortType, q)
     (ptpe, qtpe) match
       case (Some(tpe1), Some(tpe2)) =>
         if tpe1 == tpe2
@@ -290,12 +290,12 @@ val entitySources = (es: EditorState) =>
       .withProps(PropMap() + (FontSize, 22)),
     ACSetEntitySource(InPort, BasicPort(PropMap())(es))
       .withProps(PropMap() + (MinimumWidth, 40))
-      .addPropsBy((e: Entity, acs: ACSet, em: EntityMap) =>
+      .addPropsBy((e: Entity, acs: ACSet, em: EntitySeq) =>
         acs.props ++ style(acs, e.asInstanceOf[Part])
       ),
     ACSetEntitySource(OutPort, BasicPort(PropMap())(es))
       .withProps(PropMap() + (MinimumWidth, 40))
-      .addPropsBy((e: Entity, acs: ACSet, em: EntityMap) =>
+      .addPropsBy((e: Entity, acs: ACSet, em: EntitySeq) =>
         acs.props ++ style(acs, e.asInstanceOf[Part])
       ),
     ACSetEntitySource(Wire, BasicWire(Src, Tgt)(es))

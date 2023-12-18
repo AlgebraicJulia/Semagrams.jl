@@ -354,7 +354,7 @@ def renderPetri(
               (
                 v,
                 s.props(v)
-                  + (Content, s.trySubpart(SName, v).getOrElse(""))
+                  + (Content, s.tryProp(SName, v).getOrElse(""))
               )
             ),
         Stack(
@@ -384,7 +384,7 @@ def renderPetri(
               (
                 v,
                 s.props(v)
-                  + (Content, s.trySubpart(TName, v).getOrElse(""))
+                  + (Content, s.tryProp(TName, v).getOrElse(""))
                   + (Fill, colors(s.subpart(TransitionType, v)))
               )
             ),

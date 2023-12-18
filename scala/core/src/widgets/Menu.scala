@@ -1,9 +1,7 @@
 package semagrams.widgets
 
 import com.raquo.laminar.api.L._
-import semagrams.util._
 import cats.effect.IO
-import semagrams.acsets.Part
 
 /** A small menu. To be used with [[UIState.dialogue]], this returns an IO
   * action for the choice made.
@@ -12,9 +10,9 @@ import semagrams.acsets.Part
   *   It might be simpler to just return an integer for the choice made, and
   *   then have an array of IO actions on the other side.
   */
-def Menu[A](
-    choices: Seq[(String, Part => IO[A])]
-)(finished: Observer[Option[Part => IO[A]]]) = {
+def Menu[K, A](
+    choices: Seq[(String, K => IO[A])]
+)(finished: Observer[Option[K => IO[A]]]) = {
   div(
     styleAttr := "display: flex; flex-direction: column; padding: 0px; border: none",
     choices.map(

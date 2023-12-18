@@ -160,7 +160,7 @@ def springLayoutPetri(petri: ACSet, inside: BoundingBox): ACSet = {
     computeDiffs()
     n -= 1
   }
-  ps.foldLeft(petri)((acs, pv) => acs.setSubpart(pv._1, Center, pv._2))
+  ps.foldLeft(petri)((acs, pv) => acs.setProp(pv._1, Center, pv._2))
 }
 
 case class EquationWindow() extends Entity {

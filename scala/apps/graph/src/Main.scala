@@ -1,76 +1,150 @@
 package semagrams.graph
 
-import semagrams.api._
-import semagrams.acsets.{_, given}
-import Graph._
+import org.scalajs.dom
+import scala.scalajs.js.annotation._
+import scala.scalajs.js
 
-import upickle.default._
 import com.raquo.laminar.api.L._
-import cats.effect._
-import scala.scalajs.js.annotation.JSExportTopLevel
 
-case class LabelFor(e: Entity) extends Entity
+import semagrams._
+import semagrams.acsets._
+import semagrams.util._
+import semagrams.rendering._
+import semagrams.state._
+import semagrams.bindings._
+import semagrams.graphs._
+import semagrams.partprops._
 
-def bindings(es: EditorState, g: Var[Graph], ui: UIState) = {
-  val a = Actions(es, g, ui)
+/* Display */
 
-  Seq(
-    keyDown("a").andThen(a.add_(V, PropMap().set(MinimumWidth, 60).set(MinimumHeight, 60))),
-    keyDown("d").andThen(a.del),
-    keyDown("e").andThen(a.importExport),
-    keyDown("l").andThen(
-      for {
-        mv <- es.hoveredPart(V)
-        _ <- mv.map(v => a.edit(Label, false)(v)).getOrElse(IO(()))
-      } yield ()),
-    clickOnPart(MouseButton.Left, V).withMods().flatMap(a.dragMove),
-    clickOnPart(MouseButton.Left, V)
-      .withMods(KeyModifier.Shift)
-      .flatMap(a.dragEdge(E, Src, Tgt)),
-    dblClickOnPart(MouseButton.Left, V).withMods().flatMap(a.edit(ImageURL, false)),
+/* A sprite turns a `PropMap` into svg code */
+val nodeSprite = Rect(Content, PropMap() + (Fill -> "lightgreen"))
+val edgeSprite = Arrow(Content, PropMap())
+
+/* Some custom attributes */
+// val srcName = Attr(UID("CustomAttr"),"srcName",E,ValType[String]("String"))
+// val tgtName = Attr(UID("CustomAttr"),"tgtName",E,ValType[String]("String"))
+
+/* Optional modification the acset based on current `EditorState` */
+def layout(acset: ACSet, state: EditorState) =
+  GraphDisplay
+    .defaultLayout(acset, state)
+    .softSetProp(Content, acset.getParts(V).map(p => p -> p.id.toString))
+
+/* State management */
+
+/* Initialize the model variable */
+val graphVar = UndoableVar(Graph())
+
+import KeyModifier.{Ctrl, Shift}
+
+/* A `Binding` ties an `EventHook` to an `Action` */
+val bindings = Seq[Binding[ACSet]](
+  Binding(KeyDownHook("a"), AddAtMouse(V, vSrcId)),
+  Binding(KeyDownHook("d"), DeleteHovered()),
+  Binding(ClickOnPartHook(MouseButton.Left).filter(V), MoveViaDrag()),
+  Binding(
+    ClickOnPartHook(MouseButton.Left, Shift),
+    AddSpanViaDrag((V, V), (Src, Tgt))
+  ),
+  Binding(
+    DoubleClickOnPartHook(),
+    Callback(tag =>
+      graphSema.tableVar.now().get(tag.keyPart.ob.id) match
+        case Some(sematable) =>
+          sematable.edit(tag.keyPart, Content)
+        case None =>
+          ()
+    )
+  ),
+  Binding(KeyDownHook("?"), PrintModel()),
+  Binding(
+    KeyDownHook("z", Ctrl),
+    Callback(() => graphVar.undo())
+  ),
+  Binding(
+    KeyDownHook("Z", Ctrl, Shift),
+    Callback(() => graphVar.redo())
   )
+)
+
+val vSrcId = UID("VSrc")
+val vSource = ObSource(vSrcId, nodeSprite, V)
+
+val eSource = SpanSource(vSource.id, edgeSprite, Span(Src, Tgt))
+
+/* Construct the semagram */
+val graphSema: TabularSemagram = GraphDisplay(
+  /* Model variable */
+  graphVar,
+  /* Bindings for interaction */
+  bindings,
+  /* Vertex construction */
+  vSource,
+  /* Edge construction */
+  eSource
+  /* Optional pre-rendering */
+  // layout
+)
+
+def initialize() = {
+  /* Add styling to the main svg window */
+  graphSema.elt.amend(
+    backgroundColor := "lightblue"
+  )
+
+  /* Construct table elements and add styling */
+  val graphTables = Map(
+    V.id -> graphSema.editTable(V, Center, Content, Fill),
+    E.id -> graphSema.editTable(
+      E,
+      SrcName,
+      TgtName,
+      Content,
+      Stroke,
+      Fill,
+      StrokeWidth
+    )
+  )
+
+  for (part, table) <- graphTables
+  yield table.elt.amend(
+    backgroundColor := "blue"
+  )
+
+  /* Attach tables to semagram's `tableVar` variable */
+  graphSema.tableVar.set(graphTables)
+
 }
 
+/* The main app that is exported to javascript */
 object Main {
-  @JSExportTopLevel("GraphApp")
-  object GraphApp extends Semagram {
 
-    def run(es: EditorState, init: Option[String]): IO[Unit] = {
-      val initg = init match {
-        case Some(s) => read[Graph](s)(ACSet.rw)
-        case None => Graph()
-      }
-      val LabelBox = Box(
-        PropMap()
-          + (MinimumHeight, 8)
-          + (MinimumWidth, 8)
-          + (InnerSep, 0)
-          + (OuterSep, 5)
-      )
-      for {
-        g <- IO(Var(initg))
-        lg <- IO(
-          g.signal.map(assignBends[SchGraph.type](Map(E -> (Src, Tgt)), 0.35))
-        )
-        _ <- es.makeViewport(
-          lg,
-          Seq(
-            ACSetEntitySource(V, BasicDisc(es)),
-            ACSetEntitySource[SchGraph.type](V, LabelBox).updateEntities(
-              (e,p) => (
-                LabelFor(e),
-                PropMap()
-                  + (Center, p(Center) + Complex(0,-70))
-                  + (Content, p.get(Label).getOrElse(""))
-                  + (Stroke, "none")
-              )
-            ),
-            ACSetEdgeSource(E, Src, Tgt, BasicArrow(es))
+  /* The graph editor application */
+  @JSExportTopLevel("GraphApp")
+  object GraphApp {
+
+    @JSExport
+    def main(mountInto: dom.Element, init: js.UndefOr[String]) = {
+
+      initialize()
+
+      val mainDiv: Div = div(
+        idAttr := "graph-app",
+        /* The svg window */
+        graphSema.elt,
+        /* A family of tables */
+        div(
+          idAttr := "graph-app-tables",
+          display := "flex",
+          children <-- graphSema.tableVar.signal.map(tableMap =>
+            tableMap.toSeq.map((_, table) => table.elt)
           )
         )
-        ui <- es.makeUI()
-        _ <- es.bindForever(bindings(es, g, ui))
-      } yield ()
+      )
+
+      /* Render the laminar element to the DOM */
+      render(mountInto, mainDiv)
     }
   }
 }

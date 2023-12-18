@@ -2,6 +2,7 @@ package semagrams.widgets
 
 import com.raquo.laminar.api.L._
 import semagrams.util._
+import semagrams.util.Complex
 
 /** A text box that displays over the window. */
 def Popover(
